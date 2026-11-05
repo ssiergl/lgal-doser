@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------------------
+# LGAL-Doser – base configuration (ESP32-S3-DEV-KIT-N16R8)
+# Bootloader-relevant options (rollback, flash, partitions) only take effect
+# via the first USB flash and must be final from M0 on.
+# ---------------------------------------------------------------------------
+CONFIG_IDF_TARGET="esp32s3"
+
+# Flash 16 MB, QIO 80 MHz
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+
+# Partitions
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x8000
+
+# Octal PSRAM 8 MB
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+
+# OTA: rollback on failed boot (bootloader feature!)
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Crash analysis without USB: core dump into its own flash partition
+CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
+CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
+CONFIG_ESP_SYSTEM_PANIC_PRINT_REBOOT=y
+
+# Watchdogs: hanging tasks lead to a reboot (driver EN OFF via pull-up)
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_PANIC=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=10
+
+# FreeRTOS
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# HTTP server
+CONFIG_HTTPD_WS_SUPPORT=y
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+CONFIG_HTTPD_MAX_URI_LEN=256
+
+# Compiler
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
