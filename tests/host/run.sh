@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds and runs the host tests (no ESP-IDF needed).
 #   tests/host/run.sh        Tests
-#   tests/host/run.sh -v     dosing simulation with engine log
+#   tests/host/run.sh -v     simulations with engine log
 set -e
 cd "$(dirname "$0")/../.."
 OUT="${TMPDIR:-/tmp}/lgal_host_tests"
@@ -45,3 +45,20 @@ $CXX \
     components/doser_hal/src/posix_tz.cpp \
     -o "$OUT/schedule"
 "$OUT/schedule"
+
+echo
+# Scheduler with the real dosing engine against simulated motor/clock/storage
+$CXX \
+    -I tests/host/stubs \
+    -I components/doser_hal/include \
+    -I components/doser_app/include \
+    -I components/lgal_core/include \
+    tests/host/test_scheduler.cpp \
+    components/doser_app/src/scheduler.cpp \
+    components/doser_app/src/schedule_core.cpp \
+    components/doser_app/src/dosing.cpp \
+    components/doser_app/src/dosing_core.cpp \
+    components/doser_hal/src/posix_tz.cpp \
+    components/doser_hal/src/tmc2209_proto.cpp \
+    -o "$OUT/scheduler"
+"$OUT/scheduler" $1

@@ -13,6 +13,7 @@
 #include "doser/motion.h"
 #include "doser/pins.h"
 #include "doser/safe_init.h"
+#include "doser/scheduler.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -114,6 +115,8 @@ extern "C" void app_main(void) {
     eth.clock_mhz = CONFIG_LGAL_ETH_SPI_CLOCK_MHZ;
     ESP_ERROR_CHECK(lgal::net::init(eth));
     init_time();
+    // Schedules: needs the dosing engine and the time zone
+    if (doser::scheduler::init() != ESP_OK) ESP_LOGE(TAG, "Scheduler not ready");
 
     if (!lgal::settings::setup_completed()) {
         // Factory state: setup AP permanently open until setup (M4)
