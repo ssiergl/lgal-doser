@@ -33,5 +33,7 @@ struct Status {
     int ap_clients = 0;
 };
 Status status();
+// Is this client (IPv4, network byte order) connected through the open setup AP?
+bool is_setup_ap_client(uint32_t ip);
 
 }  // namespace lgal::net

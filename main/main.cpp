@@ -19,6 +19,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "lgal/auth.h"
 #include "lgal/button.h"
 #include "lgal/device.h"
 #include "lgal/http.h"
@@ -43,7 +44,7 @@ void print_banner() {
     printf(" MAC         : %s\n", lgal::device::mac_str().c_str());
     printf(" Hostname    : %s.local\n", lgal::device::hostname().c_str());
     printf(" Setup Wi-Fi : %s\n", lgal::device::setup_ssid().c_str());
-    printf(" Password    : %s   (Wi-Fi and web login 'admin')\n", lgal::device::setup_password().c_str());
+    printf(" Password    : %s   (setup Wi-Fi and first web login)\n", lgal::device::setup_password().c_str());
     printf("========================================================\n\n");
 }
 
@@ -100,6 +101,7 @@ extern "C" void app_main(void) {
     lgal::logbuf::init();
     ESP_ERROR_CHECK(lgal::settings::init());
     lgal::device::init();
+    lgal::auth::init();
     print_banner();
 
     // 4. Pumps, RTC (drivers stay off until a move starts)
@@ -127,6 +129,7 @@ extern "C" void app_main(void) {
 
     // 6. Web server, system API, dosing and hardware test, OTA
     ESP_ERROR_CHECK(lgal::http::start());
+    lgal::auth::register_handlers(lgal::http::handle());
     lgal::sysapi::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
     doser::dosing_api::register_handlers(lgal::http::handle());
@@ -134,6 +137,7 @@ extern "C" void app_main(void) {
     lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
     lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
     lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
+    lgal::sysapi::add_link("account", "Account", "/login");
 
     lgal::ota::set_guard([](std::string& reason) {
         if (doser::motion::any_running() || doser::dosing::busy()) {

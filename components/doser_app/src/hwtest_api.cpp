@@ -33,7 +33,7 @@ int pump_arg(httpd_req_t* req, const char* key = "pump") {
 }
 
 esp_err_t get_page(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     return httpd_resp_send(req, hwtest_html_start, hwtest_html_end - hwtest_html_start - 1);  // without the trailing 0
@@ -93,7 +93,7 @@ void write_pump(Json& j, int i) {
 }
 
 esp_err_t get_status(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     Json j;
     j.obj();
     j.kv("drivers_enabled", motion::drivers_enabled()).kv("locked", motion::locked());
@@ -139,7 +139,7 @@ esp_err_t get_status(httpd_req_t* req) {
 }
 
 esp_err_t post_run(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     const int p = pump_arg(req);
     if (p < 0) return bad(req, "pump=1..5 required");
     int64_t steps = 0, sps = 0, accel = 0, vstart = 0, force = 0;
@@ -170,7 +170,7 @@ esp_err_t post_run(httpd_req_t* req) {
 }
 
 esp_err_t post_stop(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     int64_t p = 0;
     http::query_int(req, "pump", &p);
     char mode[8] = "soft";
@@ -183,7 +183,7 @@ esp_err_t post_stop(httpd_req_t* req) {
 }
 
 esp_err_t post_pump_config(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     const int p = pump_arg(req);
     if (p < 0) return bad(req, "pump=1..5 required");
     auto c = motion::config(p);
@@ -204,7 +204,7 @@ esp_err_t post_pump_config(httpd_req_t* req) {
 }
 
 esp_err_t get_tmc(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     const int p = pump_arg(req);
     if (p < 0) return bad(req, "pump=1..5 required");
     static const struct {
@@ -233,14 +233,14 @@ esp_err_t get_tmc(httpd_req_t* req) {
 }
 
 esp_err_t post_time(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     int64_t utc = 0;
     if (!http::query_int(req, "utc", &utc) || !lgal::timesync::set_manual(utc)) return bad(req, "utc invalid");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 
 esp_err_t post_aging(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     int64_t v = 0;
     if (!http::query_int(req, "offset", &v) || v < -128 || v > 127) return bad(req, "offset=-128..127");
     if (rtc::set_aging(static_cast<int8_t>(v)) != ESP_OK)
@@ -249,7 +249,7 @@ esp_err_t post_aging(httpd_req_t* req) {
 }
 
 esp_err_t post_eeprom_test(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     const esp_err_t err = eeprom::self_test();
     ESP_LOGI(TAG, "EEPROM test: %s", esp_err_to_name(err));
     if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "eeprom_test_failed", esp_err_to_name(err));

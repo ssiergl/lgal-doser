@@ -206,8 +206,8 @@ esp_err_t delete_coredump(httpd_req_t* req) {
     return http::send_json(req, "{\"status\":\"deleted\"}");
 }
 
+// Public: the login page needs the device language before signing in
 esp_err_t get_language(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
     Json j;
     j.obj();
     write_language(j);

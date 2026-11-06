@@ -1,8 +1,8 @@
 #pragma once
 // HTTP server (port 80) and shared helpers for all API handlers.
 //
-// Authentication M0 (preliminary): HTTP Basic, user "admin", password =
-// the device's setup password. Replaced by session login + API key in M4.
+// Authentication (see auth.h): session cookie or API key. Pages without
+// login redirect to /login, API requests get 401 JSON.
 
 #include <cstddef>
 #include <cstdint>
@@ -17,9 +17,14 @@ namespace lgal::http {
 esp_err_t start();
 httpd_handle_t handle();
 
-// Checks the login. On failure 401 is sent and false is returned;
-// the handler must then return ESP_OK immediately.
+// Checks the login. On failure 401 (or a redirect to /login for pages) is
+// sent and false is returned; the handler must then return ESP_OK immediately.
 bool authorize(httpd_req_t* req);
+// Same for the engineering area (spec 11.1): 403 "engineering_locked" if the
+// session has not unlocked it.
+bool authorize_engineering(httpd_req_t* req);
+// Client IPv4 address (network byte order), 0 if unknown
+uint32_t client_ipv4(httpd_req_t* req);
 
 esp_err_t send_json(httpd_req_t* req, const char* json, const char* status = "200 OK");
 // Error response {"error":{"code":"...","message":"..."}}.

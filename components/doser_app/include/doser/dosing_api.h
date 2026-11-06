@@ -22,8 +22,7 @@
 //                                 &prime_max_s=&prime_heartbeat_ms=&min_dose_ml=&tube_life_h=
 //                                 &limit_mode=calendar_day|rolling_24h
 //
-// The engineering area gets its own key in M4 (spec 11.1);
-// until then the normal login applies.
+// The engineering endpoints need the unlocked engineering area (auth.h, spec 11.1).
 
 #include "esp_err.h"
 #include "esp_http_server.h"

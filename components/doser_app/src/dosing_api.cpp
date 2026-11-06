@@ -322,14 +322,14 @@ void write_engineering(Json& j) {
 }
 
 esp_err_t get_engineering(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     Json j;
     write_engineering(j);
     return http::send_json(req, j.c_str());
 }
 
 esp_err_t post_engineering(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     auto e = dosing::engineering();
     int64_t v = 0;
     char buf[16];

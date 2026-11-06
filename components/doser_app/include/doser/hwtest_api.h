@@ -1,5 +1,6 @@
 #pragma once
-// Hardware diagnostics (M1, later part of the engineering mode "danger zone"):
+// Hardware diagnostics (engineering mode "danger zone", spec 11.2 D). All
+// endpoints and the page need the unlocked engineering area (auth.h).
 //
 //   GET  /hwtest                       test page (in the firmware image)
 //   GET  /api/v1/hw/status             drivers, pumps, RTC, EEPROM, UART
