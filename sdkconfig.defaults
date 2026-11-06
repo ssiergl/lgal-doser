@@ -25,7 +25,6 @@ CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
 # Crash analysis without USB: core dump into its own flash partition
 CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
-CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
 CONFIG_ESP_SYSTEM_PANIC_PRINT_REBOOT=y
 
 # Watchdogs: hanging tasks lead to a reboot (driver EN OFF via pull-up)

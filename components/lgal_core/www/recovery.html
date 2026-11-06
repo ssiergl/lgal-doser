@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LG Aquatic Life – Wartung</title>
+<style>
+:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 16px}h2{font-size:16px;margin:0 0 10px}
+.card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}td:first-child{color:var(--mut);width:42%}
+button,input[type=file]{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button:disabled{opacity:.5;cursor:default}
+progress{width:100%;height:14px;margin-top:10px}.msg{margin-top:8px;min-height:1.4em}.err{color:var(--err)}.ok{color:var(--ok)}
+pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:auto;font-size:12px;white-space:pre-wrap;word-break:break-all}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+footer{color:var(--mut);font-size:12px;text-align:center;margin:20px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>LG Aquatic Life · Doser · Wartung</h1>
+
+<section class="card">
+<h2>Gerät</h2>
+<table id="info"><tr><td>Lade …</td><td></td></tr></table>
+</section>
+
+<section class="card">
+<h2>Firmware-Update</h2>
+<div class="row"><input type="file" id="fw" accept=".bin"><button id="up">Hochladen &amp; flashen</button></div>
+<progress id="prog" max="100" value="0" hidden></progress>
+<div class="msg" id="upmsg"></div>
+</section>
+
+<section class="card">
+<h2>Diagnose</h2>
+<div class="row">
+<button class="sec" id="logbtn">Log anzeigen</button>
+<a href="/api/v1/system/coredump" id="cdlink" hidden><button class="sec">Coredump laden</button></a>
+<button class="sec" id="reboot">Neustart</button>
+</div>
+<pre id="log" hidden></pre>
+</section>
+
+<footer>Notfall-/Wartungsseite im Firmware-Image. Die normale Oberfläche folgt in einer späteren Version.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function row(k,v){return `<tr><td>${k}</td><td>${v}</td></tr>`}
+async function loadInfo(){
+  try{
+    const r=await fetch('/api/v1/system/info',{cache:'no-store'});const j=await r.json();
+    const f=j.firmware,s=j.system,n=j.network,d=j.device;
+    $('info').innerHTML=
+      row('Firmware',`${f.version} (${f.partition}, ${f.ota_state})`)+
+      row('Build',`${f.built} · IDF ${f.idf}`)+
+      (f.last_invalid_partition?row('Zurückgerollt',`<span class="err">${f.last_invalid_partition} ist ungültig</span>`):'')+
+      row('Hostname',`${d.hostname}.local`)+row('MAC',d.mac)+
+      row('Ethernet',n.eth_present?(n.eth_link?(n.eth_ip||'Link, keine IP'):'kein Link'):'<span class="err">W5500 nicht gefunden</span>')+
+      row('Setup-AP',n.ap_active?`aktiv, ${n.ap_clients} Client(s)`:'aus')+
+      row('Laufzeit',`${Math.floor(s.uptime_s/3600)} h ${Math.floor(s.uptime_s%3600/60)} min`)+
+      row('Letzter Reset',s.reset_reason)+
+      row('Heap frei / min',`${(s.heap_free/1024).toFixed(0)} / ${(s.heap_min_free/1024).toFixed(0)} KiB`)+
+      row('PSRAM frei',`${(s.psram_free/1048576).toFixed(1)} MiB`)+
+      row('Coredump',s.coredump?'<span class="err">vorhanden</span>':'keiner');
+    $('cdlink').hidden=!s.coredump;
+  }catch(e){$('info').innerHTML=row('Fehler',String(e))}
+}
+$('up').onclick=()=>{
+  const file=$('fw').files[0],msg=$('upmsg');
+  if(!file){msg.className='msg err';msg.textContent='Bitte zuerst eine .bin-Datei wählen.';return}
+  const xhr=new XMLHttpRequest();
+  xhr.open('POST','/api/v1/ota/firmware');
+  xhr.setRequestHeader('Content-Type','application/octet-stream');
+  $('prog').hidden=false;$('up').disabled=true;msg.className='msg';msg.textContent='Übertrage …';
+  xhr.upload.onprogress=e=>{if(e.lengthComputable)$('prog').value=e.loaded/e.total*100};
+  xhr.onload=()=>{
+    let j={};try{j=JSON.parse(xhr.responseText)}catch(e){}
+    if(xhr.status===200){msg.className='msg ok';msg.textContent='Update erfolgreich. Gerät startet neu – Seite lädt in 20 s neu.';setTimeout(()=>location.reload(),20000)}
+    else{msg.className='msg err';msg.textContent=`Fehler ${xhr.status}: ${j.error||xhr.responseText}`;$('up').disabled=false}
+  };
+  xhr.onerror=()=>{msg.className='msg err';msg.textContent='Verbindung abgebrochen.';$('up').disabled=false};
+  xhr.send(file);
+};
+$('logbtn').onclick=async()=>{const r=await fetch('/api/v1/system/log',{cache:'no-store'});const p=$('log');p.textContent=await r.text();p.hidden=false;p.scrollTop=p.scrollHeight};
+$('reboot').onclick=async()=>{if(!confirm('Gerät neu starten?'))return;await fetch('/api/v1/system/reboot',{method:'POST'});$('upmsg').textContent='Neustart …';setTimeout(()=>location.reload(),15000)};
+loadInfo();setInterval(loadInfo,10000);
+</script>
+</body>
+</html>
