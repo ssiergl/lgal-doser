@@ -1,95 +1,146 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LG Aquatic Life – Wartung</title>
+<title>LG Aquatic Life – Maintenance</title>
 <style>
 :root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
 main{max-width:760px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 h1{font-size:20px;margin:8px 0 16px}h2{font-size:16px;margin:0 0 10px}
 .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:14px}
 table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}td:first-child{color:var(--mut);width:42%}
-button,input[type=file]{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
+button,input[type=file],select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
 button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button:disabled{opacity:.5;cursor:default}
+select{background:var(--card);color:var(--fg);border:1px solid var(--mut);border-radius:6px;padding:4px 8px}
 progress{width:100%;height:14px;margin-top:10px}.msg{margin-top:8px;min-height:1.4em}.err{color:var(--err)}.ok{color:var(--ok)}
 pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:auto;font-size:12px;white-space:pre-wrap;word-break:break-all}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 footer{color:var(--mut);font-size:12px;text-align:center;margin:20px 0}
 </style>
+<script src="/i18n.js"></script>
 </head>
 <body>
 <main>
-<h1>LG Aquatic Life · Doser · Wartung</h1>
+<header>
+<h1 data-i18n="title"></h1>
+<label class="row"><span data-i18n="lang.label"></span><select id="lang"></select></label>
+</header>
 <div class="row" id="links"></div>
 
 <section class="card">
-<h2>Gerät</h2>
-<table id="info"><tr><td>Lade …</td><td></td></tr></table>
+<h2 data-i18n="sec.device"></h2>
+<table id="info"></table>
 </section>
 
 <section class="card">
-<h2>Firmware-Update</h2>
-<div class="row"><input type="file" id="fw" accept=".bin"><button id="up">Hochladen &amp; flashen</button></div>
+<h2 data-i18n="sec.update"></h2>
+<div class="row"><input type="file" id="fw" accept=".bin"><button id="up" data-i18n="btn.upload"></button></div>
 <progress id="prog" max="100" value="0" hidden></progress>
 <div class="msg" id="upmsg"></div>
 </section>
 
 <section class="card">
-<h2>Diagnose</h2>
+<h2 data-i18n="sec.diag"></h2>
 <div class="row">
-<button class="sec" id="logbtn">Log anzeigen</button>
-<a href="/api/v1/system/coredump" id="cdlink" hidden><button class="sec">Coredump laden</button></a>
-<button class="sec" id="reboot">Neustart</button>
+<button class="sec" id="logbtn" data-i18n="btn.log"></button>
+<a href="/api/v1/system/coredump" id="cdlink" hidden><button class="sec" data-i18n="btn.coredump"></button></a>
+<button class="sec" id="reboot" data-i18n="btn.reboot"></button>
 </div>
 <pre id="log" hidden></pre>
 </section>
 
-<footer>Notfall-/Wartungsseite im Firmware-Image. Die normale Oberfläche folgt in einer späteren Version.</footer>
+<footer data-i18n="footer"></footer>
 </main>
 <script>
+i18n.add({
+en:{
+ 'page.title':'LG Aquatic Life – Maintenance','title':'LG Aquatic Life · Doser · Maintenance',
+ 'sec.device':'Device','sec.update':'Firmware update','sec.diag':'Diagnostics',
+ 'btn.upload':'Upload & flash','btn.log':'Show log','btn.coredump':'Download coredump','btn.reboot':'Reboot',
+ 'footer':'Emergency/maintenance page built into the firmware. The regular interface follows in a later version.',
+ 'loading':'Loading …','error':'Error',
+ 'i.firmware':'Firmware','i.build':'Build','i.rolledback':'Rolled back','i.rolledback.v':'{p} is invalid',
+ 'i.hostname':'Hostname','i.mac':'MAC','i.eth':'Ethernet','i.eth.noip':'Link, no IP','i.eth.nolink':'No link',
+ 'i.eth.missing':'W5500 not found','i.ap':'Setup AP','i.ap.on':'active, {n} client(s)','i.ap.off':'off',
+ 'i.time':'Time','i.time.v':'{t} (source: {s})','i.time.none':'no valid time',
+ 'src.ntp':'NTP','src.rtc':'RTC','src.manual':'manual',
+ 'i.uptime':'Uptime','i.uptime.v':'{h} h {m} min','i.reset':'Last reset','i.heap':'Heap free / min','i.psram':'PSRAM free',
+ 'i.coredump':'Coredump','i.coredump.yes':'present','i.coredump.no':'none',
+ 'up.nofile':'Please select a .bin file first.','up.sending':'Uploading …',
+ 'up.ok':'Update successful. The device is rebooting – the page reloads in 20 s.','up.fail':'Error {status}: {msg}',
+ 'up.conn':'Connection lost.','reboot.confirm':'Reboot the device?','reboot.busy':'Rebooting …',
+ 'link.hwtest':'Hardware test'},
+de:{
+ 'page.title':'LG Aquatic Life – Wartung','title':'LG Aquatic Life · Doser · Wartung',
+ 'sec.device':'Gerät','sec.update':'Firmware-Update','sec.diag':'Diagnose',
+ 'btn.upload':'Hochladen & flashen','btn.log':'Log anzeigen','btn.coredump':'Coredump laden','btn.reboot':'Neustart',
+ 'footer':'Notfall-/Wartungsseite im Firmware-Image. Die normale Oberfläche folgt in einer späteren Version.',
+ 'loading':'Lade …','error':'Fehler',
+ 'i.firmware':'Firmware','i.build':'Build','i.rolledback':'Zurückgerollt','i.rolledback.v':'{p} ist ungültig',
+ 'i.hostname':'Hostname','i.mac':'MAC','i.eth':'Ethernet','i.eth.noip':'Link, keine IP','i.eth.nolink':'kein Link',
+ 'i.eth.missing':'W5500 nicht gefunden','i.ap':'Setup-AP','i.ap.on':'aktiv, {n} Client(s)','i.ap.off':'aus',
+ 'i.time':'Uhrzeit','i.time.v':'{t} (Quelle: {s})','i.time.none':'keine gültige Zeit',
+ 'src.ntp':'NTP','src.rtc':'RTC','src.manual':'manuell',
+ 'i.uptime':'Laufzeit','i.uptime.v':'{h} h {m} min','i.reset':'Letzter Reset','i.heap':'Heap frei / min','i.psram':'PSRAM frei',
+ 'i.coredump':'Coredump','i.coredump.yes':'vorhanden','i.coredump.no':'keiner',
+ 'up.nofile':'Bitte zuerst eine .bin-Datei wählen.','up.sending':'Übertrage …',
+ 'up.ok':'Update erfolgreich. Gerät startet neu – Seite lädt in 20 s neu.','up.fail':'Fehler {status}: {msg}',
+ 'up.conn':'Verbindung abgebrochen.','reboot.confirm':'Gerät neu starten?','reboot.busy':'Neustart …',
+ 'link.hwtest':'Hardwaretest'}
+});
 const $=id=>document.getElementById(id);
-function row(k,v){return `<tr><td>${k}</td><td>${v}</td></tr>`}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+function row(k,v){return `<tr><td>${t(k)}</td><td>${v}</td></tr>`}
+let info=null;
+function render(){
+  if(!info){$('info').innerHTML=`<tr><td>${t('loading')}</td><td></td></tr>`;return}
+  if(info.err){$('info').innerHTML=row('error',esc(info.err));return}
+  const j=info,f=j.firmware,s=j.system,n=j.network,d=j.device,tm=j.time;
+  $('info').innerHTML=
+    row('i.firmware',`${esc(f.version)} (${f.partition}, ${f.ota_state})`)+
+    row('i.build',`${esc(f.built)} · IDF ${esc(f.idf)}`)+
+    (f.last_invalid_partition?row('i.rolledback',`<span class="err">${t('i.rolledback.v',{p:f.last_invalid_partition})}</span>`):'')+
+    row('i.hostname',`${esc(d.hostname)}.local`)+row('i.mac',d.mac)+
+    row('i.eth',n.eth_present?(n.eth_link?(n.eth_ip||t('i.eth.noip')):t('i.eth.nolink')):`<span class="err">${t('i.eth.missing')}</span>`)+
+    row('i.ap',n.ap_active?t('i.ap.on',{n:n.ap_clients}):t('i.ap.off'))+
+    row('i.time',tm&&tm.valid?t('i.time.v',{t:esc(tm.local),s:t('src.'+tm.source)}):`<span class="err">${t('i.time.none')}</span>`)+
+    row('i.uptime',t('i.uptime.v',{h:Math.floor(s.uptime_s/3600),m:Math.floor(s.uptime_s%3600/60)}))+
+    row('i.reset',s.reset_reason)+
+    row('i.heap',`${(s.heap_free/1024).toFixed(0)} / ${(s.heap_min_free/1024).toFixed(0)} KiB`)+
+    row('i.psram',`${(s.psram_free/1048576).toFixed(1)} MiB`)+
+    row('i.coredump',s.coredump?`<span class="err">${t('i.coredump.yes')}</span>`:t('i.coredump.no'));
+  $('cdlink').hidden=!s.coredump;
+  // Translate link names via the id, otherwise show the firmware's English name
+  $('links').innerHTML=(j.links||[]).map(l=>{const k='link.'+l.id,x=t(k);return `<a href="${esc(l.path)}"><button class="sec">${esc(x===k?l.name:x)}</button></a>`}).join('');
+}
 async function loadInfo(){
-  try{
-    const r=await fetch('/api/v1/system/info',{cache:'no-store'});const j=await r.json();
-    const f=j.firmware,s=j.system,n=j.network,d=j.device;
-    $('info').innerHTML=
-      row('Firmware',`${f.version} (${f.partition}, ${f.ota_state})`)+
-      row('Build',`${f.built} · IDF ${f.idf}`)+
-      (f.last_invalid_partition?row('Zurückgerollt',`<span class="err">${f.last_invalid_partition} ist ungültig</span>`):'')+
-      row('Hostname',`${d.hostname}.local`)+row('MAC',d.mac)+
-      row('Ethernet',n.eth_present?(n.eth_link?(n.eth_ip||'Link, keine IP'):'kein Link'):'<span class="err">W5500 nicht gefunden</span>')+
-      row('Setup-AP',n.ap_active?`aktiv, ${n.ap_clients} Client(s)`:'aus')+
-      row('Uhrzeit',j.time&&j.time.valid?`${j.time.local} (Quelle: ${({ntp:'NTP',rtc:'RTC',manual:'manuell'})[j.time.source]||j.time.source})`:'<span class="err">keine gültige Zeit</span>')+
-      row('Laufzeit',`${Math.floor(s.uptime_s/3600)} h ${Math.floor(s.uptime_s%3600/60)} min`)+
-      row('Letzter Reset',s.reset_reason)+
-      row('Heap frei / min',`${(s.heap_free/1024).toFixed(0)} / ${(s.heap_min_free/1024).toFixed(0)} KiB`)+
-      row('PSRAM frei',`${(s.psram_free/1048576).toFixed(1)} MiB`)+
-      row('Coredump',s.coredump?'<span class="err">vorhanden</span>':'keiner');
-    $('cdlink').hidden=!s.coredump;
-    $('links').innerHTML=(j.links||[]).map(l=>`<a href="${l.path}"><button class="sec">${l.name}</button></a>`).join('');
-  }catch(e){$('info').innerHTML=row('Fehler',String(e))}
+  try{const r=await fetch('/api/v1/system/info',{cache:'no-store'});info=await r.json()}
+  catch(e){info={err:String(e)}}
+  render();
 }
 $('up').onclick=()=>{
   const file=$('fw').files[0],msg=$('upmsg');
-  if(!file){msg.className='msg err';msg.textContent='Bitte zuerst eine .bin-Datei wählen.';return}
+  if(!file){msg.className='msg err';msg.textContent=t('up.nofile');return}
   const xhr=new XMLHttpRequest();
   xhr.open('POST','/api/v1/ota/firmware');
   xhr.setRequestHeader('Content-Type','application/octet-stream');
-  $('prog').hidden=false;$('up').disabled=true;msg.className='msg';msg.textContent='Übertrage …';
+  $('prog').hidden=false;$('up').disabled=true;msg.className='msg';msg.textContent=t('up.sending');
   xhr.upload.onprogress=e=>{if(e.lengthComputable)$('prog').value=e.loaded/e.total*100};
   xhr.onload=()=>{
     let j={};try{j=JSON.parse(xhr.responseText)}catch(e){}
-    if(xhr.status===200){msg.className='msg ok';msg.textContent='Update erfolgreich. Gerät startet neu – Seite lädt in 20 s neu.';setTimeout(()=>location.reload(),20000)}
-    else{msg.className='msg err';msg.textContent=`Fehler ${xhr.status}: ${j.error||xhr.responseText}`;$('up').disabled=false}
+    if(xhr.status===200){msg.className='msg ok';msg.textContent=t('up.ok');setTimeout(()=>location.reload(),20000)}
+    else{msg.className='msg err';msg.textContent=t('up.fail',{status:xhr.status,msg:i18n.error(j,xhr.status)});$('up').disabled=false}
   };
-  xhr.onerror=()=>{msg.className='msg err';msg.textContent='Verbindung abgebrochen.';$('up').disabled=false};
+  xhr.onerror=()=>{msg.className='msg err';msg.textContent=t('up.conn');$('up').disabled=false};
   xhr.send(file);
 };
 $('logbtn').onclick=async()=>{const r=await fetch('/api/v1/system/log',{cache:'no-store'});const p=$('log');p.textContent=await r.text();p.hidden=false;p.scrollTop=p.scrollHeight};
-$('reboot').onclick=async()=>{if(!confirm('Gerät neu starten?'))return;await fetch('/api/v1/system/reboot',{method:'POST'});$('upmsg').textContent='Neustart …';setTimeout(()=>location.reload(),15000)};
+$('reboot').onclick=async()=>{if(!confirm(t('reboot.confirm')))return;await fetch('/api/v1/system/reboot',{method:'POST'});$('upmsg').textContent=t('reboot.busy');setTimeout(()=>location.reload(),15000)};
+i18n.onChange(render);
+i18n.init('lang');
 loadInfo();setInterval(loadInfo,10000);
 </script>
 </body>
