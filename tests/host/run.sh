@@ -29,6 +29,15 @@ $CXX \
 "$OUT/json"
 
 echo
+$CXX \
+    -I components/lgal_core/include \
+    tests/host/test_auth.cpp \
+    components/lgal_core/src/sha256.cpp \
+    components/lgal_core/src/auth_core.cpp \
+    -o "$OUT/auth"
+"$OUT/auth"
+
+echo
 # Dosing engine unchanged against simulated motor/storage (stubs first)
 $CXX \
     -I tests/host/stubs \
