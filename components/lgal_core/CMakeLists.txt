@@ -14,6 +14,7 @@ idf_component_register(
         "src/sha256.cpp"
         "src/auth_core.cpp"
         "src/auth.cpp"
+        "src/net_config.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
     EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/login.html"
