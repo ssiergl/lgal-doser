@@ -64,7 +64,7 @@ en:{
  'loading':'Loading …','error':'Error',
  'i.firmware':'Firmware','i.build':'Build','i.rolledback':'Rolled back','i.rolledback.v':'{p} is invalid',
  'i.hostname':'Hostname','i.mac':'MAC','i.eth':'Ethernet','i.eth.noip':'Link, no IP','i.eth.nolink':'No link',
- 'i.eth.missing':'W5500 not found','i.ap':'Setup AP','i.ap.on':'active, {n} client(s)','i.ap.off':'off',
+ 'i.eth.missing':'W5500 not found','i.wlan':'Wi-Fi','i.wlan.connecting':'connecting …','i.wlan.disconnected':'not connected','i.wlan.connected':'connected','i.ap':'Setup AP','i.ap.on':'active, {n} client(s)','i.ap.off':'off',
  'i.time':'Time','i.time.v':'{t} (source: {s})','i.time.none':'no valid time',
  'src.ntp':'NTP','src.rtc':'RTC','src.manual':'manual',
  'i.uptime':'Uptime','i.uptime.v':'{h} h {m} min','i.reset':'Last reset','i.heap':'Heap free / min','i.psram':'PSRAM free',
@@ -72,7 +72,7 @@ en:{
  'up.nofile':'Please select a .bin file first.','up.sending':'Uploading …',
  'up.ok':'Update successful. The device is rebooting – the page reloads in 20 s.','up.fail':'Error {status}: {msg}',
  'up.conn':'Connection lost.','reboot.confirm':'Reboot the device?','reboot.busy':'Rebooting …',
- 'link.hwtest':'Hardware test','link.dosing':'Dosing test','link.schedule':'Schedule test','link.account':'Account'},
+ 'link.hwtest':'Hardware test','link.dosing':'Dosing test','link.schedule':'Schedule test','link.network':'Network','link.account':'Account'},
 de:{
  'page.title':'LG Aquatic Life – Wartung','title':'LG Aquatic Life · Doser · Wartung',
  'sec.device':'Gerät','sec.update':'Firmware-Update','sec.diag':'Diagnose',
@@ -81,7 +81,7 @@ de:{
  'loading':'Lade …','error':'Fehler',
  'i.firmware':'Firmware','i.build':'Build','i.rolledback':'Zurückgerollt','i.rolledback.v':'{p} ist ungültig',
  'i.hostname':'Hostname','i.mac':'MAC','i.eth':'Ethernet','i.eth.noip':'Link, keine IP','i.eth.nolink':'kein Link',
- 'i.eth.missing':'W5500 nicht gefunden','i.ap':'Setup-AP','i.ap.on':'aktiv, {n} Client(s)','i.ap.off':'aus',
+ 'i.eth.missing':'W5500 nicht gefunden','i.wlan':'WLAN','i.wlan.connecting':'verbindet …','i.wlan.disconnected':'nicht verbunden','i.wlan.connected':'verbunden','i.ap':'Setup-AP','i.ap.on':'aktiv, {n} Client(s)','i.ap.off':'aus',
  'i.time':'Uhrzeit','i.time.v':'{t} (Quelle: {s})','i.time.none':'keine gültige Zeit',
  'src.ntp':'NTP','src.rtc':'RTC','src.manual':'manuell',
  'i.uptime':'Laufzeit','i.uptime.v':'{h} h {m} min','i.reset':'Letzter Reset','i.heap':'Heap frei / min','i.psram':'PSRAM frei',
@@ -89,7 +89,7 @@ de:{
  'up.nofile':'Bitte zuerst eine .bin-Datei wählen.','up.sending':'Übertrage …',
  'up.ok':'Update erfolgreich. Gerät startet neu – Seite lädt in 20 s neu.','up.fail':'Fehler {status}: {msg}',
  'up.conn':'Verbindung abgebrochen.','reboot.confirm':'Gerät neu starten?','reboot.busy':'Neustart …',
- 'link.hwtest':'Hardwaretest','link.dosing':'Dosiertest','link.schedule':'Zeitplantest','link.account':'Konto'}
+ 'link.hwtest':'Hardwaretest','link.dosing':'Dosiertest','link.schedule':'Zeitplantest','link.network':'Netzwerk','link.account':'Konto'}
 });
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
@@ -105,6 +105,7 @@ function render(){
     (f.last_invalid_partition?row('i.rolledback',`<span class="err">${t('i.rolledback.v',{p:f.last_invalid_partition})}</span>`):'')+
     row('i.hostname',`${esc(d.hostname)}.local`)+row('i.mac',d.mac)+
     row('i.eth',n.eth_present?(n.eth_link?(n.eth_ip||t('i.eth.noip')):t('i.eth.nolink')):`<span class="err">${t('i.eth.missing')}</span>`)+
+    (n.wlan&&n.wlan!=='off'?row('i.wlan',n.wlan_ip||t('i.wlan.'+n.wlan)):'')+
     row('i.ap',n.ap_active?t('i.ap.on',{n:n.ap_clients}):t('i.ap.off'))+
     row('i.time',tm&&tm.valid?t('i.time.v',{t:esc(tm.local),s:t('src.'+tm.source)}):`<span class="err">${t('i.time.none')}</span>`)+
     row('i.uptime',t('i.uptime.v',{h:Math.floor(s.uptime_s/3600),m:Math.floor(s.uptime_s%3600/60)}))+
