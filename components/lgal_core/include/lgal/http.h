@@ -20,7 +20,10 @@ httpd_handle_t handle();
 bool authorize(httpd_req_t* req);
 
 esp_err_t send_json(httpd_req_t* req, const char* json, const char* status = "200 OK");
-esp_err_t send_error(httpd_req_t* req, const char* status, const char* message);
+// Error response {"error":{"code":"...","message":"..."}}.
+// code: fixed, machine-readable identifier (snake_case) – the web UI
+// translates based on the code. message: English plain text for logs/developers.
+esp_err_t send_error(httpd_req_t* req, const char* status, const char* code, const char* message);
 
 // Query parameter (?key=value). false if missing/invalid.
 bool query_str(httpd_req_t* req, const char* key, char* out, size_t len);

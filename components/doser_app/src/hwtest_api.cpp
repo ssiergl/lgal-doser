@@ -22,7 +22,8 @@ constexpr const char* TAG = "hwtest";
 using lgal::Json;
 namespace http = lgal::http;
 
-esp_err_t bad(httpd_req_t* req, const char* msg) { return http::send_error(req, "400 Bad Request", msg); }
+// Invalid/missing parameter: code "invalid_param", message names the parameter
+esp_err_t bad(httpd_req_t* req, const char* msg) { return http::send_error(req, "400 Bad Request", "invalid_param", msg); }
 
 // Read pump number 1..5 from ?key= -> index 0..4, otherwise -1
 int pump_arg(httpd_req_t* req, const char* key = "pump") {
@@ -140,15 +141,15 @@ esp_err_t get_status(httpd_req_t* req) {
 esp_err_t post_run(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     const int p = pump_arg(req);
-    if (p < 0) return bad(req, "pump=1..5 fehlt");
+    if (p < 0) return bad(req, "pump=1..5 required");
     int64_t steps = 0, sps = 0, accel = 0, vstart = 0, force = 0;
     if (!http::query_int(req, "steps", &steps) || steps == 0 || steps > 20000000 || steps < -20000000)
-        return bad(req, "steps (±1..20000000) fehlt");
-    if (!http::query_int(req, "sps", &sps) || sps <= 0) return bad(req, "sps (Schritte/s) fehlt");
+        return bad(req, "steps=±1..20000000 required");
+    if (!http::query_int(req, "sps", &sps) || sps <= 0) return bad(req, "sps (steps/s) required");
     http::query_int(req, "accel", &accel);
     http::query_int(req, "vstart", &vstart);
     http::query_int(req, "force", &force);
-    if (accel < 0 || vstart < 0) return bad(req, "accel/vstart negativ");
+    if (accel < 0 || vstart < 0) return bad(req, "accel/vstart must not be negative");
 
     motion::Move m{};
     m.steps = static_cast<int32_t>(steps);
@@ -160,10 +161,11 @@ esp_err_t post_run(httpd_req_t* req) {
     switch (err) {
         case ESP_OK: return http::send_json(req, "{\"status\":\"running\"}");
         case ESP_ERR_NOT_FOUND:
-            return http::send_error(req, "409 Conflict", "Treiber nicht erreichbar/konfiguriert (force=1 taktet trotzdem)");
-        case ESP_ERR_INVALID_ARG: return bad(req, "Geschwindigkeit außerhalb 1..max_sps");
-        case ESP_ERR_INVALID_STATE: return http::send_error(req, "409 Conflict", "Pumpe läuft bereits oder OTA-Sperre");
-        default: return http::send_error(req, "500 Internal Server Error", esp_err_to_name(err));
+            return http::send_error(req, "409 Conflict", "driver_unavailable",
+                                   "Driver not reachable or not configured (force=1 steps anyway)");
+        case ESP_ERR_INVALID_ARG: return http::send_error(req, "400 Bad Request", "speed_out_of_range", "Speed outside 1..max_sps");
+        case ESP_ERR_INVALID_STATE: return http::send_error(req, "409 Conflict", "pump_busy", "Pump already running or OTA lock active");
+        default: return http::send_error(req, "500 Internal Server Error", "internal_error", esp_err_to_name(err));
     }
 }
 
@@ -183,7 +185,7 @@ esp_err_t post_stop(httpd_req_t* req) {
 esp_err_t post_pump_config(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     const int p = pump_arg(req);
-    if (p < 0) return bad(req, "pump=1..5 fehlt");
+    if (p < 0) return bad(req, "pump=1..5 required");
     auto c = motion::config(p);
     int64_t v = 0;
     if (http::query_int(req, "run_ma", &v)) c.driver.run_ma = static_cast<uint16_t>(v);
@@ -194,17 +196,17 @@ esp_err_t post_pump_config(httpd_req_t* req) {
     if (http::query_int(req, "accel", &v) && v >= 0) c.accel = static_cast<uint32_t>(v);
     if (http::query_int(req, "vstart", &v) && v >= 0) c.v_start = static_cast<uint32_t>(v);
     const esp_err_t err = motion::set_config(p, c);
-    if (err == ESP_ERR_INVALID_ARG) return bad(req, "ungültig (Strom 50..1500 mA, Halte ≤ Lauf, µSchritte 1..256)");
-    if (err == ESP_ERR_INVALID_STATE) return http::send_error(req, "409 Conflict", "Pumpe läuft");
+    if (err == ESP_ERR_INVALID_ARG) return bad(req, "Invalid (current 50..1500 mA, hold <= run, microsteps 1..256)");
+    if (err == ESP_ERR_INVALID_STATE) return http::send_error(req, "409 Conflict", "pump_busy", "Pump is running");
     hwconfig::save_pump(p, c);
-    if (err != ESP_OK) return http::send_error(req, "502 Bad Gateway", "gespeichert, aber Treiber nicht konfiguriert");
+    if (err != ESP_OK) return http::send_error(req, "502 Bad Gateway", "driver_config_failed", "Saved, but driver could not be configured");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 
 esp_err_t get_tmc(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     const int p = pump_arg(req);
-    if (p < 0) return bad(req, "pump=1..5 fehlt");
+    if (p < 0) return bad(req, "pump=1..5 required");
     static const struct {
         uint8_t reg;
         const char* name;
@@ -233,7 +235,7 @@ esp_err_t get_tmc(httpd_req_t* req) {
 esp_err_t post_time(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     int64_t utc = 0;
-    if (!http::query_int(req, "utc", &utc) || !lgal::timesync::set_manual(utc)) return bad(req, "utc ungültig");
+    if (!http::query_int(req, "utc", &utc) || !lgal::timesync::set_manual(utc)) return bad(req, "utc invalid");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 
@@ -242,15 +244,15 @@ esp_err_t post_aging(httpd_req_t* req) {
     int64_t v = 0;
     if (!http::query_int(req, "offset", &v) || v < -128 || v > 127) return bad(req, "offset=-128..127");
     if (rtc::set_aging(static_cast<int8_t>(v)) != ESP_OK)
-        return http::send_error(req, "503 Service Unavailable", "RTC nicht erreichbar");
+        return http::send_error(req, "503 Service Unavailable", "rtc_unavailable", "RTC not reachable");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 
 esp_err_t post_eeprom_test(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     const esp_err_t err = eeprom::self_test();
-    ESP_LOGI(TAG, "EEPROM-Test: %s", esp_err_to_name(err));
-    if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", esp_err_to_name(err));
+    ESP_LOGI(TAG, "EEPROM test: %s", esp_err_to_name(err));
+    if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "eeprom_test_failed", esp_err_to_name(err));
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 }  // namespace

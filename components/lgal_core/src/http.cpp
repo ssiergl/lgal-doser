@@ -7,6 +7,7 @@
 
 #include "esp_log.h"
 #include "lgal/device.h"
+#include "lgal/json.h"
 
 namespace lgal::http {
 
@@ -52,7 +53,7 @@ esp_err_t send_401(httpd_req_t* req) {
     httpd_resp_set_status(req, "401 Unauthorized");
     httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"LG Aquatic Life\", charset=\"UTF-8\"");
     httpd_resp_set_type(req, "application/json");
-    return httpd_resp_sendstr(req, "{\"error\":\"unauthorized\"}");
+    return httpd_resp_sendstr(req, "{\"error\":{\"code\":\"unauthorized\",\"message\":\"Login required\"}}");
 }
 }  // namespace
 
@@ -94,10 +95,10 @@ esp_err_t send_json(httpd_req_t* req, const char* json, const char* status) {
     return httpd_resp_sendstr(req, json);
 }
 
-esp_err_t send_error(httpd_req_t* req, const char* status, const char* message) {
-    char buf[256];
-    snprintf(buf, sizeof(buf), "{\"error\":\"%s\"}", message);
-    return send_json(req, buf, status);
+esp_err_t send_error(httpd_req_t* req, const char* status, const char* code, const char* message) {
+    Json j;
+    j.obj().obj("error").kv("code", code).kv("message", message ? message : code).end().end();
+    return send_json(req, j.c_str(), status);
 }
 
 bool query_str(httpd_req_t* req, const char* key, char* out, size_t len) {
