@@ -13,7 +13,7 @@ components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte
 components/doser_app/   Geräte-Logik: gespeicherte Hardware-Parameter, Hardwaretest (später Dosier-Engine)
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
-tests/host/             Host-Tests der hardwareunabhängigen Logik (TMC-Protokoll, Strom, Rampe, Kalender)
+tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Dosier-Logik) und Simulation der Dosier-Engine
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
 
@@ -117,14 +117,32 @@ Ablauf und Schutz:
 Alle Endpunkte mit HTTP-Basic-Auth (`admin` / Setup-Passwort). Das ist vorläufig, M4 bringt
 Session-Login und API-Key.
 
+**Mehrsprachigkeit:** Firmware, Logs und API sind englisch. Fehler kommen immer als
+`{"error":{"code":"pump_busy","message":"Pump is busy"}}`; der `code` ist fest und wird von den
+Seiten übersetzt (Englisch Standard, Deutsch; weitere Sprachen: Eintrag in
+`settings::kLanguages` + Wörterbücher in `i18n.js` und den Seiten). Die Sprache der Oberfläche
+ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
+
 | Methode | Pfad | Funktion |
 |---|---|---|
 | GET | `/` | Wartungsseite (im Firmware-Image) |
-| GET | `/api/v1/system/info` | Version, Partition, OTA-Status, Netz, Speicher |
+| GET | `/api/v1/system/info` | Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
+| GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
+| GET | `/i18n.js` | gemeinsame Übersetzungsbasis der Seiten (ohne Anmeldung) |
 | GET | `/api/v1/system/log` | RAM-Log der letzten ~32 KB |
 | POST | `/api/v1/system/reboot` | Neustart |
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
+| GET | `/dosing` | Dosiertest-Seite |
+| GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
+| POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`) |
+| POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle) |
+| POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat |
+| POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=20]` | Kalibrierlauf; danach `action=apply&measured_ml=…` oder `cancel` |
+| POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (oder `default`) |
+| POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter) |
+| POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen |
+| GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
 | GET | `/hwtest` | Hardwaretest-Seite |
 | GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
@@ -150,7 +168,7 @@ idf.py coredump-info -c coredump.elf
 | EN | gemeinsam: an, sobald eine Pumpe fährt; 0,5 s nach der letzten Fahrt aus (außer Haltestrom > 0). |
 | Überwachung | alle 100 ms während der Fahrt: SG_RESULT, DRV_STATUS (Kurzschluss/Übertemperatur → Stopp). Reihum jede Sekunde: Treiber vorhanden, GSTAT. |
 | Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`). |
-| EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling (Nutzung ab M2). |
+| EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). |
 
 Standardwerte pro Pumpe (über `/hwtest` änderbar, in NVS gespeichert): 600 mA Laufstrom,
 0 mA Haltestrom, 16 Mikroschritte, 200 Vollschritte/U (bitte am Motor prüfen),
@@ -160,6 +178,28 @@ Die Testseite **`/hwtest`** (Link auf der Wartungsseite) zeigt Treiber, StallGua
 RTC und EEPROM und fährt einzelne Pumpen um X Umdrehungen bzw. Schritte.
 „Ohne Treiber takten“ erzeugt STEP-Pulse auch ohne antwortenden TMC2209 (Test mit
 Oszilloskop/Logikanalysator).
+
+## Dosierung (M2)
+
+| Thema | Umsetzung |
+|---|---|
+| Menge → Schritte | Kalibrierung in µl pro Motorumdrehung (unabhängig von den Mikroschritten). Ohne Kalibrierung Nennwert 0,37 ml/U (≈ 111 ml/min bei 300 U/min). |
+| Ablauf | Rückzug ausgleichen → Hauptfahrt → Anti-Tropf-Rückzug. Der ausgeführte Rückzug wird spannungsausfallsicher gespeichert. |
+| Verbuchung | Beim Start wird die volle Menge auf Tageslimit, Behälter und Gesamtzähler gebucht und gesichert; ein Abbruch schreibt die nicht geförderte Menge gut. Stromausfall während der Fahrt → Menge bleibt gebucht (sichere Seite). |
+| Tageslimit | hart pro Pumpe; Fenster Kalendertag oder rollierend 24 h (Engineering). Stunden-Töpfe über 26 h, angebrochene Stunden zählen voll. Ohne gültige Uhrzeit werden Pumpen mit Limit gesperrt. |
+| Kalibrierung | Lauf mit Zielmenge (Standard 20 ml), dann gemessene Menge eintragen. Plausibel: 0,25- bis 4-facher Nennwert. Die aufgefangene Menge wird vom Behälter abgezogen. |
+| Entlüften | läuft, solange der Button gehalten wird (Heartbeat alle 150 ms, Stopp nach 500 ms ohne Heartbeat, max. 60 s). Zählt nicht für Behälter/Limit, aber für die Schlauch-Laufzeit. |
+| Sperren | Betriebsart `disabled`, OTA-Update, Treiberfehler. |
+| Speicher | Einstellungen in NVS (`dose`). Laufzustand je Pumpe im EEPROM als A/B-Datensätze (Folgenummer + CRC32, ab 0x000), Rückfall auf NVS ohne EEPROM. |
+
+Engineering-Standardwerte (Super-Admin, global; Rückzug zusätzlich pro Pumpe):
+Rückzug ¼ U (≈ 0,09 ml), Kalibrier-Zielmenge 20 ml, Stufen 100/200/300 U/min
+(≈ 37/74/111 ml/min), Entlüften max. 60 s / Heartbeat 500 ms, kleinste Dosis 0,02 ml,
+Schlauch-Lebensdauer 1000 h, Tageslimit pro Kalendertag. Der eigene Engineering-Schlüssel
+folgt mit der Anmeldung in M4.
+
+Die Testseite **`/dosing`** bedient alles davon pro Pumpe; unten liegen die
+Engineering-Parameter.
 
 ## Taster und LED
 
@@ -172,13 +212,14 @@ Beim Einschalten gedrückt = ESP-Download-Modus (Hardware). Ein dauerhaft gedrü
 Taster löst nichts aus, solange er nicht einmal losgelassen wurde.
 
 LED-Zustände: Weiß aufblenden (Start), Orange pulsierend (Setup-WLAN),
-Grün (LAN mit IP), Gelb blinkend (kein Netz), Magenta/Weiß (OTA), Dosieren (Pumpe läuft).
+Grün (LAN mit IP), Gelb blinkend (kein Netz), Magenta/Weiß (OTA), Cyan (Pumpe läuft),
+Violett pulsierend (Kalibrierung/Entlüften).
 
 ## Meilensteine
 
 - [x] **M0** Grundgerüst: Partitionen, Ethernet, Setup-WLAN, mDNS, OTA + Rollback, Wartungsseite, LED, Taster
 - [x] **M1** Hardware-Ebene: TMC2209-UART, Schritt-Takte (RMT + MCPWM/PCNT), RTC, Raw-Stepper-Test
-- [ ] **M2** Dosier-Engine: Rampen, Rückzug, Kalibrierung, Priming, Behälter, Tageslimit
+- [x] **M2** Dosier-Engine: Rückzug, Kalibrierung, Priming, Behälter, Tageslimit, Schlauch-Laufzeit; Mehrsprachigkeit (en/de)
 - [ ] **M3** Zeitplan, Zeitumstellung, Kollisionsschutz, Boost, Verhalten nach Stromausfall (mit Host-Tests)
 - [ ] **M4** WLAN-Client, Captive Portal, Ersteinrichtung, Auth, REST, WebSocket
 - [ ] **M5** WebUI (SPA, eingebettet ins Firmware-Image)
