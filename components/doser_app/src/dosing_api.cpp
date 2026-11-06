@@ -1,9 +1,12 @@
 #include "doser/dosing_api.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 
 #include "doser/dosing.h"
+#include "doser/schedule_json.h"
+#include "doser/scheduler.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
 
@@ -38,6 +41,8 @@ constexpr ErrInfo kErrors[] = {
     {"speed_out_of_range", "400 Bad Request", "Speed out of range"},
     {"not_priming", "409 Conflict", "Pump is not priming"},
     {"no_calibration_run", "409 Conflict", "No finished calibration run"},
+    {"collision_lock", "409 Conflict", "Lock time to another pump is running"},
+    {"queue_full", "409 Conflict", "A dose is already waiting for the lock time to end"},
     {"storage_error", "500 Internal Server Error", "Could not save"},
     {"internal_error", "500 Internal Server Error", "Internal error"},
 };
@@ -165,8 +170,26 @@ esp_err_t post_dose(httpd_req_t* req) {
     if (p < 0) return fail(req, "invalid_param", "pump=1..5 required");
     if (!http::query_decimal(req, "ml", 1000, &ul) || ul <= 0 || ul > dose::kMaxDoseUl)
         return fail(req, "invalid_param", "ml required");
-    if (const char* e = dosing::dose(p, static_cast<uint32_t>(ul), dosing::Trigger::Api, tier_arg(req)))
-        return fail(req, e);
+    // Through the scheduler: lock-time policy (reject or queue) applies
+    int64_t retry_at = 0;
+    bool queued = false;
+    const char* e =
+        scheduler::manual_dose(p, static_cast<uint32_t>(ul), dosing::Trigger::Api, tier_arg(req), &retry_at, &queued);
+    if (e && !std::strcmp(e, "collision_lock")) {
+        Json j;
+        j.obj().obj("error").kv("code", e).kv("message", "Lock time to another pump is running");
+        if (retry_at == INT64_MAX || retry_at <= 0) {
+            j.null("retry_at").null("retry_local");  // other pump still running
+        } else {
+            char loc[17];
+            sched_json::fmt_local(scheduler::to_local(retry_at), loc);
+            j.kv("retry_at", retry_at).kv("retry_local", loc);
+        }
+        j.end().end();
+        return http::send_json(req, j.c_str(), "409 Conflict");
+    }
+    if (e) return fail(req, e);
+    if (queued) return http::send_json(req, "{\"status\":\"queued\"}", "202 Accepted");
     return http::send_json(req, "{\"status\":\"dosing\"}");
 }
 
@@ -174,9 +197,15 @@ esp_err_t post_stop(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     int64_t p = 0;
     http::query_int(req, "pump", &p);
-    if (p == 0) dosing::stop_all();
-    else if (p >= 1 && p <= 5) dosing::stop(static_cast<int>(p - 1));
-    else return fail(req, "invalid_param", "pump=0..5");
+    if (p == 0) {
+        for (int i = 0; i < 5; ++i) scheduler::cancel_queued(i);
+        dosing::stop_all();
+    } else if (p >= 1 && p <= 5) {
+        scheduler::cancel_queued(static_cast<int>(p - 1));
+        dosing::stop(static_cast<int>(p - 1));
+    } else {
+        return fail(req, "invalid_param", "pump=0..5");
+    }
     return http::send_json(req, "{\"status\":\"stopping\"}");
 }
 

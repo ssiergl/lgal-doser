@@ -4,7 +4,11 @@
 //   GET  /dosing                              dosing test page
 //   GET  /api/v1/pumps                        status + settings of all pumps
 //   POST /api/v1/pumps/dose       ?pump=1..5&ml=1.5[&tier=0..2]
-//   POST /api/v1/pumps/stop       ?pump=0..5          (0 = all)
+//                                 409 collision_lock with "retry_at" (UTC) and
+//                                 "retry_local" (null = other pump still
+//                                 running), or 202 "queued" if
+//                                 the lock policy is "queue" (see schedule_api.h)
+//   POST /api/v1/pumps/stop       ?pump=0..5          (0 = all, also drops a queued dose)
 //   POST /api/v1/pumps/prime      ?pump=&action=start|beat|stop[&tier=]
 //   POST /api/v1/pumps/calibrate  ?pump=&action=start[&ml=20][&tier=]
 //                                 ?pump=&action=apply&measured_ml=19.6
