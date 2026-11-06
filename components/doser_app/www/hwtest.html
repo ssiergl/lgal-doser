@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LG Aquatic Life – Hardwaretest</title>
+<style>
+:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 6px}h2{font-size:16px;margin:0 0 10px}h3{font-size:15px;margin:0}
+.card{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse}td,th{padding:3px 6px 3px 0;vertical-align:top;text-align:left}th{color:var(--mut);font-weight:500}
+td.k{color:var(--mut);width:46%}
+button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button.stop{background:var(--err);color:#fff}
+button:disabled{opacity:.5;cursor:default}
+input,select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:5px 7px;width:100%}
+input[type=checkbox]{width:auto}
+label{display:block;font-size:13px;color:var(--mut)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.row>*{flex:1 1 90px}.row>button{flex:0 0 auto}
+.chip{display:inline-block;font-size:12px;border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;background:#1d3a4b}
+.chip.ok{background:#173d25;color:#7ee19a}.chip.err{background:#4a1d1d;color:#ff9b95}.chip.warn{background:#463614;color:#f2cc60}
+.err{color:var(--err)}.ok{color:var(--ok)}.mut{color:var(--mut)}
+.msg{min-height:1.3em;font-size:13px;margin-top:6px}
+details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:13px}
+pre{background:#071118;padding:8px;border-radius:6px;font-size:12px;overflow:auto;margin:6px 0 0}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<div class="top">
+<h1>Hardwaretest <span class="mut" style="font-size:14px">· Raw-Stepper ohne Behälter, Zeitplan und Log</span></h1>
+<div class="row" style="align-items:center">
+<span id="en" class="chip">EN …</span><span id="clock" class="chip">Zeit …</span>
+<span style="flex:1"></span>
+<button class="sec" id="stopall">Alle sanft stoppen</button><button class="stop" id="estop">NOT-AUS</button>
+<a href="/"><button class="sec">Wartung</button></a>
+</div>
+</div>
+
+<div class="grid" id="pumps"></div>
+
+<div class="grid">
+<section class="card">
+<h2>Uhr (DS3231)</h2>
+<table id="rtc"></table>
+<div class="row" style="margin-top:8px">
+<button class="sec" id="settime">Zeit vom Browser übernehmen</button>
+</div>
+<div class="row" style="margin-top:8px">
+<div><label>Aging-Offset (−128…127)</label><input id="aging" type="number" min="-128" max="127"></div>
+<button class="sec" id="setaging">Setzen</button>
+</div>
+<div class="msg" id="rtcmsg"></div>
+</section>
+<section class="card">
+<h2>EEPROM (AT24C32) &amp; UART</h2>
+<table id="eeprom"></table>
+<div class="row" style="margin-top:8px"><button class="sec" id="eetest">Schreib-/Lesetest</button></div>
+<div class="msg" id="eemsg"></div>
+<table id="uart" style="margin-top:10px"></table>
+</section>
+</div>
+<p class="mut" style="font-size:12px">Schritte = Mikroschritte. Rampe und Startgeschwindigkeit leer lassen = Standardwerte der Pumpe.
+StallGuard (SG): kleinere Werte = mehr Last; erst nach der Anfahrrampe aussagekräftig.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let S=null;const built={};
+async function api(method,path){
+  const r=await fetch(path,{method,cache:'no-store'});let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;
+}
+function msg(id,t,ok){const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=t}
+function chip(t,c){return `<span class="chip ${c||''}">${t}</span>`}
+function q(o){return Object.entries(o).filter(([k,v])=>v!==''&&v!==undefined&&v!==null).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')}
+
+function buildPump(p){
+  const n=p.pump,d=document.createElement('section');d.className='card';d.id='p'+n;
+  d.innerHTML=`<div class="row" style="align-items:center"><h3 style="flex:1">Pumpe ${n} <span class="mut" style="font-size:12px">(${p.stepgen})</span></h3></div>
+  <div id="c${n}" style="margin:6px 0"></div>
+  <table id="t${n}"></table>
+  <div class="row" style="margin-top:8px">
+   <div><label>Umdrehungen</label><input id="rev${n}" type="number" step="0.1" value="1"></div>
+   <div><label>U/min</label><input id="rpm${n}" type="number" step="1" value="120"></div>
+  </div>
+  <div class="row" style="margin-top:6px">
+   <button id="fw${n}">▶ vorwärts</button><button id="bw${n}" class="sec">◀ rückwärts</button>
+   <button id="st${n}" class="sec">■ Stopp</button>
+   <label style="flex:0 0 auto"><input type="checkbox" id="force${n}"> ohne Treiber takten</label>
+  </div>
+  <details><summary>Erweitert: Schritte/Frequenz direkt, Rampe</summary>
+   <div class="row" style="margin-top:6px">
+    <div><label>Schritte (±)</label><input id="steps${n}" type="number" placeholder="aus Umdrehungen"></div>
+    <div><label>Schritte/s</label><input id="sps${n}" type="number" placeholder="aus U/min"></div>
+   </div>
+   <div class="row" style="margin-top:6px">
+    <div><label>Rampe Schritte/s²</label><input id="acc${n}" type="number" placeholder="Standard"></div>
+    <div><label>Start Schritte/s</label><input id="vs${n}" type="number" placeholder="Standard"></div>
+   </div>
+  </details>
+  <details><summary>Treiber-Konfiguration (wird gespeichert)</summary>
+   <div class="row" style="margin-top:6px">
+    <div><label>Laufstrom mA</label><input id="cr${n}" type="number"></div>
+    <div><label>Haltestrom mA</label><input id="ch${n}" type="number"></div>
+   </div>
+   <div class="row" style="margin-top:6px">
+    <div><label>Mikroschritte</label><select id="cm${n}">${[8,16,32,64].map(v=>`<option>${v}</option>`).join('')}</select></div>
+    <div><label>Vollschritte/U</label><input id="cf${n}" type="number"></div>
+   </div>
+   <div class="row" style="margin-top:6px">
+    <div><label>Standard-Rampe Schritte/s²</label><input id="ca${n}" type="number"></div>
+    <div><label>Standard-Start Schritte/s</label><input id="cv${n}" type="number"></div>
+   </div>
+   <div class="row" style="margin-top:6px;align-items:center">
+    <label style="flex:1"><input type="checkbox" id="ci${n}"> Drehrichtung invertieren</label>
+    <button class="sec" id="cs${n}">Speichern</button>
+   </div>
+  </details>
+  <details><summary>Register lesen</summary><button class="sec" id="rg${n}" style="margin-top:6px">Lesen</button><pre id="rgo${n}" hidden></pre></details>
+  <div class="msg" id="m${n}"></div>`;
+  $('pumps').appendChild(d);
+  const c=p.config;
+  $('cr'+n).value=c.run_ma;$('ch'+n).value=c.hold_ma;$('cm'+n).value=c.microsteps;$('cf'+n).value=c.full_steps;
+  $('ca'+n).value=c.accel;$('cv'+n).value=c.v_start;$('ci'+n).checked=c.invert;
+  $('fw'+n).onclick=()=>run(n,1);$('bw'+n).onclick=()=>run(n,-1);
+  $('st'+n).onclick=()=>api('POST','/api/v1/hw/pump/stop?pump='+n).then(()=>msg('m'+n,'Stoppt …',true)).catch(e=>msg('m'+n,e.message));
+  $('cs'+n).onclick=()=>api('POST','/api/v1/hw/pump/config?'+q({pump:n,run_ma:$('cr'+n).value,hold_ma:$('ch'+n).value,
+     microsteps:$('cm'+n).value,full_steps:$('cf'+n).value,invert:$('ci'+n).checked?1:0,accel:$('ca'+n).value,vstart:$('cv'+n).value}))
+     .then(()=>msg('m'+n,'Gespeichert und an den Treiber übertragen',true)).catch(e=>msg('m'+n,e.message));
+  $('rg'+n).onclick=async()=>{try{const j=await api('GET','/api/v1/hw/tmc?pump='+n);const o=$('rgo'+n);
+     o.textContent=Object.entries(j.registers).map(([k,v])=>k.padEnd(11)+(v||'—')).join('\n');o.hidden=false}catch(e){msg('m'+n,e.message)}};
+}
+function run(n,dir){
+  const p=S.pumps[n-1],spr=p.config.steps_per_rev;
+  let steps=$('steps'+n).value!==''?Math.abs(parseInt($('steps'+n).value)):Math.round(parseFloat($('rev'+n).value)*spr);
+  let sps=$('sps'+n).value!==''?parseInt($('sps'+n).value):Math.round(parseFloat($('rpm'+n).value)*spr/60);
+  if(!(steps>0)||!(sps>0)){msg('m'+n,'Umdrehungen/U/min bzw. Schritte/Frequenz prüfen');return}
+  api('POST','/api/v1/hw/pump/run?'+q({pump:n,steps:dir*steps,sps,accel:$('acc'+n).value,vstart:$('vs'+n).value,force:$('force'+n).checked?1:''}))
+   .then(()=>msg('m'+n,`Fährt ${dir<0?'rückwärts ':''}${steps} Schritte mit ${sps} Schritte/s`,true)).catch(e=>msg('m'+n,e.message));
+}
+function renderPump(p){
+  const n=p.pump,f=p.flags;
+  let c=p.present?chip('Treiber v0x'+p.version.toString(16),p.configured?'ok':'warn'):chip('kein Treiber','err');
+  if(p.running)c+=chip(p.reverse?'läuft ◀':'läuft ▶','ok');
+  if(p.fault)c+=chip(p.fault,'err');
+  if(p.present){
+    if(f.overtemp)c+=chip('Übertemperatur','err');else if(f.overtemp_warn)c+=chip('Temperatur-Warnung','warn');
+    if(f.short)c+=chip('Kurzschluss','err');
+    if(p.running&&(f.open_load_a||f.open_load_b))c+=chip('Motor offen?','warn');
+  }
+  $('c'+n).innerHTML=c;
+  const rows=[['Position',`${p.position} / ${p.target}`],['Geschwindigkeit',`${p.velocity} Schritte/s · ${p.rpm} U/min`],
+   ['Strom (eingestellt)',p.configured?`${p.run_ma} mA lauf · ${p.hold_ma} mA halt`:'—'],
+   ['StallGuard',p.present?`${p.sg_result} (min ${p.sg_min===1023?'—':p.sg_min})`:'—'],
+   ['DRV_STATUS',p.present?`${p.drv_status} · CS ${f.cs_actual} · ${f.stealth?'StealthChop':'SpreadCycle'}${f.standstill?' · Stillstand':''}`:'—']];
+  $('t'+n).innerHTML=rows.map(r=>`<tr><td class="k">${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+}
+function fmt(utc){return new Date(utc*1000).toLocaleString('de-DE')}
+function render(){
+  if(!built.pumps){S.pumps.forEach(buildPump);built.pumps=true}
+  S.pumps.forEach(renderPump);
+  $('en').className='chip '+(S.drivers_enabled?'warn':'');$('en').textContent=(S.drivers_enabled?'Treiber EIN':'Treiber AUS')+(S.locked?' · OTA-Sperre':'');
+  const t=S.time;$('clock').textContent=t.valid?`${fmt(t.utc)} (${t.source})`:'keine gültige Zeit';$('clock').className='chip '+(t.valid?'':'err');
+  const r=S.rtc;
+  $('rtc').innerHTML=!r.present?'<tr><td class="err">DS3231 nicht gefunden (I²C 0x68)</td></tr>':
+   `<tr><td class="k">RTC-Zeit (UTC gespeichert)</td><td>${r.time_lost?'<span class="err">ungültig – Batterie?</span>':fmt(r.utc)}</td></tr>
+    <tr><td class="k">Abweichung zur Systemzeit</td><td>${r.time_lost||!t.valid?'—':(r.utc-t.utc)+' s'}</td></tr>
+    <tr><td class="k">Temperatur</td><td>${r.temp_c} °C</td></tr><tr><td class="k">Aging-Offset</td><td>${r.aging}</td></tr>
+    <tr><td class="k">Zeitzone</td><td>${t.timezone}</td></tr>`;
+  if(r.present&&$('aging').value==='')$('aging').value=r.aging;
+  $('eeprom').innerHTML=`<tr><td class="k">AT24C32 (0x57)</td><td>${S.eeprom.present?'<span class="ok">gefunden</span>':'<span class="err">nicht gefunden</span>'}</td></tr>`;
+  $('uart').innerHTML='<tr><th>UART-Bus</th><th>Transfers</th><th>Timeout</th><th>CRC</th><th>Echo</th></tr>'+
+    S.uart.map(u=>`<tr><td>${u.bus}</td><td>${u.transfers}</td><td>${u.timeouts}</td><td>${u.crc_errors}</td><td class="${u.echo_errors?'err':''}">${u.echo_errors}</td></tr>`).join('');
+}
+async function poll(){try{S=await api('GET','/api/v1/hw/status');render()}catch(e){$('clock').textContent='Verbindung: '+e.message;$('clock').className='chip err'}}
+$('stopall').onclick=()=>api('POST','/api/v1/hw/pump/stop?pump=0');
+$('estop').onclick=()=>api('POST','/api/v1/hw/pump/stop?pump=0&mode=hard');
+$('settime').onclick=()=>api('POST','/api/v1/hw/time?utc='+Math.floor(Date.now()/1000)).then(()=>msg('rtcmsg','Zeit gesetzt (System + RTC)',true)).catch(e=>msg('rtcmsg',e.message));
+$('setaging').onclick=()=>api('POST','/api/v1/hw/rtc/aging?offset='+$('aging').value).then(()=>msg('rtcmsg','Aging-Offset gesetzt',true)).catch(e=>msg('rtcmsg',e.message));
+$('eetest').onclick=()=>api('POST','/api/v1/hw/eeprom/test').then(()=>msg('eemsg','Test bestanden',true)).catch(e=>msg('eemsg',e.message));
+poll();setInterval(poll,1000);
+</script>
+</body>
+</html>

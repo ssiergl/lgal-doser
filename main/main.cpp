@@ -1,10 +1,14 @@
-// LGAL-Doser – entry point (milestone M0: OTA-capable skeleton)
+// LGAL-Doser – entry point (M1: hardware layer)
 //
 // The order is safety-relevant: first the pump drivers are
 // switched off, only then does anything else start.
 
 #include <cstdio>
 
+#include "doser/hwconfig.h"
+#include "doser/hwtest_api.h"
+#include "doser/i2c_devices.h"
+#include "doser/motion.h"
 #include "doser/pins.h"
 #include "doser/safe_init.h"
 #include "esp_app_desc.h"
@@ -20,6 +24,7 @@
 #include "lgal/ota.h"
 #include "lgal/settings.h"
 #include "lgal/sysapi.h"
+#include "lgal/timesync.h"
 #include "sdkconfig.h"
 
 namespace {
@@ -45,6 +50,30 @@ void update_status_led() {
     lgal::led::set(State::IdleLan, ns.eth_has_ip);
     // network disconnected: neither LAN IP nor setup AP
     lgal::led::set(State::Warning, !ns.eth_has_ip && !ns.ap_active);
+    lgal::led::set(State::Dosing, doser::motion::any_running());
+}
+
+void init_hardware() {
+    // stored parameters (current, microsteps) or defaults
+    doser::motion::PumpConfig pumps[5];
+    doser::hwconfig::load(pumps);
+
+    // I²C: RTC + EEPROM (absence does not abort startup)
+    doser::rtc::init();
+    doser::eeprom::init();
+
+    const esp_err_t err = doser::motion::init(pumps);
+    if (err != ESP_OK) ESP_LOGE(TAG, "Pumpen-Hardware nicht bereit: %s", esp_err_to_name(err));
+}
+
+void init_time() {
+    lgal::timesync::RtcHooks hooks;
+    hooks.read = [](int64_t* utc) {
+        bool lost = true;
+        return doser::rtc::present() && doser::rtc::read(utc, &lost) == ESP_OK && !lost;
+    };
+    hooks.write = [](int64_t utc) { return doser::rtc::present() && doser::rtc::write(utc) == ESP_OK; };
+    lgal::timesync::init(hooks, CONFIG_LGAL_TIMEZONE, CONFIG_LGAL_NTP_SERVER);
 }
 }  // namespace
 
@@ -65,7 +94,10 @@ extern "C" void app_main(void) {
     lgal::device::init();
     print_banner();
 
-    // 4. Network
+    // 4. Pumps, RTC (drivers stay off until a move starts)
+    init_hardware();
+
+    // 5. Network and time
     lgal::net::EthConfig eth{};
     eth.spi_host = doser::pins::kEthSpiHost;
     eth.mosi = doser::pins::kEthMosi;
@@ -75,6 +107,7 @@ extern "C" void app_main(void) {
     eth.int_gpio = doser::pins::kEthInt;
     eth.clock_mhz = CONFIG_LGAL_ETH_SPI_CLOCK_MHZ;
     ESP_ERROR_CHECK(lgal::net::init(eth));
+    init_time();
 
     if (!lgal::settings::setup_completed()) {
         // Factory state: setup AP permanently open until setup (M4)
@@ -82,17 +115,21 @@ extern "C" void app_main(void) {
         lgal::net::start_setup_ap(false);
     }
 
-    // 5. Web server, system API, OTA
+    // 6. Web server, system API, hardware test, OTA
     ESP_ERROR_CHECK(lgal::http::start());
     lgal::sysapi::register_handlers(lgal::http::handle());
+    doser::hwtest::register_handlers(lgal::http::handle());
+    lgal::sysapi::add_link("Hardwaretest", "/hwtest");
 
     lgal::ota::set_guard([](std::string& reason) {
-        // M2: this is where it is checked that no dosing is running.
-        (void)reason;
+        if (doser::motion::any_running()) {
+            reason = "Pumpe läuft – Update nach Ende der Fahrt erneut versuchen";
+            return false;
+        }
         return true;
     });
     lgal::ota::set_lock_hook([](bool locked) {
-        if (locked) doser::set_drivers_enabled(false);
+        doser::motion::lock(locked);
     });
     lgal::ota::register_handlers(lgal::http::handle());
 
@@ -102,7 +139,7 @@ extern "C" void app_main(void) {
         return lgal::http::handle() != nullptr && (ns.eth_has_ip || ns.ap_active);
     });
 
-    // 6. Button: 3 s = setup AP, 10 s = factory reset
+    // 7. Button: 3 s = setup AP, 10 s = factory reset
     lgal::button::Config btn{};
     btn.gpio = doser::pins::kButton;
     btn.on_setup_ap = [] { lgal::net::start_setup_ap(true); };

@@ -9,9 +9,11 @@ Framework: **ESP-IDF v6.0.3**, C++ (gnu++2b), FreeRTOS.
 
 ```
 components/lgal_core/   LG Aquatic Life Core: Netz, HTTP, OTA, LED, Taster, Einstellungen, Log
-components/doser_hal/   Pinbelegung, sicherer Start; später TMC2209, Schritt-Takte, Füllstand
+components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte, Pumpen, RTC/EEPROM
+components/doser_app/   Geräte-Logik: gespeicherte Hardware-Parameter, Hardwaretest (später Dosier-Engine)
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
+tests/host/             Host-Tests der hardwareunabhängigen Logik (TMC-Protokoll, Strom, Rampe, Kalender)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
 
@@ -36,6 +38,16 @@ Bauen:
 ```bash
 idf.py build
 ```
+
+Host-Tests (ohne ESP-IDF, laufen auf dem Mac):
+
+```bash
+tests/host/run.sh
+```
+
+Nach Änderungen an `sdkconfig.defaults` muss `sdkconfig` neu erzeugt werden
+(`rm sdkconfig && idf.py build`). Die IRAM-Optionen der Schritt-Takte werden
+beim Bauen geprüft.
 
 ## Erstinbetriebnahme (einmalig per USB, vor dem Einbau)
 
@@ -100,7 +112,7 @@ Ablauf und Schutz:
   **Rollback** auf die vorherige Firmware.
 - Die Pumpentreiber werden für die Dauer des Updates abgeschaltet.
 
-## API (M0)
+## API
 
 Alle Endpunkte mit HTTP-Basic-Auth (`admin` / Setup-Passwort). Das ist vorläufig, M4 bringt
 Session-Login und API-Key.
@@ -112,13 +124,42 @@ Session-Login und API-Key.
 | GET | `/api/v1/system/log` | RAM-Log der letzten ~32 KB |
 | POST | `/api/v1/system/reboot` | Neustart |
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
-| POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`) |
+| POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
+| GET | `/hwtest` | Hardwaretest-Seite |
+| GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik |
+| POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
+| POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |
+| POST | `/api/v1/hw/pump/config?pump=1&run_ma=…` | `run_ma`, `hold_ma`, `microsteps`, `full_steps`, `invert`, `accel`, `vstart` |
+| GET | `/api/v1/hw/tmc?pump=1` | TMC2209-Rohregister |
+| POST | `/api/v1/hw/time?utc=…` | Zeit manuell setzen (System + RTC) |
+| POST | `/api/v1/hw/rtc/aging?offset=…` | DS3231 Aging-Offset |
+| POST | `/api/v1/hw/eeprom/test` | EEPROM-Schreib-/Lesetest |
 
 Coredump auswerten:
 
 ```bash
 idf.py coredump-info -c coredump.elf
 ```
+
+## Hardware (M1)
+
+| Baugruppe | Umsetzung |
+|---|---|
+| TMC2209 | Eindraht-UART auf GPIO38 (Pumpe 1–4) / GPIO39 (Pumpe 5), 115200 Bd. Echo wird geprüft, für die Antwort wird der Pin losgelassen (SENDDELAY = 24 Bit). Konfiguration: StealthChop, Interpolation, Strom per Register (Rsense 0,11 Ω), Freilauf bei Haltestrom 0. Kontrolle über IFCNT, Neukonfiguration nach Treiber-Reset (GSTAT). |
+| Schritt-Takte | Pumpe 1–4: RMT (exakte Schrittzahl per Encoder). Pumpe 5: MCPWM + PCNT (Zähler stoppt beim Zielwert). Trapezrampe in Ganzzahl-Arithmetik, alle 5 parallel, IRAM-sicher. |
+| EN | gemeinsam: an, sobald eine Pumpe fährt; 0,5 s nach der letzten Fahrt aus (außer Haltestrom > 0). |
+| Überwachung | alle 100 ms während der Fahrt: SG_RESULT, DRV_STATUS (Kurzschluss/Übertemperatur → Stopp). Reihum jede Sekunde: Treiber vorhanden, GSTAT. |
+| Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`). |
+| EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling (Nutzung ab M2). |
+
+Standardwerte pro Pumpe (über `/hwtest` änderbar, in NVS gespeichert): 600 mA Laufstrom,
+0 mA Haltestrom, 16 Mikroschritte, 200 Vollschritte/U (bitte am Motor prüfen),
+Rampe 600 U/min pro s, Start 20 U/min, max. 600 U/min.
+
+Die Testseite **`/hwtest`** (Link auf der Wartungsseite) zeigt Treiber, StallGuard,
+RTC und EEPROM und fährt einzelne Pumpen um X Umdrehungen bzw. Schritte.
+„Ohne Treiber takten“ erzeugt STEP-Pulse auch ohne antwortenden TMC2209 (Test mit
+Oszilloskop/Logikanalysator).
 
 ## Taster und LED
 
@@ -130,13 +171,13 @@ idf.py coredump-info -c coredump.elf
 Beim Einschalten gedrückt = ESP-Download-Modus (Hardware). Ein dauerhaft gedrückter
 Taster löst nichts aus, solange er nicht einmal losgelassen wurde.
 
-LED-Zustände in M0: Weiß aufblenden (Start), Orange pulsierend (Setup-WLAN),
-Grün (LAN mit IP), Gelb blinkend (kein Netz), Magenta/Weiß (OTA).
+LED-Zustände: Weiß aufblenden (Start), Orange pulsierend (Setup-WLAN),
+Grün (LAN mit IP), Gelb blinkend (kein Netz), Magenta/Weiß (OTA), Dosieren (Pumpe läuft).
 
 ## Meilensteine
 
 - [x] **M0** Grundgerüst: Partitionen, Ethernet, Setup-WLAN, mDNS, OTA + Rollback, Wartungsseite, LED, Taster
-- [ ] **M1** Hardware-Ebene: TMC2209-UART, Schritt-Takte (RMT + MCPWM/PCNT), RTC, Raw-Stepper-Test
+- [x] **M1** Hardware-Ebene: TMC2209-UART, Schritt-Takte (RMT + MCPWM/PCNT), RTC, Raw-Stepper-Test
 - [ ] **M2** Dosier-Engine: Rampen, Rückzug, Kalibrierung, Priming, Behälter, Tageslimit
 - [ ] **M3** Zeitplan, Zeitumstellung, Kollisionsschutz, Boost, Verhalten nach Stromausfall (mit Host-Tests)
 - [ ] **M4** WLAN-Client, Captive Portal, Ersteinrichtung, Auth, REST, WebSocket
