@@ -43,3 +43,11 @@ CONFIG_HTTPD_MAX_URI_LEN=256
 
 # Compiler
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
+
+# Step clocks keep running during flash writes (NVS, OTA).
+# Checked in stepgen.cpp via #error – after changing: "rm sdkconfig".
+CONFIG_RMT_TX_ISR_CACHE_SAFE=y
+CONFIG_PCNT_ISR_IRAM_SAFE=y
+CONFIG_PCNT_CTRL_FUNC_IN_IRAM=y
+CONFIG_GPTIMER_ISR_CACHE_SAFE=y
+CONFIG_MCPWM_CTRL_FUNC_IN_IRAM=y

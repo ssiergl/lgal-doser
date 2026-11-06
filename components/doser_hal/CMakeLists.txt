@@ -4,12 +4,18 @@ idf_component_register(
         "src/tmc2209_proto.cpp"
         "src/tmc2209.cpp"
         "src/ramp.cpp"
+        "src/stepgen.cpp"
     INCLUDE_DIRS "include"
     REQUIRES
         esp_driver_gpio
         esp_driver_spi
         esp_driver_uart
+        esp_driver_rmt
+        esp_driver_mcpwm
+        esp_driver_pcnt
+        esp_driver_gptimer
         log
     PRIV_REQUIRES
+        esp_hal_mcpwm
         esp_hal_uart
 )
