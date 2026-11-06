@@ -5,7 +5,8 @@ idf_component_register(
         "src/dosing_core.cpp"
         "src/dosing_store.cpp"
         "src/dosing.cpp"
+        "src/dosing_api.cpp"
     INCLUDE_DIRS "include"
-    EMBED_TXTFILES "www/hwtest.html"
+    EMBED_TXTFILES "www/hwtest.html" "www/dosing.html"
     REQUIRES doser_hal lgal_core esp_http_server nvs_flash esp_timer
 )

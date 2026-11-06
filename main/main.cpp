@@ -5,6 +5,8 @@
 
 #include <cstdio>
 
+#include "doser/dosing.h"
+#include "doser/dosing_api.h"
 #include "doser/hwconfig.h"
 #include "doser/hwtest_api.h"
 #include "doser/i2c_devices.h"
@@ -51,6 +53,7 @@ void update_status_led() {
     // network disconnected: neither LAN IP nor setup AP
     lgal::led::set(State::Warning, !ns.eth_has_ip && !ns.ap_active);
     lgal::led::set(State::Dosing, doser::motion::any_running());
+    lgal::led::set(State::Service, doser::dosing::service());
 }
 
 void init_hardware() {
@@ -64,6 +67,9 @@ void init_hardware() {
 
     const esp_err_t err = doser::motion::init(pumps);
     if (err != ESP_OK) ESP_LOGE(TAG, "Pump hardware not ready: %s", esp_err_to_name(err));
+
+    // Dosing engine: load settings (NVS) and run state (EEPROM)
+    if (doser::dosing::init() != ESP_OK) ESP_LOGE(TAG, "Dosing engine not ready");
 }
 
 void init_time() {
@@ -115,14 +121,16 @@ extern "C" void app_main(void) {
         lgal::net::start_setup_ap(false);
     }
 
-    // 6. Web server, system API, hardware test, OTA
+    // 6. Web server, system API, dosing and hardware test, OTA
     ESP_ERROR_CHECK(lgal::http::start());
     lgal::sysapi::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
+    doser::dosing_api::register_handlers(lgal::http::handle());
+    lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
     lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
 
     lgal::ota::set_guard([](std::string& reason) {
-        if (doser::motion::any_running()) {
+        if (doser::motion::any_running() || doser::dosing::busy()) {
             reason = "pump_running";
             return false;
         }

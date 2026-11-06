@@ -25,9 +25,12 @@ esp_err_t send_json(httpd_req_t* req, const char* json, const char* status = "20
 // translates based on the code. message: English plain text for logs/developers.
 esp_err_t send_error(httpd_req_t* req, const char* status, const char* code, const char* message);
 
-// Query parameter (?key=value). false if missing/invalid.
+// Query parameter (?key=value, URL-decoded). false if missing,
+// invalid or longer than the buffer.
 bool query_str(httpd_req_t* req, const char* key, char* out, size_t len);
 bool query_int(httpd_req_t* req, const char* key, int64_t* out);
+// Decimal number ("1.25") times scale, rounded – e.g. ml -> µl with scale 1000
+bool query_decimal(httpd_req_t* req, const char* key, int64_t scale, int64_t* out);
 
 // Registers a handler (errors are logged).
 void route(httpd_handle_t server, const char* uri, httpd_method_t method, esp_err_t (*handler)(httpd_req_t*));
