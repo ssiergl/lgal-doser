@@ -123,7 +123,7 @@ extern "C" void app_main(void) {
 
     lgal::ota::set_guard([](std::string& reason) {
         if (doser::motion::any_running()) {
-            reason = "Pumpe läuft – Update nach Ende der Fahrt erneut versuchen";
+            reason = "pump_running";
             return false;
         }
         return true;

@@ -165,13 +165,13 @@ esp_err_t get_coredump(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     size_t addr = 0, size = 0;
     if (esp_core_dump_image_check() != ESP_OK || esp_core_dump_image_get(&addr, &size) != ESP_OK) {
-        return http::send_error(req, "404 Not Found", "no coredump");
+        return http::send_error(req, "404 Not Found", "no_coredump", "No coredump stored");
     }
     httpd_resp_set_type(req, "application/octet-stream");
     httpd_resp_set_hdr(req, "Content-Disposition", "attachment; filename=\"coredump.elf\"");
     constexpr size_t kChunk = 2048;
     std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[kChunk]);
-    if (!buf) return http::send_error(req, "500 Internal Server Error", "no memory");
+    if (!buf) return http::send_error(req, "500 Internal Server Error", "no_memory", "Out of memory");
     for (size_t off = 0; off < size; off += kChunk) {
         size_t n = (size - off) < kChunk ? (size - off) : kChunk;
         if (esp_flash_read(nullptr, buf.get(), addr + off, n) != ESP_OK) break;

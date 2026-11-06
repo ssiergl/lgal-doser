@@ -17,7 +17,7 @@
 
 namespace lgal::ota {
 
-// Returns false (+ reason) if no update is allowed right now.
+// Returns false (+ error code, e.g. "pump_running") if no update is allowed right now.
 using Guard = std::function<bool(std::string& reason)>;
 // Called with true before flashing and with false after an abort
 // (lock/unlock pumps).

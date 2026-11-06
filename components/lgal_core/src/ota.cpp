@@ -40,25 +40,29 @@ void schedule_restart(uint32_t ms) {
 }
 
 // Checks whether the uploaded image matches this device.
-bool check_header(const uint8_t* data, std::string& err) {
+bool check_header(const uint8_t* data, std::string& err, const char*& code) {
     const auto* img = reinterpret_cast<const esp_image_header_t*>(data);
     if (img->magic != ESP_IMAGE_HEADER_MAGIC) {
-        err = "keine ESP-Firmware (Magic)";
+        code = "not_esp_image";
+        err = "Not an ESP firmware image (magic)";
         return false;
     }
     if (img->chip_id != ESP_CHIP_ID_ESP32S3) {
-        err = "Firmware ist nicht für ESP32-S3";
+        code = "wrong_chip";
+        err = "Firmware is not built for ESP32-S3";
         return false;
     }
     const auto* desc = reinterpret_cast<const esp_app_desc_t*>(
         data + sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t));
     if (desc->magic_word != ESP_APP_DESC_MAGIC_WORD) {
-        err = "App-Beschreibung fehlt";
+        code = "no_app_desc";
+        err = "App description missing";
         return false;
     }
     const esp_app_desc_t* own = esp_app_get_description();
     if (strncmp(desc->project_name, own->project_name, sizeof(desc->project_name)) != 0) {
-        err = std::string("falsches Projekt: ") + std::string(desc->project_name, strnlen(desc->project_name, 32));
+        code = "wrong_project";
+        err = std::string("Wrong project: ") + std::string(desc->project_name, strnlen(desc->project_name, 32));
         return false;
     }
     ESP_LOGI(TAG, "New image: %s %s (%s %s), running: %s", desc->project_name, desc->version, desc->date,
@@ -77,22 +81,22 @@ esp_err_t post_firmware(httpd_req_t* req) {
 
     bool expected = false;
     if (!s_busy.compare_exchange_strong(expected, true)) {
-        return http::send_error(req, "409 Conflict", "OTA laeuft bereits");
+        return http::send_error(req, "409 Conflict", "ota_in_progress", "An update is already in progress");
     }
     std::string reason;
     if (s_guard && !s_guard(reason)) {
         s_busy = false;
-        return http::send_error(req, "409 Conflict", reason.c_str());
+        return http::send_error(req, "409 Conflict", reason.c_str(), "Update not allowed right now");
     }
 
     const esp_partition_t* target = esp_ota_get_next_update_partition(nullptr);
     if (!target) {
         s_busy = false;
-        return http::send_error(req, "500 Internal Server Error", "keine OTA-Partition");
+        return http::send_error(req, "500 Internal Server Error", "no_ota_partition", "No OTA partition");
     }
     if (req->content_len < kHeaderLen || req->content_len > target->size) {
         s_busy = false;
-        return http::send_error(req, "413 Content Too Large", "ungueltige Dateigroesse");
+        return http::send_error(req, "413 Content Too Large", "invalid_size", "Invalid file size");
     }
 
     if (s_lock) s_lock(true);
@@ -102,7 +106,7 @@ esp_err_t post_firmware(httpd_req_t* req) {
     std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[kChunk]);
     if (!buf) {
         finish(false);
-        return http::send_error(req, "500 Internal Server Error", "kein Speicher");
+        return http::send_error(req, "500 Internal Server Error", "no_memory", "Out of memory");
     }
 
     esp_ota_handle_t handle = 0;
@@ -112,13 +116,15 @@ esp_err_t post_firmware(httpd_req_t* req) {
     uint8_t head[kHeaderLen];
     int timeouts = 0;
     std::string err;
+    const char* code = "upload_failed";
 
     while (received < req->content_len) {
         int n = httpd_req_recv(req, reinterpret_cast<char*>(buf.get()),
                                std::min(kChunk, req->content_len - received));
         if (n == HTTPD_SOCK_ERR_TIMEOUT && ++timeouts < 5) continue;
         if (n <= 0) {
-            err = "Uebertragung abgebrochen";
+            code = "transfer_aborted";
+            err = "Transfer aborted";
             break;
         }
         timeouts = 0;
@@ -132,37 +138,44 @@ esp_err_t post_firmware(httpd_req_t* req) {
                 received += n;
                 continue;
             }
-            if (!check_header(head, err)) break;
+            if (!check_header(head, err, code)) break;
             esp_err_t e = esp_ota_begin(target, OTA_WITH_SEQUENTIAL_WRITES, &handle);
             if (e != ESP_OK) {
+                code = "flash_error";
                 err = std::string("esp_ota_begin: ") + esp_err_to_name(e);
                 break;
             }
             begun = true;
             // Write the collected header; the rest of the current chunk follows below
             if (esp_ota_write(handle, head, kHeaderLen) != ESP_OK) {
-                err = "Flash-Schreibfehler";
+                code = "flash_error";
+                err = "Flash write error";
                 break;
             }
             size_t rest = static_cast<size_t>(n) - take;
             if (rest && esp_ota_write(handle, buf.get() + take, rest) != ESP_OK) {
-                err = "Flash-Schreibfehler";
+                code = "flash_error";
+                err = "Flash write error";
                 break;
             }
         } else if (esp_ota_write(handle, buf.get(), n) != ESP_OK) {
-            err = "Flash-Schreibfehler";
+            code = "flash_error";
+            err = "Flash write error";
             break;
         }
         received += n;
     }
 
-    if (err.empty() && !begun) err = "Datei zu kurz";
+    if (err.empty() && !begun) {
+        code = "file_too_short";
+        err = "File too short";
+    }
 
     if (!err.empty()) {
         if (begun) esp_ota_abort(handle);
         ESP_LOGE(TAG, "OTA failed: %s", err.c_str());
         finish(false);
-        return http::send_error(req, "400 Bad Request", err.c_str());
+        return http::send_error(req, "400 Bad Request", code, err.c_str());
     }
 
     esp_err_t e = esp_ota_end(handle);  // checks image integrity (hash)
@@ -170,8 +183,8 @@ esp_err_t post_firmware(httpd_req_t* req) {
     if (e != ESP_OK) {
         ESP_LOGE(TAG, "OTA finalize failed: %s", esp_err_to_name(e));
         finish(false);
-        return http::send_error(req, "400 Bad Request",
-                                e == ESP_ERR_OTA_VALIDATE_FAILED ? "Image ungueltig" : esp_err_to_name(e));
+        return http::send_error(req, "400 Bad Request", e == ESP_ERR_OTA_VALIDATE_FAILED ? "image_invalid" : "flash_error",
+                                e == ESP_ERR_OTA_VALIDATE_FAILED ? "Image verification failed" : esp_err_to_name(e));
     }
 
     ESP_LOGI(TAG, "OTA successful, rebooting in 1 s");

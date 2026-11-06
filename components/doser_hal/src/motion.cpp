@@ -128,7 +128,7 @@ void health_check(int i) {
         probe_and_configure(i);
         if (!p.present) {
             auto* ch = step::channel(i);
-            if (ch && ch->busy()) fault_stop(i, "Treiber nicht erreichbar");
+            if (ch && ch->busy()) fault_stop(i, "driver_lost");
         }
         return;
     }
@@ -137,12 +137,12 @@ void health_check(int i) {
         // Driver restarted (e.g. 24 V lost and back) -> registers lost
         ESP_LOGW(TAG, "Pump %d: driver reset detected, reconfiguring", i + 1);
         auto* ch = step::channel(i);
-        if (ch && ch->busy()) fault_stop(i, "Treiber-Reset während der Fahrt");
+        if (ch && ch->busy()) fault_stop(i, "driver_reset");
         configure(i);
     }
     if (gstat & tmc::GSTAT_DRV_ERR) {
         auto* ch = step::channel(i);
-        if (ch && ch->busy()) fault_stop(i, "Treiberfehler (drv_err)");
+        if (ch && ch->busy()) fault_stop(i, "driver_error");
         p.drv.write(tmc::reg::GSTAT, tmc::GSTAT_DRV_ERR);
     }
     uint32_t v = 0;
@@ -162,8 +162,8 @@ void sample_running(int i, int64_t now) {
     if (p.drv.read(tmc::reg::DRV_STATUS, &v) == ESP_OK) {
         p.drv_status = v;
         const auto d = tmc::decode_drv_status(v);
-        if (d.short_circuit()) fault_stop(i, "Kurzschluss an der Motorwicklung");
-        else if (d.ot) fault_stop(i, "Übertemperatur Treiber");
+        if (d.short_circuit()) fault_stop(i, "short_circuit");
+        else if (d.ot) fault_stop(i, "overtemperature");
     }
 }
 

@@ -54,7 +54,7 @@ struct PumpStatus {
     uint32_t pwm_scale;
     uint16_t run_ma;       // actually set
     uint16_t hold_ma;
-    const char* fault;     // nullptr = ok
+    const char* fault;     // error code (driver_lost, driver_reset, driver_error, short_circuit, overtemperature), nullptr = ok
     const char* stepgen;   // "rmt" / "mcpwm"
 };
 
