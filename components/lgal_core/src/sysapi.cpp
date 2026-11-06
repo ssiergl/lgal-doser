@@ -2,7 +2,11 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <ctime>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "esp_app_desc.h"
 #include "esp_core_dump.h"
@@ -19,6 +23,8 @@
 #include "lgal/logbuf.h"
 #include "lgal/net.h"
 #include "lgal/settings.h"
+#include "lgal/json.h"
+#include "lgal/timesync.h"
 
 extern const char recovery_html_start[] asm("_binary_recovery_html_start");
 extern const char recovery_html_end[] asm("_binary_recovery_html_end");
@@ -27,6 +33,7 @@ namespace lgal::sysapi {
 
 namespace {
 constexpr const char* TAG = "sysapi";
+std::vector<std::pair<std::string, std::string>> s_links;
 
 const char* reset_reason_str(esp_reset_reason_t r) {
     switch (r) {
@@ -101,7 +108,35 @@ esp_err_t get_info(httpd_req_t* req) {
              ns.eth_present ? "true" : "false", ns.eth_link ? "true" : "false",
              ns.eth_has_ip ? "\"" : "", ns.eth_has_ip ? ip_str : "null", ns.eth_has_ip ? "\"" : "",
              ns.ap_active ? "true" : "false", ns.ap_clients);
-    return http::send_json(req, buf);
+
+    // Append time and device-specific pages
+    const auto ts = timesync::status();
+    char local[40] = "";
+    if (ts.valid) {
+        time_t t = static_cast<time_t>(ts.utc);
+        tm lt{};
+        localtime_r(&t, &lt);
+        strftime(local, sizeof(local), "%Y-%m-%d %H:%M:%S %Z", &lt);
+    }
+    Json extra;
+    extra.obj("time")
+        .kv("valid", ts.valid)
+        .kv("utc", ts.utc)
+        .kv("local", local)
+        .kv("source", timesync::source_str(ts.source))
+        .kv("last_ntp_sync", ts.last_ntp_sync)
+        .kv("rtc_ok", ts.rtc_ok)
+        .kv("timezone", timesync::timezone())
+        .end();
+    extra.arr("links");
+    for (const auto& l : s_links) extra.obj().kv("name", l.first).kv("path", l.second).end();
+    extra.end();
+    std::string out(buf);
+    out.pop_back();  // closing bracket
+    out += ',';
+    out += extra.str();
+    out += '}';
+    return http::send_json(req, out.c_str());
 }
 
 esp_err_t get_log(httpd_req_t* req) {
@@ -159,6 +194,8 @@ void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(htt
     httpd_register_uri_handler(s, &u);
 }
 }  // namespace
+
+void add_link(const char* name, const char* path) { s_links.emplace_back(name, path); }
 
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;

@@ -14,4 +14,7 @@ namespace lgal::sysapi {
 
 esp_err_t register_handlers(httpd_handle_t server);
 
+// Link to a device-specific page, shown on the maintenance page
+void add_link(const char* name, const char* path);
+
 }  // namespace lgal::sysapi
