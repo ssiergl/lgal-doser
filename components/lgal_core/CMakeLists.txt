@@ -1,0 +1,32 @@
+idf_component_register(
+    SRCS
+        "src/led.cpp"
+        "src/button.cpp"
+        "src/device.cpp"
+        "src/settings.cpp"
+        "src/logbuf.cpp"
+        "src/net.cpp"
+        "src/http.cpp"
+        "src/sysapi.cpp"
+        "src/ota.cpp"
+    INCLUDE_DIRS "include"
+    EMBED_TXTFILES "www/recovery.html"
+    REQUIRES
+        esp_driver_gpio
+        esp_driver_ledc
+        esp_driver_spi
+        esp_eth
+        esp_netif
+        esp_event
+        esp_wifi
+        esp_http_server
+        esp_app_format
+        app_update
+        esp_partition
+        espcoredump
+        nvs_flash
+        mbedtls
+        esp_timer
+        spi_flash
+        log
+)

@@ -1,0 +1,35 @@
+menu "LG Aquatic Life Core"
+
+    config LGAL_DEVICE_TYPE
+        string "Device type (hostname/topic prefix)"
+        default "doser"
+        help
+            Used for the hostname (lgal-<type>-xxxx) and later the MQTT namespace
+            lg-aquatic-life/<type>/<id>/.
+
+    config LGAL_AP_SECRET
+        string "Secret for deriving the setup password"
+        default "LGAL-change-me-before-first-flash"
+        help
+            The setup/admin password of every device is derived from the base
+            MAC and this secret (HMAC-SHA256). The MAC alone is public (BSSID),
+            hence the secret. Change it once before the first flash and NEVER
+            again afterwards, otherwise all passwords change.
+            tools/ap_password.py needs the same value.
+
+    config LGAL_SETUP_AP_TIMEOUT_MIN
+        int "Runtime of the setup AP opened via the button (minutes)"
+        default 30
+        range 5 240
+
+    config LGAL_OTA_CONFIRM_DELAY_S
+        int "Stable runtime until a new OTA image counts as valid (s)"
+        default 60
+        range 10 600
+
+    config LGAL_ETH_SPI_CLOCK_MHZ
+        int "W5500 SPI clock (MHz)"
+        default 20
+        range 1 40
+
+endmenu
