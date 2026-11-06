@@ -4,6 +4,7 @@ idf_component_register(
         "src/tmc2209_proto.cpp"
         "src/tmc2209.cpp"
         "src/ramp.cpp"
+        "src/posix_tz.cpp"
         "src/stepgen.cpp"
         "src/motion.cpp"
         "src/i2c_devices.cpp"

@@ -7,6 +7,7 @@
 
 #include "doser/civil_time.h"
 #include "doser/dosing_core.h"
+#include "doser/posix_tz.h"
 #include "doser/ramp.h"
 #include "doser/tmc2209_proto.h"
 
@@ -224,6 +225,56 @@ static void test_civil() {
     CHECK(y2100.month == 2 && y2100.day == 28);
 }
 
+static int64_t utc_of(int y, int mo, int d, int h, int mi) { return civil::to_unix({y, mo, d, h, mi, 0, 0}); }
+
+static void test_tz() {
+    tz::Zone z;
+    CHECK(tz::parse("CET-1CEST,M3.5.0,M10.5.0/3", &z));
+    CHECK(z.std_offset == 3600 && z.dst_offset == 7200 && z.has_dst);
+    // 2026: DST from 29 March 01:00 UTC to 25 October 01:00 UTC
+    CHECK(tz::offset_at(z, utc_of(2026, 3, 29, 1, 0) - 1) == 3600);
+    CHECK(tz::offset_at(z, utc_of(2026, 3, 29, 1, 0)) == 7200);
+    CHECK(tz::offset_at(z, utc_of(2026, 10, 25, 1, 0) - 1) == 7200);
+    CHECK(tz::offset_at(z, utc_of(2026, 10, 25, 1, 0)) == 3600);
+    CHECK(tz::offset_at(z, utc_of(2026, 1, 15, 12, 0)) == 3600);
+    tz::Mapping how;
+    CHECK(tz::to_utc(z, utc_of(2026, 7, 1, 12, 0), &how) == utc_of(2026, 7, 1, 10, 0));
+    CHECK(how == tz::Mapping::Unique);
+    CHECK(tz::to_utc(z, utc_of(2026, 12, 1, 12, 0), &how) == utc_of(2026, 12, 1, 11, 0));
+    // spring forward: 02:30 does not exist -> 03:30 CEST
+    int64_t u = tz::to_utc(z, utc_of(2026, 3, 29, 2, 30), &how);
+    CHECK(how == tz::Mapping::Gap && u == utc_of(2026, 3, 29, 1, 30));
+    CHECK(tz::to_local(z, u) == utc_of(2026, 3, 29, 3, 30));
+    CHECK(tz::to_utc(z, utc_of(2026, 3, 29, 3, 0), &how) == utc_of(2026, 3, 29, 1, 0) && how == tz::Mapping::Unique);
+    // fall back: 02:30 occurs twice -> first occurrence (CEST)
+    CHECK(tz::to_utc(z, utc_of(2026, 10, 25, 2, 30), &how) == utc_of(2026, 10, 25, 0, 30));
+    CHECK(how == tz::Mapping::Ambiguous);
+    CHECK(tz::to_utc(z, utc_of(2026, 10, 25, 3, 0), &how) == utc_of(2026, 10, 25, 2, 0) && how == tz::Mapping::Unique);
+
+    // USA, default rules when none are given
+    CHECK(tz::parse("EST5EDT", &z) && z.std_offset == -18000 && z.dst_offset == -14400);
+    CHECK(tz::offset_at(z, utc_of(2026, 3, 8, 7, 0) - 1) == -18000);  // 2nd Sunday of March, 02:00 EST
+    CHECK(tz::offset_at(z, utc_of(2026, 3, 8, 7, 0)) == -14400);
+    CHECK(tz::offset_at(z, utc_of(2026, 11, 1, 6, 0)) == -18000);    // 1st Sunday of November, 02:00 EDT
+
+    // southern hemisphere: DST across the turn of the year
+    CHECK(tz::parse("AEST-10AEDT,M10.1.0,M4.1.0/3", &z));
+    CHECK(tz::offset_at(z, utc_of(2026, 1, 15, 0, 0)) == 39600);
+    CHECK(tz::offset_at(z, utc_of(2026, 7, 15, 0, 0)) == 36000);
+    CHECK(tz::offset_at(z, utc_of(2026, 4, 4, 16, 0) - 1) == 39600);  // 5 April 03:00 AEDT
+    CHECK(tz::offset_at(z, utc_of(2026, 4, 4, 16, 0)) == 36000);
+    CHECK(tz::offset_at(z, utc_of(2026, 10, 3, 16, 0)) == 39600);     // 4 October 02:00 AEST
+
+    // no DST, quoted names, minutes, Julian days
+    CHECK(tz::parse("UTC0", &z) && !z.has_dst && tz::offset_at(z, 0) == 0);
+    CHECK(tz::parse("<+0330>-3:30", &z) && tz::offset_at(z, utc_of(2026, 6, 1, 0, 0)) == 12600);
+    CHECK(tz::parse("AAA0BBB,J60,J300", &z));  // J60 = 1 March, also in leap years
+    CHECK(tz::offset_at(z, utc_of(2028, 3, 1, 2, 0) - 1) == 0 && tz::offset_at(z, utc_of(2028, 3, 1, 2, 0)) == 3600);
+    CHECK(tz::parse("AAA0BBB,M3.5.0/-1,M10.5.0/25", &z) && z.start.time == -3600 && z.end.time == 90000);
+    CHECK(!tz::parse("", &z) && !tz::parse("X", &z) && !tz::parse("CET-1CEST,M13.1.0,M10.5.0", &z));
+    CHECK(!tz::parse("CET-1CEST,M3.5.0", &z) && !tz::parse("CET", &z) && !tz::parse("CET-1CEST,M3.5.0,M10.5.0x", &z));
+}
+
 static void test_dose_conversion() {
     using namespace dose;
     const uint32_t spr = 3200;  // 200 full steps × 16
@@ -333,6 +384,8 @@ int main() {
     test_ramp_velocity_mode();
     std::printf("Calendar\n");
     test_civil();
+    std::printf("Time zone rules\n");
+    test_tz();
     std::printf("Dosing: conversion, calibration\n");
     test_dose_conversion();
     std::printf("Daily limit\n");

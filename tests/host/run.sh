@@ -14,6 +14,7 @@ $CXX \
     tests/host/test_main.cpp \
     components/doser_hal/src/tmc2209_proto.cpp \
     components/doser_hal/src/ramp.cpp \
+    components/doser_hal/src/posix_tz.cpp \
     components/doser_app/src/dosing_core.cpp \
     -o "$OUT/core"
 "$OUT/core"
