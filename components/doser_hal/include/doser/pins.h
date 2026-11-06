@@ -42,6 +42,10 @@ constexpr std::array<TmcAddress, kPumpCount> kTmc = {{
     {kUartBusB, 0},
 }};
 
+// Driver module Ulegqin TMC2209 V2.0: Rsense R6/R7 = "R110" (0.11 Ω, photo 11/2026)
+constexpr uint16_t kTmcRsenseMohm = 110;
+constexpr uint32_t kTmcBaud = 115200;
+
 // Ethernet W5500 (USR-ES1), SPI2 via IOMUX pins
 constexpr spi_host_device_t kEthSpiHost = SPI2_HOST;
 constexpr gpio_num_t kEthMosi = GPIO_NUM_11;
