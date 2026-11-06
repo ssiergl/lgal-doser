@@ -38,6 +38,16 @@ $CXX \
 "$OUT/auth"
 
 echo
+$CXX \
+    -I components/lgal_core/include \
+    tests/host/test_net_config.cpp \
+    components/lgal_core/src/net_config.cpp \
+    components/lgal_core/src/json.cpp \
+    components/lgal_core/src/json_reader.cpp \
+    -o "$OUT/net_config"
+"$OUT/net_config"
+
+echo
 # Dosing engine unchanged against simulated motor/storage (stubs first)
 $CXX \
     -I tests/host/stubs \
