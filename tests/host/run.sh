@@ -41,6 +41,7 @@ $CXX \
     -I components/doser_app/include \
     tests/host/test_schedule.cpp \
     components/doser_app/src/schedule_core.cpp \
+    components/doser_app/src/dosing_core.cpp \
     components/doser_hal/src/posix_tz.cpp \
     -o "$OUT/schedule"
 "$OUT/schedule"
