@@ -99,7 +99,7 @@ struct PumpState {
     uint64_t tube_ms;       // tube runtime
     uint64_t total_ul;      // total dosed (statistics)
     Ledger ledger;
-    uint32_t reserved2;     // explicit padding (CRC over defined bytes)
+    uint32_t last_end;      // UTC end of the last job (lock times between pumps), 0 = unknown
 };
 static_assert(sizeof(PumpState) == 136);
 
