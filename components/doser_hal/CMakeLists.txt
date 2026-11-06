@@ -5,6 +5,7 @@ idf_component_register(
         "src/tmc2209.cpp"
         "src/ramp.cpp"
         "src/stepgen.cpp"
+        "src/motion.cpp"
     INCLUDE_DIRS "include"
     REQUIRES
         esp_driver_gpio
@@ -14,6 +15,7 @@ idf_component_register(
         esp_driver_mcpwm
         esp_driver_pcnt
         esp_driver_gptimer
+        esp_timer
         log
     PRIV_REQUIRES
         esp_hal_mcpwm
