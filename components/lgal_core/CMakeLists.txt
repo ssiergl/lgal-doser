@@ -9,6 +9,7 @@ idf_component_register(
         "src/http.cpp"
         "src/sysapi.cpp"
         "src/ota.cpp"
+        "src/json.cpp"
     INCLUDE_DIRS "include"
     EMBED_TXTFILES "www/recovery.html"
     REQUIRES
