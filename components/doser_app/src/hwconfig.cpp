@@ -45,7 +45,7 @@ esp_err_t save_blob(const char* key, const T& v) {
 void load(motion::PumpConfig (&pumps)[5]) {
     nvs_handle_t h;
     if (nvs_open(kNs, NVS_READONLY, &h) != ESP_OK) {
-        ESP_LOGI(TAG, "Keine gespeicherten Hardware-Parameter, verwende Standardwerte");
+        ESP_LOGI(TAG, "No stored hardware parameters, using defaults");
         return;
     }
     char key[12];

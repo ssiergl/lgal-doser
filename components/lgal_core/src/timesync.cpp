@@ -46,7 +46,7 @@ bool load_from_rtc(const char* why) {
     s_rtc_ok = true;
     set_system(utc);
     if (s_source != Source::Ntp && s_source != Source::Manual) s_source = Source::Rtc;
-    ESP_LOGI(TAG, "Systemzeit aus RTC (%s)", why);
+    ESP_LOGI(TAG, "System time from RTC (%s)", why);
     return true;
 }
 
@@ -59,13 +59,13 @@ void on_ntp(timeval* tv) {
     tm lt{};
     localtime_r(&t, &lt);
     strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %Z", &lt);
-    ESP_LOGI(TAG, "NTP-Zeit %s, RTC %s", buf, s_rtc_ok ? "nachgestellt" : "nicht verfügbar");
+    ESP_LOGI(TAG, "NTP time %s, RTC %s", buf, s_rtc_ok ? "updated" : "unavailable");
 }
 
 void periodic(void*) {
     // Without fresh NTP time the RTC (±2 ppm) is more accurate than the ESP clock.
     const int64_t now = now_utc();
-    if (s_last_ntp == 0 || now - s_last_ntp > 2 * 3600) load_from_rtc("stündlicher Abgleich");
+    if (s_last_ntp == 0 || now - s_last_ntp > 2 * 3600) load_from_rtc("hourly resync");
 }
 }  // namespace
 
@@ -84,19 +84,19 @@ void init(const RtcHooks& rtc, const char* tz_posix, const char* ntp_server) {
     setenv("TZ", s_tz.c_str(), 1);
     tzset();
 
-    if (!load_from_rtc("Start")) ESP_LOGW(TAG, "RTC ohne gültige Zeit – warte auf NTP oder manuelle Eingabe");
+    if (!load_from_rtc("boot")) ESP_LOGW(TAG, "RTC has no valid time - waiting for NTP or manual input");
 
     esp_sntp_config_t cfg = ESP_NETIF_SNTP_DEFAULT_CONFIG(ntp_server);
     cfg.sync_cb = on_ntp;
     cfg.start = true;
     cfg.wait_for_sync = false;
-    if (esp_netif_sntp_init(&cfg) != ESP_OK) ESP_LOGE(TAG, "SNTP-Start fehlgeschlagen");
+    if (esp_netif_sntp_init(&cfg) != ESP_OK) ESP_LOGE(TAG, "SNTP start failed");
 
     esp_timer_create_args_t args{};
     args.callback = periodic;
     args.name = "rtc_resync";
     if (esp_timer_create(&args, &s_timer) == ESP_OK) esp_timer_start_periodic(s_timer, kRtcResyncUs);
-    ESP_LOGI(TAG, "Zeitzone %s, NTP %s", s_tz.c_str(), ntp_server);
+    ESP_LOGI(TAG, "Time zone %s, NTP %s", s_tz.c_str(), ntp_server);
 }
 
 Status status() {
@@ -114,7 +114,7 @@ bool set_manual(int64_t utc) {
     set_system(utc);
     s_source = Source::Manual;
     if (s_rtc.write) s_rtc_ok = s_rtc.write(utc);
-    ESP_LOGI(TAG, "Zeit manuell gesetzt, RTC %s", s_rtc_ok ? "nachgestellt" : "nicht verfügbar");
+    ESP_LOGI(TAG, "Time set manually, RTC %s", s_rtc_ok ? "updated" : "unavailable");
     return true;
 }
 

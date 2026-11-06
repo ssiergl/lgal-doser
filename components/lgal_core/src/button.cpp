@@ -37,7 +37,7 @@ void task(void*) {
         if (!armed) {
             if (!raw) {
                 armed = true;
-                ESP_LOGI(TAG, "Taster bereit");
+                ESP_LOGI(TAG, "Button ready");
             }
             continue;
         }
@@ -54,10 +54,10 @@ void task(void*) {
             led::set(led::State::ButtonAp, false);
             led::set(led::State::ButtonReset, false);
             if (held_ms >= s_cfg.reset_hold_ms) {
-                ESP_LOGW(TAG, "Taster %u ms: Werkseinstellungen", (unsigned)held_ms);
+                ESP_LOGW(TAG, "Button %u ms: factory reset", (unsigned)held_ms);
                 if (s_cfg.on_factory_reset) s_cfg.on_factory_reset();
             } else if (held_ms >= s_cfg.ap_hold_ms) {
-                ESP_LOGI(TAG, "Taster %u ms: Einrichtungs-AP", (unsigned)held_ms);
+                ESP_LOGI(TAG, "Button %u ms: setup AP", (unsigned)held_ms);
                 if (s_cfg.on_setup_ap) s_cfg.on_setup_ap();
             }
         }

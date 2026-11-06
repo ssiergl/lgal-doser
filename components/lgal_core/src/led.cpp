@@ -130,7 +130,7 @@ esp_err_t init(const Config& cfg) {
 
     set(State::Boot, true);
     if (xTaskCreate(task, "led", 3072, nullptr, 2, nullptr) != pdPASS) return ESP_ERR_NO_MEM;
-    ESP_LOGI(TAG, "RGB-LED bereit");
+    ESP_LOGI(TAG, "RGB LED ready");
     return ESP_OK;
 }
 

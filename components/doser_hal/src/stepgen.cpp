@@ -17,7 +17,7 @@
 // sdkconfig.defaults: "rm sdkconfig" and rebuild.
 #if !CONFIG_RMT_TX_ISR_CACHE_SAFE || !CONFIG_PCNT_ISR_IRAM_SAFE || !CONFIG_PCNT_CTRL_FUNC_IN_IRAM || \
     !CONFIG_GPTIMER_ISR_CACHE_SAFE || !CONFIG_MCPWM_CTRL_FUNC_IN_IRAM
-#error "IRAM-Optionen für RMT/PCNT/GPTimer/MCPWM fehlen – sdkconfig löschen und neu bauen (siehe sdkconfig.defaults)"
+#error "IRAM options for RMT/PCNT/GPTimer/MCPWM missing - delete sdkconfig and rebuild (see sdkconfig.defaults)"
 #endif
 
 namespace doser::step {
@@ -362,11 +362,11 @@ bool s_ready = false;
 esp_err_t init() {
     if (s_ready) return ESP_OK;
     for (int i = 0; i < 4; ++i) {
-        ESP_RETURN_ON_ERROR(s_rmt[i].init(pins::kStep[i]), TAG, "Pumpe %d (RMT)", i + 1);
+        ESP_RETURN_ON_ERROR(s_rmt[i].init(pins::kStep[i]), TAG, "pump %d (RMT)", i + 1);
     }
-    ESP_RETURN_ON_ERROR(s_mcpwm.init(pins::kStep[4]), TAG, "Pumpe 5 (MCPWM/PCNT)");
+    ESP_RETURN_ON_ERROR(s_mcpwm.init(pins::kStep[4]), TAG, "pump 5 (MCPWM/PCNT)");
     s_ready = true;
-    ESP_LOGI(TAG, "Schritt-Takte bereit: Pumpe 1-4 RMT, Pumpe 5 MCPWM+PCNT");
+    ESP_LOGI(TAG, "Step generators ready: pumps 1-4 RMT, pump 5 MCPWM+PCNT");
     return ESP_OK;
 }
 

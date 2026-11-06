@@ -39,7 +39,7 @@ esp_err_t TmcBus::init(uart_port_t port, gpio_num_t pin, uint32_t baud) {
     // Move received bytes into the buffer quickly (timeout 2 characters instead of 10)
     uart_set_rx_timeout(port, 2);
     drive();
-    ESP_LOGI(TAG, "UART%d an GPIO%d (Eindraht, %" PRIu32 " Bd)", port, pin, baud);
+    ESP_LOGI(TAG, "UART%d on GPIO%d (single wire, %" PRIu32 " baud)", port, pin, baud);
     return ESP_OK;
 }
 
@@ -154,7 +154,7 @@ esp_err_t Tmc2209::apply(const tmc::DriverRegs& r) {
     ESP_RETURN_ON_ERROR(read(tmc::reg::IFCNT, &after), TAG, "ifcnt");
     const uint8_t delta = static_cast<uint8_t>(after - before);
     if (delta != sizeof(seq) / sizeof(seq[0])) {
-        ESP_LOGW(TAG, "Adresse %u: %u von %u Schreibzugriffen bestätigt", addr_, delta,
+        ESP_LOGW(TAG, "Address %u: %u of %u writes acknowledged", addr_, delta,
                  unsigned(sizeof(seq) / sizeof(seq[0])));
         return ESP_ERR_INVALID_RESPONSE;
     }

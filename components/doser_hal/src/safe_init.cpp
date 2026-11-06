@@ -40,7 +40,7 @@ void safe_init() {
     gpio_config(&step);
     for (auto pin : pins::kStep) gpio_set_level(pin, 0);
 
-    ESP_LOGI(TAG, "Treiber deaktiviert (EN=HIGH), STEP-Pins LOW");
+    ESP_LOGI(TAG, "Drivers disabled (EN=HIGH), STEP pins LOW");
 }
 
 void set_drivers_enabled(bool enabled) {

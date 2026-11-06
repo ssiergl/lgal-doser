@@ -38,8 +38,8 @@ void print_banner() {
     printf(" LG Aquatic Life · Doser · Firmware %s\n", app->version);
     printf(" MAC         : %s\n", lgal::device::mac_str().c_str());
     printf(" Hostname    : %s.local\n", lgal::device::hostname().c_str());
-    printf(" Setup-WLAN  : %s\n", lgal::device::setup_ssid().c_str());
-    printf(" Passwort    : %s   (WLAN und Web-Login 'admin')\n", lgal::device::setup_password().c_str());
+    printf(" Setup Wi-Fi : %s\n", lgal::device::setup_ssid().c_str());
+    printf(" Password    : %s   (Wi-Fi and web login 'admin')\n", lgal::device::setup_password().c_str());
     printf("========================================================\n\n");
 }
 
@@ -63,7 +63,7 @@ void init_hardware() {
     doser::eeprom::init();
 
     const esp_err_t err = doser::motion::init(pumps);
-    if (err != ESP_OK) ESP_LOGE(TAG, "Pumpen-Hardware nicht bereit: %s", esp_err_to_name(err));
+    if (err != ESP_OK) ESP_LOGE(TAG, "Pump hardware not ready: %s", esp_err_to_name(err));
 }
 
 void init_time() {
@@ -148,7 +148,7 @@ extern "C" void app_main(void) {
 
     vTaskDelay(pdMS_TO_TICKS(1500));  // let the boot fade-in finish
     lgal::led::set(lgal::led::State::Boot, false);
-    ESP_LOGI(TAG, "System bereit");
+    ESP_LOGI(TAG, "System ready");
 
     while (true) {
         update_status_led();

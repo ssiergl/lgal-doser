@@ -19,7 +19,7 @@ constexpr const char* kKeySetupDone = "setup_done";
 esp_err_t init() {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW(TAG, "NVS wird neu formatiert (%s)", esp_err_to_name(err));
+        ESP_LOGW(TAG, "Reformatting NVS (%s)", esp_err_to_name(err));
         nvs_flash_erase();
         err = nvs_flash_init();
     }
@@ -46,7 +46,7 @@ esp_err_t set_setup_completed(bool done) {
 }
 
 void factory_reset() {
-    ESP_LOGW(TAG, "Werkseinstellungen: NVS und Datenpartition werden gelöscht");
+    ESP_LOGW(TAG, "Factory reset: erasing NVS and data partition");
     nvs_flash_deinit();
     nvs_flash_erase();
     const esp_partition_t* p =
