@@ -56,6 +56,21 @@ $CXX \
 "$OUT/schedule"
 
 echo
+$CXX \
+    -I components/lgal_core/include \
+    -I components/doser_hal/include \
+    -I components/doser_app/include \
+    tests/host/test_schedule_json.cpp \
+    components/doser_app/src/schedule_json.cpp \
+    components/doser_app/src/schedule_core.cpp \
+    components/doser_app/src/dosing_core.cpp \
+    components/doser_hal/src/posix_tz.cpp \
+    components/lgal_core/src/json.cpp \
+    components/lgal_core/src/json_reader.cpp \
+    -o "$OUT/schedule_json"
+"$OUT/schedule_json"
+
+echo
 # Scheduler with the real dosing engine against simulated motor/clock/storage
 $CXX \
     -I tests/host/stubs \

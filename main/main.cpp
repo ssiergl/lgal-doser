@@ -13,6 +13,7 @@
 #include "doser/motion.h"
 #include "doser/pins.h"
 #include "doser/safe_init.h"
+#include "doser/schedule_api.h"
 #include "doser/scheduler.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
@@ -129,7 +130,9 @@ extern "C" void app_main(void) {
     lgal::sysapi::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
     doser::dosing_api::register_handlers(lgal::http::handle());
+    doser::schedule_api::register_handlers(lgal::http::handle());
     lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
+    lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
     lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
 
     lgal::ota::set_guard([](std::string& reason) {

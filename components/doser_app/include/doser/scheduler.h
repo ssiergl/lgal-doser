@@ -77,5 +77,7 @@ struct Status {
 Status status(int pump);
 // Local day number of now (for API/UI), -1 without valid clock
 int32_t today();
+// UTC -> local wall-clock seconds in the device time zone (for API/UI)
+int64_t to_local(int64_t utc);
 
 }  // namespace doser::scheduler

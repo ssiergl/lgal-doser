@@ -10,10 +10,11 @@ Framework: **ESP-IDF v6.0.3**, C++ (gnu++2b), FreeRTOS.
 ```
 components/lgal_core/   LG Aquatic Life Core: Netz, HTTP, OTA, LED, Taster, Einstellungen, Log
 components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte, Pumpen, RTC/EEPROM
-components/doser_app/   Geräte-Logik: gespeicherte Hardware-Parameter, Hardwaretest (später Dosier-Engine)
+components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Scheduler) und ihre REST-APIs
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
-tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Dosier-Logik) und Simulation der Dosier-Engine
+tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik)
+                        und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
 
@@ -135,14 +136,20 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
 | GET | `/dosing` | Dosiertest-Seite |
 | GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
-| POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`) |
-| POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle) |
+| POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
+| POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle); verwirft eine vorgemerkte Dosis |
 | POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat |
 | POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=20]` | Kalibrierlauf; danach `action=apply&measured_ml=…` oder `cancel` |
 | POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (oder `default`) |
 | POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter) |
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
+| GET | `/schedule` | Zeitplantest-Seite |
+| GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + heutige Dosen |
+| POST | `/api/v1/pumps/boost?pump=1&ml=30&days=3` | Boost starten; `action=stop` beendet ihn |
+| GET | `/api/v1/schedule/status` | nächste Dosis, Verzögerung, Warteschlange, Übersprungene, Boost, Reichweite aller Pumpen |
+| GET / PUT | `/api/v1/schedule/locks` | Sperrzeiten zwischen Pumpen + Regel für manuelle Dosen (JSON) |
+| GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/hwtest` | Hardwaretest-Seite |
 | GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
@@ -201,6 +208,51 @@ folgt mit der Anmeldung in M4.
 Die Testseite **`/dosing`** bedient alles davon pro Pumpe; unten liegen die
 Engineering-Parameter.
 
+## Zeitplan (M3)
+
+| Thema | Umsetzung |
+|---|---|
+| Programme | bis 8 pro Pumpe: Einzelzeitpunkt oder Generator („X ml in N Dosen zwischen A und B“, gleichmäßig auf das Raster gelegt, Rundungsrest auf die ersten Dosen). Höchstens 96 Dosen pro Tag und Pumpe. |
+| Tage | täglich, Wochentage oder „alle N Tage“ (1–30) ab einem Startdatum. |
+| Raster | Zeiten auf dem Zeitplan-Raster (Standard 5 min, Engineering). Ortszeit der Geräte-Zeitzone. |
+| Zeitumstellung | Zeitzone als POSIX-Regel. Fällt eine Zeit in die Lücke im Frühjahr, wird sie nach hinten verschoben; eine doppelte Stunde im Herbst wird einmal (beim ersten Auftreten) dosiert. |
+| Prüfung beim Speichern | alle Pumpen zusammen: Laufzeit jeder Dosis (Menge, Kalibrierung, Geschwindigkeit, Rampe, Rückzug + 2 s) darf die nächste Dosis derselben Pumpe nicht erreichen; Sperrzeiten zwischen Pumpen auch über Mitternacht und für Intervall-Tage; Tageslimit. Verstöße → 409 mit Liste der kollidierenden Dosen, nichts wird gespeichert. |
+| Laufzeit-Schutz | Jede Dosierung (auch manuell und Boost) prüft die Sperrzeiten gegen das tatsächliche Ende der letzten Dosis der anderen Pumpe. Eine geplante Dosis wartet dann und wird nach `max_delay_min` (Standard 30 min) verworfen. Entlüften und Kalibrieren sind ausgenommen. |
+| Manuelle Dosis in Sperrzeit | Regel `reject` (Standard): 409 mit Zeitpunkt, ab dem es geht. Regel `queue`: vorgemerkt (eine pro Pumpe), startet nach Ende der Sperrzeit. |
+| Stromausfall | Bis 2 min Verspätung gilt eine Dosis als pünktlich. Danach wird sie übersprungen (Standard) oder innerhalb eines einstellbaren Fensters nachgeholt. Übersprungene Dosen werden gezählt und mit Grund angezeigt; nach langen Ausfällen wird alles Ältere in einem Schritt übersprungen. |
+| Boost | Zusatzmenge über 1–30 Tage, gleichmäßig auf die geplanten Dosen des Tages verteilt; was nicht dosiert werden kann, wandert auf die Folgetage. Endet von selbst. |
+| Reichweite | Behälter-Restmenge geteilt durch den Durchschnitt der nächsten 7 Tage (inkl. Boost). |
+| Ohne gültige Uhrzeit | Es wird nichts geplant; manuelle Dosen bleiben möglich (außer bei Pumpen mit Tageslimit). |
+| Speicher | Programme, Sperrzeiten, Parameter in NVS (`sched`). Fortschritt je Pumpe (zuletzt bearbeitete Dosis, Boost, Zähler) im EEPROM als A/B-Datensätze ab 0x640, Rückfall auf NVS. Geschrieben wird nur, wenn eine Dosis bearbeitet wurde. |
+
+Zeitplan als JSON (`PUT /api/v1/pumps/schedule?pump=1`; unbekannte Felder werden ignoriert, ein
+GET-Ergebnis kann also bearbeitet zurückgeschickt werden):
+
+```json
+{"power_loss": "skip_missed", "catch_up_min": 60,
+ "programs": [
+  {"kind": "generator", "start": "08:00", "end": "20:00", "count": 12, "ml": 24,
+   "days": {"mode": "daily"}},
+  {"kind": "single", "time": "21:30", "ml": 2.5, "enabled": true,
+   "days": {"mode": "weekdays", "weekdays": ["mon", "fri"]}},
+  {"kind": "single", "time": "09:00", "ml": 5,
+   "days": {"mode": "interval", "every": 2, "anchor": "2026-11-06"}}]}
+```
+
+Sperrzeiten (`PUT /api/v1/schedule/locks`):
+
+```json
+{"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]}
+```
+
+Fehler nennen die Stelle (`"program": 2, "field": "time"`) bzw. bei 409 `conflict` die
+kollidierenden Dosen (`"conflicts": [{"code": "collision_lock", "first": {…}, "second": {…}, "gap_min": 5}]`).
+Zeitpunkte kommen als UTC-Sekunden plus Ortszeit des Geräts (`"at"` + `"local"`), weil der
+Browser in einer anderen Zeitzone sein kann.
+
+Die Testseite **`/schedule`** zeigt den Status aller Pumpen (inkl. Boost und manueller Dosis)
+und bearbeitet Zeitpläne, Sperrzeiten und die Scheduler-Parameter.
+
 ## Taster und LED
 
 | Taster (GPIO0) | Aktion beim Loslassen | LED während des Haltens |
@@ -220,7 +272,7 @@ Violett pulsierend (Kalibrierung/Entlüften).
 - [x] **M0** Grundgerüst: Partitionen, Ethernet, Setup-WLAN, mDNS, OTA + Rollback, Wartungsseite, LED, Taster
 - [x] **M1** Hardware-Ebene: TMC2209-UART, Schritt-Takte (RMT + MCPWM/PCNT), RTC, Raw-Stepper-Test
 - [x] **M2** Dosier-Engine: Rückzug, Kalibrierung, Priming, Behälter, Tageslimit, Schlauch-Laufzeit; Mehrsprachigkeit (en/de)
-- [ ] **M3** Zeitplan, Zeitumstellung, Kollisionsschutz, Boost, Verhalten nach Stromausfall (mit Host-Tests)
+- [x] **M3** Zeitplan, Zeitumstellung, Kollisionsschutz, Boost, Verhalten nach Stromausfall (mit Host-Tests)
 - [ ] **M4** WLAN-Client, Captive Portal, Ersteinrichtung, Auth, REST, WebSocket
 - [ ] **M5** WebUI (SPA, eingebettet ins Firmware-Image)
 - [ ] **M6** MQTT + Home-Assistant-Discovery, Historie, Backup, Engineering-Modus

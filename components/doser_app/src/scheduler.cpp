@@ -395,6 +395,13 @@ int32_t today() {
     return local_day(ts.utc);
 }
 
+int64_t to_local(int64_t utc) {
+    if (!s_mx) return utc;
+    Guard g;
+    refresh_zone();
+    return tz::to_local(s_zone, utc);
+}
+
 Status status(int pump) {
     Status s{};
     if (!valid_pump(pump)) return s;

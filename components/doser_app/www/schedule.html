@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LG Aquatic Life – Schedule test</title>
+<style>
+:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922;--svc:#a371f7}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 6px}h2{font-size:16px;margin:0 0 10px}h3{font-size:15px;margin:0}
+.card{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse}td{padding:2px 6px 2px 0;vertical-align:top}td.k{color:var(--mut);width:42%}
+button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button.stop{background:var(--err);color:#fff}
+button.x{background:transparent;color:var(--err);border:1px solid var(--err);padding:4px 9px}
+button:disabled{opacity:.5;cursor:default}
+input,select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:5px 7px;width:100%}
+input[type=checkbox]{width:auto}
+label{display:block;font-size:13px;color:var(--mut)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px}.row>*{flex:1 1 80px}.row>button{flex:0 0 auto}
+.chip{display:inline-block;font-size:12px;border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;background:#1d3a4b}
+.chip.ok{background:#173d25;color:#7ee19a}.chip.err{background:#4a1d1d;color:#ff9b95}.chip.warn{background:#463614;color:#f2cc60}.chip.svc{background:#33204f;color:#d2b8ff}
+.err{color:var(--err)}.ok{color:var(--ok)}.mut{color:var(--mut)}
+.msg{min-height:1.3em;font-size:13px;margin-top:6px;white-space:pre-line}
+.prog{border:1px solid #2c4757;border-radius:8px;padding:8px 10px;margin-top:8px}
+.prog.bad{border-color:var(--err)}
+.wd{display:flex;gap:6px;flex-wrap:wrap;font-size:13px}.wd label{display:inline;color:var(--fg)}
+.slots{font-size:13px;color:var(--mut);margin-top:8px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
+select.lang{width:auto}
+</style>
+<script src="/i18n.js"></script>
+</head>
+<body>
+<main>
+<div class="top">
+<h1><span data-i18n="title"></span> <span class="mut" style="font-size:14px" data-i18n="subtitle"></span></h1>
+<div class="row" style="align-items:center;margin-top:0">
+<span id="clock" class="chip">…</span>
+<span style="flex:1"></span>
+<a href="/dosing"><button class="sec" data-i18n="btn.dosing"></button></a>
+<a href="/"><button class="sec" data-i18n="btn.maint"></button></a>
+<select id="lang" class="lang" data-i18n-title="lang.label"></select>
+</div>
+</div>
+
+<div class="grid" id="pumps"></div>
+
+<section class="card">
+<div class="row" style="align-items:center;margin:0 0 6px">
+<h2 style="flex:1;margin:0" data-i18n="ed.title"></h2>
+<div style="flex:0 0 140px"><select id="ed_pump"></select></div>
+</div>
+<div class="row">
+<div><label data-i18n="ed.power_loss"></label><select id="ed_pl"><option value="skip_missed" data-i18n="pl.skip_missed"></option><option value="catch_up_window" data-i18n="pl.catch_up_window"></option></select></div>
+<div><label data-i18n="ed.catch_up"></label><input id="ed_cu" type="number" min="1" max="1440"></div>
+</div>
+<div id="ed_progs"></div>
+<div class="row"><button class="sec" id="ed_add" data-i18n="ed.add"></button><span></span><button class="sec" id="ed_reload" data-i18n="btn.reload"></button><button id="ed_save" data-i18n="btn.save"></button></div>
+<div class="msg" id="ed_msg"></div>
+<div class="slots" id="ed_slots"></div>
+</section>
+
+<section class="card">
+<h2 data-i18n="lk.title"></h2>
+<p class="mut" style="font-size:13px;margin:0 0 6px" data-i18n="lk.hint"></p>
+<div class="row"><div><label data-i18n="lk.manual"></label><select id="lk_manual"><option value="reject" data-i18n="lk.reject"></option><option value="queue" data-i18n="lk.queue"></option></select></div></div>
+<div id="lk_rules"></div>
+<div class="row"><button class="sec" id="lk_add" data-i18n="lk.add"></button><span></span><button id="lk_save" data-i18n="btn.save"></button></div>
+<div class="msg" id="lk_msg"></div>
+</section>
+
+<section class="card">
+<h2 data-i18n="eng.title"></h2>
+<p class="mut" style="font-size:13px;margin:0 0 6px" data-i18n="eng.hint"></p>
+<div class="row">
+<div><label data-i18n="eng.grid"></label><input id="e_grid" type="number" min="1" max="60"></div>
+<div><label data-i18n="eng.delay"></label><input id="e_delay" type="number" min="1" max="720"></div>
+<button class="sec" id="e_save" data-i18n="btn.save"></button>
+</div>
+<div class="msg" id="emsg"></div>
+</section>
+<p class="mut" style="font-size:12px" data-i18n="footnote"></p>
+</main>
+<script>
+i18n.add({
+en:{
+ 'page.title':'LG Aquatic Life – Schedule test','title':'Schedule test','subtitle':'· programs, lock times, boost, status',
+ 'btn.dosing':'Dosing test','btn.maint':'Maintenance','btn.save':'Save','btn.reload':'Reload','btn.stop':'Stop','btn.dose':'▶ Dose',
+ 'pump':'Pump','time.none':'no valid time','conn':'Connection: {e}',
+ 's.next':'Next dose','s.none':'none planned','s.delayed':'Delayed','s.retry':'until {t}','s.retry.busy':'until the other pump has finished',
+ 's.queued':'Waiting dose','s.queued.v':'{ml} ml since {t}','s.skipped':'Skipped','s.skipped.v':'{n} (last: {r}, {t})',
+ 's.last_run':'Last scheduled run','s.today':'Planned today','s.days':'Container lasts','s.days.v':'{d} days',
+ 's.boost':'Boost','s.boost.v':'{rem} of {tot} ml left · {d} days from {s}','s.boost.pending':'starts with the next slot',
+ 'b.ml':'Boost ml','b.days':'Days','b.start':'Start boost','b.stop':'Stop boost','b.ok':'Boost started','b.stopped':'Boost stopped',
+ 'm.ml':'Manual ml','m.ok':'Dosing {ml} ml','m.queued':'Queued: starts when the lock time ends','m.retry':'Lock time running – possible from {t}',
+ 'm.retry.busy':'Lock time running – the other pump is still dosing',
+ 'reason.collision_lock':'lock time','reason.pump_busy':'pump busy','reason.locked':'update running',
+ 'skip.missed':'missed (power loss)','skip.delay_timeout':'delayed too long','skip.daily_limit':'daily limit',
+ 'skip.driver_unavailable':'driver not reachable',
+ 'ed.title':'Schedule','ed.power_loss':'After a power loss','pl.skip_missed':'skip missed doses','pl.catch_up_window':'catch up within window',
+ 'ed.catch_up':'Catch-up window min','ed.add':'+ Program','ed.prog':'Program {n}','ed.enabled':'active',
+ 'ed.kind':'Type','k.single':'single time','k.generator':'spread over time span','ed.time':'Time','ed.start':'From','ed.end':'To',
+ 'ed.count':'Doses','ed.ml':'ml','ed.ml.gen':'ml per day (total)','ed.days':'Days','d.daily':'daily','d.weekdays':'weekdays',
+ 'd.interval':'every N days','ed.every':'every','ed.anchor':'starting','ed.ok':'Schedule saved',
+ 'ed.today':'Today ({d}): {n} doses, {ml} ml','ed.today.none':'No doses today','ed.today.unknown':'No valid time – today\'s doses unknown',
+ 'wd.mon':'Mon','wd.tue':'Tue','wd.wed':'Wed','wd.thu':'Thu','wd.fri':'Fri','wd.sat':'Sat','wd.sun':'Sun',
+ 'cf.collision_lock':'P{p1} program {g1} at {t1} and P{p2} program {g2} at {t2}{nd}: lock time {gap} min',
+ 'cf.overlap':'P{p1} program {g1} at {t1} still running at {t2}{nd} (program {g2})','cf.next_day':' (next day)',
+ 'at.program':'Program {n}','at.rule':'Rule {n}','at.pump':'Pump {n}',
+ 'lk.title':'Lock times between pumps','lk.hint':'After a dose on one pump the other one waits at least this long. Checked when saving and again at runtime.',
+ 'lk.manual':'Manual dose during a lock time','lk.reject':'reject (show remaining time)','lk.queue':'queue (start when the lock ends)',
+ 'lk.add':'+ Rule','lk.a':'Pump','lk.b':'and pump','lk.gap':'at least min','lk.ok':'Lock times saved',
+ 'eng.title':'Engineering (super admin)','eng.hint':'Scheduling grid and how long a delayed dose may wait before it is dropped.',
+ 'eng.grid':'Grid min','eng.delay':'Max. delay min','eng.ok':'Scheduler parameters saved',
+ 'footnote':'Times are local wall-clock times of the device time zone. A dose up to 2 minutes late counts as on time.',
+ 'err.invalid_param':'Invalid input','err.invalid_time':'Invalid time','err.off_grid':'Time is not on the {g}-minute grid',
+ 'err.invalid_range':'End time before start time','err.invalid_count':'Invalid number of doses',
+ 'err.slots_too_dense':'Doses closer together than the grid','err.dose_too_small':'Single dose below the minimum',
+ 'err.dose_too_large':'Single dose too large','err.invalid_days':'Select at least one day / interval 1..30',
+ 'err.invalid_catch_up':'Catch-up window 1..1440 min','err.invalid_lock':'Invalid lock rule (two different pumps, 1..1440 min)',
+ 'err.too_many_slots':'Too many doses per day (max. 96)','err.exceeds_daily_limit':'Planned amount exceeds the daily limit',
+ 'err.conflict':'Doses collide','err.time_invalid':'No valid time','err.no_slots':'No scheduled doses in the boost period',
+ 'err.collision_lock':'Lock time running','err.queue_full':'A dose is already waiting',
+ 'err.pump_busy':'Pump is busy','err.pump_disabled':'Pump is disabled','err.pump_manual_only':'Pump is set to manual only',
+ 'err.daily_limit':'Daily limit would be exceeded','err.storage_error':'Could not save'},
+de:{
+ 'page.title':'LG Aquatic Life – Zeitplantest','title':'Zeitplantest','subtitle':'· Programme, Sperrzeiten, Boost, Status',
+ 'btn.dosing':'Dosiertest','btn.maint':'Wartung','btn.save':'Speichern','btn.reload':'Neu laden','btn.stop':'Stopp','btn.dose':'▶ Dosieren',
+ 'pump':'Pumpe','time.none':'keine gültige Zeit','conn':'Verbindung: {e}',
+ 's.next':'Nächste Dosis','s.none':'keine geplant','s.delayed':'Verzögert','s.retry':'bis {t}','s.retry.busy':'bis die andere Pumpe fertig ist',
+ 's.queued':'Wartende Dosis','s.queued.v':'{ml} ml seit {t}','s.skipped':'Übersprungen','s.skipped.v':'{n} (zuletzt: {r}, {t})',
+ 's.last_run':'Letzter Planlauf','s.today':'Heute geplant','s.days':'Behälter reicht','s.days.v':'{d} Tage',
+ 's.boost':'Boost','s.boost.v':'{rem} von {tot} ml offen · {d} Tage ab {s}','s.boost.pending':'beginnt mit dem nächsten Slot',
+ 'b.ml':'Boost ml','b.days':'Tage','b.start':'Boost starten','b.stop':'Boost beenden','b.ok':'Boost gestartet','b.stopped':'Boost beendet',
+ 'm.ml':'Manuell ml','m.ok':'Dosiere {ml} ml','m.queued':'Vorgemerkt: startet nach Ende der Sperrzeit','m.retry':'Sperrzeit läuft – möglich ab {t}',
+ 'm.retry.busy':'Sperrzeit läuft – die andere Pumpe dosiert noch',
+ 'reason.collision_lock':'Sperrzeit','reason.pump_busy':'Pumpe beschäftigt','reason.locked':'Update läuft',
+ 'skip.missed':'verpasst (Stromausfall)','skip.delay_timeout':'zu lange verzögert','skip.daily_limit':'Tageslimit',
+ 'skip.driver_unavailable':'Treiber nicht erreichbar',
+ 'ed.title':'Zeitplan','ed.power_loss':'Nach Stromausfall','pl.skip_missed':'verpasste Dosen überspringen','pl.catch_up_window':'im Fenster nachholen',
+ 'ed.catch_up':'Nachhol-Fenster min','ed.add':'+ Programm','ed.prog':'Programm {n}','ed.enabled':'aktiv',
+ 'ed.kind':'Art','k.single':'Einzelzeitpunkt','k.generator':'über Zeitraum verteilen','ed.time':'Uhrzeit','ed.start':'Von','ed.end':'Bis',
+ 'ed.count':'Dosen','ed.ml':'ml','ed.ml.gen':'ml pro Tag (gesamt)','ed.days':'Tage','d.daily':'täglich','d.weekdays':'Wochentage',
+ 'd.interval':'alle N Tage','ed.every':'alle','ed.anchor':'ab','ed.ok':'Zeitplan gespeichert',
+ 'ed.today':'Heute ({d}): {n} Dosen, {ml} ml','ed.today.none':'Heute keine Dosen','ed.today.unknown':'Keine gültige Zeit – heutige Dosen unbekannt',
+ 'wd.mon':'Mo','wd.tue':'Di','wd.wed':'Mi','wd.thu':'Do','wd.fri':'Fr','wd.sat':'Sa','wd.sun':'So',
+ 'cf.collision_lock':'P{p1} Programm {g1} um {t1} und P{p2} Programm {g2} um {t2}{nd}: Sperrzeit {gap} min',
+ 'cf.overlap':'P{p1} Programm {g1} um {t1} läuft um {t2}{nd} noch (Programm {g2})','cf.next_day':' (Folgetag)',
+ 'at.program':'Programm {n}','at.rule':'Regel {n}','at.pump':'Pumpe {n}',
+ 'lk.title':'Sperrzeiten zwischen Pumpen','lk.hint':'Nach einer Dosis auf einer Pumpe wartet die andere mindestens so lange. Geprüft beim Speichern und zur Laufzeit.',
+ 'lk.manual':'Manuelle Dosis während Sperrzeit','lk.reject':'ablehnen (Restzeit anzeigen)','lk.queue':'vormerken (nach Ende starten)',
+ 'lk.add':'+ Regel','lk.a':'Pumpe','lk.b':'und Pumpe','lk.gap':'mindestens min','lk.ok':'Sperrzeiten gespeichert',
+ 'eng.title':'Engineering (Super-Admin)','eng.hint':'Zeitplan-Raster und wie lange eine verzögerte Dosis warten darf, bevor sie verworfen wird.',
+ 'eng.grid':'Raster min','eng.delay':'Max. Verzögerung min','eng.ok':'Scheduler-Parameter gespeichert',
+ 'footnote':'Zeiten sind Ortszeit der Geräte-Zeitzone. Eine Dosis bis 2 Minuten zu spät gilt als pünktlich.',
+ 'err.invalid_param':'Ungültige Eingabe','err.invalid_time':'Ungültige Uhrzeit','err.off_grid':'Uhrzeit liegt nicht im {g}-Minuten-Raster',
+ 'err.invalid_range':'Endzeit vor Startzeit','err.invalid_count':'Ungültige Anzahl Dosen',
+ 'err.slots_too_dense':'Dosen liegen enger als das Raster','err.dose_too_small':'Einzeldosis unter der kleinsten Dosis',
+ 'err.dose_too_large':'Einzeldosis zu groß','err.invalid_days':'Mindestens einen Tag wählen / Intervall 1..30',
+ 'err.invalid_catch_up':'Nachhol-Fenster 1..1440 min','err.invalid_lock':'Ungültige Sperrregel (zwei verschiedene Pumpen, 1..1440 min)',
+ 'err.too_many_slots':'Zu viele Dosen pro Tag (max. 96)','err.exceeds_daily_limit':'Geplante Menge überschreitet das Tageslimit',
+ 'err.conflict':'Dosen kollidieren','err.time_invalid':'Keine gültige Uhrzeit','err.no_slots':'Keine geplanten Dosen im Boost-Zeitraum',
+ 'err.collision_lock':'Sperrzeit läuft','err.queue_full':'Es wartet bereits eine Dosis',
+ 'err.pump_busy':'Pumpe ist beschäftigt','err.pump_disabled':'Pumpe ist deaktiviert','err.pump_manual_only':'Pumpe steht auf „nur manuell“',
+ 'err.daily_limit':'Tageslimit würde überschritten','err.storage_error':'Speichern fehlgeschlagen'}
+});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const L=k=>`data-i18n="${k}"`;
+const f=(v,d)=>Number(v).toLocaleString(i18n.lang,{minimumFractionDigits:d,maximumFractionDigits:d});
+const WD=['mon','tue','wed','thu','fri','sat','sun'];
+let S=null,E=null,ED=null,LK=null,built=false;
+
+class ApiError extends Error{constructor(m,j){super(m);this.body=j}}
+async function api(method,path,body){
+  const o={method,cache:'no-store'};
+  if(body!==undefined){o.body=JSON.stringify(body);o.headers={'Content-Type':'application/json'}}
+  const r=await fetch(path,o);let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok)throw new ApiError(i18n.error(j,r.status),j);return j;
+}
+function msg(id,txt,ok){const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=txt}
+function chip(txt,c){return `<span class="chip ${c||''}">${txt}</span>`}
+function q(o){return Object.entries(o).filter(([k,v])=>v!==undefined&&v!==null&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')}
+const hm=loc=>loc?loc.slice(11):'';  // device-local "YYYY-MM-DD HH:MM" -> HH:MM
+// Error text incl. position and conflict list
+function errText(e){
+  const j=e.body&&e.body.error;if(!j)return e.message;
+  let s=j.code==='off_grid'&&E?t('err.off_grid',{g:E.grid_min}):e.message;
+  const at=[];if(j.pump)at.push(t('at.pump',{n:j.pump}));if(j.program)at.push(t('at.program',{n:j.program}));if(j.rule)at.push(t('at.rule',{n:j.rule}));
+  if(j.field)at.push(j.field);if(at.length)s+=' – '+at.join(', ');
+  (j.conflicts||[]).forEach(c=>{s+='\n• '+t('cf.'+c.code,{p1:c.first.pump,g1:c.first.program,t1:c.first.time,p2:c.second.pump,g2:c.second.program,t2:c.second.time,
+    nd:c.next_day?t('cf.next_day'):'',gap:c.gap_min||0})});
+  return s;
+}
+
+// ---------------------------------------------------------------- status
+function buildPumps(){
+  S.pumps.forEach(p=>{const n=p.pump,d=document.createElement('section');d.className='card';
+    d.innerHTML=`<h3><span ${L('pump')}></span> ${n}</h3><div id="c${n}" style="margin:6px 0"></div><table id="t${n}"></table>
+    <div class="row"><div><label ${L('m.ml')}></label><input id="ml${n}" type="number" step="0.01" min="0" value="1"></div><button id="md${n}" ${L('btn.dose')}></button><button class="sec" id="ms${n}" ${L('btn.stop')}></button></div>
+    <div class="row"><div><label ${L('b.ml')}></label><input id="bm${n}" type="number" step="0.1" min="0"></div><div><label ${L('b.days')}></label><input id="bd${n}" type="number" min="1" max="30" value="3"></div>
+    <button class="sec" id="bs${n}" ${L('b.start')}></button><button class="x" id="bx${n}" ${L('b.stop')}></button></div><div class="msg" id="m${n}"></div>`;
+    $('pumps').appendChild(d);i18n.apply(d);
+    const err=e=>msg('m'+n,errText(e));
+    $('md'+n).onclick=()=>{const ml=$('ml'+n).value;api('POST','/api/v1/pumps/dose?'+q({pump:n,ml})).then(j=>msg('m'+n,j.status==='queued'?t('m.queued'):t('m.ok',{ml}),true)).catch(e=>{
+      const j=e.body&&e.body.error;if(j&&j.code==='collision_lock')msg('m'+n,j.retry_local?t('m.retry',{t:hm(j.retry_local)}):t('m.retry.busy'));else err(e)})};
+    $('ms'+n).onclick=()=>api('POST','/api/v1/pumps/stop?pump='+n).catch(err);
+    $('bs'+n).onclick=()=>api('POST','/api/v1/pumps/boost?'+q({pump:n,ml:$('bm'+n).value,days:$('bd'+n).value})).then(()=>msg('m'+n,t('b.ok'),true)).catch(err);
+    $('bx'+n).onclick=()=>api('POST','/api/v1/pumps/boost?'+q({pump:n,action:'stop'})).then(()=>msg('m'+n,t('b.stopped'),true)).catch(err);
+  });built=true;
+}
+function renderPump(p){
+  const n=p.pump,rows=[];let c='';
+  if(p.delayed)c+=chip(t('s.delayed')+': '+t('reason.'+p.delayed.reason),'warn');
+  if(p.queued)c+=chip(t('s.queued'),'svc');
+  if(p.boost&&p.boost.active)c+=chip(t('s.boost'),'ok');
+  if(p.last_skip)c+=chip(t('s.skipped')+': '+p.skipped,'err');
+  $('c'+n).innerHTML=c;
+  rows.push(['s.next',p.next?`${esc(p.next.local.slice(5))} · ${f(p.next.ml,2)} ml · P${p.next.program}`:t('s.none')]);
+  if(p.delayed)rows.push(['s.delayed',`${t('reason.'+p.delayed.reason)} · `+(p.delayed.retry_local?t('s.retry',{t:hm(p.delayed.retry_local)}):t('s.retry.busy'))]);
+  if(p.queued)rows.push(['s.queued',t('s.queued.v',{ml:f(p.queued.ml,2),t:hm(p.queued.since_local)})]);
+  if(p.last_skip)rows.push(['s.skipped',t('s.skipped.v',{n:p.skipped,r:t('skip.'+p.last_skip.reason),t:esc(p.last_skip.local||'')})]);
+  if(p.last_run)rows.push(['s.last_run',esc(p.last_run.local)]);
+  rows.push(['s.today',`${f(p.planned_today_ml,2)} ml`]);
+  if(p.remaining_days!==null)rows.push(['s.days',t('s.days.v',{d:f(p.remaining_days,1)})]);
+  if(p.boost)rows.push(['s.boost',t('s.boost.v',{rem:f(p.boost.remaining_ml,2),tot:f(p.boost.total_ml,1),d:p.boost.days,s:p.boost.start})]);
+  $('t'+n).innerHTML=rows.map(r=>`<tr><td class="k">${t(r[0])}</td><td>${r[1]}</td></tr>`).join('');
+  $('bx'+n).disabled=!p.boost;
+}
+function render(){
+  if(!S)return;if(!built)buildPumps();S.pumps.forEach(renderPump);
+  $('clock').textContent=S.clock_valid?S.now_local:t('time.none');$('clock').className='chip '+(S.clock_valid?'':'err');
+  if(ED)renderSlots();
+}
+async function poll(){try{S=await api('GET','/api/v1/schedule/status');render()}catch(e){$('clock').textContent=t('conn',{e:e.message});$('clock').className='chip err'}}
+
+// ---------------------------------------------------------------- editor
+function progHtml(p,i){
+  const k=p.kind,dm=p.days.mode,g=E?E.grid_min:5;
+  const opt=(v,key,cur)=>`<option value="${v}" ${v===cur?'selected':''} ${L(key)}></option>`;
+  return `<div class="prog" id="pg${i}"><div class="row" style="align-items:center;margin:0">
+   <h3 style="flex:1">${t('ed.prog',{n:i+1})}</h3><label style="flex:0 0 auto;color:var(--fg)"><input type="checkbox" data-f="enabled" ${p.enabled?'checked':''}> <span ${L('ed.enabled')}></span></label>
+   <button class="x" data-del="${i}">✕</button></div>
+  <div class="row"><div style="flex:1 1 170px"><label ${L('ed.kind')}></label><select data-f="kind">${opt('single','k.single',k)}${opt('generator','k.generator',k)}</select></div>
+   ${k==='single'?`<div><label ${L('ed.time')}></label><input type="time" step="${g*60}" data-f="time" value="${p.time||'08:00'}"></div>
+     <div><label ${L('ed.ml')}></label><input type="number" step="0.01" min="0" data-f="ml" value="${p.ml}"></div>`
+   :`<div><label ${L('ed.start')}></label><input type="time" step="${g*60}" data-f="start" value="${p.start||'08:00'}"></div>
+     <div><label ${L('ed.end')}></label><input type="time" step="${g*60}" data-f="end" value="${p.end||'20:00'}"></div>
+     <div><label ${L('ed.count')}></label><input type="number" min="1" max="96" data-f="count" value="${p.count||12}"></div>
+     <div><label ${L('ed.ml.gen')}></label><input type="number" step="0.1" min="0" data-f="ml" value="${p.ml}"></div>`}</div>
+  <div class="row"><div style="flex:0 0 170px"><label ${L('ed.days')}></label><select data-f="mode">${opt('daily','d.daily',dm)}${opt('weekdays','d.weekdays',dm)}${opt('interval','d.interval',dm)}</select></div>
+   ${dm==='weekdays'?`<div class="wd" style="flex:3 1 260px">${WD.map(w=>`<label><input type="checkbox" data-wd="${w}" ${(p.days.weekdays||[]).includes(w)?'checked':''}> <span ${L('wd.'+w)}></span></label>`).join('')}</div>`:''}
+   ${dm==='interval'?`<div><label ${L('ed.every')}></label><input type="number" min="1" max="30" data-f="every" value="${p.days.every||2}"></div>
+     <div><label ${L('ed.anchor')}></label><input type="date" data-f="anchor" value="${p.days.anchor||''}"></div>`:''}</div></div>`;
+}
+// Read the form back into ED (keeps values when the type or day mode changes)
+function readEditor(){
+  ED.power_loss=$('ed_pl').value;ED.catch_up_min=Number($('ed_cu').value)||60;
+  ED.programs.forEach((p,i)=>{const r=$('pg'+i);if(!r)return;
+    r.querySelectorAll('[data-f]').forEach(e=>{const k=e.dataset.f,v=e.type==='checkbox'?e.checked:e.value;
+      if(k==='mode')p.days.mode=v;else if(k==='every')p.days.every=Number(v);else if(k==='anchor')p.days.anchor=v||undefined;
+      else if(k==='ml'||k==='count')p[k]=v===''?undefined:Number(v);else p[k]=v});
+    if(p.days.mode==='weekdays'&&r.querySelector('[data-wd]'))p.days.weekdays=[...r.querySelectorAll('[data-wd]')].filter(e=>e.checked).map(e=>e.dataset.wd);
+  });
+}
+function renderEditor(){
+  $('ed_pl').value=ED.power_loss;$('ed_cu').value=ED.catch_up_min;
+  const box=$('ed_progs');box.innerHTML=ED.programs.map(progHtml).join('');i18n.apply(box);
+  box.querySelectorAll('select[data-f]').forEach(s=>s.onchange=()=>{readEditor();renderEditor()});
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{readEditor();ED.programs.splice(Number(b.dataset.del),1);renderEditor()});
+  $('ed_add').disabled=ED.programs.length>=8;$('ed_cu').disabled=ED.power_loss!=='catch_up_window';
+  renderSlots();
+}
+function renderSlots(){
+  const d=ED.today;
+  $('ed_slots').textContent=!d?t('ed.today.unknown'):!d.slots.length?t('ed.today.none'):
+    t('ed.today',{d:d.date,n:d.slots.length,ml:f(d.ml,2)})+': '+d.slots.map(s=>`${s.time} ${f(s.ml,2)}`).join(' · ');
+}
+function markBad(e){const j=e.body&&e.body.error;if(j&&j.program&&$('pg'+(j.program-1)))$('pg'+(j.program-1)).classList.add('bad')}
+async function loadEditor(){
+  try{ED=await api('GET','/api/v1/pumps/schedule?pump='+$('ed_pump').value);renderEditor();$('ed_msg').textContent=''}catch(e){msg('ed_msg',errText(e))}
+}
+
+// ---------------------------------------------------------------- locks
+function renderLocks(){
+  $('lk_manual').value=LK.manual;
+  const po=(cur)=>[1,2,3,4,5].map(n=>`<option ${n===cur?'selected':''}>${n}</option>`).join('');
+  const box=$('lk_rules');
+  box.innerHTML=LK.rules.map((r,i)=>`<div class="row" id="lr${i}"><div><label ${L('lk.a')}></label><select data-a>${po(r.pumps[0])}</select></div>
+    <div><label ${L('lk.b')}></label><select data-b>${po(r.pumps[1])}</select></div>
+    <div><label ${L('lk.gap')}></label><input type="number" min="1" max="1440" data-g value="${r.gap_min}"></div><button class="x" data-del="${i}">✕</button></div>`).join('');
+  i18n.apply(box);
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{readLocks();LK.rules.splice(Number(b.dataset.del),1);renderLocks()});
+  $('lk_add').disabled=LK.rules.length>=10;
+}
+function readLocks(){
+  LK.manual=$('lk_manual').value;
+  LK.rules.forEach((r,i)=>{const e=$('lr'+i);r.pumps=[Number(e.querySelector('[data-a]').value),Number(e.querySelector('[data-b]').value)];r.gap_min=Number(e.querySelector('[data-g]').value)});
+}
+async function loadLocks(){try{LK=await api('GET','/api/v1/schedule/locks');renderLocks()}catch(e){msg('lk_msg',errText(e))}}
+
+// ---------------------------------------------------------------- engineering
+async function loadEng(){try{E=await api('GET','/api/v1/engineering/scheduler');$('e_grid').value=E.grid_min;$('e_delay').value=E.max_delay_min}catch(e){msg('emsg',errText(e))}}
+
+$('ed_pump').innerHTML=[1,2,3,4,5].map(n=>`<option value="${n}">${n}</option>`).join('');
+$('ed_pump').onchange=loadEditor;
+$('ed_pl').onchange=()=>{readEditor();renderEditor()};
+$('ed_reload').onclick=loadEditor;
+$('ed_add').onclick=()=>{readEditor();ED.programs.push({enabled:true,kind:'single',time:'08:00',ml:1,days:{mode:'daily'}});renderEditor()};
+$('ed_save').onclick=()=>{readEditor();const body={power_loss:ED.power_loss,catch_up_min:ED.catch_up_min,programs:ED.programs};
+  api('PUT','/api/v1/pumps/schedule?pump='+$('ed_pump').value,body).then(j=>{ED=j;renderEditor();msg('ed_msg',t('ed.ok'),true);poll()})
+  .catch(e=>{msg('ed_msg',errText(e));markBad(e)})};
+$('lk_add').onclick=()=>{readLocks();LK.rules.push({pumps:[1,2],gap_min:5});renderLocks()};
+$('lk_save').onclick=()=>{readLocks();api('PUT','/api/v1/schedule/locks',LK).then(j=>{LK=j;renderLocks();msg('lk_msg',t('lk.ok'),true)}).catch(e=>msg('lk_msg',errText(e)))};
+$('e_save').onclick=()=>api('POST','/api/v1/engineering/scheduler?'+q({grid_min:$('e_grid').value,max_delay_min:$('e_delay').value}))
+  .then(j=>{E=j;msg('emsg',t('eng.ok'),true);if(ED)renderEditor()}).catch(e=>msg('emsg',errText(e)));
+i18n.onChange(()=>{render();if(ED){readEditor();renderEditor()}if(LK){readLocks();renderLocks()}});
+i18n.init('lang');
+loadEng().then(loadEditor);loadLocks();poll();setInterval(poll,2000);
+</script>
+</body>
+</html>
