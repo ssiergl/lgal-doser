@@ -10,6 +10,7 @@ idf_component_register(
         "src/sysapi.cpp"
         "src/ota.cpp"
         "src/json.cpp"
+        "src/json_reader.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
     EMBED_TXTFILES "www/recovery.html" "www/i18n.js"

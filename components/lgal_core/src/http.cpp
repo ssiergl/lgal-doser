@@ -157,6 +157,38 @@ bool query_int(httpd_req_t* req, const char* key, int64_t* out) {
     return true;
 }
 
+bool read_json(httpd_req_t* req, size_t max_len, std::string* body, JsonReader* doc, JsonToken* tokens,
+               int max_tokens) {
+    const size_t len = req->content_len;
+    if (len == 0) {
+        send_error(req, "400 Bad Request", "body_missing", "JSON body required");
+        return false;
+    }
+    if (len > max_len) {
+        send_error(req, "413 Content Too Large", "body_too_large", "JSON body too large");
+        return false;
+    }
+    body->resize(len);
+    size_t got = 0;
+    int timeouts = 0;
+    while (got < len) {
+        const int n = httpd_req_recv(req, body->data() + got, len - got);
+        if (n == HTTPD_SOCK_ERR_TIMEOUT && ++timeouts < 3) continue;  // slow client: recv_wait_timeout each
+        if (n <= 0) {
+            send_error(req, "408 Request Timeout", "timeout", "Body not received");
+            return false;
+        }
+        got += static_cast<size_t>(n);
+    }
+    if (!doc->parse(body->data(), body->size(), tokens, max_tokens)) {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "%s at offset %u", doc->error(), static_cast<unsigned>(doc->error_pos()));
+        send_error(req, "400 Bad Request", "invalid_json", msg);
+        return false;
+    }
+    return true;
+}
+
 void route(httpd_handle_t server, const char* uri, httpd_method_t method, esp_err_t (*handler)(httpd_req_t*)) {
     httpd_uri_t u{};
     u.uri = uri;
