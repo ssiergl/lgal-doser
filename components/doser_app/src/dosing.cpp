@@ -64,6 +64,7 @@ struct Pump {
 SemaphoreHandle_t s_mx = nullptr;
 Pump s_p[kN];
 dose::Engineering s_eng;
+sched::Locks s_locks;
 
 struct Guard {
     Guard() { xSemaphoreTake(s_mx, portMAX_DELAY); }
@@ -73,7 +74,7 @@ struct Guard {
 bool valid_pump(int i) { return i >= 0 && i < kN && s_mx; }
 
 bool time_valid() { return lgal::timesync::status().valid; }
-int64_t now_utc() { return static_cast<int64_t>(time(nullptr)); }
+int64_t now_utc() { return lgal::timesync::status().utc; }
 
 int64_t local_midnight(int64_t utc) {
     time_t t = static_cast<time_t>(utc);
@@ -163,6 +164,7 @@ void finish(int i, bool fault) {
                          : j.aborted ? "aborted"
                          : (j.act == Activity::Priming && j.reason) ? j.reason
                                                                     : "success";
+    if (time_valid()) p.st.last_end = static_cast<uint32_t>(now_utc());
     dosing_store::save_state(i, p.st);
     p.last_result = result;
     p.last_act = j.act;
@@ -339,12 +341,27 @@ esp_err_t init() {
     return ESP_OK;
 }
 
-const char* dose(int pump, uint32_t ul, Trigger trigger, int tier) {
+const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retry_at) {
     if (!valid_pump(pump)) return "invalid_param";
     Guard g;
     Pump& p = s_p[pump];
     if (const char* e = precheck(pump)) return e;
-    if (trigger == Trigger::Schedule && p.set.mode != dose::Mode::Auto) return "pump_manual_only";
+    if ((trigger == Trigger::Schedule || trigger == Trigger::Boost) && p.set.mode != dose::Mode::Auto)
+        return "pump_manual_only";
+    // Lock times: without a valid clock only running pumps count
+    const bool clock = time_valid();
+    int64_t last_end[kN];
+    bool running[kN];
+    for (int q = 0; q < kN; ++q) {
+        last_end[q] = clock ? s_p[q].st.last_end : 0;
+        running[q] = s_p[q].job.act != Activity::Idle;
+    }
+    const int64_t start = clock ? now_utc() : 0;
+    const int64_t until = sched::lock_until(s_locks, pump, last_end, running, start);
+    if (until > start) {
+        if (retry_at) *retry_at = until;
+        return "collision_lock";
+    }
     if (p.set.daily_limit_ul && !time_valid()) return "time_invalid";  // limit cannot be checked
     if (const char* e = dose::check_dose(ul, p.set, s_eng, p.st, used_today(p))) return e;
     const uint32_t spr = motion::config(pump).steps_per_rev();
@@ -478,6 +495,27 @@ const char* set_settings(int pump, const dose::PumpSettings& s) {
     p.set = s;
     p.set.name[sizeof(p.set.name) - 1] = 0;
     return dosing_store::save_settings(pump, p.set) == ESP_OK ? nullptr : "storage_error";
+}
+
+void set_locks(const sched::Locks& l) {
+    if (!s_mx) return;
+    Guard g;
+    s_locks = l;
+}
+
+sched::RunParams run_params(int pump) {
+    sched::RunParams r;
+    if (!valid_pump(pump)) return r;
+    Guard g;
+    const Pump& p = s_p[pump];
+    const auto cfg = motion::config(pump);
+    const uint32_t spr = cfg.steps_per_rev();
+    r.ul_per_rev = dose::ul_per_rev(p.set);
+    r.rpm = s_eng.tier_rpm[p.set.speed_tier < dose::kTiers ? p.set.speed_tier : 1];
+    r.retract_mrev = dose::retract_mrev(p.set, s_eng);
+    const uint32_t accel = spr ? cfg.accel_or_default() * 60 / spr : 600;
+    r.accel_rpm_s = static_cast<uint16_t>(accel < 1 ? 1 : accel > 60000 ? 60000 : accel);
+    return r;
 }
 
 const char* set_engineering(const dose::Engineering& e) {

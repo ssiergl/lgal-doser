@@ -7,13 +7,6 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-#include <vector>
-
-#include "doser/dosing.h"
-#include "doser/dosing_store.h"
-#include "doser/motion.h"
-#include "freertos/task.h"
-#include "lgal/timesync.h"
 
 static int g_fail = 0;
 static int g_checks = 0;
@@ -28,127 +21,7 @@ bool g_log_verbose = false;
     } while (0)
 #define CHECK_STR(a, b) CHECK((a) && std::strcmp((a), (b)) == 0)
 
-using namespace doser;
-
-// ---------------------------------------------------------------------------
-// Simulation
-namespace sim {
-int64_t now_us = 1000000;
-bool time_valid = true;
-TaskFunction_t task = nullptr;
-
-struct Motor {
-    bool running = false;
-    uint32_t position = 0, target = 0, sps = 0;
-    double frac = 0;
-    const char* fault = nullptr;
-    std::vector<int32_t> moves;  // started moves (± steps)
-};
-Motor motor[5];
-bool locked = false;
-int saves[5];
-dose::PumpState stored[5];
-
-void advance(int64_t dt_us) {
-    now_us += dt_us;
-    for (auto& m : motor) {
-        if (!m.running) continue;
-        m.frac += m.sps * dt_us / 1e6;
-        const uint32_t add = static_cast<uint32_t>(m.frac);
-        m.frac -= add;
-        m.position = std::min(m.target, m.position + add);
-        if (m.position >= m.target) m.running = false;
-    }
-}
-
-// One tick of the engine (20 ms)
-void tick() {
-    advance(20000);
-    try {
-        task(nullptr);
-    } catch (const TaskYield&) {
-    }
-}
-
-// Ticks until pump i is done (max. seconds)
-bool run_until_idle(int i, double max_s = 600) {
-    for (int64_t n = 0; n < max_s * 50; ++n) {
-        tick();
-        if (dosing::status(i).activity == dosing::Activity::Idle) return true;
-    }
-    return false;
-}
-
-void reset() {
-    for (auto& m : motor) m = Motor{};
-    locked = false;
-    time_valid = true;
-}
-}  // namespace sim
-
-// --- Stubs of the dependencies ----------------------------------------------
-int64_t esp_timer_get_time() { return sim::now_us; }
-BaseType_t xTaskCreate(TaskFunction_t fn, const char*, uint32_t, void*, int, void*) {
-    sim::task = fn;
-    return pdPASS;
-}
-
-namespace doser::motion {
-esp_err_t run(int pump, const Move& m) {
-    auto& s = sim::motor[pump];
-    if (sim::locked || s.running) return ESP_ERR_INVALID_STATE;
-    if (m.sps == 0 || m.sps > PumpConfig{}.max_sps()) return ESP_ERR_INVALID_ARG;
-    s.moves.push_back(m.steps);
-    if (m.steps == 0) return ESP_OK;
-    s.running = true;
-    s.position = 0;
-    s.frac = 0;
-    s.target = static_cast<uint32_t>(std::abs(m.steps));
-    s.sps = m.sps;
-    s.fault = nullptr;
-    return ESP_OK;
-}
-void stop(int pump, bool immediate) {
-    auto& s = sim::motor[pump];
-    if (!s.running) return;
-    if (immediate) s.running = false;
-    else s.target = std::min(s.target, s.position + 200);  // short braking distance
-}
-bool locked() { return sim::locked; }
-PumpStatus status(int pump) {
-    PumpStatus st{};
-    const auto& s = sim::motor[pump];
-    st.running = s.running;
-    st.position = s.position;
-    st.target = s.target;
-    st.fault = s.fault;
-    st.configured = true;
-    return st;
-}
-PumpConfig config(int) { return PumpConfig{}; }
-}  // namespace doser::motion
-
-namespace lgal::timesync {
-Status status() {
-    Status s{};
-    s.valid = sim::time_valid;
-    return s;
-}
-}  // namespace lgal::timesync
-
-namespace doser::dosing_store {
-void load_engineering(dose::Engineering*) {}
-esp_err_t save_engineering(const dose::Engineering&) { return ESP_OK; }
-void load_settings(int, dose::PumpSettings*) {}
-esp_err_t save_settings(int, const dose::PumpSettings&) { return ESP_OK; }
-bool load_state(int, dose::PumpState*) { return false; }
-esp_err_t save_state(int pump, const dose::PumpState& s) {
-    ++sim::saves[pump];
-    sim::stored[pump] = s;
-    return ESP_OK;
-}
-const char* state_backend() { return "sim"; }
-}  // namespace doser::dosing_store
+#include "sim.h"
 
 // ---------------------------------------------------------------------------
 constexpr uint32_t kSpr = 3200;
@@ -385,6 +258,59 @@ static void test_engineering() {
     CHECK_STR(dosing::set_engineering(e), "invalid_param");
 }
 
+static void test_locks() {
+    sim::reset();
+    for (int p = 0; p < 3; ++p) {
+        auto s = dosing::settings(p);
+        s.mode = dose::Mode::Auto;
+        s.daily_limit_ul = 0;
+        CHECK(dosing::set_settings(p, s) == nullptr);
+    }
+    sched::Locks l;
+    l.count = 1;
+    l.rules[0] = sched::LockRule{0, 1, 5};  // pump 1 <-> pump 2: 5 min
+    dosing::set_locks(l);
+    int64_t retry = 0;
+    // earlier tests ended jobs a few seconds ago: the lock applies right away
+    CHECK_STR(dosing::dose(0, 1000, dosing::Trigger::Manual, -1, &retry), "collision_lock");
+    CHECK(retry == dosing::status(1).state.last_end + 300);
+    sim::now_us += 600 * 1000000LL;
+    CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK_STR(dosing::dose(1, 1000, dosing::Trigger::Manual, -1, &retry), "collision_lock");
+    CHECK(retry == INT64_MAX);  // pump 1 still running, end unknown
+    CHECK(sim::run_until_idle(0));
+    const int64_t end = dosing::status(0).state.last_end;
+    CHECK(end > 0 && sim::stored[0].last_end == end);  // saved with the end of the job
+    CHECK_STR(dosing::dose(1, 1000, dosing::Trigger::Schedule, -1, &retry), "collision_lock");
+    CHECK(retry == end + 300);
+    // no rule for pump 3
+    CHECK(dosing::dose(2, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(2));
+    // priming is not affected
+    CHECK(dosing::prime_start(1) == nullptr);
+    dosing::stop(1);
+    CHECK(sim::run_until_idle(1, 5));
+    sim::now_us += 300 * 1000000LL;  // lock time over
+    CHECK(dosing::dose(1, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(1));
+    // symmetric: now pump 1 has to wait for pump 2
+    CHECK_STR(dosing::dose(0, 1000, dosing::Trigger::Api, -1, &retry), "collision_lock");
+    CHECK(retry == dosing::status(1).state.last_end + 300);
+    // without a valid clock only running pumps count
+    sim::time_valid = false;
+    CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK_STR(dosing::dose(1, 1000, dosing::Trigger::Manual, -1, &retry), "collision_lock");
+    CHECK(sim::run_until_idle(0));
+    sim::time_valid = true;
+    dosing::set_locks(sched::Locks{});
+    CHECK(dosing::dose(1, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(1));
+    // run-time parameters for the schedule check
+    const auto rp = dosing::run_params(2);
+    CHECK(rp.rpm == 250 && rp.retract_mrev == 100 && rp.accel_rpm_s == 600);
+    CHECK(rp.ul_per_rev > 0);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -406,6 +332,8 @@ int main(int argc, char**) {
     test_fault();
     std::printf("Engineering parameters\n");
     test_engineering();
+    std::printf("Lock times between pumps\n");
+    test_locks();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

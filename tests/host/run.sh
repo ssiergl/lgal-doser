@@ -29,6 +29,8 @@ $CXX \
     tests/host/test_dosing.cpp \
     components/doser_app/src/dosing.cpp \
     components/doser_app/src/dosing_core.cpp \
+    components/doser_app/src/schedule_core.cpp \
+    components/doser_hal/src/posix_tz.cpp \
     components/doser_hal/src/tmc2209_proto.cpp \
     -o "$OUT/dosing"
 "$OUT/dosing" $1

@@ -15,6 +15,7 @@
 #include <cstdint>
 
 #include "doser/dosing_core.h"
+#include "doser/schedule_core.h"
 #include "esp_err.h"
 
 namespace doser::dosing {
@@ -55,8 +56,11 @@ struct Status {
 
 esp_err_t init();  // after motion::init and eeprom::init
 
-// Dosing (amount in µl, speed tier 0..2 or -1 = pump setting)
-const char* dose(int pump, uint32_t ul, Trigger trigger, int tier = -1);
+// Dosing (amount in µl, speed tier 0..2 or -1 = pump setting).
+// "collision_lock": a lock time to another pump is running; *retry_at is the
+// UTC from which the dose is allowed (INT64_MAX: the other pump is still
+// running, end unknown).
+const char* dose(int pump, uint32_t ul, Trigger trigger, int tier = -1, int64_t* retry_at = nullptr);
 
 // Priming ("fill tube"): runs as long as beat() arrives in time
 const char* prime_start(int pump, int tier = -1);
@@ -73,6 +77,11 @@ void stop(int pump);
 void stop_all();
 
 const char* set_settings(int pump, const dose::PumpSettings& s);
+// Chemical lock times between pumps, checked on every dose (all triggers).
+// Priming and calibration are not affected (operator present, measuring cup).
+void set_locks(const sched::Locks& l);
+// Parameters for the run-time estimate of scheduled doses
+sched::RunParams run_params(int pump);
 const char* set_engineering(const dose::Engineering& e);
 // Container: set remaining amount (refill), capacity (-1 = unchanged)
 const char* set_container(int pump, int64_t remaining_ul, int64_t capacity_ul);
