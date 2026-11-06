@@ -1,13 +1,15 @@
 #include "lgal/http.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 
 #include "esp_log.h"
-#include "lgal/device.h"
+#include "lgal/auth.h"
 #include "lgal/json.h"
+#include "lwip/sockets.h"
 
 namespace lgal::http {
 
@@ -15,52 +17,53 @@ namespace {
 constexpr const char* TAG = "http";
 httpd_handle_t s_server = nullptr;
 
-int b64_value(char c) {
-    if (c >= 'A' && c <= 'Z') return c - 'A';
-    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
-    if (c >= '0' && c <= '9') return c - '0' + 52;
-    if (c == '+') return 62;
-    if (c == '/') return 63;
-    return -1;
+// Browsers asking for a page get a redirect to the login page, API clients JSON
+bool wants_html(httpd_req_t* req) {
+    char accept[128];
+    return httpd_req_get_hdr_value_str(req, "Accept", accept, sizeof(accept)) == ESP_OK &&
+           std::strstr(accept, "text/html") != nullptr;
 }
 
-bool b64_decode(const char* in, std::string& out) {
-    out.clear();
-    uint32_t acc = 0;
-    int bits = 0;
-    for (; *in && *in != '='; ++in) {
-        int v = b64_value(*in);
-        if (v < 0) return false;
-        acc = (acc << 6) | static_cast<uint32_t>(v);
-        bits += 6;
-        if (bits >= 8) {
-            bits -= 8;
-            out.push_back(static_cast<char>((acc >> bits) & 0xFF));
+void redirect_login(httpd_req_t* req, bool engineering) {
+    // static: httpd keeps the header pointer until the response is sent (single server task)
+    static char location[3 * CONFIG_HTTPD_MAX_URI_LEN + 32];
+    size_t o = static_cast<size_t>(snprintf(location, sizeof(location), "/login?%snext=", engineering ? "eng=1&" : ""));
+    static constexpr char kHex[] = "0123456789ABCDEF";
+    for (const char* p = req->uri; *p && o + 4 < sizeof(location); ++p) {
+        const unsigned char c = static_cast<unsigned char>(*p);
+        if (std::isalnum(c) || std::strchr("/-_.~", c)) {
+            location[o++] = static_cast<char>(c);
+        } else {
+            location[o++] = '%';
+            location[o++] = kHex[c >> 4];
+            location[o++] = kHex[c & 15];
         }
     }
-    return true;
+    location[o] = '\0';
+    httpd_resp_set_status(req, "302 Found");
+    httpd_resp_set_hdr(req, "Location", location);
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    httpd_resp_send(req, nullptr, 0);
 }
 
-// constant-time comparison (against timing attacks)
-bool equal_ct(const std::string& a, const std::string& b) {
-    if (a.size() != b.size()) return false;
-    unsigned char diff = 0;
-    for (size_t i = 0; i < a.size(); ++i) diff |= static_cast<unsigned char>(a[i] ^ b[i]);
-    return diff == 0;
-}
-
-esp_err_t send_401(httpd_req_t* req) {
-    httpd_resp_set_status(req, "401 Unauthorized");
-    httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"LG Aquatic Life\", charset=\"UTF-8\"");
-    httpd_resp_set_type(req, "application/json");
-    return httpd_resp_sendstr(req, "{\"error\":{\"code\":\"unauthorized\",\"message\":\"Login required\"}}");
+bool deny(httpd_req_t* req, auth::Result r) {
+    if (r == auth::Result::Throttled) {
+        send_error(req, "429 Too Many Requests", "too_many_attempts", "Too many failed attempts");
+    } else if (wants_html(req)) {
+        redirect_login(req, r == auth::Result::EngineeringLocked);
+    } else if (r == auth::Result::EngineeringLocked) {
+        send_error(req, "403 Forbidden", "engineering_locked", "Engineering area is locked");
+    } else {
+        send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+    }
+    return false;
 }
 }  // namespace
 
 esp_err_t start() {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.server_port = 80;
-    cfg.max_uri_handlers = 48;
+    cfg.max_uri_handlers = 72;
     cfg.stack_size = 8192;
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
@@ -75,17 +78,28 @@ esp_err_t start() {
 httpd_handle_t handle() { return s_server; }
 
 bool authorize(httpd_req_t* req) {
-    char hdr[160];
-    if (httpd_req_get_hdr_value_str(req, "Authorization", hdr, sizeof(hdr)) == ESP_OK &&
-        strncmp(hdr, "Basic ", 6) == 0) {
-        std::string creds;
-        if (b64_decode(hdr + 6, creds)) {
-            const std::string expected = std::string("admin:") + device::setup_password();
-            if (equal_ct(creds, expected)) return true;
-        }
+    const auth::Result r = auth::check(req, false);
+    return r == auth::Result::Ok || deny(req, r);
+}
+
+bool authorize_engineering(httpd_req_t* req) {
+    const auth::Result r = auth::check(req, true);
+    return r == auth::Result::Ok || deny(req, r);
+}
+
+uint32_t client_ipv4(httpd_req_t* req) {
+    const int fd = httpd_req_to_sockfd(req);
+    struct sockaddr_storage addr {};
+    socklen_t len = sizeof(addr);
+    if (fd < 0 || getpeername(fd, reinterpret_cast<struct sockaddr*>(&addr), &len) != 0) return 0;
+    uint32_t ip = 0;
+    if (addr.ss_family == AF_INET) {
+        ip = reinterpret_cast<struct sockaddr_in*>(&addr)->sin_addr.s_addr;
+    } else if (addr.ss_family == AF_INET6) {
+        // IPv4-mapped (::ffff:a.b.c.d); pure IPv6 clients keep their low 32 bits
+        std::memcpy(&ip, &reinterpret_cast<struct sockaddr_in6*>(&addr)->sin6_addr.s6_addr[12], 4);
     }
-    send_401(req);
-    return false;
+    return ip;
 }
 
 esp_err_t send_json(httpd_req_t* req, const char* json, const char* status) {

@@ -242,6 +242,13 @@ void stop_setup_ap() {
     ESP_LOGI(TAG, "Setup AP stopped, Wi-Fi radio off");
 }
 
+bool is_setup_ap_client(uint32_t ip) {
+    if (!ip || !s_ap_netif || !status().ap_active) return false;
+    esp_netif_ip_info_t info{};
+    if (esp_netif_get_ip_info(s_ap_netif, &info) != ESP_OK) return false;
+    return (ip & info.netmask.addr) == (info.ip.addr & info.netmask.addr);
+}
+
 Status status() {
     taskENTER_CRITICAL(&s_mux);
     Status copy = s_status;

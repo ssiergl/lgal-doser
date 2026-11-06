@@ -84,14 +84,39 @@ geschrieben. Danach laufen alle Updates per OTA.
    python3 tools/ap_password.py AA:BB:CC:DD:EE:FF
    ```
 
+   Den Engineering-Schlüssel (nur Hersteller, nicht aufs Etikett) liefert
+   `python3 tools/ap_password.py AA:BB:CC:DD:EE:FF --engineering`.
+
 3. Board einstecken, LAN-Kabel anschließen.
 
 ## Zugang
 
 | Weg | Adresse | Anmeldung |
 |---|---|---|
-| LAN | `http://lgal-doser-xxxx.local/` oder DHCP-IP | `admin` / Setup-Passwort |
-| Setup-WLAN `LG-Aquatic-Life-Setup-XXXX` | `http://192.168.4.1/` | WLAN + Web: Setup-Passwort |
+| LAN | `http://lgal-doser-xxxx.local/` oder DHCP-IP | `/login` |
+| Setup-WLAN `LG-Aquatic-Life-Setup-XXXX` | `http://192.168.4.1/` | WLAN: Geräte-Passwort, Web: `/login` |
+
+Anmeldung auf `/login` (Seite „Account“):
+- **Erste Anmeldung** mit dem Geräte-Passwort vom Etikett. Danach verlangt die Seite ein
+  eigenes Admin-Passwort (8–64 Zeichen); ab dann gilt nur noch dieses.
+- **Sitzungen** liegen nur im RAM (Cookie `lgal_session`, max. 8, 7 Tage ohne Nutzung bzw.
+  30 Tage absolut). Nach Neustart oder OTA neu anmelden. Passwort ändern meldet alle
+  anderen Browser ab.
+- **API-Keys** (max. 4) für App, Home Assistant und Skripte, Header `X-API-Key: lgal_…` oder
+  `Authorization: Bearer lgal_…`. Der Key wird nur einmal angezeigt; gespeichert ist nur
+  sein SHA-256. Keys überleben Neustarts und Passwortwechsel.
+- **Fehlversuche:** 5 frei, danach Wartezeit pro IP ab 1 s, verdoppelt bis 300 s. Eine IP wird
+  erst nach 1 h Ruhe vergessen; sind alle 8 Plätze belegt, teilen sich weitere IPs eine
+  gemeinsame Wartezeit (viele Adressen bremsen sich gegenseitig aus).
+- **Passwort vergessen:** Taster 3 s halten → Setup-WLAN. Darüber verbunden kann `/login`
+  mit dem Geräte-Passwort ein neues Admin-Passwort setzen. Einstellungen, Zeitpläne und
+  Kalibrierung bleiben erhalten.
+- **Engineering** (Super-Admin, nur Hersteller): `/login?eng=1`, Schlüssel pro Gerät aus
+  dem Geheimnis abgeleitet. Gilt für die angemeldete Sitzung und sperrt 15 min nach der
+  letzten Engineering-Anfrage. Mit API-Key zusätzlich Header `X-Engineering-Key`.
+
+Browser-Seiten ohne Anmeldung leiten auf `/login?next=…` um, API-Aufrufe antworten
+mit 401 `unauthorized` bzw. 403 `engineering_locked`.
 
 Im Werkszustand (`setup_completed = false`) ist das Setup-WLAN immer an. Die
 Ersteinrichtung, die es abschaltet, folgt in M4.
@@ -101,8 +126,12 @@ Ersteinrichtung, die es abschaltet, folgt in M4.
 Über die Wartungsseite (`/`) per Datei-Upload oder per Skript:
 
 ```bash
-python3 tools/ota_upload.py lgal-doser-xxxx.local --mac AA:BB:CC:DD:EE:FF
+python3 tools/ota_upload.py lgal-doser-xxxx.local --key lgal_...
 ```
+
+Anmeldung: `--key` (oder `LGAL_API_KEY`), `--password` (oder `LGAL_PASSWORD`, Admin-Passwort)
+oder vor der Ersteinrichtung `--mac AA:BB:CC:DD:EE:FF` (Geräte-Passwort). Mit Passwort meldet
+sich das Skript nach dem Neustart selbst wieder an.
 
 Ablauf und Schutz:
 - Das Image wird vor dem Schreiben geprüft (ESP32-S3, Projektname `lgal_doser`) und
@@ -115,8 +144,10 @@ Ablauf und Schutz:
 
 ## API
 
-Alle Endpunkte mit HTTP-Basic-Auth (`admin` / Setup-Passwort). Das ist vorläufig, M4 bringt
-Session-Login und API-Key.
+Alle Endpunkte brauchen eine Sitzung oder einen API-Key (siehe [Zugang](#zugang)). Ohne
+Anmeldung erreichbar: `/login`, `/api/v1/auth/status`, `/api/v1/auth/login`,
+`/api/v1/auth/recover` und `GET /api/v1/system/language`. Die `engineering`-Endpunkte und
+alle `/api/v1/hw/…`-Endpunkte brauchen zusätzlich die Engineering-Freischaltung.
 
 **Mehrsprachigkeit:** Firmware, Logs und API sind englisch. Fehler kommen immer als
 `{"error":{"code":"pump_busy","message":"Pump is busy"}}`; der `code` ist fest und wird von den
@@ -127,6 +158,14 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | Methode | Pfad | Funktion |
 |---|---|---|
 | GET | `/` | Wartungsseite (im Firmware-Image) |
+| GET | `/login` | Anmeldung, Passwort, API-Keys, Engineering |
+| GET | `/api/v1/auth/status` | angemeldet?, Passwort gesetzt?, Engineering-Restzeit, Wiederherstellung möglich? |
+| POST | `/api/v1/auth/login` | `{"password"}` → Sitzungs-Cookie |
+| POST | `/api/v1/auth/logout` | Sitzung beenden |
+| POST | `/api/v1/auth/password` | `{"current","new"}` (vor dem ersten Setzen ohne `current`) |
+| POST | `/api/v1/auth/recover` | `{"device_password","new"}`, nur aus dem Setup-WLAN |
+| GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | API-Keys auflisten / `{"name"}` anlegen / löschen |
+| POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` freischalten / sperren |
 | GET | `/api/v1/system/info` | Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
 | GET | `/i18n.js` | gemeinsame Übersetzungsbasis der Seiten (ohne Anmeldung) |
@@ -202,8 +241,8 @@ Oszilloskop/Logikanalysator).
 Engineering-Standardwerte (Super-Admin, global; Rückzug zusätzlich pro Pumpe):
 Rückzug ¼ U (≈ 0,09 ml), Kalibrier-Zielmenge 20 ml, Stufen 100/200/300 U/min
 (≈ 37/74/111 ml/min), Entlüften max. 60 s / Heartbeat 500 ms, kleinste Dosis 0,02 ml,
-Schlauch-Lebensdauer 1000 h, Tageslimit pro Kalendertag. Der eigene Engineering-Schlüssel
-folgt mit der Anmeldung in M4.
+Schlauch-Lebensdauer 1000 h, Tageslimit pro Kalendertag. Änderungen brauchen die
+Engineering-Freischaltung (siehe [Zugang](#zugang)).
 
 Die Testseite **`/dosing`** bedient alles davon pro Pumpe; unten liegen die
 Engineering-Parameter.
@@ -257,7 +296,7 @@ und bearbeitet Zeitpläne, Sperrzeiten und die Scheduler-Parameter.
 
 | Taster (GPIO0) | Aktion beim Loslassen | LED während des Haltens |
 |---|---|---|
-| ≥ 3 s | Setup-WLAN für 30 min | Orange |
+| ≥ 3 s | Setup-WLAN für 30 min (auch zum Zurücksetzen des Admin-Passworts) | Orange |
 | ≥ 10 s | Werkseinstellungen (NVS + Datenpartition löschen) | Rot |
 
 Beim Einschalten gedrückt = ESP-Download-Modus (Hardware). Ein dauerhaft gedrückter

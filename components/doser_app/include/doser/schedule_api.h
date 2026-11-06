@@ -14,7 +14,7 @@
 //                                               and forecast of all pumps
 //   GET  /api/v1/schedule/locks
 //   PUT  /api/v1/schedule/locks                 JSON body, see below
-//   GET  /api/v1/engineering/scheduler          super-admin parameters
+//   GET  /api/v1/engineering/scheduler          super-admin parameters (engineering area)
 //   POST /api/v1/engineering/scheduler ?grid_min=5&max_delay_min=30
 //
 // Schedule body (unknown members are ignored, so a GET result can be sent

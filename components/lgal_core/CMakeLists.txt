@@ -13,9 +13,10 @@ idf_component_register(
         "src/json_reader.cpp"
         "src/sha256.cpp"
         "src/auth_core.cpp"
+        "src/auth.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
-    EMBED_TXTFILES "www/recovery.html" "www/i18n.js"
+    EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/login.html"
     REQUIRES
         esp_driver_gpio
         esp_driver_ledc

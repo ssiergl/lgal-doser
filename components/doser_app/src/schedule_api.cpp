@@ -309,7 +309,7 @@ esp_err_t get_status(httpd_req_t* req) {
 
 // ---------------------------------------------------------------------------
 esp_err_t get_engineering(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     const sched::Config c = scheduler::config();
     Json j;
     j.obj().kv("grid_min", c.grid_min).kv("max_delay_min", c.max_delay_min).end();
@@ -317,7 +317,7 @@ esp_err_t get_engineering(httpd_req_t* req) {
 }
 
 esp_err_t post_engineering(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     sched::Config c = scheduler::config();
     int64_t v = 0;
     if (http::query_int(req, "grid_min", &v)) {
