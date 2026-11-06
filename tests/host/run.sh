@@ -32,3 +32,13 @@ $CXX \
     components/doser_hal/src/tmc2209_proto.cpp \
     -o "$OUT/dosing"
 "$OUT/dosing" $1
+
+echo
+$CXX \
+    -I components/doser_hal/include \
+    -I components/doser_app/include \
+    tests/host/test_schedule.cpp \
+    components/doser_app/src/schedule_core.cpp \
+    components/doser_hal/src/posix_tz.cpp \
+    -o "$OUT/schedule"
+"$OUT/schedule"
