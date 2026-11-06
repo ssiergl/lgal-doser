@@ -6,6 +6,7 @@ idf_component_register(
         "src/ramp.cpp"
         "src/stepgen.cpp"
         "src/motion.cpp"
+        "src/i2c_devices.cpp"
     INCLUDE_DIRS "include"
     REQUIRES
         esp_driver_gpio
@@ -15,6 +16,7 @@ idf_component_register(
         esp_driver_mcpwm
         esp_driver_pcnt
         esp_driver_gptimer
+        esp_driver_i2c
         esp_timer
         log
     PRIV_REQUIRES
