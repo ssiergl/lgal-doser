@@ -15,9 +15,10 @@ idf_component_register(
         "src/auth_core.cpp"
         "src/auth.cpp"
         "src/net_config.cpp"
+        "src/netapi.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
-    EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/login.html"
+    EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/login.html" "www/network.html"
     REQUIRES
         esp_driver_gpio
         esp_driver_ledc

@@ -93,7 +93,8 @@ geschrieben. Danach laufen alle Updates per OTA.
 
 | Weg | Adresse | Anmeldung |
 |---|---|---|
-| LAN | `http://lgal-doser-xxxx.local/` oder DHCP-IP | `/login` |
+| LAN | `http://lgal-doser-xxxx.local/` oder DHCP-/feste IP | `/login` |
+| WLAN (Ersatz oder fest, siehe [Netzwerk](#netzwerk-m4)) | `http://lgal-doser-xxxx.local/` oder IP | `/login` |
 | Setup-WLAN `LG-Aquatic-Life-Setup-XXXX` | `http://192.168.4.1/` | WLAN: Geräte-Passwort, Web: `/login` |
 
 Anmeldung auf `/login` (Seite „Account“):
@@ -120,6 +121,32 @@ mit 401 `unauthorized` bzw. 403 `engineering_locked`.
 
 Im Werkszustand (`setup_completed = false`) ist das Setup-WLAN immer an. Die
 Ersteinrichtung, die es abschaltet, folgt in M4.
+
+## Netzwerk (M4)
+
+Seite **`/network`**: Status, Einstellungen, WLAN-Suche und Verbindungstest.
+
+| Thema | Verhalten |
+|---|---|
+| Schnittstelle | `auto` (Standard): LAN hat Vorrang. Ist das LAN 30 s ohne Adresse (Kabel weg, kein DHCP), startet der WLAN-Client; sobald das LAN wieder eine Adresse hat, geht das WLAN-Funkmodul aus. `lan`: nur LAN, WLAN bleibt aus. `wlan`: nur WLAN, Ethernet wird abgeschaltet. |
+| Adressen | LAN und WLAN getrennt: DHCP oder fest (IP, Maske /8–/30, Gateway, DNS 1/2). Die DNS-Server folgen der aktiven Schnittstelle. |
+| WLAN | WPA2 oder neuer (Passwort 8–63 Zeichen) oder offen. Wiederverbindung mit Wartezeit 2 s, verdoppelt bis 60 s. |
+| Übernahme | Gespeichert sofort (NVS `net`), angewendet 1 s nach der Antwort – sonst erreicht die Antwort bei einer neuen IP den Browser nicht mehr. |
+| Verbindungstest | Prüft SSID/Passwort/Adressen ohne zu speichern (max. 25 s); danach gelten wieder die gespeicherten Einstellungen. |
+| Ausgesperrt? | Taster 3 s → Setup-WLAN, dort `/network` öffnen. Das Setup-WLAN läuft parallel zum WLAN-Client. |
+
+Einstellungen (`PUT /api/v1/net/settings`; fehlende Felder bleiben, leere Adresse = keine):
+
+```json
+{"mode": "auto",
+ "lan":  {"dhcp": false, "ip": "192.168.1.50", "netmask": "255.255.255.0",
+          "gateway": "192.168.1.1", "dns1": "192.168.1.1", "dns2": ""},
+ "wlan": {"ssid": "Riff", "password": "…", "dhcp": true}}
+```
+
+Das WLAN-Passwort wird nie zurückgegeben (`"password_set": true`); ohne `password` bleibt das
+gespeicherte. Fehler: 400 `invalid_param` mit `field` (z. B. `lan.gateway`), 400
+`wlan_not_configured` für `wlan` ohne SSID.
 
 ## OTA-Update
 
@@ -159,6 +186,11 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 |---|---|---|
 | GET | `/` | Wartungsseite (im Firmware-Image) |
 | GET | `/login` | Anmeldung, Passwort, API-Keys, Engineering |
+| GET | `/network` | Netzwerk-Seite |
+| GET | `/api/v1/net/status` | aktive Schnittstelle, LAN, WLAN (Zustand, RSSI, Fehlergrund), Setup-WLAN, `fallback_in_s` |
+| GET / PUT | `/api/v1/net/settings` | Einstellungen (JSON, siehe [Netzwerk](#netzwerk-m4)); PUT nimmt Teil-Dokumente |
+| POST / GET | `/api/v1/net/scan` | WLAN-Suche starten / Ergebnis (`idle\|running\|done\|failed`, stärkstes zuerst) |
+| POST / GET | `/api/v1/net/wlan/test` | Verbindungstest `{"ssid","password"?,"dhcp",…}` / Ergebnis (`ok` mit `ip`, `failed` mit `reason`) |
 | GET | `/api/v1/auth/status` | angemeldet?, Passwort gesetzt?, Engineering-Restzeit, Wiederherstellung möglich? |
 | POST | `/api/v1/auth/login` | `{"password"}` → Sitzungs-Cookie |
 | POST | `/api/v1/auth/logout` | Sitzung beenden |
@@ -303,7 +335,7 @@ Beim Einschalten gedrückt = ESP-Download-Modus (Hardware). Ein dauerhaft gedrü
 Taster löst nichts aus, solange er nicht einmal losgelassen wurde.
 
 LED-Zustände: Weiß aufblenden (Start), Orange pulsierend (Setup-WLAN),
-Grün (LAN mit IP), Gelb blinkend (kein Netz), Magenta/Weiß (OTA), Cyan (Pumpe läuft),
+Grün (LAN mit IP), Türkis (WLAN mit IP), Gelb blinkend (kein Netz), Magenta/Weiß (OTA), Cyan (Pumpe läuft),
 Violett pulsierend (Kalibrierung/Entlüften).
 
 ## Meilensteine

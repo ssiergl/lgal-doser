@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LG Aquatic Life – Network</title>
+<style>
+:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 12px}h2{font-size:16px;margin:0 0 10px}h3{font-size:14px;margin:14px 0 4px;color:var(--mut)}
+.card{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button:disabled{opacity:.5;cursor:default}
+input,select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:7px 9px;width:100%}
+input[type=checkbox]{width:auto;margin:0 6px 0 0}input.bad{border-color:var(--err)}
+label{display:block;font-size:13px;color:var(--mut);margin-top:8px}label.chk{display:flex;align-items:center;color:var(--fg);font-size:14px;margin-top:10px}
+[hidden]{display:none!important}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:10px}.row>*{flex:1 1 150px}.row>button{flex:0 0 auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 10px}
+.msg{min-height:1.3em;font-size:13px;margin-top:8px}.err{color:var(--err)}.ok{color:var(--ok)}.mut{color:var(--mut)}.warn{color:var(--warn)}
+.hint{font-size:13px;color:var(--mut);margin:4px 0 0}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:3px 8px 3px 0;vertical-align:top}td:first-child{color:var(--mut);white-space:nowrap;width:1%}
+.nets{max-height:220px;overflow:auto;margin-top:8px}.nets button{display:flex;width:100%;justify-content:space-between;background:transparent;color:var(--fg);border:1px solid #2c4757;margin-top:4px;font-weight:400}
+.top{display:flex;align-items:center;gap:8px}.top h1{flex:1}.top select{width:auto;padding:5px 7px}
+a{color:var(--acc)}
+</style>
+<script src="/i18n.js"></script>
+</head>
+<body>
+<main>
+<div class="top"><h1 data-i18n="title"></h1><select id="lang" data-i18n-title="lang.label"></select></div>
+
+<section class="card">
+<h2 data-i18n="st.title"></h2>
+<table id="st"></table>
+<div class="msg" id="st_msg"></div>
+</section>
+
+<form id="f" class="card" novalidate>
+<h2 data-i18n="set.title"></h2>
+<label data-i18n="mode"></label>
+<select id="mode"><option value="auto" data-i18n="mode.auto"></option><option value="lan" data-i18n="mode.lan"></option><option value="wlan" data-i18n="mode.wlan"></option></select>
+<p class="hint" id="mode_hint"></p>
+
+<h3 data-i18n="lan"></h3>
+<label class="chk"><input type="checkbox" id="lan_dhcp"><span data-i18n="dhcp"></span></label>
+<div class="grid" id="lan_static"></div>
+
+<h3 data-i18n="wlan"></h3>
+<div class="row"><div><label data-i18n="ssid"></label><input id="wlan_ssid" maxlength="32" autocomplete="off"></div><button type="button" class="sec" id="scan" data-i18n="scan"></button></div>
+<div class="nets" id="nets"></div>
+<div class="msg" id="scan_msg"></div>
+<label data-i18n="password"></label><input id="wlan_password" type="password" maxlength="63" autocomplete="new-password">
+<label class="chk"><input type="checkbox" id="wlan_dhcp"><span data-i18n="dhcp"></span></label>
+<div class="grid" id="wlan_static"></div>
+
+<div class="row"><button type="button" class="sec" id="test" data-i18n="test"></button><span></span><button data-i18n="save"></button></div>
+<div class="msg" id="msg"></div>
+</form>
+<p class="mut"><a href="/" data-i18n="back"></a></p>
+</main>
+<script>
+i18n.add({
+en:{'title':'LG Aquatic Life · Network','st.title':'Status','set.title':'Settings',
+ 'st.active':'Active','st.lan':'LAN','st.wlan':'Wi-Fi','st.ap':'Setup Wi-Fi','st.fallback':'Wi-Fi starts in {s} s',
+ 'act.lan':'LAN','act.wlan':'Wi-Fi','act.none':'no connection',
+ 'lan.missing':'W5500 not found','lan.off':'switched off','lan.nolink':'no cable / link','lan.noip':'link, waiting for an address',
+ 'wlan.off':'off','wlan.connecting':'connecting to {s} …','wlan.connected':'{s}, {r} dBm','wlan.disconnected':'not connected ({x})','wlan.none':'not configured',
+ 'ap.on':'on, {n} client(s)','ap.off':'off',
+ 'mode':'Interface','mode.auto':'Automatic (LAN, Wi-Fi as fallback)','mode.lan':'LAN only','mode.wlan':'Wi-Fi only',
+ 'mode.h.auto':'Wi-Fi starts after the LAN has been down for 30 s and stops again when the cable is back.',
+ 'mode.h.lan':'The Wi-Fi radio stays off.','mode.h.wlan':'Ethernet is switched off.',
+ 'lan':'LAN','wlan':'Wi-Fi','dhcp':'Automatic address (DHCP)','ip':'IP address','netmask':'Subnet mask','gateway':'Gateway','dns1':'DNS 1','dns2':'DNS 2',
+ 'ssid':'Network (SSID)','password':'Password','pw.keep':'unchanged','scan':'Search','scan.run':'Searching …','scan.none':'No networks found.','scan.fail':'Search failed.',
+ 'test':'Test Wi-Fi','test.run':'Connecting to {s} …','test.ok':'Connected – address {ip}. Not saved yet.','test.fail':'Connection failed: {r}',
+ 'save':'Save','saved':'Saved. The settings apply in a moment.','saved.moved':'Saved. The device will be at {u} – this page may lose the connection.',
+ 'r.timeout':'no answer','r.no_ap_found':'network not found','r.wrong_password':'wrong password','r.security_mismatch':'security not supported (WPA2 or newer required)','r.connection_failed':'connection failed',
+ 'field':'Please check: {f}','back':'← Maintenance page',
+ 'err.wlan_not_configured':'"Wi-Fi only" needs a Wi-Fi network','err.busy':'A search is already running','err.wifi_unavailable':'Wi-Fi is not available'},
+de:{'title':'LG Aquatic Life · Netzwerk','st.title':'Status','set.title':'Einstellungen',
+ 'st.active':'Aktiv','st.lan':'LAN','st.wlan':'WLAN','st.ap':'Setup-WLAN','st.fallback':'WLAN startet in {s} s',
+ 'act.lan':'LAN','act.wlan':'WLAN','act.none':'keine Verbindung',
+ 'lan.missing':'W5500 nicht gefunden','lan.off':'abgeschaltet','lan.nolink':'kein Kabel / Link','lan.noip':'Link, warte auf Adresse',
+ 'wlan.off':'aus','wlan.connecting':'verbinde mit {s} …','wlan.connected':'{s}, {r} dBm','wlan.disconnected':'nicht verbunden ({x})','wlan.none':'nicht eingerichtet',
+ 'ap.on':'an, {n} Client(s)','ap.off':'aus',
+ 'mode':'Schnittstelle','mode.auto':'Automatisch (LAN, WLAN als Ersatz)','mode.lan':'Nur LAN','mode.wlan':'Nur WLAN',
+ 'mode.h.auto':'WLAN startet, wenn das LAN 30 s weg ist, und geht wieder aus, sobald das Kabel zurück ist.',
+ 'mode.h.lan':'Das WLAN-Funkmodul bleibt aus.','mode.h.wlan':'Ethernet wird abgeschaltet.',
+ 'lan':'LAN','wlan':'WLAN','dhcp':'Adresse automatisch (DHCP)','ip':'IP-Adresse','netmask':'Subnetzmaske','gateway':'Gateway','dns1':'DNS 1','dns2':'DNS 2',
+ 'ssid':'Netzwerk (SSID)','password':'Passwort','pw.keep':'unverändert','scan':'Suchen','scan.run':'Suche …','scan.none':'Keine Netzwerke gefunden.','scan.fail':'Suche fehlgeschlagen.',
+ 'test':'WLAN testen','test.run':'Verbinde mit {s} …','test.ok':'Verbunden – Adresse {ip}. Noch nicht gespeichert.','test.fail':'Verbindung fehlgeschlagen: {r}',
+ 'save':'Speichern','saved':'Gespeichert. Die Einstellungen gelten gleich.','saved.moved':'Gespeichert. Das Gerät ist dann unter {u} erreichbar – diese Seite kann die Verbindung verlieren.',
+ 'r.timeout':'keine Antwort','r.no_ap_found':'Netzwerk nicht gefunden','r.wrong_password':'falsches Passwort','r.security_mismatch':'Verschlüsselung nicht unterstützt (WPA2 oder neuer nötig)','r.connection_failed':'Verbindung fehlgeschlagen',
+ 'field':'Bitte prüfen: {f}','back':'← Wartungsseite',
+ 'err.wlan_not_configured':'„Nur WLAN“ braucht ein WLAN-Netzwerk','err.busy':'Es läuft bereits eine Suche','err.wifi_unavailable':'WLAN ist nicht verfügbar'}
+});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const F=['ip','netmask','gateway','dns1','dns2'];
+let cfg=null,cur={};  // cur: addresses in use per interface (from the status)
+async function api(method,path,body){
+  const o={method,cache:'no-store'};if(body!==undefined){o.body=JSON.stringify(body);o.headers={'Content-Type':'application/json'}}
+  const r=await fetch(path,o);let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok){const e=new Error(i18n.error(j,r.status));e.body=j;throw e}return j;
+}
+function msg(id,txt,cls){const m=$(id);m.className='msg '+(cls||'err');m.textContent=txt}
+function fail(id,e){
+  document.querySelectorAll('input.bad').forEach(i=>i.classList.remove('bad'));
+  const f=e.body&&e.body.error&&e.body.error.field;
+  if(f){const i=$(f.replace('.','_'));if(i){i.classList.add('bad');i.focus()}
+    if(e.body.error.code==='invalid_param'){msg(id,t('field',{f:t(f.split('.')[0])+' · '+t(f.split('.')[1]||f)}));return}}
+  msg(id,e.message);
+}
+function fields(p){$(p+'_static').innerHTML=F.map(k=>`<div><label>${t(k)}</label><input id="${p}_${k}" inputmode="decimal" autocomplete="off"></div>`).join('')}
+function fill(){
+  $('mode').value=cfg.mode;
+  for(const p of ['lan','wlan']){$(p+'_dhcp').checked=cfg[p].dhcp;F.forEach(k=>$(p+'_'+k).value=cfg[p][k]||'')}
+  $('wlan_ssid').value=cfg.wlan.ssid;$('wlan_password').value='';
+  $('wlan_password').placeholder=cfg.wlan.password_set?t('pw.keep'):'';
+  vis();
+}
+function vis(){
+  $('mode_hint').textContent=t('mode.h.'+$('mode').value);
+  for(const p of ['lan','wlan'])$(p+'_static').hidden=$(p+'_dhcp').checked;
+}
+function ipPart(p){const o={dhcp:$(p+'_dhcp').checked};F.forEach(k=>o[k]=$(p+'_'+k).value.trim());return o}
+function body(){
+  const w=ipPart('wlan');w.ssid=$('wlan_ssid').value;const pw=$('wlan_password').value;
+  if(pw||w.ssid!==cfg.wlan.ssid||!cfg.wlan.password_set)w.password=pw;
+  return {mode:$('mode').value,lan:ipPart('lan'),wlan:w};
+}
+async function status(){
+  try{const s=await api('GET','/api/v1/net/status');const L=s.lan,W=s.wlan;cur={lan:L.address,wlan:W.address};
+    const lan=!L.present?`<span class="err">${t('lan.missing')}</span>`:!L.running?t('lan.off'):!L.link?t('lan.nolink'):L.ip?addr(L):t('lan.noip');
+    let wl=!W.configured?t('wlan.none'):W.state==='connected'?t('wlan.connected',{s:esc(W.ssid),r:W.rssi})+(W.ip?'<br>'+addr(W):'')
+      :W.state==='connecting'?t('wlan.connecting',{s:esc(W.ssid)}):W.state==='disconnected'?`<span class="warn">${t('wlan.disconnected',{x:t('r.'+(W.reason||'connection_failed'))})}</span>`:t('wlan.off');
+    if(s.fallback_in_s!==undefined)wl+=`<br><span class="mut">${t('st.fallback',{s:s.fallback_in_s})}</span>`;
+    $('st').innerHTML=`<tr><td>${t('st.active')}</td><td>${t('act.'+s.active)}</td></tr><tr><td>${t('st.lan')}</td><td>${lan}</td></tr>`+
+      `<tr><td>${t('st.wlan')}</td><td>${wl}</td></tr><tr><td>${t('st.ap')}</td><td>${s.ap.active?t('ap.on',{n:s.ap.clients}):t('ap.off')}</td></tr>`;
+    $('st_msg').textContent='';
+  }catch(e){msg('st_msg',e.message)}
+}
+function addr(x){const a=x.address;if(!a)return esc(x.ip);
+  return `${esc(a.ip)} / ${esc(a.netmask)}`+(a.gateway?` · GW ${esc(a.gateway)}`:'')+(a.dns1?` · DNS ${esc(a.dns1)}`:'')+` <span class="mut">(${a.dhcp?'DHCP':'static'})</span>`}
+async function load(){try{cfg=await api('GET','/api/v1/net/settings');fill()}catch(e){msg('msg',e.message)}}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+$('scan').onclick=async()=>{
+  $('scan').disabled=true;msg('scan_msg',t('scan.run'),'mut');$('nets').innerHTML='';
+  try{await api('POST','/api/v1/net/scan').catch(e=>{if(!(e.body&&e.body.error&&e.body.error.code==='busy'))throw e});
+    let r;for(let i=0;i<40;i++){await sleep(750);r=await api('GET','/api/v1/net/scan');if(r.state!=='running')break}
+    if(r.state!=='done'){msg('scan_msg',t('scan.fail'));return}
+    $('scan_msg').textContent=r.networks.length?'':t('scan.none');
+    $('nets').innerHTML=r.networks.map((n,i)=>`<button type="button" data-i="${i}"><span>${n.secure?'🔒 ':''}${esc(n.ssid)}</span><span class="mut">${n.rssi} dBm</span></button>`).join('');
+    $('nets').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('wlan_ssid').value=r.networks[b.dataset.i].ssid;$('nets').innerHTML='';$('wlan_password').focus()});
+  }catch(e){msg('scan_msg',e.message)}finally{$('scan').disabled=false}
+};
+$('test').onclick=async()=>{
+  const w=body().wlan;$('test').disabled=true;msg('msg',t('test.run',{s:w.ssid}),'mut');
+  try{await api('POST','/api/v1/net/wlan/test',w);
+    let r;for(let i=0;i<60;i++){await sleep(1000);r=await api('GET','/api/v1/net/wlan/test');if(r.state!=='running')break}
+    if(r.state==='ok')msg('msg',t('test.ok',{ip:r.ip}),'ok');else msg('msg',t('test.fail',{r:t('r.'+(r.reason||'timeout'))}));
+  }catch(e){fail('msg',e)}finally{$('test').disabled=false;status()}
+};
+$('f').onsubmit=async e=>{
+  e.preventDefault();const b=body();
+  try{const old=cfg;cfg=await api('PUT','/api/v1/net/settings',b);fill();
+    // static LAN address changed while we talk over the LAN: show where to go
+    const moved=!b.lan.dhcp&&b.lan.ip&&b.lan.ip!==location.hostname&&old.lan.ip!==b.lan.ip&&!/\.local$/.test(location.hostname)&&location.hostname!=='192.168.4.1';
+    msg('msg',moved?t('saved.moved',{u:'http://'+b.lan.ip+'/network'}):t('saved'),'ok');
+    setTimeout(status,2500);
+  }catch(e){fail('msg',e)}
+};
+// switching to a static address: start from the addresses in use
+function prefill(p){if($(p+'_dhcp').checked)return;const a=cur[p]||{};
+  F.forEach(k=>{const i=$(p+'_'+k);if(!i.value)i.value=a[k]||(k==='netmask'?'255.255.255.0':'')})}
+$('mode').onchange=vis;
+['lan','wlan'].forEach(p=>$(p+'_dhcp').onchange=()=>{prefill(p);vis()});
+function build(){fields('lan');fields('wlan');i18n.apply();if(cfg)fill()}
+i18n.onChange(()=>{build();status()});
+i18n.init('lang').then(()=>{build();load();status();setInterval(status,3000)});
+</script>
+</body>
+</html>

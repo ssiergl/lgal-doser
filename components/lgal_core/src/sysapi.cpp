@@ -98,9 +98,10 @@ esp_err_t get_info(httpd_req_t* req) {
     const esp_partition_t* last_invalid = esp_ota_get_last_invalid_partition();
 
     net::Status ns = net::status();
-    esp_ip4_addr_t ip{ns.eth_ip};
-    char ip_str[16];
+    esp_ip4_addr_t ip{ns.eth_ip}, wip{ns.wlan_ip};
+    char ip_str[16], wip_str[16];
     snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip));
+    snprintf(wip_str, sizeof(wip_str), IPSTR, IP2STR(&wip));
 
     bool coredump = esp_core_dump_image_check() == ESP_OK;
 
@@ -112,8 +113,8 @@ esp_err_t get_info(httpd_req_t* req) {
              "\"partition\":\"%s\",\"ota_state\":\"%s\",\"last_invalid_partition\":%s%s%s},"
              "\"system\":{\"uptime_s\":%" PRId64 ",\"reset_reason\":\"%s\",\"heap_free\":%u,"
              "\"heap_min_free\":%u,\"heap_largest_block\":%u,\"psram_free\":%u,\"coredump\":%s},"
-             "\"network\":{\"eth_present\":%s,\"eth_link\":%s,\"eth_ip\":%s%s%s,"
-             "\"ap_active\":%s,\"ap_clients\":%d}}",
+             "\"network\":{\"active\":\"%s\",\"eth_present\":%s,\"eth_link\":%s,\"eth_ip\":%s%s%s,"
+             "\"wlan\":\"%s\",\"wlan_ip\":%s%s%s,\"ap_active\":%s,\"ap_clients\":%d}}",
              device::hostname().c_str(), device::mac_str().c_str(),
              settings::setup_completed() ? "true" : "false", app->project_name, app->version,
              esp_get_idf_version(), app->date, app->time, running ? running->label : "?",
@@ -124,9 +125,10 @@ esp_err_t get_info(httpd_req_t* req) {
              (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
              (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM), coredump ? "true" : "false",
-             ns.eth_present ? "true" : "false", ns.eth_link ? "true" : "false",
+             net::iface_name(ns.active), ns.eth_present ? "true" : "false", ns.eth_link ? "true" : "false",
              ns.eth_has_ip ? "\"" : "", ns.eth_has_ip ? ip_str : "null", ns.eth_has_ip ? "\"" : "",
-             ns.ap_active ? "true" : "false", ns.ap_clients);
+             net::wlan_state_name(ns.wlan), ns.wlan_ip ? "\"" : "", ns.wlan_ip ? wip_str : "null",
+             ns.wlan_ip ? "\"" : "", ns.ap_active ? "true" : "false", ns.ap_clients);
 
     // Append time and device-specific pages
     const auto ts = timesync::status();

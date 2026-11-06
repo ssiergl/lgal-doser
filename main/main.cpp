@@ -26,6 +26,7 @@
 #include "lgal/led.h"
 #include "lgal/logbuf.h"
 #include "lgal/net.h"
+#include "lgal/netapi.h"
 #include "lgal/ota.h"
 #include "lgal/settings.h"
 #include "lgal/sysapi.h"
@@ -52,9 +53,10 @@ void update_status_led() {
     using lgal::led::State;
     const auto ns = lgal::net::status();
     lgal::led::set(State::SetupAp, ns.ap_active);
-    lgal::led::set(State::IdleLan, ns.eth_has_ip);
-    // network disconnected: neither LAN IP nor setup AP
-    lgal::led::set(State::Warning, !ns.eth_has_ip && !ns.ap_active);
+    lgal::led::set(State::IdleLan, ns.active == lgal::net::Iface::Lan);
+    lgal::led::set(State::IdleWlan, ns.active == lgal::net::Iface::Wlan);
+    // network disconnected: neither LAN/WLAN IP nor setup AP
+    lgal::led::set(State::Warning, ns.active == lgal::net::Iface::None && !ns.ap_active);
     lgal::led::set(State::Dosing, doser::motion::any_running());
     lgal::led::set(State::Service, doser::dosing::service());
 }
@@ -131,12 +133,14 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(lgal::http::start());
     lgal::auth::register_handlers(lgal::http::handle());
     lgal::sysapi::register_handlers(lgal::http::handle());
+    lgal::netapi::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
     doser::dosing_api::register_handlers(lgal::http::handle());
     doser::schedule_api::register_handlers(lgal::http::handle());
     lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
     lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
     lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
+    lgal::sysapi::add_link("network", "Network", "/network");
     lgal::sysapi::add_link("account", "Account", "/login");
 
     lgal::ota::set_guard([](std::string& reason) {
@@ -154,7 +158,7 @@ extern "C" void app_main(void) {
     // A new image only counts as valid once the device is reachable.
     lgal::ota::start_rollback_guard([] {
         const auto ns = lgal::net::status();
-        return lgal::http::handle() != nullptr && (ns.eth_has_ip || ns.ap_active);
+        return lgal::http::handle() != nullptr && (ns.active != lgal::net::Iface::None || ns.ap_active);
     });
 
     // 7. Button: 3 s = setup AP, 10 s = factory reset
