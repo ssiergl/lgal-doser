@@ -1,6 +1,7 @@
 #include "lgal/http.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -97,6 +98,33 @@ esp_err_t send_error(httpd_req_t* req, const char* status, const char* message) 
     char buf[256];
     snprintf(buf, sizeof(buf), "{\"error\":\"%s\"}", message);
     return send_json(req, buf, status);
+}
+
+bool query_str(httpd_req_t* req, const char* key, char* out, size_t len) {
+    const size_t qlen = httpd_req_get_url_query_len(req);
+    if (qlen == 0 || qlen > 512) return false;
+    char q[513];
+    if (httpd_req_get_url_query_str(req, q, sizeof(q)) != ESP_OK) return false;
+    return httpd_query_key_value(q, key, out, len) == ESP_OK;
+}
+
+bool query_int(httpd_req_t* req, const char* key, int64_t* out) {
+    char buf[24];
+    if (!query_str(req, key, buf, sizeof(buf)) || buf[0] == '\0') return false;
+    char* end = nullptr;
+    const long long v = strtoll(buf, &end, 10);
+    if (!end || *end != '\0') return false;
+    *out = v;
+    return true;
+}
+
+void route(httpd_handle_t server, const char* uri, httpd_method_t method, esp_err_t (*handler)(httpd_req_t*)) {
+    httpd_uri_t u{};
+    u.uri = uri;
+    u.method = method;
+    u.handler = handler;
+    const esp_err_t err = httpd_register_uri_handler(server, &u);
+    if (err != ESP_OK) ESP_LOGE(TAG, "Route %s: %s", uri, esp_err_to_name(err));
 }
 
 }  // namespace lgal::http
