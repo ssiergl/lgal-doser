@@ -67,7 +67,7 @@ esp_err_t start() {
     cfg.recv_wait_timeout = 15;
     cfg.send_wait_timeout = 15;
     esp_err_t err = httpd_start(&s_server, &cfg);
-    if (err == ESP_OK) ESP_LOGI(TAG, "HTTP-Server läuft auf Port 80");
+    if (err == ESP_OK) ESP_LOGI(TAG, "HTTP server running on port 80");
     return err;
 }
 
@@ -101,6 +101,7 @@ esp_err_t send_error(httpd_req_t* req, const char* status, const char* message) 
 }
 
 bool query_str(httpd_req_t* req, const char* key, char* out, size_t len) {
+    if (!out || len == 0) return false;
     const size_t qlen = httpd_req_get_url_query_len(req);
     if (qlen == 0 || qlen > 512) return false;
     char q[513];

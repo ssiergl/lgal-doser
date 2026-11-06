@@ -70,14 +70,14 @@ namespace rtc {
 esp_err_t init() {
     ESP_RETURN_ON_ERROR(i2c::init(), TAG, "bus");
     if (!i2c::probe(kAddr)) {
-        ESP_LOGW(TAG, "DS3231 (0x68) nicht gefunden");
+        ESP_LOGW(TAG, "DS3231 (0x68) not found");
         return ESP_ERR_NOT_FOUND;
     }
     ESP_RETURN_ON_ERROR(add_device(kAddr, &s_rtc), TAG, "rtc dev");
     // Control: oscillator on, no square wave, alarms off (INTCN=1)
     const uint8_t ctrl = 0x1C;
     rtc_write_regs(0x0E, &ctrl, 1);
-    ESP_LOGI(TAG, "DS3231 gefunden");
+    ESP_LOGI(TAG, "DS3231 found");
     return ESP_OK;
 }
 
@@ -168,11 +168,11 @@ esp_err_t wait_ready() {
 esp_err_t init() {
     ESP_RETURN_ON_ERROR(i2c::init(), TAG, "bus");
     if (!i2c::probe(kAddr)) {
-        ESP_LOGW(TAG, "AT24C32 (0x57) nicht gefunden");
+        ESP_LOGW(TAG, "AT24C32 (0x57) not found");
         return ESP_ERR_NOT_FOUND;
     }
     ESP_RETURN_ON_ERROR(add_device(kAddr, &s_eeprom), TAG, "eeprom dev");
-    ESP_LOGI(TAG, "AT24C32 gefunden");
+    ESP_LOGI(TAG, "AT24C32 found");
     return ESP_OK;
 }
 

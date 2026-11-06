@@ -44,11 +44,11 @@ void update(F&& f) {
 void on_eth_event(void*, esp_event_base_t, int32_t id, void*) {
     switch (id) {
         case ETHERNET_EVENT_CONNECTED:
-            ESP_LOGI(TAG, "Ethernet: Link aktiv");
+            ESP_LOGI(TAG, "Ethernet: link up");
             update([](Status& s) { s.eth_link = true; });
             break;
         case ETHERNET_EVENT_DISCONNECTED:
-            ESP_LOGW(TAG, "Ethernet: Link verloren");
+            ESP_LOGW(TAG, "Ethernet: link lost");
             update([](Status& s) {
                 s.eth_link = false;
                 s.eth_has_ip = false;
@@ -70,7 +70,7 @@ void on_ip_event(void*, esp_event_base_t, int32_t id, void* data) {
             s.eth_ip = ip;
         });
     } else if (id == IP_EVENT_ETH_LOST_IP) {
-        ESP_LOGW(TAG, "Ethernet: IP verloren");
+        ESP_LOGW(TAG, "Ethernet: IP lost");
         update([](Status& s) {
             s.eth_has_ip = false;
             s.eth_ip = 0;
@@ -81,12 +81,12 @@ void on_ip_event(void*, esp_event_base_t, int32_t id, void* data) {
 void on_wifi_event(void*, esp_event_base_t, int32_t id, void*) {
     if (id == WIFI_EVENT_AP_STACONNECTED) {
         update([](Status& s) { s.ap_clients++; });
-        ESP_LOGI(TAG, "Setup-AP: Client verbunden");
+        ESP_LOGI(TAG, "Setup AP: client connected");
     } else if (id == WIFI_EVENT_AP_STADISCONNECTED) {
         update([](Status& s) {
             if (s.ap_clients > 0) s.ap_clients--;
         });
-        ESP_LOGI(TAG, "Setup-AP: Client getrennt");
+        ESP_LOGI(TAG, "Setup AP: client disconnected");
     }
 }
 
@@ -148,7 +148,7 @@ esp_err_t init_ethernet(const EthConfig& c) {
 
 void init_mdns() {
     if (mdns_init() != ESP_OK) {
-        ESP_LOGE(TAG, "mDNS-Start fehlgeschlagen");
+        ESP_LOGE(TAG, "mDNS start failed");
         return;
     }
     mdns_hostname_set(device::hostname().c_str());
@@ -167,7 +167,7 @@ void housekeeping_task(void*) {
         vTaskDelay(pdMS_TO_TICKS(5000));
         Status st = status();
         if (st.ap_active && s_ap_temporary && esp_timer_get_time() > s_ap_deadline_us && st.ap_clients == 0) {
-            ESP_LOGI(TAG, "Temporärer Setup-AP abgelaufen");
+            ESP_LOGI(TAG, "Temporary setup AP expired");
             stop_setup_ap();
         }
     }
@@ -183,9 +183,9 @@ esp_err_t init(const EthConfig& eth) {
     err = init_ethernet(eth);
     if (err == ESP_OK) {
         update([](Status& s) { s.eth_present = true; });
-        ESP_LOGI(TAG, "Ethernet (W5500) gestartet");
+        ESP_LOGI(TAG, "Ethernet (W5500) started");
     } else {
-        ESP_LOGE(TAG, "Ethernet nicht verfügbar: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Ethernet unavailable: %s", esp_err_to_name(err));
     }
 
     init_mdns();
@@ -220,15 +220,15 @@ esp_err_t start_setup_ap(bool temporary) {
     if (err == ESP_OK) err = esp_wifi_set_config(WIFI_IF_AP, &wc);
     if (err == ESP_OK) err = esp_wifi_start();
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Setup-AP-Start fehlgeschlagen: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Setup AP start failed: %s", esp_err_to_name(err));
         return err;
     }
 
     s_ap_temporary = temporary;
     s_ap_deadline_us = esp_timer_get_time() + int64_t(CONFIG_LGAL_SETUP_AP_TIMEOUT_MIN) * 60 * 1000000;
     update([](Status& s) { s.ap_active = true; });
-    ESP_LOGI(TAG, "Setup-AP aktiv: SSID %s, http://192.168.4.1/%s", ssid.c_str(),
-             temporary ? " (temporär)" : "");
+    ESP_LOGI(TAG, "Setup AP active: SSID %s, http://192.168.4.1/%s", ssid.c_str(),
+             temporary ? " (temporary)" : "");
     return ESP_OK;
 }
 
@@ -239,7 +239,7 @@ void stop_setup_ap() {
         s.ap_active = false;
         s.ap_clients = 0;
     });
-    ESP_LOGI(TAG, "Setup-AP abgeschaltet, WLAN-Funk aus");
+    ESP_LOGI(TAG, "Setup AP stopped, Wi-Fi radio off");
 }
 
 Status status() {

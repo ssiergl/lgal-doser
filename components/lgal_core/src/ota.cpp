@@ -61,7 +61,7 @@ bool check_header(const uint8_t* data, std::string& err) {
         err = std::string("falsches Projekt: ") + std::string(desc->project_name, strnlen(desc->project_name, 32));
         return false;
     }
-    ESP_LOGI(TAG, "Neues Image: %s %s (%s %s), laufend: %s", desc->project_name, desc->version, desc->date,
+    ESP_LOGI(TAG, "New image: %s %s (%s %s), running: %s", desc->project_name, desc->version, desc->date,
              desc->time, own->version);
     return true;
 }
@@ -97,7 +97,7 @@ esp_err_t post_firmware(httpd_req_t* req) {
 
     if (s_lock) s_lock(true);
     led::set(led::State::Ota, true);
-    ESP_LOGI(TAG, "OTA-Start: %u Bytes -> %s", (unsigned)req->content_len, target->label);
+    ESP_LOGI(TAG, "OTA start: %u bytes -> %s", (unsigned)req->content_len, target->label);
 
     std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[kChunk]);
     if (!buf) {
@@ -160,7 +160,7 @@ esp_err_t post_firmware(httpd_req_t* req) {
 
     if (!err.empty()) {
         if (begun) esp_ota_abort(handle);
-        ESP_LOGE(TAG, "OTA fehlgeschlagen: %s", err.c_str());
+        ESP_LOGE(TAG, "OTA failed: %s", err.c_str());
         finish(false);
         return http::send_error(req, "400 Bad Request", err.c_str());
     }
@@ -168,13 +168,13 @@ esp_err_t post_firmware(httpd_req_t* req) {
     esp_err_t e = esp_ota_end(handle);  // checks image integrity (hash)
     if (e == ESP_OK) e = esp_ota_set_boot_partition(target);
     if (e != ESP_OK) {
-        ESP_LOGE(TAG, "OTA-Abschluss fehlgeschlagen: %s", esp_err_to_name(e));
+        ESP_LOGE(TAG, "OTA finalize failed: %s", esp_err_to_name(e));
         finish(false);
         return http::send_error(req, "400 Bad Request",
                                 e == ESP_ERR_OTA_VALIDATE_FAILED ? "Image ungueltig" : esp_err_to_name(e));
     }
 
-    ESP_LOGI(TAG, "OTA erfolgreich, Neustart in 1 s");
+    ESP_LOGI(TAG, "OTA successful, rebooting in 1 s");
     http::send_json(req, "{\"status\":\"ok\",\"reboot\":true}");
     // pumps stay locked, LED stays on OTA until reboot
     led::set(led::State::Ota, true);
@@ -186,9 +186,9 @@ void rollback_task(void*) {
     vTaskDelay(pdMS_TO_TICKS(CONFIG_LGAL_OTA_CONFIRM_DELAY_S * 1000));
     if (!s_health || s_health()) {
         esp_ota_mark_app_valid_cancel_rollback();
-        ESP_LOGI(TAG, "Neue Firmware bestätigt (gültig)");
+        ESP_LOGI(TAG, "New firmware confirmed (valid)");
     } else {
-        ESP_LOGE(TAG, "Health-Check fehlgeschlagen -> Rollback auf vorherige Firmware");
+        ESP_LOGE(TAG, "Health check failed -> rolling back to previous firmware");
         vTaskDelay(pdMS_TO_TICKS(200));
         esp_ota_mark_app_invalid_rollback_and_reboot();
     }
@@ -215,7 +215,7 @@ void start_rollback_guard(std::function<bool()> health_check) {
     if (esp_ota_get_state_partition(running, &state) != ESP_OK || state != ESP_OTA_IMG_PENDING_VERIFY) {
         return;
     }
-    ESP_LOGW(TAG, "Firmware in %s ist neu (PENDING_VERIFY), Prüfung in %d s", running->label,
+    ESP_LOGW(TAG, "Firmware in %s is new (PENDING_VERIFY), verifying in %d s", running->label,
              CONFIG_LGAL_OTA_CONFIRM_DELAY_S);
     s_health = std::move(health_check);
     xTaskCreate(rollback_task, "ota_verify", 4096, nullptr, 5, nullptr);

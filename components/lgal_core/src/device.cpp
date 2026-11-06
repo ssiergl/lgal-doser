@@ -63,7 +63,7 @@ void init() {
     const char* secret = CONFIG_LGAL_AP_SECRET;
     uint8_t digest[32];
     if (!hmac_sha256(reinterpret_cast<const uint8_t*>(secret), strlen(secret), msg, sizeof(msg), digest)) {
-        ESP_LOGE(TAG, "HMAC fehlgeschlagen");
+        ESP_LOGE(TAG, "HMAC failed");
         memset(digest, 0, sizeof(digest));
     }
     s_pass.clear();

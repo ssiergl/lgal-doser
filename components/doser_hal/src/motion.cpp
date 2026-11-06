@@ -82,10 +82,10 @@ esp_err_t configure(int i) {
     p.shaft_reverse = false;
     p.tuned = false;
     if (p.configured) {
-        ESP_LOGI(TAG, "Pumpe %d: %u µSchritte, Laufstrom %u mA, Haltestrom %u mA%s", i + 1, p.cfg.driver.microsteps,
-                 p.regs.current.run_ma, p.regs.current.hold_ma, p.cfg.driver.invert ? ", Richtung invertiert" : "");
+        ESP_LOGI(TAG, "Pump %d: %u microsteps, run current %u mA, hold current %u mA%s", i + 1, p.cfg.driver.microsteps,
+                 p.regs.current.run_ma, p.regs.current.hold_ma, p.cfg.driver.invert ? ", direction inverted" : "");
     } else {
-        ESP_LOGE(TAG, "Pumpe %d: Konfiguration fehlgeschlagen (%s)", i + 1, esp_err_to_name(err));
+        ESP_LOGE(TAG, "Pump %d: configuration failed (%s)", i + 1, esp_err_to_name(err));
     }
     return err;
 }
@@ -99,13 +99,13 @@ void probe_and_configure(int i) {
     p.present = (err == ESP_OK);
     p.version = ver;
     if (p.present && !was) {
-        ESP_LOGI(TAG, "Pumpe %d: TMC2209 gefunden (Version 0x%02x)", i + 1, ver);
+        ESP_LOGI(TAG, "Pump %d: TMC2209 found (version 0x%02x)", i + 1, ver);
         configure(i);
     } else if (!p.present && was) {
-        ESP_LOGW(TAG, "Pumpe %d: Treiber antwortet nicht mehr", i + 1);
+        ESP_LOGW(TAG, "Pump %d: driver stopped responding", i + 1);
         p.configured = false;
     } else if (err == ESP_ERR_NOT_SUPPORTED) {
-        ESP_LOGW(TAG, "Pumpe %d: unerwartete Version 0x%02x", i + 1, ver);
+        ESP_LOGW(TAG, "Pump %d: unexpected version 0x%02x", i + 1, ver);
     }
 }
 
@@ -113,7 +113,7 @@ void fault_stop(int i, const char* why) {
     auto* ch = step::channel(i);
     if (ch) ch->stop(true);
     s_pump[i].fault = why;
-    ESP_LOGE(TAG, "Pumpe %d: %s – Fahrt abgebrochen", i + 1, why);
+    ESP_LOGE(TAG, "Pump %d: %s - move aborted", i + 1, why);
 }
 
 void health_check(int i) {
@@ -135,7 +135,7 @@ void health_check(int i) {
     p.gstat = static_cast<uint8_t>(gstat);
     if (gstat & tmc::GSTAT_RESET) {
         // Driver restarted (e.g. 24 V lost and back) -> registers lost
-        ESP_LOGW(TAG, "Pumpe %d: Treiber-Reset erkannt, konfiguriere neu", i + 1);
+        ESP_LOGW(TAG, "Pump %d: driver reset detected, reconfiguring", i + 1);
         auto* ch = step::channel(i);
         if (ch && ch->busy()) fault_stop(i, "Treiber-Reset während der Fahrt");
         configure(i);
@@ -178,7 +178,7 @@ void task(void*) {
         for (int i = 0; i < kN; ++i) {
             s_pump[i].drv.bind(pins::kTmc[i].bus == pins::kUartBusA ? &s_bus[0] : &s_bus[1], pins::kTmc[i].addr);
             probe_and_configure(i);
-            if (!s_pump[i].present) ESP_LOGW(TAG, "Pumpe %d: kein Treiber (24 V an? Modul gesteckt?)", i + 1);
+            if (!s_pump[i].present) ESP_LOGW(TAG, "Pump %d: no driver (24 V on? module inserted?)", i + 1);
         }
     }
     xSemaphoreGive(s_ready);
@@ -202,7 +202,7 @@ void task(void*) {
             const bool busy = ch->busy();
             if (p.was_running && !busy) {
                 p.was_running = false;
-                ESP_LOGI(TAG, "Pumpe %d: fertig, %" PRIu32 " von %" PRIu32 " Schritten in %.2f s", i + 1,
+                ESP_LOGI(TAG, "Pump %d: done, %" PRIu32 " of %" PRIu32 " steps in %.2f s", i + 1,
                          ch->position(), ch->target(), (now - p.start_us) / 1e6);
             }
         }
@@ -225,7 +225,7 @@ void task(void*) {
             s_last_busy_us = now;
         } else if (doser::drivers_enabled() && !any_hold_current() && now - s_last_busy_us > kEnOffDelayUs) {
             set_drivers_enabled(false);
-            ESP_LOGI(TAG, "Alle Pumpen still – Treiber aus (EN)");
+            ESP_LOGI(TAG, "All pumps idle - drivers off (EN)");
         }
     }
 }
@@ -286,8 +286,8 @@ esp_err_t run(int pump, const Move& move) {
         p.sg_min = 0x3FF;
         p.start_us = esp_timer_get_time();
         p.was_running = true;
-        ESP_LOGI(TAG, "Pumpe %d: %s%" PRIu32 " Schritte, %" PRIu32 " Schritte/s, Rampe %" PRIu32 " Schritte/s²%s",
-                 pump + 1, rev ? "-" : "", steps, move.sps, rp.accel, p.configured ? "" : " (ohne Treiber!)");
+        ESP_LOGI(TAG, "Pump %d: %s%" PRIu32 " steps, %" PRIu32 " steps/s, ramp %" PRIu32 " steps/s^2%s",
+                 pump + 1, rev ? "-" : "", steps, move.sps, rp.accel, p.configured ? "" : " (without driver!)");
     }
     return err;
 }

@@ -151,7 +151,7 @@ void restart_cb(void*) { esp_restart(); }
 
 esp_err_t post_reboot(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
-    ESP_LOGW(TAG, "Neustart per API angefordert");
+    ESP_LOGW(TAG, "Reboot requested via API");
     http::send_json(req, "{\"status\":\"rebooting\"}");
     esp_timer_create_args_t args{};
     args.callback = restart_cb;
