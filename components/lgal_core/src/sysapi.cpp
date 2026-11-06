@@ -28,12 +28,17 @@
 
 extern const char recovery_html_start[] asm("_binary_recovery_html_start");
 extern const char recovery_html_end[] asm("_binary_recovery_html_end");
+extern const char i18n_js_start[] asm("_binary_i18n_js_start");
+extern const char i18n_js_end[] asm("_binary_i18n_js_end");
 
 namespace lgal::sysapi {
 
 namespace {
 constexpr const char* TAG = "sysapi";
-std::vector<std::pair<std::string, std::string>> s_links;
+struct Link {
+    std::string id, name, path;
+};
+std::vector<Link> s_links;
 
 const char* reset_reason_str(esp_reset_reason_t r) {
     switch (r) {
@@ -62,11 +67,25 @@ const char* ota_state_str(esp_ota_img_states_t s) {
     }
 }
 
+void write_language(Json& j) {
+    j.kv("language", settings::language()).arr("languages");
+    for (const char* l : settings::kLanguages) j.v(l);
+    j.end();
+}
+
 esp_err_t get_root(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, recovery_html_start, recovery_html_end - recovery_html_start);
+    // EMBED_TXTFILES appends a terminating 0 – do not send it
+    return httpd_resp_send(req, recovery_html_start, recovery_html_end - recovery_html_start - 1);
+}
+
+// Shared translation base; contains nothing confidential -> no login
+esp_err_t get_i18n(httpd_req_t* req) {
+    httpd_resp_set_type(req, "text/javascript; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+    return httpd_resp_send(req, i18n_js_start, i18n_js_end - i18n_js_start - 1);
 }
 
 esp_err_t get_info(httpd_req_t* req) {
@@ -128,8 +147,9 @@ esp_err_t get_info(httpd_req_t* req) {
         .kv("rtc_ok", ts.rtc_ok)
         .kv("timezone", timesync::timezone())
         .end();
+    write_language(extra);
     extra.arr("links");
-    for (const auto& l : s_links) extra.obj().kv("name", l.first).kv("path", l.second).end();
+    for (const auto& l : s_links) extra.obj().kv("id", l.id).kv("name", l.name).kv("path", l.path).end();
     extra.end();
     std::string out(buf);
     out.pop_back();  // closing bracket
@@ -186,6 +206,25 @@ esp_err_t delete_coredump(httpd_req_t* req) {
     return http::send_json(req, "{\"status\":\"deleted\"}");
 }
 
+esp_err_t get_language(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    Json j;
+    j.obj();
+    write_language(j);
+    j.end();
+    return http::send_json(req, j.c_str());
+}
+
+esp_err_t post_language(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    char lang[8] = "";
+    if (!http::query_str(req, "lang", lang, sizeof(lang)) || !settings::language_supported(lang))
+        return http::send_error(req, "400 Bad Request", "invalid_param", "lang: unsupported language");
+    if (settings::set_language(lang) != ESP_OK)
+        return http::send_error(req, "500 Internal Server Error", "storage_error", "Could not save setting");
+    return get_language(req);
+}
+
 void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(httpd_req_t*)) {
     httpd_uri_t u{};
     u.uri = uri;
@@ -195,7 +234,7 @@ void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(htt
 }
 }  // namespace
 
-void add_link(const char* name, const char* path) { s_links.emplace_back(name, path); }
+void add_link(const char* id, const char* name, const char* path) { s_links.push_back({id, name, path}); }
 
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;
@@ -206,6 +245,9 @@ esp_err_t register_handlers(httpd_handle_t server) {
     reg(server, "/api/v1/system/reboot", HTTP_POST, post_reboot);
     reg(server, "/api/v1/system/coredump", HTTP_GET, get_coredump);
     reg(server, "/api/v1/system/coredump", HTTP_DELETE, delete_coredump);
+    reg(server, "/i18n.js", HTTP_GET, get_i18n);
+    reg(server, "/api/v1/system/language", HTTP_GET, get_language);
+    reg(server, "/api/v1/system/language", HTTP_POST, post_language);
     return ESP_OK;
 }
 

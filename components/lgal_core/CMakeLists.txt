@@ -12,7 +12,7 @@ idf_component_register(
         "src/json.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
-    EMBED_TXTFILES "www/recovery.html"
+    EMBED_TXTFILES "www/recovery.html" "www/i18n.js"
     REQUIRES
         esp_driver_gpio
         esp_driver_ledc

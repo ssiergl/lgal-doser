@@ -119,7 +119,7 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(lgal::http::start());
     lgal::sysapi::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
-    lgal::sysapi::add_link("Hardwaretest", "/hwtest");
+    lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
 
     lgal::ota::set_guard([](std::string& reason) {
         if (doser::motion::any_running()) {
