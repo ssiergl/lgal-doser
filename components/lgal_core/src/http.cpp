@@ -60,7 +60,7 @@ esp_err_t send_401(httpd_req_t* req) {
 esp_err_t start() {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.server_port = 80;
-    cfg.max_uri_handlers = 32;
+    cfg.max_uri_handlers = 48;
     cfg.stack_size = 8192;
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
@@ -101,13 +101,50 @@ esp_err_t send_error(httpd_req_t* req, const char* status, const char* code, con
     return send_json(req, j.c_str(), status);
 }
 
+namespace {
+int hex_value(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+}  // namespace
+
 bool query_str(httpd_req_t* req, const char* key, char* out, size_t len) {
     if (!out || len == 0) return false;
     const size_t qlen = httpd_req_get_url_query_len(req);
     if (qlen == 0 || qlen > 512) return false;
     char q[513];
     if (httpd_req_get_url_query_str(req, q, sizeof(q)) != ESP_OK) return false;
-    return httpd_query_key_value(q, key, out, len) == ESP_OK;
+    char raw[257];
+    if (httpd_query_key_value(q, key, raw, sizeof(raw)) != ESP_OK) return false;
+    // URL decoding (%XX, '+') so that names with umlauts/spaces arrive intact
+    size_t o = 0;
+    for (size_t i = 0; raw[i]; ++i) {
+        char c = raw[i];
+        if (c == '+') {
+            c = ' ';
+        } else if (c == '%' && hex_value(raw[i + 1]) >= 0 && hex_value(raw[i + 2]) >= 0) {
+            c = static_cast<char>(hex_value(raw[i + 1]) * 16 + hex_value(raw[i + 2]));
+            i += 2;
+            if (c == '\0') return false;  // %00 would cut the value short
+        }
+        if (o + 1 >= len) return false;  // too long: rather reject than truncate
+        out[o++] = c;
+    }
+    out[o] = '\0';
+    return true;
+}
+
+bool query_decimal(httpd_req_t* req, const char* key, int64_t scale, int64_t* out) {
+    char buf[24];
+    if (!query_str(req, key, buf, sizeof(buf)) || buf[0] == '\0') return false;
+    char* end = nullptr;
+    const double v = strtod(buf, &end);
+    if (!end || *end != '\0' || !(v == v) || v > 9.0e15 / scale || v < -9.0e15 / scale) return false;
+    const double scaled = v * static_cast<double>(scale);
+    *out = static_cast<int64_t>(scaled < 0 ? scaled - 0.5 : scaled + 0.5);
+    return true;
 }
 
 bool query_int(httpd_req_t* req, const char* key, int64_t* out) {

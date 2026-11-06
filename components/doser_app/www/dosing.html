@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LG Aquatic Life – Dosing test</title>
+<style>
+:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922;--svc:#a371f7}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 6px}h2{font-size:16px;margin:0 0 10px}h3{font-size:15px;margin:0}
+.card{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse}td{padding:2px 6px 2px 0;vertical-align:top}td.k{color:var(--mut);width:44%}
+button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button.stop{background:var(--err);color:#fff}
+button.svc{background:var(--svc);color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
+button:disabled{opacity:.5;cursor:default}
+input,select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:5px 7px;width:100%}
+input[type=checkbox]{width:auto}
+label{display:block;font-size:13px;color:var(--mut)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px}.row>*{flex:1 1 80px}.row>button{flex:0 0 auto}
+.chip{display:inline-block;font-size:12px;border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;background:#1d3a4b}
+.chip.ok{background:#173d25;color:#7ee19a}.chip.err{background:#4a1d1d;color:#ff9b95}.chip.warn{background:#463614;color:#f2cc60}.chip.svc{background:#33204f;color:#d2b8ff}
+.bar{height:6px;background:#0a161e;border-radius:3px;overflow:hidden;margin-top:3px}.bar>i{display:block;height:100%;background:var(--acc)}
+.err{color:var(--err)}.ok{color:var(--ok)}.mut{color:var(--mut)}
+.msg{min-height:1.3em;font-size:13px;margin-top:6px}
+details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:13px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
+select.lang{width:auto}
+</style>
+<script src="/i18n.js"></script>
+</head>
+<body>
+<main>
+<div class="top">
+<h1><span data-i18n="title"></span> <span class="mut" style="font-size:14px" data-i18n="subtitle"></span></h1>
+<div class="row" style="align-items:center;margin-top:0">
+<span id="clock" class="chip">…</span>
+<span style="flex:1"></span>
+<button class="stop" id="stopall" data-i18n="btn.stopall"></button>
+<a href="/hwtest"><button class="sec" data-i18n="btn.hwtest"></button></a>
+<a href="/"><button class="sec" data-i18n="btn.maint"></button></a>
+<select id="lang" class="lang" data-i18n-title="lang.label"></select>
+</div>
+</div>
+
+<div class="grid" id="pumps"></div>
+
+<section class="card">
+<h2 data-i18n="eng.title"></h2>
+<p class="mut" style="font-size:13px;margin:0 0 6px" data-i18n="eng.hint"></p>
+<div class="row">
+<div><label data-i18n="eng.retract"></label><input id="e_retract" type="number" step="0.01" min="0" max="2"></div>
+<div><label data-i18n="eng.calib"></label><input id="e_calib" type="number" step="1" min="1" max="200"></div>
+<div><label data-i18n="eng.min_dose"></label><input id="e_min" type="number" step="0.001" min="0.001"></div>
+</div>
+<div class="row">
+<div><label data-i18n="eng.tier1"></label><input id="e_t0" type="number" min="10" max="600"></div>
+<div><label data-i18n="eng.tier2"></label><input id="e_t1" type="number" min="10" max="600"></div>
+<div><label data-i18n="eng.tier3"></label><input id="e_t2" type="number" min="10" max="600"></div>
+</div>
+<div class="row">
+<div><label data-i18n="eng.prime_max"></label><input id="e_pmax" type="number" min="5" max="600"></div>
+<div><label data-i18n="eng.prime_hb"></label><input id="e_phb" type="number" min="200" max="5000"></div>
+<div><label data-i18n="eng.tube"></label><input id="e_tube" type="number" min="10"></div>
+<div><label data-i18n="eng.limit_mode"></label><select id="e_lm"><option value="calendar_day" data-i18n="lm.calendar_day"></option><option value="rolling_24h" data-i18n="lm.rolling_24h"></option></select></div>
+</div>
+<div class="row"><span></span><button class="sec" id="e_save" data-i18n="btn.save"></button></div>
+<div class="msg" id="emsg"></div>
+</section>
+<p class="mut" style="font-size:12px" data-i18n="footnote"></p>
+</main>
+<script>
+i18n.add({
+en:{
+ 'page.title':'LG Aquatic Life – Dosing test','title':'Dosing test','subtitle':'· dose in ml, calibration, priming, container',
+ 'btn.stopall':'Stop all','btn.hwtest':'Hardware test','btn.maint':'Maintenance','btn.save':'Save','btn.stop':'■ Stop',
+ 'pump':'Pump','unnamed':'(no name)',
+ 'act.idle':'idle','act.dosing':'dosing','act.priming':'priming','act.calibrating':'calibration run','rpm':'rpm',
+ 'ph.unretract':'compensating retraction','ph.main':'pumping','ph.retract':'retracting',
+ 'mode.auto':'auto','mode.manual_only':'manual only','mode.disabled':'disabled',
+ 'res.success':'done','res.aborted':'aborted','res.fault':'driver fault','res.locked':'locked (update)',
+ 'res.heartbeat_lost':'connection lost','res.max_duration':'max. duration reached',
+ 'c.uncal':'not calibrated','c.cal':'calibrated','c.limit':'daily limit reached',
+ 'c.tube':'replace tube','c.notime':'no valid time',
+ 'r.progress':'Progress','r.last':'Last run','r.calib':'Calibration','r.calib.v':'{mlrev} ml/rev · {spm} steps/ml',
+ 'r.speed':'Speed','r.retract':'Retraction','r.retract.v':'{rev} rev ≈ {ml} ml{g}','r.global':' (global)',
+ 'r.daily':'Daily limit','r.daily.v':'{used} of {limit} ml','r.daily.off':'{used} ml (no limit)',
+ 'r.container':'Container','r.container.v':'{rem} of {cap} ml ({pct} %)','r.container.off':'not tracked',
+ 'r.tube':'Tube runtime','r.tube.v':'{h} of {lim} h','r.total':'Total dosed',
+ 'd.ml':'Amount ml','d.tier':'Speed','d.dose':'▶ Dose','tier.0':'slow','tier.1':'normal','tier.2':'fast',
+ 'p.prime':'Hold to prime','p.hint':'Runs while pressed (max. {s} s)',
+ 'cal.title':'Calibration','cal.target':'Target ml','cal.start':'Start run','cal.measured':'Measured ml','cal.apply':'Apply',
+ 'cal.cancel':'Discard','cal.pending':'Run finished ({t} ml nominal). Measure the collected amount and enter it.',
+ 'cal.ok':'Calibration saved','cal.started':'Calibration run started',
+ 'ct.title':'Container','ct.capacity':'Capacity ml','ct.remaining':'Remaining ml','ct.refill':'Refill (full)','ct.set':'Set',
+ 'ct.ok':'Container updated',
+ 'st.title':'Settings','st.name':'Name','st.mode':'Mode','st.tier':'Default speed','st.limit':'Daily limit ml (0 = none)',
+ 'st.retract':'Retraction rev (empty = global)','st.ok':'Settings saved',
+ 'tb.reset':'Reset tube counter','tb.confirm':'Reset tube runtime of pump {n}?','tb.ok':'Tube counter reset',
+ 'dose.ok':'Dosing {ml} ml','stopping':'Stopping …',
+ 'eng.title':'Engineering (super admin)','eng.hint':'Global defaults for all pumps. Will be protected by a separate engineering key later.',
+ 'eng.retract':'Retraction rev','eng.calib':'Calibration target ml','eng.min_dose':'Minimum dose ml',
+ 'eng.tier1':'Slow rpm','eng.tier2':'Normal rpm','eng.tier3':'Fast rpm','eng.prime_max':'Priming max. s',
+ 'eng.prime_hb':'Priming heartbeat ms','eng.tube':'Tube lifetime h','eng.limit_mode':'Daily limit window',
+ 'lm.calendar_day':'calendar day','lm.rolling_24h':'rolling 24 h','eng.ok':'Engineering parameters saved',
+ 'time.none':'no valid time','conn':'Connection: {e}',
+ 'footnote':'Amounts are booked when a run starts; a stopped run credits back what was not pumped. Priming is not counted against the container or the daily limit.',
+ 'err.pump_busy':'Pump is busy','err.pump_disabled':'Pump is disabled','err.pump_manual_only':'Pump is set to manual only',
+ 'err.locked':'Pumps are locked (update in progress)','err.daily_limit':'Daily limit would be exceeded',
+ 'err.time_invalid':'No valid time – daily limit cannot be checked',
+ 'err.driver_unavailable':'Driver not reachable','err.speed_out_of_range':'Speed out of range',
+ 'err.dose_too_small':'Amount below the minimum dose','err.dose_too_large':'Amount too large',
+ 'err.measured_out_of_range':'Measured amount is implausible – check and repeat','err.no_calibration_run':'No finished calibration run',
+ 'err.not_priming':'Priming has already stopped'},
+de:{
+ 'page.title':'LG Aquatic Life – Dosiertest','title':'Dosiertest','subtitle':'· Dosieren in ml, Kalibrierung, Entlüften, Behälter',
+ 'btn.stopall':'Alle stoppen','btn.hwtest':'Hardwaretest','btn.maint':'Wartung','btn.save':'Speichern','btn.stop':'■ Stopp',
+ 'pump':'Pumpe','unnamed':'(ohne Namen)',
+ 'act.idle':'bereit','act.dosing':'Dosierung','act.priming':'Entlüften','act.calibrating':'Kalibrierlauf','rpm':'U/min',
+ 'ph.unretract':'Rückzug ausgleichen','ph.main':'fördert','ph.retract':'Rückzug',
+ 'mode.auto':'Automatik','mode.manual_only':'nur manuell','mode.disabled':'deaktiviert',
+ 'res.success':'fertig','res.aborted':'abgebrochen','res.fault':'Treiberfehler','res.locked':'gesperrt (Update)',
+ 'res.heartbeat_lost':'Verbindung verloren','res.max_duration':'Höchstdauer erreicht',
+ 'c.uncal':'nicht kalibriert','c.cal':'kalibriert','c.limit':'Tageslimit erreicht',
+ 'c.tube':'Schlauch tauschen','c.notime':'keine gültige Zeit',
+ 'r.progress':'Fortschritt','r.last':'Letzter Lauf','r.calib':'Kalibrierung','r.calib.v':'{mlrev} ml/U · {spm} Schritte/ml',
+ 'r.speed':'Geschwindigkeit','r.retract':'Rückzug','r.retract.v':'{rev} U ≈ {ml} ml{g}','r.global':' (global)',
+ 'r.daily':'Tageslimit','r.daily.v':'{used} von {limit} ml','r.daily.off':'{used} ml (kein Limit)',
+ 'r.container':'Behälter','r.container.v':'{rem} von {cap} ml ({pct} %)','r.container.off':'nicht erfasst',
+ 'r.tube':'Schlauch-Laufzeit','r.tube.v':'{h} von {lim} h','r.total':'Gesamt dosiert',
+ 'd.ml':'Menge ml','d.tier':'Geschwindigkeit','d.dose':'▶ Dosieren','tier.0':'langsam','tier.1':'normal','tier.2':'schnell',
+ 'p.prime':'Halten zum Entlüften','p.hint':'Läuft, solange gedrückt (max. {s} s)',
+ 'cal.title':'Kalibrierung','cal.target':'Ziel ml','cal.start':'Lauf starten','cal.measured':'Gemessen ml','cal.apply':'Übernehmen',
+ 'cal.cancel':'Verwerfen','cal.pending':'Lauf beendet ({t} ml nominal). Aufgefangene Menge messen und eintragen.',
+ 'cal.ok':'Kalibrierung gespeichert','cal.started':'Kalibrierlauf gestartet',
+ 'ct.title':'Behälter','ct.capacity':'Kapazität ml','ct.remaining':'Restinhalt ml','ct.refill':'Nachgefüllt (voll)','ct.set':'Setzen',
+ 'ct.ok':'Behälter aktualisiert',
+ 'st.title':'Einstellungen','st.name':'Name','st.mode':'Betriebsart','st.tier':'Standard-Geschwindigkeit','st.limit':'Tageslimit ml (0 = keins)',
+ 'st.retract':'Rückzug U (leer = global)','st.ok':'Einstellungen gespeichert',
+ 'tb.reset':'Schlauchzähler zurücksetzen','tb.confirm':'Schlauch-Laufzeit von Pumpe {n} zurücksetzen?','tb.ok':'Schlauchzähler zurückgesetzt',
+ 'dose.ok':'Dosiere {ml} ml','stopping':'Stoppt …',
+ 'eng.title':'Engineering (Super-Admin)','eng.hint':'Globale Vorgaben für alle Pumpen. Wird später durch einen eigenen Engineering-Schlüssel geschützt.',
+ 'eng.retract':'Rückzug U','eng.calib':'Kalibrier-Zielmenge ml','eng.min_dose':'Kleinste Dosis ml',
+ 'eng.tier1':'Langsam U/min','eng.tier2':'Normal U/min','eng.tier3':'Schnell U/min','eng.prime_max':'Entlüften max. s',
+ 'eng.prime_hb':'Entlüften Heartbeat ms','eng.tube':'Schlauch-Lebensdauer h','eng.limit_mode':'Fenster Tageslimit',
+ 'lm.calendar_day':'Kalendertag','lm.rolling_24h':'rollierend 24 h','eng.ok':'Engineering-Parameter gespeichert',
+ 'time.none':'keine gültige Zeit','conn':'Verbindung: {e}',
+ 'footnote':'Mengen werden beim Start verbucht; ein gestoppter Lauf schreibt die nicht geförderte Menge gut. Entlüften zählt weder für den Behälter noch für das Tageslimit.',
+ 'err.pump_busy':'Pumpe ist beschäftigt','err.pump_disabled':'Pumpe ist deaktiviert','err.pump_manual_only':'Pumpe steht auf „nur manuell“',
+ 'err.locked':'Pumpen gesperrt (Update läuft)','err.daily_limit':'Tageslimit würde überschritten',
+ 'err.time_invalid':'Keine gültige Uhrzeit – Tageslimit nicht prüfbar',
+ 'err.driver_unavailable':'Treiber nicht erreichbar','err.speed_out_of_range':'Geschwindigkeit außerhalb des Bereichs',
+ 'err.dose_too_small':'Menge unter der kleinsten Dosis','err.dose_too_large':'Menge zu groß',
+ 'err.measured_out_of_range':'Gemessene Menge unplausibel – prüfen und wiederholen','err.no_calibration_run':'Kein abgeschlossener Kalibrierlauf',
+ 'err.not_priming':'Entlüften ist bereits beendet'}
+});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+let S=null,E=null;const built={};
+async function api(method,path){
+  const r=await fetch(path,{method,cache:'no-store'});let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok)throw new Error(i18n.error(j,r.status));return j;
+}
+function msg(id,txt,ok){const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=txt}
+function chip(txt,c){return `<span class="chip ${c||''}">${txt}</span>`}
+function q(o){return Object.entries(o).filter(([k,v])=>v!==undefined&&v!==null).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')}
+const L=k=>`data-i18n="${k}"`;
+const f=(v,d)=>Number(v).toLocaleString(i18n.lang,{minimumFractionDigits:d,maximumFractionDigits:d});
+const tierOpts=()=>[0,1,2].map(t=>`<option value="${t}" ${L('tier.'+t)}></option>`).join('');
+
+function buildPump(p){
+  const n=p.pump,d=document.createElement('section');d.className='card';d.id='p'+n;
+  d.innerHTML=`<div class="row" style="align-items:center;margin:0"><h3 style="flex:1"><span ${L('pump')}></span> ${n} <span class="mut" id="nm${n}"></span></h3></div>
+  <div id="c${n}" style="margin:6px 0"></div>
+  <table id="t${n}"></table>
+  <div class="row">
+   <div><label ${L('d.ml')}></label><input id="ml${n}" type="number" step="0.01" min="0" value="1"></div>
+   <div><label ${L('d.tier')}></label><select id="tr${n}">${tierOpts()}</select></div>
+  </div>
+  <div class="row">
+   <button id="ds${n}" ${L('d.dose')}></button><button id="sp${n}" class="sec" ${L('btn.stop')}></button>
+   <button id="pr${n}" class="svc" ${L('p.prime')}></button>
+  </div>
+  <div class="mut" style="font-size:12px;margin-top:4px" id="ph${n}"></div>
+  <details id="cd${n}"><summary ${L('cal.title')}></summary>
+   <div class="row"><div><label ${L('cal.target')}></label><input id="ct${n}" type="number" step="1" min="1" max="200"></div><button class="sec" id="cs${n}" ${L('cal.start')}></button></div>
+   <div id="cp${n}" hidden><div class="msg ok" id="cpm${n}"></div>
+    <div class="row"><div><label ${L('cal.measured')}></label><input id="cm${n}" type="number" step="0.01" min="0"></div>
+    <button id="ca${n}" ${L('cal.apply')}></button><button class="sec" id="cx${n}" ${L('cal.cancel')}></button></div></div>
+  </details>
+  <details><summary ${L('ct.title')}></summary>
+   <div class="row"><div><label ${L('ct.capacity')}></label><input id="kc${n}" type="number" step="1" min="0"></div>
+   <div><label ${L('ct.remaining')}></label><input id="kr${n}" type="number" step="1" min="0"></div></div>
+   <div class="row"><span></span><button class="sec" id="kf${n}" ${L('ct.refill')}></button><button class="sec" id="ks${n}" ${L('ct.set')}></button></div>
+  </details>
+  <details><summary ${L('st.title')}></summary>
+   <div class="row"><div><label ${L('st.name')}></label><input id="sn${n}" maxlength="23"></div>
+   <div><label ${L('st.mode')}></label><select id="sm${n}"><option value="auto" ${L('mode.auto')}></option><option value="manual_only" ${L('mode.manual_only')}></option><option value="disabled" ${L('mode.disabled')}></option></select></div></div>
+   <div class="row"><div><label ${L('st.tier')}></label><select id="st${n}">${tierOpts()}</select></div>
+   <div><label ${L('st.limit')}></label><input id="sl${n}" type="number" step="0.1" min="0"></div>
+   <div><label ${L('st.retract')}></label><input id="sr${n}" type="number" step="0.01" min="0" max="2"></div></div>
+   <div class="row"><button class="sec" id="ss${n}" ${L('btn.save')}></button></div>
+   <div class="row"><span></span><button class="sec" id="tb${n}" ${L('tb.reset')}></button></div>
+  </details>
+  <div class="msg" id="m${n}"></div>`;
+  $('pumps').appendChild(d);
+  i18n.apply(d);
+  fillForms(p);
+  const done=(t)=>()=>msg('m'+n,t,true),err=e=>msg('m'+n,e.message);
+  $('ds'+n).onclick=()=>{const ml=$('ml'+n).value;api('POST','/api/v1/pumps/dose?'+q({pump:n,ml,tier:$('tr'+n).value})).then(()=>msg('m'+n,t('dose.ok',{ml}),true)).catch(err)};
+  $('sp'+n).onclick=()=>api('POST','/api/v1/pumps/stop?pump='+n).then(done(t('stopping'))).catch(err);
+  // Priming: dead-man switch – start on press, heartbeat every 150 ms, stop on release
+  let hb=null;const pr=$('pr'+n);
+  const stopPrime=()=>{if(!hb)return;clearInterval(hb);hb=null;api('POST','/api/v1/pumps/prime?'+q({pump:n,action:'stop'})).catch(()=>{})};
+  pr.onpointerdown=e=>{e.preventDefault();pr.setPointerCapture(e.pointerId);if(hb)return;
+    api('POST','/api/v1/pumps/prime?'+q({pump:n,action:'start',tier:$('tr'+n).value})).then(()=>{
+      if(hb)return;hb=setInterval(()=>api('POST','/api/v1/pumps/prime?'+q({pump:n,action:'beat'})).catch(e=>{clearInterval(hb);hb=null;err(e)}),150)}).catch(err)};
+  pr.onpointerup=pr.onpointercancel=pr.onlostpointercapture=stopPrime;
+  $('cs'+n).onclick=()=>api('POST','/api/v1/pumps/calibrate?'+q({pump:n,action:'start',ml:$('ct'+n).value||undefined,tier:$('tr'+n).value})).then(done(t('cal.started'))).catch(err);
+  $('ca'+n).onclick=()=>api('POST','/api/v1/pumps/calibrate?'+q({pump:n,action:'apply',measured_ml:$('cm'+n).value})).then(()=>{$('cm'+n).value='';msg('m'+n,t('cal.ok'),true)}).catch(err);
+  $('cx'+n).onclick=()=>api('POST','/api/v1/pumps/calibrate?'+q({pump:n,action:'cancel'})).catch(err);
+  $('kf'+n).onclick=()=>api('POST','/api/v1/pumps/container?'+q({pump:n,remaining_ml:$('kc'+n).value,capacity_ml:$('kc'+n).value})).then(done(t('ct.ok'))).catch(err);
+  $('ks'+n).onclick=()=>api('POST','/api/v1/pumps/container?'+q({pump:n,capacity_ml:$('kc'+n).value,remaining_ml:$('kr'+n).value})).then(done(t('ct.ok'))).catch(err);
+  $('ss'+n).onclick=()=>api('POST','/api/v1/pumps/settings?'+q({pump:n,name:$('sn'+n).value,mode:$('sm'+n).value,tier:$('st'+n).value,
+     daily_limit_ml:$('sl'+n).value||0,retract_rev:$('sr'+n).value===''?'default':$('sr'+n).value}))
+     .then(done(t('st.ok'))).catch(err);
+  $('tb'+n).onclick=()=>{if(confirm(t('tb.confirm',{n})))api('POST','/api/v1/pumps/tube?'+q({pump:n,hours:0})).then(done(t('tb.ok'))).catch(err)};
+}
+function fillForms(p){
+  const n=p.pump;
+  $('tr'+n).value=p.speed.tier;$('st'+n).value=p.speed.tier;$('sn'+n).value=p.name;$('sm'+n).value=p.mode;
+  $('sl'+n).value=p.daily.limit_ml||0;$('sr'+n).value=p.retract.custom?p.retract.rev:'';
+  $('kc'+n).value=p.container.capacity_ml||'';$('kr'+n).value=p.container.tracked?Math.round(p.container.remaining_ml):'';
+}
+function renderPump(p){
+  const n=p.pump,c=p.container,d=p.daily,tb=p.tube,busy=p.activity!=='idle';
+  $('nm'+n).textContent=p.name?'· '+p.name:'';
+  let h=chip(t('act.'+p.activity),busy?(p.activity==='dosing'?'ok':'svc'):'');
+  if(p.mode!=='auto')h+=chip(t('mode.'+p.mode),p.mode==='disabled'?'err':'warn');
+  h+=p.calibration.calibrated?chip(t('c.cal'),'ok'):chip(t('c.uncal'),'warn');
+  if(d.limit_ml&&d.used_ml>=d.limit_ml)h+=chip(t('c.limit'),'err');
+  if(d.limit_ml&&!d.time_valid)h+=chip(t('c.notime'),'err');
+  if(tb.percent>=100)h+=chip(t('c.tube'),'warn');
+  $('c'+n).innerHTML=h;
+  const tier=p.speed.tiers[p.speed.tier],rows=[];
+  if(busy){
+    const prog=p.activity==='priming'?`${f(p.prime_s,1)} s · ${f(p.done_ml,2)} ml`:`${f(p.done_ml,2)} / ${f(p.target_ml,2)} ml`;
+    rows.push(['r.progress',`${prog} · ${t('ph.'+p.phase)} · ${f(p.rpm,0)} ${t('rpm')}`+
+      (p.target_ml?`<div class="bar"><i style="width:${Math.min(100,p.done_ml/p.target_ml*100)}%"></i></div>`:'')]);
+  }
+  if(p.last.result){const ok=p.last.result==='success';
+    rows.push(['r.last',`<span class="${ok?'ok':'err'}">${t('res.'+p.last.result)}</span> · ${t('act.'+p.last.activity)} `+
+      (p.last.activity==='priming'?`${f(p.last.done_ml,2)} ml`:`${f(p.last.done_ml,2)} / ${f(p.last.target_ml,2)} ml`)]);}
+  rows.push(['r.calib',t('r.calib.v',{mlrev:f(p.calibration.ml_per_rev,3),spm:f(p.calibration.steps_per_ml,0)})]);
+  rows.push(['r.speed',`${t('tier.'+p.speed.tier)} · ${tier.rpm} ${t('rpm')} ≈ ${f(tier.ml_min,1)} ml/min`]);
+  rows.push(['r.retract',t('r.retract.v',{rev:f(p.retract.rev,2),ml:f(p.retract.ml,3),g:p.retract.custom?'':t('r.global')})]);
+  rows.push(['r.daily',d.limit_ml?t('r.daily.v',{used:f(d.used_ml,2),limit:f(d.limit_ml,1)})+`<div class="bar"><i style="width:${Math.min(100,d.used_ml/d.limit_ml*100)}%"></i></div>`:t('r.daily.off',{used:f(d.used_ml,2)})]);
+  rows.push(['r.container',c.tracked?t('r.container.v',{rem:f(c.remaining_ml,1),cap:f(c.capacity_ml,0),pct:f(c.percent,0)})+`<div class="bar"><i style="width:${c.percent}%"></i></div>`:t('r.container.off')]);
+  rows.push(['r.tube',t('r.tube.v',{h:f(tb.hours,1),lim:tb.limit_h})]);
+  rows.push(['r.total',`${f(p.total_ml,2)} ml`]);
+  $('t'+n).innerHTML=rows.map(r=>`<tr><td class="k">${t(r[0])}</td><td>${r[1]}</td></tr>`).join('');
+  $('ds'+n).disabled=busy;$('cs'+n).disabled=busy;
+  const cp=p.calibration.pending;$('cp'+n).hidden=!cp;
+  if(cp){$('cpm'+n).textContent=t('cal.pending',{t:f(p.calibration.pending_target_ml,1)});$('cd'+n).open=true}
+  $('ph'+n).textContent=E?t('p.hint',{s:E.prime_max_s}):'';
+  if(E&&$('ct'+n).value==='')$('ct'+n).value=E.calib_ml;
+}
+function renderEng(){
+  if(!E)return;
+  $('e_retract').value=E.retract_rev;$('e_calib').value=E.calib_ml;$('e_min').value=E.min_dose_ml;
+  E.tier_rpm.forEach((v,i)=>$('e_t'+i).value=v);
+  $('e_pmax').value=E.prime_max_s;$('e_phb').value=E.prime_heartbeat_ms;$('e_tube').value=E.tube_life_h;$('e_lm').value=E.limit_mode;
+}
+function render(){
+  if(!S)return;
+  if(!built.pumps){S.pumps.forEach(buildPump);built.pumps=true}
+  S.pumps.forEach(renderPump);
+  const d=S.pumps[0].daily;$('clock').textContent=d.time_valid?new Date().toLocaleString(i18n.lang):t('time.none');$('clock').className='chip '+(d.time_valid?'':'err');
+}
+async function poll(){try{S=await api('GET','/api/v1/pumps');render()}catch(e){$('clock').textContent=t('conn',{e:e.message});$('clock').className='chip err'}}
+async function loadEng(){try{E=await api('GET','/api/v1/engineering/dosing');renderEng();if(S)S.pumps.forEach(fillForms)}catch(e){msg('emsg',e.message)}}
+$('stopall').onclick=()=>api('POST','/api/v1/pumps/stop?pump=0');
+$('e_save').onclick=()=>api('POST','/api/v1/engineering/dosing?'+q({retract_rev:$('e_retract').value,calib_ml:$('e_calib').value,min_dose_ml:$('e_min').value,
+  tier1_rpm:$('e_t0').value,tier2_rpm:$('e_t1').value,tier3_rpm:$('e_t2').value,prime_max_s:$('e_pmax').value,prime_heartbeat_ms:$('e_phb').value,
+  tube_life_h:$('e_tube').value,limit_mode:$('e_lm').value})).then(j=>{E=j;renderEng();msg('emsg',t('eng.ok'),true)}).catch(e=>msg('emsg',e.message));
+i18n.onChange(render);
+i18n.init('lang');
+loadEng();poll();setInterval(poll,1000);
+</script>
+</body>
+</html>

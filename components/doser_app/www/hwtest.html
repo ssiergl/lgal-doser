@@ -40,6 +40,7 @@ select.lang{width:auto}
 <span id="en" class="chip">EN …</span><span id="clock" class="chip">…</span>
 <span style="flex:1"></span>
 <button class="sec" id="stopall" data-i18n="btn.stopall"></button><button class="stop" id="estop" data-i18n="btn.estop"></button>
+<a href="/dosing"><button class="sec" data-i18n="btn.dosing"></button></a>
 <a href="/"><button class="sec" data-i18n="btn.maint"></button></a>
 <select id="lang" class="lang" data-i18n-title="lang.label"></select>
 </div>
@@ -74,7 +75,7 @@ select.lang{width:auto}
 i18n.add({
 en:{
  'page.title':'LG Aquatic Life – Hardware test','title':'Hardware test','subtitle':'· raw stepper without container, schedule and log',
- 'btn.stopall':'Soft stop all','btn.estop':'EMERGENCY STOP','btn.maint':'Maintenance','btn.set':'Set','btn.save':'Save','btn.read':'Read',
+ 'btn.stopall':'Soft stop all','btn.estop':'EMERGENCY STOP','btn.maint':'Maintenance','btn.dosing':'Dosing test','btn.set':'Set','btn.save':'Save','btn.read':'Read',
  'pump':'Pump','p.revs':'Revolutions','p.rpm':'rpm','p.fwd':'▶ forward','p.bwd':'◀ reverse','p.stop':'■ Stop','p.force':'step without driver',
  'p.adv':'Advanced: steps/frequency directly, ramp','p.steps':'Steps (±)','p.sps':'Steps/s','p.from_revs':'from revolutions','p.from_rpm':'from rpm',
  'p.acc':'Ramp steps/s²','p.vs':'Start steps/s','p.default':'default',
@@ -101,7 +102,7 @@ en:{
  'err.rtc_unavailable':'RTC not reachable','err.eeprom_test_failed':'EEPROM test failed'},
 de:{
  'page.title':'LG Aquatic Life – Hardwaretest','title':'Hardwaretest','subtitle':'· Raw-Stepper ohne Behälter, Zeitplan und Log',
- 'btn.stopall':'Alle sanft stoppen','btn.estop':'NOT-AUS','btn.maint':'Wartung','btn.set':'Setzen','btn.save':'Speichern','btn.read':'Lesen',
+ 'btn.stopall':'Alle sanft stoppen','btn.estop':'NOT-AUS','btn.maint':'Wartung','btn.dosing':'Dosiertest','btn.set':'Setzen','btn.save':'Speichern','btn.read':'Lesen',
  'pump':'Pumpe','p.revs':'Umdrehungen','p.rpm':'U/min','p.fwd':'▶ vorwärts','p.bwd':'◀ rückwärts','p.stop':'■ Stopp','p.force':'ohne Treiber takten',
  'p.adv':'Erweitert: Schritte/Frequenz direkt, Rampe','p.steps':'Schritte (±)','p.sps':'Schritte/s','p.from_revs':'aus Umdrehungen','p.from_rpm':'aus U/min',
  'p.acc':'Rampe Schritte/s²','p.vs':'Start Schritte/s','p.default':'Standard',
