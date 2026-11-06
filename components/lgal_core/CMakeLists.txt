@@ -10,6 +10,7 @@ idf_component_register(
         "src/sysapi.cpp"
         "src/ota.cpp"
         "src/json.cpp"
+        "src/timesync.cpp"
     INCLUDE_DIRS "include"
     EMBED_TXTFILES "www/recovery.html"
     REQUIRES
@@ -30,4 +31,5 @@ idf_component_register(
         esp_timer
         spi_flash
         log
+        lwip
 )

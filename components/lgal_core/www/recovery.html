@@ -22,6 +22,7 @@ footer{color:var(--mut);font-size:12px;text-align:center;margin:20px 0}
 <body>
 <main>
 <h1>LG Aquatic Life · Doser · Wartung</h1>
+<div class="row" id="links"></div>
 
 <section class="card">
 <h2>Gerät</h2>
@@ -61,12 +62,14 @@ async function loadInfo(){
       row('Hostname',`${d.hostname}.local`)+row('MAC',d.mac)+
       row('Ethernet',n.eth_present?(n.eth_link?(n.eth_ip||'Link, keine IP'):'kein Link'):'<span class="err">W5500 nicht gefunden</span>')+
       row('Setup-AP',n.ap_active?`aktiv, ${n.ap_clients} Client(s)`:'aus')+
+      row('Uhrzeit',j.time&&j.time.valid?`${j.time.local} (Quelle: ${({ntp:'NTP',rtc:'RTC',manual:'manuell'})[j.time.source]||j.time.source})`:'<span class="err">keine gültige Zeit</span>')+
       row('Laufzeit',`${Math.floor(s.uptime_s/3600)} h ${Math.floor(s.uptime_s%3600/60)} min`)+
       row('Letzter Reset',s.reset_reason)+
       row('Heap frei / min',`${(s.heap_free/1024).toFixed(0)} / ${(s.heap_min_free/1024).toFixed(0)} KiB`)+
       row('PSRAM frei',`${(s.psram_free/1048576).toFixed(1)} MiB`)+
       row('Coredump',s.coredump?'<span class="err">vorhanden</span>':'keiner');
     $('cdlink').hidden=!s.coredump;
+    $('links').innerHTML=(j.links||[]).map(l=>`<a href="${l.path}"><button class="sec">${l.name}</button></a>`).join('');
   }catch(e){$('info').innerHTML=row('Fehler',String(e))}
 }
 $('up').onclick=()=>{

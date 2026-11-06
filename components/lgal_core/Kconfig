@@ -32,4 +32,12 @@ menu "LG Aquatic Life Core"
         default 20
         range 1 40
 
+    config LGAL_TIMEZONE
+        string "Time zone (POSIX TZ, default until setup)"
+        default "CET-1CEST,M3.5.0,M10.5.0/3"
+
+    config LGAL_NTP_SERVER
+        string "NTP server (default until setup)"
+        default "pool.ntp.org"
+
 endmenu
