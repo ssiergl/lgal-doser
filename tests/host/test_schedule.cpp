@@ -382,6 +382,25 @@ static void test_forecast() {
     CHECK(weekdays_only > 69.9f && weekdays_only < 70.1f);
 }
 
+static void test_run_records() {
+    RunState st;
+    st.cursor = Cursor{1793968215, 7713};
+    boost_start(st.boost, 30000, 3, 20763);
+    st.skipped = 4;
+    RunRecord a, b;
+    seal(a, 7, st);
+    CHECK(valid(a) && a.state.cursor.utc == 1793968215 && a.state.boost.remaining_ul == 30000);
+    seal(b, 8, st);
+    CHECK(newest(a, b) == 1 && newest(b, a) == 0);
+    b.state.cursor.tag ^= 1;  // bit error / half written
+    CHECK(!valid(b) && newest(a, b) == 0);
+    RunRecord z{};
+    CHECK(newest(z, z) == -1);
+    seal(a, 0xFFFFFFFFu, st);  // sequence number wraps around
+    seal(b, 0, st);
+    CHECK(newest(a, b) == 1);
+}
+
 int main() {
     std::printf("Schedule: days\n");
     test_days();
@@ -398,6 +417,8 @@ int main() {
     test_boost();
     std::printf("Schedule: forecast\n");
     test_forecast();
+    std::printf("Schedule: run state records\n");
+    test_run_records();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

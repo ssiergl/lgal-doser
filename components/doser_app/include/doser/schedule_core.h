@@ -24,6 +24,14 @@ constexpr int kMaxInterval = 30;      // "every N days"
 constexpr uint16_t kMinutesPerDay = 1440;
 constexpr int64_t kOnTimeTolerance = 120;  // a slot started this late is not "missed"
 
+// Scheduler parameters (super admin, functional spec 11.2)
+struct Config {
+    uint16_t grid_min = 5;        // smallest scheduling grid
+    uint16_t max_delay_min = 30;  // a delayed slot (lock time, pump busy) is dropped after this
+};
+// nullptr = valid, otherwise name of the invalid field
+const char* validate(const Config& c);
+
 // ---------------------------------------------------------------------------
 // Days
 enum class DayMode : uint8_t { Weekdays = 0, Interval = 1 };
@@ -159,6 +167,7 @@ Validation validate(const PumpSchedule (&all)[kPumps], const Locks& locks, const
 struct Cursor {
     int64_t utc = 0;
     uint32_t tag = 0;  // minute * 16 + program + 1, 0 = before all slots of that second
+    uint32_t reserved = 0;  // explicit padding (CRC over defined bytes)
 };
 
 struct Due {
@@ -198,6 +207,7 @@ struct Boost {
     uint32_t budget_ul = 0;     // still to dose on budget_day
     uint32_t total_ul = 0;      // as started (display)
 };
+static_assert(sizeof(Boost) == 24);
 void boost_start(Boost& b, uint32_t total_ul, uint16_t days, int32_t today);
 bool boost_active(const Boost& b, int32_t today);
 // Share for the slot due now; reduces the boost. remaining_slots: slots of
@@ -205,6 +215,36 @@ bool boost_active(const Boost& b, int32_t today);
 uint32_t boost_take(Boost& b, int32_t today, int remaining_slots);
 // Dose failed or was aborted: give the share back
 void boost_refund(Boost& b, int32_t today, uint32_t ul);
+
+// ---------------------------------------------------------------------------
+// Run state per pump (written after every processed slot -> EEPROM A/B,
+// NVS as fallback), sealed like the dosing records.
+struct RunState {
+    Cursor cursor;
+    Boost boost;
+    uint32_t skipped = 0;  // slots skipped since the counter was reset (statistics)
+    uint32_t reserved = 0;
+};
+static_assert(sizeof(RunState) == 48);
+
+struct RunRecord {
+    uint32_t magic;
+    uint16_t version;
+    uint16_t size;
+    uint32_t seq;
+    uint32_t reserved;
+    RunState state;
+    uint32_t crc;
+    uint32_t reserved2;
+};
+static_assert(sizeof(RunRecord) == 72);
+constexpr uint32_t kRunMagic = 0x4C475343;  // "LGSC"
+constexpr uint16_t kRunVersion = 1;
+
+void seal(RunRecord& r, uint32_t seq, const RunState& s);
+bool valid(const RunRecord& r);
+// Index (0/1) of the newer valid record, -1 if none is valid
+int newest(const RunRecord& a, const RunRecord& b);
 
 // ---------------------------------------------------------------------------
 // Forecast: days until the container is empty, based on the plan of the

@@ -2,11 +2,10 @@
 
 #include <cinttypes>
 #include <cstdio>
-#include <type_traits>
 
 #include "doser/i2c_devices.h"
+#include "doser/nvs_blob.h"
 #include "esp_log.h"
-#include "nvs.h"
 
 namespace doser::dosing_store {
 
@@ -24,34 +23,13 @@ struct Slots {
 Slots s_slots[5];
 
 template <typename T>
-struct Blob {
-    uint16_t version;
-    T value;
-};
-
-template <typename T>
 bool nvs_load(const char* key, T* out) {
-    static_assert(std::is_trivially_copyable_v<T>);
-    nvs_handle_t h;
-    if (nvs_open(kNs, NVS_READONLY, &h) != ESP_OK) return false;
-    Blob<T> b{};
-    size_t len = sizeof(b);
-    const bool ok = nvs_get_blob(h, key, &b, &len) == ESP_OK && len == sizeof(b) && b.version == kVersion;
-    nvs_close(h);
-    if (ok) *out = b.value;
-    return ok;
+    return nvs_blob::load(kNs, key, kVersion, out);
 }
 
 template <typename T>
 esp_err_t nvs_save(const char* key, const T& v) {
-    nvs_handle_t h;
-    esp_err_t err = nvs_open(kNs, NVS_READWRITE, &h);
-    if (err != ESP_OK) return err;
-    Blob<T> b{kVersion, v};
-    err = nvs_set_blob(h, key, &b, sizeof(b));
-    if (err == ESP_OK) err = nvs_commit(h);
-    nvs_close(h);
-    return err;
+    return nvs_blob::save(kNs, key, kVersion, v);
 }
 
 uint16_t slot_addr(int pump, int slot) { return kEepromBase + (pump * 2 + slot) * kSlotSize; }

@@ -1,6 +1,7 @@
 #include "doser/schedule_core.h"
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 
@@ -75,6 +76,13 @@ bool parse_manual_during_lock(const char* s, ManualDuringLock* out) {
     else if (!std::strcmp(s, "queue")) *out = ManualDuringLock::Queue;
     else return false;
     return true;
+}
+
+const char* validate(const Config& c) {
+    // the grid must divide a day so that slots repeat on the same minutes
+    if (c.grid_min < 1 || c.grid_min > 60 || kMinutesPerDay % c.grid_min) return "grid_min";
+    if (c.max_delay_min < 1 || c.max_delay_min > 720) return "max_delay_min";
+    return nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -423,6 +431,28 @@ void boost_refund(Boost& b, int32_t today, uint32_t ul) {
     if (!ul) return;
     b.remaining_ul += ul;
     if (b.budget_day == today) b.budget_ul += ul;
+}
+
+// ---------------------------------------------------------------------------
+void seal(RunRecord& r, uint32_t seq, const RunState& s) {
+    std::memset(&r, 0, sizeof(r));
+    r.magic = kRunMagic;
+    r.version = kRunVersion;
+    r.size = sizeof(RunRecord);
+    r.seq = seq;
+    r.state = s;
+    r.crc = dose::crc32(&r, offsetof(RunRecord, crc));
+}
+
+bool valid(const RunRecord& r) {
+    return r.magic == kRunMagic && r.version == kRunVersion && r.size == sizeof(RunRecord) &&
+           r.crc == dose::crc32(&r, offsetof(RunRecord, crc));
+}
+
+int newest(const RunRecord& a, const RunRecord& b) {
+    const bool va = valid(a), vb = valid(b);
+    if (va && vb) return static_cast<int32_t>(b.seq - a.seq) > 0 ? 1 : 0;
+    return va ? 0 : vb ? 1 : -1;
 }
 
 // ---------------------------------------------------------------------------
