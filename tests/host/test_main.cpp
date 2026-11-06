@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "doser/civil_time.h"
+#include "doser/dosing_core.h"
 #include "doser/ramp.h"
 #include "doser/tmc2209_proto.h"
 
@@ -223,6 +224,103 @@ static void test_civil() {
     CHECK(y2100.month == 2 && y2100.day == 28);
 }
 
+static void test_dose_conversion() {
+    using namespace dose;
+    const uint32_t spr = 3200;  // 200 full steps × 16
+    CHECK(ul_to_steps(370, kNominalUlPerRev, spr) == 3200);
+    CHECK(ul_to_steps(20, kNominalUlPerRev, spr) == 173);  // 0.02 ml
+    CHECK(steps_to_ul(3200, kNominalUlPerRev, spr) == 370);
+    CHECK(ul_to_steps(1000000, kNominalUlPerRev, spr) == 8648649);
+    CHECK(mrev_to_steps(250, spr) == 800);  // ¼ rev
+    CHECK(mrev_to_steps(250, 6400) == 1600);
+    CHECK(std::fabs(flow_ml_min(300, kNominalUlPerRev) - 111.0f) < 0.01f);
+    // Calibration: 20 ml target with nominal value, collected 18.5 ml
+    const uint32_t steps = ul_to_steps(20000, kNominalUlPerRev, spr);
+    auto c = calibrate(steps, spr, 18500);
+    CHECK(c.ok && std::fabs(c.ul_per_rev - 342.25f) < 0.1f);
+    CHECK(ul_to_steps(18500, c.ul_per_rev, spr) == steps);
+    // Change microsteps: calibration stays valid
+    CHECK(ul_to_steps(18500, c.ul_per_rev, 6400) == 2 * steps);
+    CHECK(!calibrate(steps, spr, 1000).ok);      // implausibly small
+    CHECK(!calibrate(steps, spr, 400000).ok);    // implausibly large
+    CHECK(!calibrate(0, spr, 1000).ok);
+    // Retraction: global or per pump
+    PumpSettings p;
+    Engineering e;
+    CHECK(retract_mrev(p, e) == 250);
+    p.retract_mrev = 0;
+    CHECK(retract_mrev(p, e) == 0);
+    p.retract_mrev = 500;
+    CHECK(retract_mrev(p, e) == 500);
+    CHECK(validate(e, 600) == nullptr);
+    e.tier_rpm[2] = 700;
+    CHECK(validate(e, 600) != nullptr);
+    e.tier_rpm[2] = 150;  // not ascending
+    CHECK(validate(e, 600) != nullptr);
+}
+
+static void test_ledger() {
+    using namespace dose;
+    const int64_t t0 = 1793968215;  // 2026-11-06 12:30:15 UTC
+    Ledger l{};
+    l.add(t0, 1000);
+    l.add(t0 + 600, 500);  // same hour
+    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 600, 0)) == 1500);
+    // 23 h later: still in the rolling window, 25 h later no longer
+    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 23 * 3600, 0)) == 1500);
+    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 24 * 3600, 0)) == 1500);  // started hour: conservative
+    l.add(t0 + 25 * 3600 + 3599, 0);
+    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 25 * 3600 + 3599, 0)) == 0);
+    // Calendar day (CET): local midnight = 23:00 UTC of the previous day
+    Ledger d{};
+    const int64_t midnight = 1793919600;  // 2026-11-06 00:00 CET
+    d.add(midnight - 60, 700);            // 23:59 on the previous day
+    d.add(midnight + 3600, 300);
+    d.add(t0, 200);
+    CHECK(d.sum_from(window_start_hour(LimitMode::CalendarDay, t0, midnight)) == 500);
+    // credit on abort
+    d.subtract(t0, 150);
+    CHECK(d.sum_from(window_start_hour(LimitMode::CalendarDay, t0, midnight)) == 350);
+    // Long pause: old buckets are cleared on the next entry
+    d.add(t0 + 30 * 24 * 3600, 10);
+    CHECK(d.sum_from(0) == 10);
+    // Clock far back: nothing is lost (conservative)
+    d.add(t0, 5);
+    CHECK(d.sum_from(window_start_hour(LimitMode::Rolling24h, t0, 0)) == 15);
+    // check before start
+    PumpSettings p;
+    Engineering e;
+    PumpState s{};
+    p.daily_limit_ul = 10000;
+    CHECK(check_dose(5000, p, e, s, 5000) == nullptr);
+    CHECK(std::strcmp(check_dose(5001, p, e, s, 5000), "daily_limit") == 0);
+    CHECK(std::strcmp(check_dose(19, p, e, s, 0), "dose_too_small") == 0);
+    CHECK(check_dose(100, p, e, s, 0) == nullptr);
+    p.mode = Mode::Disabled;
+    CHECK(std::strcmp(check_dose(100, p, e, s, 0), "pump_disabled") == 0);
+}
+
+static void test_records() {
+    using namespace dose;
+    CHECK(crc32("123456789", 9) == 0xCBF43926u);  // standard check value
+    PumpState s{};
+    s.remaining_ul = 123456;
+    s.tube_ms = 3600000;
+    Record a, b;
+    seal(a, 7, s);
+    s.remaining_ul = 120000;
+    seal(b, 8, s);
+    CHECK(valid(a) && valid(b));
+    CHECK(newest(a, b) == 1);
+    b.state.remaining_ul ^= 1;  // bit error / half written
+    CHECK(!valid(b) && newest(a, b) == 0);
+    Record z{};
+    CHECK(newest(z, z) == -1);
+    seal(a, 0xFFFFFFFFu, s);  // sequence number wraps around
+    seal(b, 0, s);
+    CHECK(newest(a, b) == 1);
+}
+
 int main() {
     std::printf("TMC2209 protocol\n");
     test_crc_and_datagrams();
@@ -235,6 +333,12 @@ int main() {
     test_ramp_velocity_mode();
     std::printf("Calendar\n");
     test_civil();
+    std::printf("Dosing: conversion, calibration\n");
+    test_dose_conversion();
+    std::printf("Daily limit\n");
+    test_ledger();
+    std::printf("EEPROM records\n");
+    test_records();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }
