@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LG Aquatic Life – Hardwaretest</title>
+<title>LG Aquatic Life – Hardware test</title>
 <style>
 :root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
 *{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
@@ -28,17 +28,20 @@ details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:13px}
 pre{background:#071118;padding:8px;border-radius:6px;font-size:12px;overflow:auto;margin:6px 0 0}
 .top{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
 a{color:var(--acc)}
+select.lang{width:auto}
 </style>
+<script src="/i18n.js"></script>
 </head>
 <body>
 <main>
 <div class="top">
-<h1>Hardwaretest <span class="mut" style="font-size:14px">· Raw-Stepper ohne Behälter, Zeitplan und Log</span></h1>
+<h1><span data-i18n="title"></span> <span class="mut" style="font-size:14px" data-i18n="subtitle"></span></h1>
 <div class="row" style="align-items:center">
-<span id="en" class="chip">EN …</span><span id="clock" class="chip">Zeit …</span>
+<span id="en" class="chip">EN …</span><span id="clock" class="chip">…</span>
 <span style="flex:1"></span>
-<button class="sec" id="stopall">Alle sanft stoppen</button><button class="stop" id="estop">NOT-AUS</button>
-<a href="/"><button class="sec">Wartung</button></a>
+<button class="sec" id="stopall" data-i18n="btn.stopall"></button><button class="stop" id="estop" data-i18n="btn.estop"></button>
+<a href="/"><button class="sec" data-i18n="btn.maint"></button></a>
+<select id="lang" class="lang" data-i18n-title="lang.label"></select>
 </div>
 </div>
 
@@ -46,92 +49,149 @@ a{color:var(--acc)}
 
 <div class="grid">
 <section class="card">
-<h2>Uhr (DS3231)</h2>
+<h2 data-i18n="rtc.title"></h2>
 <table id="rtc"></table>
 <div class="row" style="margin-top:8px">
-<button class="sec" id="settime">Zeit vom Browser übernehmen</button>
+<button class="sec" id="settime" data-i18n="rtc.settime"></button>
 </div>
 <div class="row" style="margin-top:8px">
-<div><label>Aging-Offset (−128…127)</label><input id="aging" type="number" min="-128" max="127"></div>
-<button class="sec" id="setaging">Setzen</button>
+<div><label data-i18n="rtc.aging"></label><input id="aging" type="number" min="-128" max="127"></div>
+<button class="sec" id="setaging" data-i18n="btn.set"></button>
 </div>
 <div class="msg" id="rtcmsg"></div>
 </section>
 <section class="card">
-<h2>EEPROM (AT24C32) &amp; UART</h2>
+<h2 data-i18n="ee.title"></h2>
 <table id="eeprom"></table>
-<div class="row" style="margin-top:8px"><button class="sec" id="eetest">Schreib-/Lesetest</button></div>
+<div class="row" style="margin-top:8px"><button class="sec" id="eetest" data-i18n="ee.test"></button></div>
 <div class="msg" id="eemsg"></div>
 <table id="uart" style="margin-top:10px"></table>
 </section>
 </div>
-<p class="mut" style="font-size:12px">Schritte = Mikroschritte. Rampe und Startgeschwindigkeit leer lassen = Standardwerte der Pumpe.
-StallGuard (SG): kleinere Werte = mehr Last; erst nach der Anfahrrampe aussagekräftig.</p>
+<p class="mut" style="font-size:12px" data-i18n="footnote"></p>
 </main>
 <script>
+i18n.add({
+en:{
+ 'page.title':'LG Aquatic Life – Hardware test','title':'Hardware test','subtitle':'· raw stepper without container, schedule and log',
+ 'btn.stopall':'Soft stop all','btn.estop':'EMERGENCY STOP','btn.maint':'Maintenance','btn.set':'Set','btn.save':'Save','btn.read':'Read',
+ 'pump':'Pump','p.revs':'Revolutions','p.rpm':'rpm','p.fwd':'▶ forward','p.bwd':'◀ reverse','p.stop':'■ Stop','p.force':'step without driver',
+ 'p.adv':'Advanced: steps/frequency directly, ramp','p.steps':'Steps (±)','p.sps':'Steps/s','p.from_revs':'from revolutions','p.from_rpm':'from rpm',
+ 'p.acc':'Ramp steps/s²','p.vs':'Start steps/s','p.default':'default',
+ 'p.cfg':'Driver configuration (saved)','p.run_ma':'Run current mA','p.hold_ma':'Hold current mA','p.micro':'Microsteps','p.full':'Full steps/rev',
+ 'p.def_acc':'Default ramp steps/s²','p.def_vs':'Default start steps/s','p.invert':'Invert direction','p.regs':'Read registers',
+ 'p.stopping':'Stopping …','p.saved':'Saved and sent to the driver','p.check':'Check revolutions/rpm or steps/frequency',
+ 'p.running_msg':'Moving {dir}{steps} steps at {sps} steps/s','p.rev_word':'reverse ',
+ 'c.driver':'Driver v0x{v}','c.nodriver':'no driver','c.run_fwd':'running ▶','c.run_bwd':'running ◀','c.overtemp':'Overtemperature',
+ 'c.overtemp_warn':'Temperature warning','c.short':'Short circuit','c.open':'Motor open?',
+ 'r.pos':'Position','r.vel':'Speed','r.vel.v':'{sps} steps/s · {rpm} rpm','r.cur':'Current (set)','r.cur.v':'{run} mA run · {hold} mA hold',
+ 'r.sg':'StallGuard','r.drv':'DRV_STATUS','r.standstill':' · standstill',
+ 'fault.driver_lost':'Driver not reachable','fault.driver_reset':'Driver reset during move','fault.driver_error':'Driver error (drv_err)',
+ 'fault.short_circuit':'Short circuit in motor winding','fault.overtemperature':'Driver overtemperature',
+ 'en.on':'Drivers ON','en.off':'Drivers OFF','en.lock':' · OTA lock','time.none':'no valid time','conn':'Connection: {e}',
+ 'rtc.title':'Clock (DS3231)','rtc.settime':'Take time from browser','rtc.aging':'Aging offset (−128…127)',
+ 'rtc.missing':'DS3231 not found (I²C 0x68)','rtc.time':'RTC time (stored as UTC)','rtc.lost':'invalid – battery?',
+ 'rtc.diff':'Difference to system time','rtc.temp':'Temperature','rtc.aging_l':'Aging offset','rtc.tz':'Time zone',
+ 'rtc.set_ok':'Time set (system + RTC)','rtc.aging_ok':'Aging offset set',
+ 'ee.title':'EEPROM (AT24C32) & UART','ee.test':'Write/read test','ee.found':'found','ee.missing':'not found','ee.ok':'Test passed',
+ 'u.bus':'UART bus','u.transfers':'Transfers','u.timeout':'Timeout','u.crc':'CRC','u.echo':'Echo',
+ 'footnote':'Steps = microsteps. Leave ramp and start speed empty = pump defaults. StallGuard (SG): lower values = more load; only meaningful after the acceleration ramp.',
+ 'err.pump_busy':'Pump already running or OTA lock active','err.driver_unavailable':'Driver not reachable/configured (tick "step without driver" to step anyway)',
+ 'err.speed_out_of_range':'Speed out of range','err.driver_config_failed':'Saved, but the driver could not be configured',
+ 'err.rtc_unavailable':'RTC not reachable','err.eeprom_test_failed':'EEPROM test failed'},
+de:{
+ 'page.title':'LG Aquatic Life – Hardwaretest','title':'Hardwaretest','subtitle':'· Raw-Stepper ohne Behälter, Zeitplan und Log',
+ 'btn.stopall':'Alle sanft stoppen','btn.estop':'NOT-AUS','btn.maint':'Wartung','btn.set':'Setzen','btn.save':'Speichern','btn.read':'Lesen',
+ 'pump':'Pumpe','p.revs':'Umdrehungen','p.rpm':'U/min','p.fwd':'▶ vorwärts','p.bwd':'◀ rückwärts','p.stop':'■ Stopp','p.force':'ohne Treiber takten',
+ 'p.adv':'Erweitert: Schritte/Frequenz direkt, Rampe','p.steps':'Schritte (±)','p.sps':'Schritte/s','p.from_revs':'aus Umdrehungen','p.from_rpm':'aus U/min',
+ 'p.acc':'Rampe Schritte/s²','p.vs':'Start Schritte/s','p.default':'Standard',
+ 'p.cfg':'Treiber-Konfiguration (wird gespeichert)','p.run_ma':'Laufstrom mA','p.hold_ma':'Haltestrom mA','p.micro':'Mikroschritte','p.full':'Vollschritte/U',
+ 'p.def_acc':'Standard-Rampe Schritte/s²','p.def_vs':'Standard-Start Schritte/s','p.invert':'Drehrichtung invertieren','p.regs':'Register lesen',
+ 'p.stopping':'Stoppt …','p.saved':'Gespeichert und an den Treiber übertragen','p.check':'Umdrehungen/U/min bzw. Schritte/Frequenz prüfen',
+ 'p.running_msg':'Fährt {dir}{steps} Schritte mit {sps} Schritte/s','p.rev_word':'rückwärts ',
+ 'c.driver':'Treiber v0x{v}','c.nodriver':'kein Treiber','c.run_fwd':'läuft ▶','c.run_bwd':'läuft ◀','c.overtemp':'Übertemperatur',
+ 'c.overtemp_warn':'Temperatur-Warnung','c.short':'Kurzschluss','c.open':'Motor offen?',
+ 'r.pos':'Position','r.vel':'Geschwindigkeit','r.vel.v':'{sps} Schritte/s · {rpm} U/min','r.cur':'Strom (eingestellt)','r.cur.v':'{run} mA lauf · {hold} mA halt',
+ 'r.sg':'StallGuard','r.drv':'DRV_STATUS','r.standstill':' · Stillstand',
+ 'fault.driver_lost':'Treiber nicht erreichbar','fault.driver_reset':'Treiber-Reset während der Fahrt','fault.driver_error':'Treiberfehler (drv_err)',
+ 'fault.short_circuit':'Kurzschluss an der Motorwicklung','fault.overtemperature':'Übertemperatur Treiber',
+ 'en.on':'Treiber EIN','en.off':'Treiber AUS','en.lock':' · OTA-Sperre','time.none':'keine gültige Zeit','conn':'Verbindung: {e}',
+ 'rtc.title':'Uhr (DS3231)','rtc.settime':'Zeit vom Browser übernehmen','rtc.aging':'Aging-Offset (−128…127)',
+ 'rtc.missing':'DS3231 nicht gefunden (I²C 0x68)','rtc.time':'RTC-Zeit (UTC gespeichert)','rtc.lost':'ungültig – Batterie?',
+ 'rtc.diff':'Abweichung zur Systemzeit','rtc.temp':'Temperatur','rtc.aging_l':'Aging-Offset','rtc.tz':'Zeitzone',
+ 'rtc.set_ok':'Zeit gesetzt (System + RTC)','rtc.aging_ok':'Aging-Offset gesetzt',
+ 'ee.title':'EEPROM (AT24C32) & UART','ee.test':'Schreib-/Lesetest','ee.found':'gefunden','ee.missing':'nicht gefunden','ee.ok':'Test bestanden',
+ 'u.bus':'UART-Bus','u.transfers':'Transfers','u.timeout':'Timeout','u.crc':'CRC','u.echo':'Echo',
+ 'footnote':'Schritte = Mikroschritte. Rampe und Startgeschwindigkeit leer lassen = Standardwerte der Pumpe. StallGuard (SG): kleinere Werte = mehr Last; erst nach der Anfahrrampe aussagekräftig.',
+ 'err.pump_busy':'Pumpe läuft bereits oder OTA-Sperre aktiv','err.driver_unavailable':'Treiber nicht erreichbar/konfiguriert („ohne Treiber takten“ taktet trotzdem)',
+ 'err.speed_out_of_range':'Geschwindigkeit außerhalb des zulässigen Bereichs','err.driver_config_failed':'Gespeichert, aber Treiber nicht konfiguriert',
+ 'err.rtc_unavailable':'RTC nicht erreichbar','err.eeprom_test_failed':'EEPROM-Test fehlgeschlagen'}
+});
 const $=id=>document.getElementById(id);
 let S=null;const built={};
 async function api(method,path){
   const r=await fetch(path,{method,cache:'no-store'});let j={};try{j=await r.json()}catch(e){}
-  if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;
+  if(!r.ok)throw new Error(i18n.error(j,r.status));return j;
 }
-function msg(id,t,ok){const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=t}
-function chip(t,c){return `<span class="chip ${c||''}">${t}</span>`}
+function msg(id,txt,ok){const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=txt}
+function chip(txt,c){return `<span class="chip ${c||''}">${txt}</span>`}
 function q(o){return Object.entries(o).filter(([k,v])=>v!==''&&v!==undefined&&v!==null).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')}
+const L=k=>`data-i18n="${k}"`;
 
 function buildPump(p){
   const n=p.pump,d=document.createElement('section');d.className='card';d.id='p'+n;
-  d.innerHTML=`<div class="row" style="align-items:center"><h3 style="flex:1">Pumpe ${n} <span class="mut" style="font-size:12px">(${p.stepgen})</span></h3></div>
+  d.innerHTML=`<div class="row" style="align-items:center"><h3 style="flex:1"><span ${L('pump')}></span> ${n} <span class="mut" style="font-size:12px">(${p.stepgen})</span></h3></div>
   <div id="c${n}" style="margin:6px 0"></div>
   <table id="t${n}"></table>
   <div class="row" style="margin-top:8px">
-   <div><label>Umdrehungen</label><input id="rev${n}" type="number" step="0.1" value="1"></div>
-   <div><label>U/min</label><input id="rpm${n}" type="number" step="1" value="120"></div>
+   <div><label ${L('p.revs')}></label><input id="rev${n}" type="number" step="0.1" value="1"></div>
+   <div><label ${L('p.rpm')}></label><input id="rpm${n}" type="number" step="1" value="120"></div>
   </div>
   <div class="row" style="margin-top:6px">
-   <button id="fw${n}">▶ vorwärts</button><button id="bw${n}" class="sec">◀ rückwärts</button>
-   <button id="st${n}" class="sec">■ Stopp</button>
-   <label style="flex:0 0 auto"><input type="checkbox" id="force${n}"> ohne Treiber takten</label>
+   <button id="fw${n}" ${L('p.fwd')}></button><button id="bw${n}" class="sec" ${L('p.bwd')}></button>
+   <button id="st${n}" class="sec" ${L('p.stop')}></button>
+   <label style="flex:0 0 auto"><input type="checkbox" id="force${n}"> <span ${L('p.force')}></span></label>
   </div>
-  <details><summary>Erweitert: Schritte/Frequenz direkt, Rampe</summary>
+  <details><summary ${L('p.adv')}></summary>
    <div class="row" style="margin-top:6px">
-    <div><label>Schritte (±)</label><input id="steps${n}" type="number" placeholder="aus Umdrehungen"></div>
-    <div><label>Schritte/s</label><input id="sps${n}" type="number" placeholder="aus U/min"></div>
+    <div><label ${L('p.steps')}></label><input id="steps${n}" type="number" data-i18n-placeholder="p.from_revs"></div>
+    <div><label ${L('p.sps')}></label><input id="sps${n}" type="number" data-i18n-placeholder="p.from_rpm"></div>
    </div>
    <div class="row" style="margin-top:6px">
-    <div><label>Rampe Schritte/s²</label><input id="acc${n}" type="number" placeholder="Standard"></div>
-    <div><label>Start Schritte/s</label><input id="vs${n}" type="number" placeholder="Standard"></div>
+    <div><label ${L('p.acc')}></label><input id="acc${n}" type="number" data-i18n-placeholder="p.default"></div>
+    <div><label ${L('p.vs')}></label><input id="vs${n}" type="number" data-i18n-placeholder="p.default"></div>
    </div>
   </details>
-  <details><summary>Treiber-Konfiguration (wird gespeichert)</summary>
+  <details><summary ${L('p.cfg')}></summary>
    <div class="row" style="margin-top:6px">
-    <div><label>Laufstrom mA</label><input id="cr${n}" type="number"></div>
-    <div><label>Haltestrom mA</label><input id="ch${n}" type="number"></div>
+    <div><label ${L('p.run_ma')}></label><input id="cr${n}" type="number"></div>
+    <div><label ${L('p.hold_ma')}></label><input id="ch${n}" type="number"></div>
    </div>
    <div class="row" style="margin-top:6px">
-    <div><label>Mikroschritte</label><select id="cm${n}">${[8,16,32,64].map(v=>`<option>${v}</option>`).join('')}</select></div>
-    <div><label>Vollschritte/U</label><input id="cf${n}" type="number"></div>
+    <div><label ${L('p.micro')}></label><select id="cm${n}">${[8,16,32,64].map(v=>`<option>${v}</option>`).join('')}</select></div>
+    <div><label ${L('p.full')}></label><input id="cf${n}" type="number"></div>
    </div>
    <div class="row" style="margin-top:6px">
-    <div><label>Standard-Rampe Schritte/s²</label><input id="ca${n}" type="number"></div>
-    <div><label>Standard-Start Schritte/s</label><input id="cv${n}" type="number"></div>
+    <div><label ${L('p.def_acc')}></label><input id="ca${n}" type="number"></div>
+    <div><label ${L('p.def_vs')}></label><input id="cv${n}" type="number"></div>
    </div>
    <div class="row" style="margin-top:6px;align-items:center">
-    <label style="flex:1"><input type="checkbox" id="ci${n}"> Drehrichtung invertieren</label>
-    <button class="sec" id="cs${n}">Speichern</button>
+    <label style="flex:1"><input type="checkbox" id="ci${n}"> <span ${L('p.invert')}></span></label>
+    <button class="sec" id="cs${n}" ${L('btn.save')}></button>
    </div>
   </details>
-  <details><summary>Register lesen</summary><button class="sec" id="rg${n}" style="margin-top:6px">Lesen</button><pre id="rgo${n}" hidden></pre></details>
+  <details><summary ${L('p.regs')}></summary><button class="sec" id="rg${n}" style="margin-top:6px" ${L('btn.read')}></button><pre id="rgo${n}" hidden></pre></details>
   <div class="msg" id="m${n}"></div>`;
   $('pumps').appendChild(d);
+  i18n.apply(d);
   const c=p.config;
   $('cr'+n).value=c.run_ma;$('ch'+n).value=c.hold_ma;$('cm'+n).value=c.microsteps;$('cf'+n).value=c.full_steps;
   $('ca'+n).value=c.accel;$('cv'+n).value=c.v_start;$('ci'+n).checked=c.invert;
   $('fw'+n).onclick=()=>run(n,1);$('bw'+n).onclick=()=>run(n,-1);
-  $('st'+n).onclick=()=>api('POST','/api/v1/hw/pump/stop?pump='+n).then(()=>msg('m'+n,'Stoppt …',true)).catch(e=>msg('m'+n,e.message));
+  $('st'+n).onclick=()=>api('POST','/api/v1/hw/pump/stop?pump='+n).then(()=>msg('m'+n,t('p.stopping'),true)).catch(e=>msg('m'+n,e.message));
   $('cs'+n).onclick=()=>api('POST','/api/v1/hw/pump/config?'+q({pump:n,run_ma:$('cr'+n).value,hold_ma:$('ch'+n).value,
      microsteps:$('cm'+n).value,full_steps:$('cf'+n).value,invert:$('ci'+n).checked?1:0,accel:$('ca'+n).value,vstart:$('cv'+n).value}))
-     .then(()=>msg('m'+n,'Gespeichert und an den Treiber übertragen',true)).catch(e=>msg('m'+n,e.message));
+     .then(()=>msg('m'+n,t('p.saved'),true)).catch(e=>msg('m'+n,e.message));
   $('rg'+n).onclick=async()=>{try{const j=await api('GET','/api/v1/hw/tmc?pump='+n);const o=$('rgo'+n);
      o.textContent=Object.entries(j.registers).map(([k,v])=>k.padEnd(11)+(v||'—')).join('\n');o.hidden=false}catch(e){msg('m'+n,e.message)}};
 }
@@ -139,50 +199,53 @@ function run(n,dir){
   const p=S.pumps[n-1],spr=p.config.steps_per_rev;
   let steps=$('steps'+n).value!==''?Math.abs(parseInt($('steps'+n).value)):Math.round(parseFloat($('rev'+n).value)*spr);
   let sps=$('sps'+n).value!==''?parseInt($('sps'+n).value):Math.round(parseFloat($('rpm'+n).value)*spr/60);
-  if(!(steps>0)||!(sps>0)){msg('m'+n,'Umdrehungen/U/min bzw. Schritte/Frequenz prüfen');return}
+  if(!(steps>0)||!(sps>0)){msg('m'+n,t('p.check'));return}
   api('POST','/api/v1/hw/pump/run?'+q({pump:n,steps:dir*steps,sps,accel:$('acc'+n).value,vstart:$('vs'+n).value,force:$('force'+n).checked?1:''}))
-   .then(()=>msg('m'+n,`Fährt ${dir<0?'rückwärts ':''}${steps} Schritte mit ${sps} Schritte/s`,true)).catch(e=>msg('m'+n,e.message));
+   .then(()=>msg('m'+n,t('p.running_msg',{dir:dir<0?t('p.rev_word'):'',steps,sps}),true)).catch(e=>msg('m'+n,e.message));
 }
 function renderPump(p){
   const n=p.pump,f=p.flags;
-  let c=p.present?chip('Treiber v0x'+p.version.toString(16),p.configured?'ok':'warn'):chip('kein Treiber','err');
-  if(p.running)c+=chip(p.reverse?'läuft ◀':'läuft ▶','ok');
-  if(p.fault)c+=chip(p.fault,'err');
+  let c=p.present?chip(t('c.driver',{v:p.version.toString(16)}),p.configured?'ok':'warn'):chip(t('c.nodriver'),'err');
+  if(p.running)c+=chip(t(p.reverse?'c.run_bwd':'c.run_fwd'),'ok');
+  if(p.fault)c+=chip(t('fault.'+p.fault),'err');
   if(p.present){
-    if(f.overtemp)c+=chip('Übertemperatur','err');else if(f.overtemp_warn)c+=chip('Temperatur-Warnung','warn');
-    if(f.short)c+=chip('Kurzschluss','err');
-    if(p.running&&(f.open_load_a||f.open_load_b))c+=chip('Motor offen?','warn');
+    if(f.overtemp)c+=chip(t('c.overtemp'),'err');else if(f.overtemp_warn)c+=chip(t('c.overtemp_warn'),'warn');
+    if(f.short)c+=chip(t('c.short'),'err');
+    if(p.running&&(f.open_load_a||f.open_load_b))c+=chip(t('c.open'),'warn');
   }
   $('c'+n).innerHTML=c;
-  const rows=[['Position',`${p.position} / ${p.target}`],['Geschwindigkeit',`${p.velocity} Schritte/s · ${p.rpm} U/min`],
-   ['Strom (eingestellt)',p.configured?`${p.run_ma} mA lauf · ${p.hold_ma} mA halt`:'—'],
-   ['StallGuard',p.present?`${p.sg_result} (min ${p.sg_min===1023?'—':p.sg_min})`:'—'],
-   ['DRV_STATUS',p.present?`${p.drv_status} · CS ${f.cs_actual} · ${f.stealth?'StealthChop':'SpreadCycle'}${f.standstill?' · Stillstand':''}`:'—']];
-  $('t'+n).innerHTML=rows.map(r=>`<tr><td class="k">${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+  const rows=[['r.pos',`${p.position} / ${p.target}`],['r.vel',t('r.vel.v',{sps:p.velocity,rpm:p.rpm})],
+   ['r.cur',p.configured?t('r.cur.v',{run:p.run_ma,hold:p.hold_ma}):'—'],
+   ['r.sg',p.present?`${p.sg_result} (min ${p.sg_min===1023?'—':p.sg_min})`:'—'],
+   ['r.drv',p.present?`${p.drv_status} · CS ${f.cs_actual} · ${f.stealth?'StealthChop':'SpreadCycle'}${f.standstill?t('r.standstill'):''}`:'—']];
+  $('t'+n).innerHTML=rows.map(r=>`<tr><td class="k">${t(r[0])}</td><td>${r[1]}</td></tr>`).join('');
 }
-function fmt(utc){return new Date(utc*1000).toLocaleString('de-DE')}
+function fmt(utc){return new Date(utc*1000).toLocaleString(i18n.lang)}
 function render(){
+  if(!S)return;
   if(!built.pumps){S.pumps.forEach(buildPump);built.pumps=true}
   S.pumps.forEach(renderPump);
-  $('en').className='chip '+(S.drivers_enabled?'warn':'');$('en').textContent=(S.drivers_enabled?'Treiber EIN':'Treiber AUS')+(S.locked?' · OTA-Sperre':'');
-  const t=S.time;$('clock').textContent=t.valid?`${fmt(t.utc)} (${t.source})`:'keine gültige Zeit';$('clock').className='chip '+(t.valid?'':'err');
+  $('en').className='chip '+(S.drivers_enabled?'warn':'');$('en').textContent=t(S.drivers_enabled?'en.on':'en.off')+(S.locked?t('en.lock'):'');
+  const tm=S.time;$('clock').textContent=tm.valid?`${fmt(tm.utc)} (${tm.source})`:t('time.none');$('clock').className='chip '+(tm.valid?'':'err');
   const r=S.rtc;
-  $('rtc').innerHTML=!r.present?'<tr><td class="err">DS3231 nicht gefunden (I²C 0x68)</td></tr>':
-   `<tr><td class="k">RTC-Zeit (UTC gespeichert)</td><td>${r.time_lost?'<span class="err">ungültig – Batterie?</span>':fmt(r.utc)}</td></tr>
-    <tr><td class="k">Abweichung zur Systemzeit</td><td>${r.time_lost||!t.valid?'—':(r.utc-t.utc)+' s'}</td></tr>
-    <tr><td class="k">Temperatur</td><td>${r.temp_c} °C</td></tr><tr><td class="k">Aging-Offset</td><td>${r.aging}</td></tr>
-    <tr><td class="k">Zeitzone</td><td>${t.timezone}</td></tr>`;
+  $('rtc').innerHTML=!r.present?`<tr><td class="err">${t('rtc.missing')}</td></tr>`:
+   `<tr><td class="k">${t('rtc.time')}</td><td>${r.time_lost?`<span class="err">${t('rtc.lost')}</span>`:fmt(r.utc)}</td></tr>
+    <tr><td class="k">${t('rtc.diff')}</td><td>${r.time_lost||!tm.valid?'—':(r.utc-tm.utc)+' s'}</td></tr>
+    <tr><td class="k">${t('rtc.temp')}</td><td>${r.temp_c} °C</td></tr><tr><td class="k">${t('rtc.aging_l')}</td><td>${r.aging}</td></tr>
+    <tr><td class="k">${t('rtc.tz')}</td><td>${tm.timezone}</td></tr>`;
   if(r.present&&$('aging').value==='')$('aging').value=r.aging;
-  $('eeprom').innerHTML=`<tr><td class="k">AT24C32 (0x57)</td><td>${S.eeprom.present?'<span class="ok">gefunden</span>':'<span class="err">nicht gefunden</span>'}</td></tr>`;
-  $('uart').innerHTML='<tr><th>UART-Bus</th><th>Transfers</th><th>Timeout</th><th>CRC</th><th>Echo</th></tr>'+
+  $('eeprom').innerHTML=`<tr><td class="k">AT24C32 (0x57)</td><td>${S.eeprom.present?`<span class="ok">${t('ee.found')}</span>`:`<span class="err">${t('ee.missing')}</span>`}</td></tr>`;
+  $('uart').innerHTML=`<tr><th>${t('u.bus')}</th><th>${t('u.transfers')}</th><th>${t('u.timeout')}</th><th>${t('u.crc')}</th><th>${t('u.echo')}</th></tr>`+
     S.uart.map(u=>`<tr><td>${u.bus}</td><td>${u.transfers}</td><td>${u.timeouts}</td><td>${u.crc_errors}</td><td class="${u.echo_errors?'err':''}">${u.echo_errors}</td></tr>`).join('');
 }
-async function poll(){try{S=await api('GET','/api/v1/hw/status');render()}catch(e){$('clock').textContent='Verbindung: '+e.message;$('clock').className='chip err'}}
+async function poll(){try{S=await api('GET','/api/v1/hw/status');render()}catch(e){$('clock').textContent=t('conn',{e:e.message});$('clock').className='chip err'}}
 $('stopall').onclick=()=>api('POST','/api/v1/hw/pump/stop?pump=0');
 $('estop').onclick=()=>api('POST','/api/v1/hw/pump/stop?pump=0&mode=hard');
-$('settime').onclick=()=>api('POST','/api/v1/hw/time?utc='+Math.floor(Date.now()/1000)).then(()=>msg('rtcmsg','Zeit gesetzt (System + RTC)',true)).catch(e=>msg('rtcmsg',e.message));
-$('setaging').onclick=()=>api('POST','/api/v1/hw/rtc/aging?offset='+$('aging').value).then(()=>msg('rtcmsg','Aging-Offset gesetzt',true)).catch(e=>msg('rtcmsg',e.message));
-$('eetest').onclick=()=>api('POST','/api/v1/hw/eeprom/test').then(()=>msg('eemsg','Test bestanden',true)).catch(e=>msg('eemsg',e.message));
+$('settime').onclick=()=>api('POST','/api/v1/hw/time?utc='+Math.floor(Date.now()/1000)).then(()=>msg('rtcmsg',t('rtc.set_ok'),true)).catch(e=>msg('rtcmsg',e.message));
+$('setaging').onclick=()=>api('POST','/api/v1/hw/rtc/aging?offset='+$('aging').value).then(()=>msg('rtcmsg',t('rtc.aging_ok'),true)).catch(e=>msg('rtcmsg',e.message));
+$('eetest').onclick=()=>api('POST','/api/v1/hw/eeprom/test').then(()=>msg('eemsg',t('ee.ok'),true)).catch(e=>msg('eemsg',e.message));
+i18n.onChange(render);
+i18n.init('lang');
 poll();setInterval(poll,1000);
 </script>
 </body>

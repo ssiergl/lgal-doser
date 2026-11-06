@@ -36,7 +36,7 @@ esp_err_t get_page(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, hwtest_html_start, hwtest_html_end - hwtest_html_start);
+    return httpd_resp_send(req, hwtest_html_start, hwtest_html_end - hwtest_html_start - 1);  // without the trailing 0
 }
 
 void write_pump(Json& j, int i) {
