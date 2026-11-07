@@ -409,3 +409,9 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .sched-io { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
 .sched-io p { margin: 0 0 8px; }
 .btn.disabled { opacity: .45; pointer-events: none; }
+.backup { margin-top: 6px; }
+.backup .row { margin-top: 10px; }
+.bk-restore { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card-2); }
+.bk-restore p { margin: 0 0 6px; }
+.bk-restore .warn { margin: -2px 0 6px 26px; }
+.bk-restore label.check { margin-top: 6px; }
