@@ -35,7 +35,7 @@ add({
     'use.title': 'Consumption', 'use.today': 'Today', 'use.plan': 'Planned today', 'use.limit': 'Daily limit',
     'use.last': 'Last run', 'use.total': 'Total dosed', 'use.tube': 'Tube', 'use.tube.v': '{h} of {lim} h',
     'use.tube.reset': 'Tube replaced', 'use.tube.ask': 'Reset the tube counter of pump {n}?', 'use.tube.ok': 'Tube counter reset',
-    'use.next': 'Next dose', 'use.none': '–', 'use.off': 'off',
+    'use.next': 'Next dose', 'use.none': '–', 'use.off': 'off', 'use.history': 'History',
     'res.success': 'done', 'res.aborted': 'stopped', 'res.heartbeat_lost': 'stopped (connection)',
     'res.max_duration': 'stopped (max. time)', 'res.fault': 'driver fault', 'res.locked': 'locked (update)',
     'act.dosing': 'Dose', 'act.priming': 'Filling', 'act.calibrating': 'Calibration',
@@ -85,7 +85,7 @@ add({
     'use.title': 'Verbrauch', 'use.today': 'Heute', 'use.plan': 'Heute geplant', 'use.limit': 'Tageslimit',
     'use.last': 'Letzter Lauf', 'use.total': 'Insgesamt dosiert', 'use.tube': 'Schlauch', 'use.tube.v': '{h} von {lim} h',
     'use.tube.reset': 'Schlauch getauscht', 'use.tube.ask': 'Schlauchzähler von Pumpe {n} zurücksetzen?', 'use.tube.ok': 'Schlauchzähler zurückgesetzt',
-    'use.next': 'Nächste Dosis', 'use.none': '–', 'use.off': 'aus',
+    'use.next': 'Nächste Dosis', 'use.none': '–', 'use.off': 'aus', 'use.history': 'Verlauf',
     'res.success': 'fertig', 'res.aborted': 'gestoppt', 'res.heartbeat_lost': 'gestoppt (Verbindung)',
     'res.max_duration': 'gestoppt (max. Dauer)', 'res.fault': 'Treiberfehler', 'res.locked': 'gesperrt (Update)',
     'act.dosing': 'Dosis', 'act.priming': 'Füllen', 'act.calibrating': 'Kalibrierung',
@@ -307,7 +307,8 @@ function UsageCard({ p, sp, nowLocal }) {
       <dt>${t('use.tube')}</dt><dd class="num">${t('use.tube.v', { h: num(tb.hours, 1), lim: tb.limit_h })}
         <div class="bar"><i style=${{ width: Math.min(100, tb.percent) + '%', background: tb.percent >= 100 ? 'var(--err)' : undefined }}></i></div></dd>
     </dl>
-    <button class="sec small" onClick=${resetTube}>${t('use.tube.reset')}</button>
+    <div class="row"><button class="sec small" onClick=${resetTube}>${t('use.tube.reset')}</button>
+      <a class="btn sec small" href=${'#/history/' + p.pump}>${t('use.history')}</a></div>
     ${msg.node}
   </section>`;
 }
