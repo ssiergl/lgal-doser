@@ -79,6 +79,13 @@ Json& Json::kv(const char* key, double v, int decimals) {
     return key_(key).raw_(b);
 }
 
+Json& Json::v(double x, int decimals) {
+    if (!std::isfinite(x)) return key_(nullptr).raw_("null");
+    char b[32];
+    snprintf(b, sizeof(b), "%.*f", decimals, x);
+    return key_(nullptr).raw_(b);
+}
+
 Json& Json::v(int64_t x) {
     char b[24];
     snprintf(b, sizeof(b), "%" PRId64, x);
