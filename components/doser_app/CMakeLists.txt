@@ -3,6 +3,8 @@ idf_component_register(
         "src/alarms.cpp"
         "src/history_core.cpp"
         "src/history.cpp"
+        "src/history_json.cpp"
+        "src/history_api.cpp"
         "src/hwconfig.cpp"
         "src/hwtest_api.cpp"
         "src/dosing_core.cpp"

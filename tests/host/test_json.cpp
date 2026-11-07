@@ -225,6 +225,9 @@ static void test_round_trip() {
     CHECK(r.root()["ml"].get_decimal(1000, &v) && v == 2250);
     CHECK(r.root()["days"][1].equals("fri"));
     CHECK(r.root()["none"].is_null());
+    Json k;
+    k.arr().v(1.5, 3).v(0.0, 1).end();
+    CHECK(k.str() == "[1.500,0.0]");
 }
 
 // Mutated and truncated documents must never read outside the text

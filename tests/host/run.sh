@@ -140,3 +140,20 @@ $CXX \
     components/doser_app/src/history_core.cpp \
     -o "$OUT/history"
 "$OUT/history"
+
+echo
+$CXX \
+    -I components/doser_app/include \
+    -I components/doser_hal/include \
+    -I components/lgal_core/include \
+    tests/host/test_history_json.cpp \
+    components/doser_app/src/history_json.cpp \
+    components/doser_app/src/history_core.cpp \
+    components/doser_app/src/schedule_json.cpp \
+    components/doser_app/src/schedule_core.cpp \
+    components/doser_app/src/dosing_core.cpp \
+    components/doser_hal/src/posix_tz.cpp \
+    components/lgal_core/src/json.cpp \
+    components/lgal_core/src/json_reader.cpp \
+    -o "$OUT/history_json"
+"$OUT/history_json"

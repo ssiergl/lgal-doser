@@ -38,6 +38,7 @@ public:
     Json& v(bool x) { return key_(nullptr).raw_(x ? "true" : "false"); }
     Json& v(int64_t x);
     Json& v(int x) { return v(static_cast<int64_t>(x)); }
+    Json& v(double x, int decimals);
 
     const char* c_str() const { return s_.c_str(); }
     const std::string& str() const { return s_; }

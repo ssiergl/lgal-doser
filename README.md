@@ -14,7 +14,7 @@ components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Sc
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
-tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme)
+tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
@@ -285,6 +285,10 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (Umdrehungen, `off` = 0 = aus, `global` = Service-Wert; ab Werk aus) |
 | POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter) |
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen |
+| GET | `/api/v1/history?…` | Ereignisse, neueste zuerst: `pump=1..5`, `kind=dose,skip,…`, `days=1..60` (oder `from`/`to` in UTC-Sekunden), `limit=1..500` (100), `offset` → `{"events":[…],"more"}` (siehe [Historie](#historie-m6)) |
+| GET | `/api/v1/history.csv?…` | dieselben Filter als CSV-Download, ohne Limit |
+| GET | `/api/v1/history/daily?days=14` | dosierte Menge, Anzahl Dosen und ausgelassene Dosen je Ortstag und Pumpe (1–60 Tage, älteste zuerst; ohne gültige Uhrzeit leer) |
+| DELETE | `/api/v1/history` | Historie löschen (Engineering) |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
 | GET | `/schedule` | Zeitplantest-Seite |
 | GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |
@@ -395,6 +399,28 @@ Browser in einer anderen Zeitzone sein kann.
 
 Die Testseite **`/schedule`** zeigt den Status aller Pumpen (inkl. Boost und manueller Dosis)
 und bearbeitet Zeitpläne, Sperrzeiten und die Scheduler-Parameter.
+
+## Historie (M6)
+
+Das Gerät zeichnet Ereignisse als 24-Byte-Einträge auf der LittleFS-Partition `storage` auf
+(eine Datei pro UTC-Tag unter `/storage/hist`, Prüfsumme je Eintrag). Tage älter als 60 Tage
+löscht es stündlich. Geschrieben wird über eine Warteschlange in einem eigenen Task – Dosierung
+und Zeitplan warten nie auf den Flash. Ohne gültige Uhrzeit wird nichts aufgezeichnet.
+Bei rund 240 Dosen am Tag sind das etwa 6 KB pro Tag, 60 Tage ≈ 350 KB von 5,9 MB.
+Werkseinstellungen (Taster 10 s) löschen die Historie mit.
+
+| `kind` | Inhalt |
+|---|---|
+| `dose`, `prime`, `calib_run` | Ziel- und Ist-Menge, Ergebnis (`success`, `aborted`, `fault`, `locked`, `heartbeat_lost`, `max_duration`), Auslöser (`schedule`, `manual`, `api`, `boost`, `mqtt`) |
+| `skip` | ausgelassene Dosis mit Grund (`missed`, `daily_limit`, `delay_timeout`, …); nach einem Stromausfall ein Eintrag mit `count` |
+| `container` | Behälter gesetzt oder nachgefüllt (`remaining_ml`, `capacity_ml`) |
+| `calibration` | übernommene Kalibrierung (`ul_per_rev`, `measured_ml`, `target_ml`) |
+| `tube` | Schlauchzähler gesetzt (`hours`) |
+| `alarm` | Beginn eines Alarms: `container_low`, `tube_worn`, `rtc_fault` (Pumpe 0 = Gerät); Treiberfehler und Tageslimit stehen schon als Ergebnis bzw. ausgelassene Dosis drin |
+
+Die CSV hat die Spalten `utc,local,kind,pump,source,code,target_ml,done_ml,value`; `value` ist
+der Inhalt (Behälter), µl pro Umdrehung (Kalibrierung), Stunden (Schlauch) oder die Anzahl
+(ausgelassen).
 
 ## Taster und LED
 
