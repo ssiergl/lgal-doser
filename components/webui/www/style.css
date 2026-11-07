@@ -406,3 +406,6 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
   .hi-t { grid-area: t; } .hi-p { grid-area: p; } .hi-d { grid-area: d; text-align: right; }
   .hi-k { grid-area: k; } .hi-c { grid-area: c; text-align: right; }
 }
+.sched-io { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.sched-io p { margin: 0 0 8px; }
+.btn.disabled { opacity: .45; pointer-events: none; }

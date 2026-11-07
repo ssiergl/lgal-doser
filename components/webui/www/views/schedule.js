@@ -8,6 +8,7 @@ import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { setMode } from '../lib/prefs.js';
+import { pumpName } from '../lib/pumps.js';
 import { reloadSched } from '../lib/store.js';
 import { Amount, Seg, parseNum, useMsg } from '../lib/ui.js';
 
@@ -17,6 +18,10 @@ const kMaxTimes = 24;
 add({
   en: {
     'sched.title': 'Schedule', 'sc.loading': 'Loading …',
+    'sc.export': 'Export', 'sc.import': 'Import', 'sc.io.hint': 'Save the schedule of this pump as a file or load one.',
+    'sc.import.ask': 'Use the schedule of “{name}” from {d} for pump {n}? The current schedule is replaced.',
+    'sc.import.ok': 'Schedule imported', 'sc.import.bad': 'This file is not a schedule export.',
+    'sc.import.newer': 'This file is from a newer firmware and cannot be read.',
     'sc.none': 'No schedule', 'sc.none.hint': 'This pump only doses when you start it by hand.',
     'sc.daily': 'Daily amount', 'sc.count': 'Doses per day', 'sc.from': 'From', 'sc.to': 'To', 'sc.at': 'Time',
     'sc.doses': 'doses', 'sc.every': 'every {m} min', 'sc.everyh': 'every {h} h', 'sc.each': '{n} × {ml} ml',
@@ -51,6 +56,10 @@ add({
   },
   de: {
     'sched.title': 'Zeitplan', 'sc.loading': 'Lädt …',
+    'sc.export': 'Exportieren', 'sc.import': 'Importieren', 'sc.io.hint': 'Zeitplan dieser Pumpe als Datei sichern oder laden.',
+    'sc.import.ask': 'Zeitplan von „{name}“ vom {d} für Pumpe {n} übernehmen? Der aktuelle Zeitplan wird ersetzt.',
+    'sc.import.ok': 'Zeitplan importiert', 'sc.import.bad': 'Diese Datei ist kein Zeitplan-Export.',
+    'sc.import.newer': 'Diese Datei stammt von einer neueren Firmware und kann nicht gelesen werden.',
     'sc.none': 'Kein Zeitplan', 'sc.none.hint': 'Diese Pumpe dosiert nur, wenn du sie von Hand startest.',
     'sc.daily': 'Tagesmenge', 'sc.count': 'Dosen pro Tag', 'sc.from': 'Von', 'sc.to': 'Bis', 'sc.at': 'Uhrzeit',
     'sc.doses': 'Dosen', 'sc.every': 'alle {m} Min.', 'sc.everyh': 'alle {h} Std.', 'sc.each': '{n} × {ml} ml',
@@ -432,6 +441,52 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
 }
 
 // ---------------------------------------------------------------------------
+// Export / import of this pump's schedule as a JSON file (all users)
+
+const kFormat = 'lgal-doser-schedule';
+const kKeys = ['kind', 'enabled', 'start', 'end', 'count', 'ml', 'times', 'days', 'power_loss', 'catch_up_min'];
+
+function exportFile(p, s) {
+  const schedule = Object.fromEntries(kKeys.filter(k => s[k] !== undefined).map(k => [k, s[k]]));
+  const doc = { format: kFormat, version: 1, exported: new Date().toISOString(), pump: p.pump, name: pumpName(p), schedule };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2) + '\n'], { type: 'application/json' }));
+  const slug = (p.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  a.download = `doser-pump${p.pump}${slug ? '-' + slug : ''}-schedule.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function ScheduleIO({ p, s, onSaved, grid }) {
+  const { msg, busy, save } = useSave(p.pump, onSaved);
+  const pick = e => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    file.text().then(txt => {
+      let doc;
+      try { doc = JSON.parse(txt); } catch { doc = null; }
+      if (!doc || doc.format !== kFormat || !doc.schedule || typeof doc.schedule !== 'object') { msg.err(t('sc.import.bad')); return; }
+      if (doc.version > 1) { msg.err(t('sc.import.newer')); return; }
+      const d = doc.exported ? new Date(doc.exported).toLocaleDateString(getLang()) : '–';
+      if (!confirm(t('sc.import.ask', { name: doc.name || t('pump', { n: doc.pump }), d, n: p.pump }))) return;
+      save(doc.schedule, t('sc.import.ok'), grid);
+    }).catch(() => msg.err(t('sc.import.bad')));
+  };
+  return html`<div class="sched-io">
+    <p class="small mut">${t('sc.io.hint')}</p>
+    <div class="row">
+      <button type="button" class="sec small" onClick=${() => exportFile(p, s)}>${t('sc.export')}</button>
+      <label class=${'btn sec small' + (busy ? ' disabled' : '')}>${t('sc.import')}
+        <input type="file" accept="application/json,.json" hidden disabled=${busy} onChange=${pick}/></label>
+    </div>
+    ${msg.node}
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
 
 export function ScheduleCard({ p, pro, nowLocal }) {
   const [s, setS] = useState(null);
@@ -456,6 +511,7 @@ export function ScheduleCard({ p, pro, nowLocal }) {
         : html`<${DayBar} slots=${slots} nowMin=${nowMin}/>
           ${pro ? draft && html`<${ProEditor} pump=${pump} s=${s} draft=${draft} setDraft=${setDraft} onSaved=${setS}
               today=${today} limit=${p.daily.limit_ml}/>`
-            : html`<${SimpleEditor} pump=${pump} s=${s} onSaved=${setS} limit=${p.daily.limit_ml}/>`}`}
+            : html`<${SimpleEditor} pump=${pump} s=${s} onSaved=${setS} limit=${p.daily.limit_ml}/>`}
+          <${ScheduleIO} p=${p} s=${s} onSaved=${setS} grid=${grid}/>`}
   </section>`;
 }
