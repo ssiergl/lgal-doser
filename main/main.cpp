@@ -31,6 +31,7 @@
 #include "lgal/netapi.h"
 #include "lgal/ota.h"
 #include "lgal/settings.h"
+#include "lgal/setup.h"
 #include "lgal/sysapi.h"
 #include "lgal/timesync.h"
 #include "sdkconfig.h"
@@ -130,8 +131,8 @@ extern "C" void app_main(void) {
     if (doser::scheduler::init() != ESP_OK) ESP_LOGE(TAG, "Scheduler not ready");
 
     if (!lgal::settings::setup_completed()) {
-        // Factory state: setup AP permanently open until setup (M4)
-        // has been completed.
+        // Factory state: setup AP permanently open until the setup
+        // wizard has been completed.
         lgal::net::start_setup_ap(false);
     }
 
@@ -141,6 +142,7 @@ extern "C" void app_main(void) {
     lgal::sysapi::register_handlers(lgal::http::handle());
     lgal::netapi::register_handlers(lgal::http::handle());
     lgal::captive::register_handlers(lgal::http::handle());
+    lgal::setup::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
     doser::dosing_api::register_handlers(lgal::http::handle());
     doser::schedule_api::register_handlers(lgal::http::handle());
@@ -148,6 +150,7 @@ extern "C" void app_main(void) {
     lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
     lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
     lgal::sysapi::add_link("network", "Network", "/network");
+    lgal::sysapi::add_link("setup", "Setup wizard", "/setup");
     lgal::sysapi::add_link("account", "Account", "/login");
 
     lgal::ota::set_guard([](std::string& reason) {

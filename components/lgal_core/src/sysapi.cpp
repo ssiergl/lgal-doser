@@ -2,6 +2,7 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <memory>
 #include <string>
@@ -95,6 +96,13 @@ void write_language(Json& j) {
 }
 
 esp_err_t get_root(httpd_req_t* req) {
+    // factory state: the start page is the setup wizard (/recovery stays reachable)
+    if (!settings::setup_completed() && std::strcmp(req->uri, "/") == 0) {
+        httpd_resp_set_status(req, "302 Found");
+        httpd_resp_set_hdr(req, "Location", "/setup");
+        httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+        return httpd_resp_send(req, nullptr, 0);
+    }
     if (!http::authorize(req)) return ESP_OK;
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");

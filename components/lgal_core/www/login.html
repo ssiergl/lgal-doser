@@ -161,7 +161,8 @@ async function loadKeys(){
   }catch(e){msg('k_msg',e.message)}
 }
 $('f_login').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/login',{password:$('l_pw').value}).then(j=>{$('l_pw').value='';
-  if(j.password_set&&!showEng)location.href=next;else load()}).catch(e=>errMsg('l_msg',e))};
+  // the setup wizard asks for the admin password itself
+  if((j.password_set||next.startsWith('/setup'))&&!showEng)location.href=next;else load()}).catch(e=>errMsg('l_msg',e))};
 $('f_rec').onsubmit=e=>{e.preventDefault();if(!same('r_pw','r_pw2','r_msg'))return;
   api('POST','/api/v1/auth/recover',{device_password:$('r_dev').value.trim(),new:$('r_pw').value}).then(()=>{msg('r_msg',t('rec.ok'),true);load()}).catch(e=>errMsg('r_msg',e))};
 $('f_pw').onsubmit=e=>{e.preventDefault();if(!same('p_pw','p_pw2','p_msg'))return;

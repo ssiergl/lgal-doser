@@ -89,6 +89,7 @@ wifi_mode_t s_mode = WIFI_MODE_NULL;
 bool s_ap_want = false;
 bool s_ap_temporary = false;
 int64_t s_ap_deadline_us = 0;
+int64_t s_ap_off_at_us = 0;  // forced switch-off, 0 = none
 
 struct StaTarget {
     char ssid[netcfg::kSsidMax + 1];
@@ -443,6 +444,11 @@ void reconcile() {
         ESP_LOGI(TAG, "Temporary setup AP expired");
         s_ap_want = false;
     }
+    if (s_ap_off_at_us && esp_timer_get_time() >= s_ap_off_at_us) {
+        s_ap_off_at_us = 0;
+        if (s_ap_want) ESP_LOGI(TAG, "Setup AP switched off");
+        s_ap_want = false;
+    }
 
     // LAN / WLAN selection
     netcfg::Policy::Input in;
@@ -750,11 +756,17 @@ esp_err_t start_setup_ap(bool temporary) {
         s_ap_deadline_us = esp_timer_get_time() + int64_t(CONFIG_LGAL_SETUP_AP_TIMEOUT_MIN) * 60 * 1000000;
     }
     s_ap_want = true;
+    s_ap_off_at_us = 0;
     reconcile();
     if (!status().ap_active) return ESP_FAIL;
     ESP_LOGI(TAG, "Setup AP active: SSID %s, http://192.168.4.1/%s", device::setup_ssid().c_str(),
              s_ap_temporary ? " (temporary)" : "");
     return ESP_OK;
+}
+
+void stop_setup_ap_in(int seconds) {
+    Lock l;
+    s_ap_off_at_us = esp_timer_get_time() + int64_t(seconds) * 1000000;
 }
 
 netcfg::Config config() {

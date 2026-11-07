@@ -119,8 +119,26 @@ Anmeldung auf `/login` (Seite „Account“):
 Browser-Seiten ohne Anmeldung leiten auf `/login?next=…` um, API-Aufrufe antworten
 mit 401 `unauthorized` bzw. 403 `engineering_locked`.
 
-Im Werkszustand (`setup_completed = false`) ist das Setup-WLAN immer an. Die
-Ersteinrichtung, die es abschaltet, folgt in M4.
+Im Werkszustand (`setup_completed = false`) ist das Setup-WLAN immer an und `/` führt
+zur [Ersteinrichtung](#ersteinrichtung-m4).
+
+## Ersteinrichtung (M4)
+
+1. Mit dem Setup-WLAN `LG-Aquatic-Life-Setup-XXXX` verbinden (Passwort vom Etikett).
+   Das **Captive Portal** öffnet die Einrichtung auf Handy und Laptop meist von selbst;
+   sonst `http://192.168.4.1/` aufrufen.
+2. Mit dem Geräte-Passwort anmelden; die Seite **`/setup`** führt durch fünf Schritte:
+   Sprache → eigenes Admin-Passwort → Netzwerk (LAN-Status, WLAN suchen, testen,
+   speichern) → Zeitzone, NTP-Server, ggf. Uhrzeit vom Browser → Abschluss.
+3. **Abschließen** geht erst mit Admin-Passwort und verbundenem LAN oder WLAN. Die Seite
+   zeigt die neuen Adressen (`http://lgal-doser-xxxx.local/` und IP); 20 s später schaltet
+   das Setup-WLAN ab.
+
+| Thema | Verhalten |
+|---|---|
+| Captive Portal | DNS-Server auf dem Setup-WLAN beantwortet jeden Namen (A) mit `192.168.4.1`, andere Typen leer. Unbekannte Seiten leiten Setup-WLAN-Clients auf `http://192.168.4.1/` um. LAN/WLAN-Clients bekommen ein normales 404. |
+| Wiederholen | `/setup` bleibt nach dem Abschluss erreichbar (Link auf der Wartungsseite), schaltet das Setup-WLAN dann aber nicht erneut ein. |
+| Werkseinstellungen | Taster 10 s setzt `setup_completed` zurück → Ersteinrichtung beginnt von vorn. |
 
 ## Netzwerk (M4)
 
@@ -201,6 +219,9 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/system/info` | Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
 | GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` (alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
+| GET | `/setup` | Ersteinrichtung |
+| GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
+| POST | `/api/v1/setup/complete` | Einrichtung abschließen (409 `password_not_set` / `not_connected`), Setup-WLAN aus nach 20 s |
 | GET | `/i18n.js` | gemeinsame Übersetzungsbasis der Seiten (ohne Anmeldung) |
 | GET | `/api/v1/system/log` | RAM-Log der letzten ~32 KB |
 | POST | `/api/v1/system/reboot` | Neustart |
