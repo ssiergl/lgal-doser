@@ -4,7 +4,7 @@
 //  * Configuration (changed by the user): NVS namespace "sched"
 //      "cfg"       scheduler parameters (super admin)
 //      "locks"     lock times between pumps + manual-dose policy
-//      "p0".."p4"  programs and power-loss policy per pump
+//      "p0".."p4"  plan per pump (blob version 2; older versions are dropped)
 //  * Run state (after every processed slot): EEPROM AT24C32, two slots per
 //    pump (A/B) with sequence number and CRC32, behind the dosing records.
 //      0x640 + pump * 192 + slot * 96   (used up to 0x9FF)

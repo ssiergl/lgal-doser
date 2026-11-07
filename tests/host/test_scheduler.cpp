@@ -70,27 +70,24 @@ static int64_t local(int mo, int d, int h, int mi, int s = 0) {
     return tz::to_utc(g_zone, civil::to_unix({2026, mo, d, h, mi, s, 0}));
 }
 
-static sched::Program single(uint16_t minute, uint32_t ul) {
-    sched::Program p;
-    p.kind = sched::Kind::Single;
-    p.start_min = minute;
-    p.amount_ul = ul;
-    return p;
-}
+static sched::TimeDose single(uint16_t minute, uint32_t ul) { return sched::TimeDose{minute, 0, ul}; }
 
-static sched::Program generator(uint16_t from, uint16_t to, uint16_t n, uint32_t ul) {
-    sched::Program p;
-    p.kind = sched::Kind::Generator;
-    p.start_min = from;
-    p.end_min = to;
-    p.count = n;
-    p.amount_ul = ul;
-    return p;
-}
-
-static sched::PumpSchedule plan(std::initializer_list<sched::Program> programs) {
+// "times" plan, daily
+static sched::PumpSchedule plan(std::initializer_list<sched::TimeDose> times) {
     sched::PumpSchedule s;
-    for (const auto& p : programs) s.programs[s.count++] = p;
+    s.kind = sched::Kind::Times;
+    for (const auto& t : times) s.times[s.time_count++] = t;
+    return s;
+}
+
+// "spread" plan, daily
+static sched::PumpSchedule spread(uint16_t from, uint16_t to, uint16_t n, uint32_t ul) {
+    sched::PumpSchedule s;
+    s.kind = sched::Kind::Spread;
+    s.start_min = from;
+    s.end_min = to;
+    s.count = n;
+    s.amount_ul = ul;
     return s;
 }
 
@@ -127,7 +124,7 @@ static void test_conflicts_on_save() {
     CHECK(r.validation.conflicts == 1);
     CHECK_STR(r.conflicts[0].code, "collision_lock");
     CHECK(r.conflicts[0].gap_min == 5 && r.conflicts[0].first.minute == 480);
-    CHECK(scheduler::schedule(1).count == 0);  // not saved
+    CHECK(scheduler::schedule(1).kind == sched::Kind::None);  // not saved
     CHECK(scheduler::set_schedule(1, plan({single(490, 2000)})) == nullptr);
     // a lock rule that contradicts existing schedules is rejected as well
     l.rules[0].gap_min = 15;
@@ -218,7 +215,7 @@ static void test_schedule_change() {
     const uint64_t b0 = total(0);
     const uint32_t skipped = scheduler::status(0).skipped;
     auto p0 = scheduler::schedule(0);
-    p0.programs[p0.count++] = single(540, 1000);
+    p0.times[p0.time_count++] = single(540, 1000);
     CHECK(scheduler::set_schedule(0, p0) == nullptr);
     sim::run_for(60);
     CHECK(total(0) == b0 && scheduler::status(0).skipped == skipped);
@@ -228,7 +225,7 @@ static void test_schedule_change() {
 
 static void test_limit_and_mode() {
     // pump 3: 2 x 1 ml, then a daily limit of 1.5 ml
-    CHECK(scheduler::set_schedule(2, plan({generator(600, 720, 2, 2000)})) == nullptr);  // 10:00, 12:00
+    CHECK(scheduler::set_schedule(2, spread(600, 720, 2, 2000)) == nullptr);  // 10:00, 12:00
     auto set = dosing::settings(2);
     set.daily_limit_ul = 1500;
     CHECK(dosing::set_settings(2, set) == nullptr);
@@ -238,7 +235,7 @@ static void test_limit_and_mode() {
     auto st = scheduler::status(2);
     CHECK(st.skipped == 1 && std::strcmp(st.last_skip_reason, "daily_limit") == 0);
     // validation now knows the limit
-    CHECK_STR(scheduler::set_schedule(2, plan({generator(600, 720, 2, 2000)})), "exceeds_daily_limit");
+    CHECK_STR(scheduler::set_schedule(2, spread(600, 720, 2, 2000)), "exceeds_daily_limit");
     // manual only: slots pass silently
     set.daily_limit_ul = 0;
     set.mode = dose::Mode::ManualOnly;
@@ -253,7 +250,7 @@ static void test_limit_and_mode() {
 
 static void test_boost_and_forecast() {
     // pump 4: 4 ml per day in 4 doses, container 100 ml
-    CHECK(scheduler::set_schedule(3, plan({generator(480, 1200, 4, 4000)})) == nullptr);  // 08, 12, 16, 20 h
+    CHECK(scheduler::set_schedule(3, spread(480, 1200, 4, 4000)) == nullptr);  // 08, 12, 16, 20 h
     sim::run_until(local(11, 19, 7, 0));
     CHECK(dosing::set_container(3, 100000, 100000) == nullptr);
     auto st = scheduler::status(3);

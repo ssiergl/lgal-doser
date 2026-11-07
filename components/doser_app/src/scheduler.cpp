@@ -250,15 +250,15 @@ esp_err_t init() {
     if (!s_mx) return ESP_ERR_NO_MEM;
     schedule_store::load_config(&s_cfg);
     schedule_store::load_locks(&s_locks);
-    int programs = 0;
+    int plans = 0;
     for (int p = 0; p < kN; ++p) {
         schedule_store::load_schedule(p, &s_rt[p].sch);
         s_rt[p].run_loaded = schedule_store::load_run(p, &s_rt[p].run);
-        programs += s_rt[p].sch.count;
+        if (s_rt[p].sch.kind != sched::Kind::None) ++plans;
     }
     dosing::set_locks(s_locks);
     refresh_zone();
-    ESP_LOGI(TAG, "Ready: %d programs, %u lock rules, grid %u min", programs, s_locks.count, s_cfg.grid_min);
+    ESP_LOGI(TAG, "Ready: %d plans, %u lock rules, grid %u min", plans, s_locks.count, s_cfg.grid_min);
     if (xTaskCreate(task, "sched", 6144, nullptr, 5, nullptr) != pdPASS) return ESP_ERR_NO_MEM;
     return ESP_OK;
 }
@@ -283,7 +283,7 @@ const char* set_schedule(int pump, const sched::PumpSchedule& s, SaveResult* r) 
         start_from_now(rt, ts.utc);
         save(pump);
     }
-    ESP_LOGI(TAG, "Pump %d: schedule saved (%u programs)", pump + 1, s.count);
+    ESP_LOGI(TAG, "Pump %d: schedule saved (%s%s)", pump + 1, sched::kind_str(s.kind), s.enabled ? "" : ", paused");
     return nullptr;
 }
 
@@ -323,7 +323,7 @@ const char* set_config(const sched::Config& c) {
     const auto ts = lgal::timesync::status();
     Guard g;
     ctx.today = ts.valid ? local_day(ts.utc) : 0;
-    // existing programs must still fit the new grid
+    // existing plans must still fit the new grid
     for (int q = 0; q < kN; ++q) s_all[q] = s_rt[q].sch;
     if (const char* e = check_all(s_locks, c, ctx, nullptr)) return e;
     if (schedule_store::save_config(c) != ESP_OK) return "storage_error";
@@ -436,7 +436,6 @@ Status status(int pump) {
         s.has_next = true;
         s.next_utc = d.utc;
         s.next_ul = d.ul;
-        s.next_program = d.program;
     }
     if (set.mode == dose::Mode::Auto) {
         s.planned_today_ul = sched::day_total(r.sch, day);

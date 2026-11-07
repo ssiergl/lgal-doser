@@ -1,7 +1,8 @@
-// Schedules: day overview of all pumps and the editor of one pump.
-// Simple view: daily amount in N doses between two times, every day.
-// Pro view: up to 8 programs (single time or spread doses; daily, weekdays
-// or every N days) and the behaviour after a power loss.
+// Schedules: day overview of all pumps and the editor of one pump. Every
+// pump has exactly one plan: "spread" (daily amount in N doses between two
+// times) or "times" (single times, each with its own amount).
+// Simple view: spread, every day. Pro view: both kinds, days (daily,
+// weekdays, every N days), pause and the behaviour after a power loss.
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
@@ -12,7 +13,7 @@ import { reloadSched, useStore } from '../lib/store.js';
 import { Amount, Seg, parseNum, useMsg } from '../lib/ui.js';
 
 const WD = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const kMaxPrograms = 8;
+const kMaxTimes = 24;
 
 add({
   en: {
@@ -27,8 +28,11 @@ add({
     'sc.mode.manual_only': 'The pump is set to “manual only” – the schedule is paused.',
     'sc.mode.disabled': 'The pump is off – the schedule is paused.',
     'sc.limit': 'Daily limit {l} ml – planned {p} ml', 'sc.unsaved': 'Unsaved changes',
-    'sc.prog': 'Program {n}', 'sc.on': 'Active', 'sc.add': 'Add program', 'sc.del': 'Delete program',
-    'sc.kind.single': 'Single time', 'sc.kind.generator': 'Spread', 'sc.ml.single': 'Amount', 'sc.ml.total': 'Amount per day',
+    'sc.kind': 'Plan', 'sc.kind.none': 'None', 'sc.kind.spread': 'Spread', 'sc.kind.times': 'Single times',
+    'sc.kind.hint.spread': 'A daily amount, split evenly over several doses.',
+    'sc.kind.hint.times': 'Fixed times, each with its own amount.',
+    'sc.on': 'Active', 'sc.on.hint': 'Off pauses the schedule; it stays saved.',
+    'sc.ml.total': 'Amount per day', 'sc.t.add': 'Add time', 'sc.t.del': 'Remove time', 'sc.t.sum': '{n} times · {ml} ml per day',
     'sc.days': 'Days', 'sc.d.daily': 'Daily', 'sc.d.weekdays': 'Weekdays', 'sc.d.interval': 'Every N days',
     'sc.d.every': 'Every', 'sc.d.days': 'days', 'sc.d.anchor': 'starting', 'sc.d.everyN': 'every {n} days',
     'sc.wd.mon': 'Mon', 'sc.wd.tue': 'Tue', 'sc.wd.wed': 'Wed', 'sc.wd.thu': 'Thu', 'sc.wd.fri': 'Fri', 'sc.wd.sat': 'Sat', 'sc.wd.sun': 'Sun',
@@ -38,11 +42,12 @@ add({
     'sc.total': 'Planned today: {ml} ml', 'sc.off': 'paused',
     'sc.cf.overlap': 'Pump {p1} {t1} overlaps with pump {p2} {t2}{d}',
     'sc.cf.collision_lock': 'Pump {p1} {t1} and pump {p2} {t2}{d}: lock time {g} min',
-    'sc.cf.next': ' (next day)', 'sc.err.prog': 'Program {n}: {e}',
+    'sc.cf.next': ' (next day)', 'sc.err.entry': '{time}: {e}',
     'err.invalid_time': 'Invalid time', 'err.off_grid': 'Times must be on the {g}-minute grid',
     'err.invalid_range': 'End time must be after the start time', 'err.invalid_count': 'Invalid number of doses',
     'err.slots_too_dense': 'Too many doses for this time window', 'err.invalid_days': 'Choose at least one day',
     'err.invalid_catch_up': 'Catch-up window: 1 to 1440 minutes', 'err.too_many_slots': 'Too many doses per day',
+    'err.duplicate_time': 'Each time only once', 'err.invalid_kind': 'Unknown kind of plan',
     'err.exceeds_daily_limit': 'The planned amount exceeds the daily limit', 'err.conflict': 'Doses collide',
   },
   de: {
@@ -57,8 +62,11 @@ add({
     'sc.mode.manual_only': 'Die Pumpe steht auf „Nur manuell“ – der Zeitplan ruht.',
     'sc.mode.disabled': 'Die Pumpe ist aus – der Zeitplan ruht.',
     'sc.limit': 'Tageslimit {l} ml – geplant {p} ml', 'sc.unsaved': 'Ungespeicherte Änderungen',
-    'sc.prog': 'Programm {n}', 'sc.on': 'Aktiv', 'sc.add': 'Programm hinzufügen', 'sc.del': 'Programm löschen',
-    'sc.kind.single': 'Einzelzeit', 'sc.kind.generator': 'Verteilt', 'sc.ml.single': 'Menge', 'sc.ml.total': 'Menge pro Tag',
+    'sc.kind': 'Plan', 'sc.kind.none': 'Keiner', 'sc.kind.spread': 'Verteilt', 'sc.kind.times': 'Einzelzeiten',
+    'sc.kind.hint.spread': 'Eine Tagesmenge, gleichmäßig auf mehrere Dosen verteilt.',
+    'sc.kind.hint.times': 'Feste Uhrzeiten, jede mit eigener Menge.',
+    'sc.on': 'Aktiv', 'sc.on.hint': 'Aus pausiert den Zeitplan; er bleibt gespeichert.',
+    'sc.ml.total': 'Menge pro Tag', 'sc.t.add': 'Uhrzeit hinzufügen', 'sc.t.del': 'Uhrzeit entfernen', 'sc.t.sum': '{n} Uhrzeiten · {ml} ml pro Tag',
     'sc.days': 'Tage', 'sc.d.daily': 'Täglich', 'sc.d.weekdays': 'Wochentage', 'sc.d.interval': 'Alle N Tage',
     'sc.d.every': 'Alle', 'sc.d.days': 'Tage', 'sc.d.anchor': 'ab', 'sc.d.everyN': 'alle {n} Tage',
     'sc.wd.mon': 'Mo', 'sc.wd.tue': 'Di', 'sc.wd.wed': 'Mi', 'sc.wd.thu': 'Do', 'sc.wd.fri': 'Fr', 'sc.wd.sat': 'Sa', 'sc.wd.sun': 'So',
@@ -68,11 +76,12 @@ add({
     'sc.total': 'Heute geplant: {ml} ml', 'sc.off': 'pausiert',
     'sc.cf.overlap': 'Pumpe {p1} {t1} überschneidet sich mit Pumpe {p2} {t2}{d}',
     'sc.cf.collision_lock': 'Pumpe {p1} {t1} und Pumpe {p2} {t2}{d}: Sperrzeit {g} Min.',
-    'sc.cf.next': ' (Folgetag)', 'sc.err.prog': 'Programm {n}: {e}',
+    'sc.cf.next': ' (Folgetag)', 'sc.err.entry': '{time}: {e}',
     'err.invalid_time': 'Ungültige Uhrzeit', 'err.off_grid': 'Uhrzeiten müssen im {g}-Minuten-Raster liegen',
     'err.invalid_range': 'Ende muss nach dem Start liegen', 'err.invalid_count': 'Ungültige Anzahl Dosen',
     'err.slots_too_dense': 'Zu viele Dosen für dieses Zeitfenster', 'err.invalid_days': 'Mindestens einen Tag wählen',
     'err.invalid_catch_up': 'Nachholfenster: 1 bis 1440 Minuten', 'err.too_many_slots': 'Zu viele Dosen pro Tag',
+    'err.duplicate_time': 'Jede Uhrzeit nur einmal', 'err.invalid_kind': 'Unbekannte Planart',
     'err.exceeds_daily_limit': 'Die geplante Menge überschreitet das Tageslimit', 'err.conflict': 'Dosen kollidieren',
   },
 });
@@ -96,87 +105,88 @@ function activeOn(days, day) {
   return true;
 }
 
-// Program (parsed, see toProgram) -> {slots: [{min, ul}], err}
-function expand(p, grid) {
-  const fail = err => ({ slots: [], err });
-  if (p.days.mode === 'weekdays' && !p.days.weekdays.length) return fail('invalid_days');
-  if (p.days.mode === 'interval' && !(p.days.every >= 1 && p.days.every <= 30 && p.days.anchor)) return fail('invalid_days');
-  if (Number.isNaN(p.start)) return fail('invalid_time');
-  if (p.start % grid) return fail('off_grid');
-  if (!(p.ul > 0)) return fail('invalid_param');
-  if (p.kind === 'single') return { slots: [{ min: p.start, ul: p.ul }] };
-  const n = p.count;
+// Single times of a draft, sorted by time as the device stores them
+const sortedTimes = d => d.times.map(x => ({ time: x.time, min: toMin(x.time), ml: parseNum(x.ml) }))
+  .sort((a, b) => (Number.isNaN(a.min) ? 1e4 : a.min) - (Number.isNaN(b.min) ? 1e4 : b.min));
+
+// Draft -> {slots: [{min, ul}], err, entry (time text of the faulty entry)}
+function expand(d, grid) {
+  const fail = (err, entry) => ({ slots: [], err, entry });
+  if (d.kind === 'none') return { slots: [] };
+  const days = d.days;
+  if (days.mode === 'weekdays' && !days.weekdays.length) return fail('invalid_days');
+  if (days.mode === 'interval' && !(+days.every >= 1 && +days.every <= 30 && days.anchor)) return fail('invalid_days');
+  if (d.kind === 'times') {
+    const list = sortedTimes(d);
+    if (!list.length || list.length > kMaxTimes) return fail('invalid_count');
+    const slots = [];
+    for (let i = 0; i < list.length; ++i) {
+      const x = list[i];
+      if (Number.isNaN(x.min)) return fail('invalid_time', x.time || '–');
+      if (x.min % grid) return fail('off_grid', x.time);
+      if (i > 0 && x.min === list[i - 1].min) return fail('duplicate_time', x.time);
+      if (!(x.ml > 0)) return fail('invalid_param', x.time);
+      slots.push({ min: x.min, ul: ul(x.ml) });
+    }
+    return { slots };
+  }
+  const start = toMin(d.start), end = toMin(d.end), n = parseInt(d.count, 10), total = ul(parseNum(d.ml));
+  if (Number.isNaN(start)) return fail('invalid_time');
+  if (start % grid) return fail('off_grid');
+  if (!(total > 0)) return fail('invalid_param');
   if (!(n >= 1 && n <= 96)) return fail('invalid_count');
   if (n > 1) {
-    if (Number.isNaN(p.end)) return fail('invalid_time');
-    if (p.end % grid) return fail('off_grid');
-    if (p.end <= p.start) return fail('invalid_range');
+    if (Number.isNaN(end)) return fail('invalid_time');
+    if (end % grid) return fail('off_grid');
+    if (end <= start) return fail('invalid_range');
   }
-  const base = Math.floor(p.ul / n), rest = p.ul % n, span = n > 1 ? p.end - p.start : 0;
+  const base = Math.floor(total / n), rest = total % n, span = n > 1 ? end - start : 0;
   const slots = [];
   for (let i = 0; i < n; ++i) {
-    const min = n > 1 ? p.start + Math.floor((2 * i * span + (n - 1) * grid) / (2 * (n - 1) * grid)) * grid : p.start;
+    const min = n > 1 ? start + Math.floor((2 * i * span + (n - 1) * grid) / (2 * (n - 1) * grid)) * grid : start;
     if (i > 0 && min <= slots[i - 1].min) return fail('slots_too_dense');
     slots.push({ min, ul: base + (i < rest ? 1 : 0) });
   }
   return { slots };
 }
 
+// Slots of a draft on a day
+const daySlots = (d, day, grid) => (d.kind !== 'none' && d.enabled && activeOn(d.days, day) ? expand(d, grid).slots : []);
+
 // ---------------------------------------------------------------------------
 // Draft (form values as text) <-> device JSON
 
+const newRow = (time = '08:00') => ({ time, ml: '' });
+
 function draftOf(s) {
+  const d = s.days || { mode: 'daily' };
   return {
-    power_loss: s.power_loss, catch_up: String(s.catch_up_min),
-    programs: s.programs.map(p => ({
-      enabled: p.enabled, kind: p.kind,
-      start: p.kind === 'single' ? p.time : p.start, end: p.kind === 'generator' ? p.end : '',
-      count: String(p.kind === 'generator' ? p.count : 1), ml: text(p.ml),
-      days: { mode: p.days.mode, weekdays: p.days.weekdays || [], every: String(p.days.every || 2), anchor: p.days.anchor || '' },
-    })),
+    kind: s.kind || 'none', enabled: s.enabled !== false,
+    start: s.start || '08:00', end: s.end || '20:00', count: String(s.count || 4), ml: text(s.ml),
+    times: (s.times || []).map(x => ({ time: x.time, ml: text(x.ml) })),
+    days: { mode: d.mode, weekdays: d.weekdays || [...WD], every: String(d.every || 2), anchor: d.anchor || '' },
+    power_loss: s.power_loss || 'skip_missed', catch_up: String(s.catch_up_min ?? 60),
   };
 }
 
-function toProgram(d) {
-  return {
-    enabled: d.enabled, kind: d.kind, start: toMin(d.start), end: toMin(d.end), count: parseInt(d.count, 10),
-    ul: ul(parseNum(d.ml)), days: { ...d.days, every: parseInt(d.days.every, 10) },
-  };
+function bodyOf(d) {
+  const common = { power_loss: d.power_loss, catch_up_min: parseInt(d.catch_up, 10) || 0 };
+  if (d.kind === 'none') return { kind: 'none', ...common };
+  const days = d.days.mode === 'weekdays' ? { mode: 'weekdays', weekdays: WD.filter(w => d.days.weekdays.includes(w)) }
+    : d.days.mode === 'interval' ? { mode: 'interval', every: parseInt(d.days.every, 10), anchor: d.days.anchor }
+      : { mode: 'daily' };
+  const head = { kind: d.kind, enabled: d.enabled };
+  if (d.kind === 'times') return { ...head, times: sortedTimes(d).map(x => ({ time: x.time, ml: x.ml })), days, ...common };
+  const count = parseInt(d.count, 10);
+  return { ...head, start: d.start, ...(count > 1 ? { end: d.end } : {}), count, ml: parseNum(d.ml), days, ...common };
 }
 
-function bodyOf(draft) {
-  return {
-    power_loss: draft.power_loss, catch_up_min: parseInt(draft.catch_up, 10) || 0,
-    programs: draft.programs.map(d => {
-      const ml = parseNum(d.ml);
-      const days = d.days.mode === 'weekdays' ? { mode: 'weekdays', weekdays: WD.filter(w => d.days.weekdays.includes(w)) }
-        : d.days.mode === 'interval' ? { mode: 'interval', every: parseInt(d.days.every, 10), anchor: d.days.anchor }
-          : { mode: 'daily' };
-      return d.kind === 'single'
-        ? { enabled: d.enabled, kind: 'single', time: d.start, ml, days }
-        : { enabled: d.enabled, kind: 'generator', start: d.start, end: d.end, count: parseInt(d.count, 10), ml, days };
-    }),
-  };
-}
-
-// Slots of a draft on a day, sorted
-function daySlots(draft, day, grid) {
-  const out = [];
-  draft.programs.forEach((d, i) => {
-    const p = toProgram(d);
-    if (!p.enabled || !activeOn(p.days, day)) return;
-    for (const s of expand(p, grid).slots) out.push({ ...s, program: i + 1 });
-  });
-  return out.sort((a, b) => a.min - b.min);
-}
-
-// Simple form of a schedule: {ml, count, start, end}, {} without programs, null if not representable
+// Simple form of a schedule: {ml, count, start, end}, {} without a plan, null if not representable
 function simpleOf(s) {
-  if (!s.programs.length) return {};
-  const p = s.programs[0];
-  if (s.programs.length > 1 || !p.enabled || p.days.mode !== 'daily') return null;
-  return p.kind === 'single' ? { ml: p.ml, count: 1, start: p.time, end: p.time }
-    : { ml: p.ml, count: p.count, start: p.start, end: p.end };
+  if (s.kind === 'none') return {};
+  if (!s.enabled || s.days.mode !== 'daily') return null;
+  if (s.kind === 'spread') return { ml: s.ml, count: s.count, start: s.start, end: s.end };
+  return s.times.length === 1 ? { ml: s.times[0].ml, count: 1, start: s.times[0].time, end: '20:00' } : null;
 }
 
 function daysText(days) {
@@ -185,24 +195,34 @@ function daysText(days) {
   return t('sc.d.daily');
 }
 
-function programText(p) {
-  const amount = p.kind === 'single' ? `${p.time} · ${num(p.ml, 2)} ml`
-    : `${t('sc.each', { n: p.count, ml: num(p.ml / p.count, 2) })} · ${p.start}–${p.end} (${num(p.ml, 1)} ml)`;
-  return `${amount} · ${daysText(p.days)}${p.enabled ? '' : ' · ' + t('sc.off')}`;
+// One-line summary lines of a saved plan
+function planLines(s) {
+  const tail = `${daysText(s.days)}${s.enabled ? '' : ' · ' + t('sc.off')}`;
+  if (s.kind === 'spread') {
+    return [`${t('sc.each', { n: s.count, ml: num(s.ml / s.count, 2) })} · ${s.count > 1 ? s.start + '–' + s.end : s.start} (${num(s.ml, 1)} ml)`, tail];
+  }
+  return [s.times.map(x => `${x.time} · ${num(x.ml, 2)} ml`).join(', '), tail];
 }
 
-function errorText(e, grid) {
+function errorText(e, grid, body) {
   if (!e) return '';
-  if (e.code === 'conflict' && e.body && e.body.error && e.body.error.conflicts) {
-    return e.body.error.conflicts.map(c => t('sc.cf.' + (c.code === 'collision_lock' ? 'collision_lock' : 'overlap'), {
+  const info = e.body && e.body.error;
+  if (e.code === 'conflict' && info && info.conflicts) {
+    return info.conflicts.map(c => t('sc.cf.' + (c.code === 'collision_lock' ? 'collision_lock' : 'overlap'), {
       p1: c.first.pump, t1: c.first.time, p2: c.second.pump, t2: c.second.time, g: c.gap_min,
       d: c.next_day ? t('sc.cf.next') : '',
     })).join('\n');
   }
   const base = errText({ code: e.code || 'invalid_param', message: e.message, vars: { g: grid } });
-  const prog = e.body && e.body.error && e.body.error.program;
-  return prog ? t('sc.err.prog', { n: prog, e: base }) : base;
+  const entry = info && info.entry;  // 1-based, in the sorted order of the body sent
+  const time = entry && body && body.times && body.times[entry - 1] && body.times[entry - 1].time;
+  return time ? t('sc.err.entry', { time, e: base }) : base;
 }
+
+const localError = (ex, grid) => {
+  const base = t('err.' + ex.err, { g: grid });
+  return ex.entry ? t('sc.err.entry', { time: ex.entry, e: base }) : base;
+};
 
 // ---------------------------------------------------------------------------
 // Schedules of all pumps (GET /api/v1/pumps/schedule), shared while the page is open
@@ -269,14 +289,14 @@ function useSave(pump, onSaved) {
     setBusy(true);
     return api('PUT', '/api/v1/pumps/schedule?pump=' + pump, body)
       .then(j => { cache[pump] = j; msg.ok(okText); onSaved(j); reloadSched(); })
-      .catch(e => msg.err(errorText(e, grid)))
+      .catch(e => msg.err(errorText(e, grid, body)))
       .finally(() => setBusy(false));
   };
   return { msg, busy, save };
 }
 
 // ---------------------------------------------------------------------------
-// Simple view
+// Simple view: daily amount in N doses, every day
 
 function SimpleEditor({ pump, name, s, onSaved, limit }) {
   const grid = s.grid_min || 5;
@@ -287,7 +307,7 @@ function SimpleEditor({ pump, name, s, onSaved, limit }) {
     const sl = s.today ? s.today.slots : [];
     return {
       ml: text(sm.ml ?? (s.today && s.today.ml) ?? ''), count: String(sm.count ?? (sl.length || 1)),
-      start: sm.start ?? (sl.length ? sl[0].time : '08:00'), end: sm.end ?? (sl.length ? sl[sl.length - 1].time : '20:00'),
+      start: sm.start ?? (sl.length ? sl[0].time : '08:00'), end: sm.end ?? (sl.length > 1 ? sl[sl.length - 1].time : '20:00'),
     };
   };
   const [f, setF] = useState(init);
@@ -298,27 +318,29 @@ function SimpleEditor({ pump, name, s, onSaved, limit }) {
   if (simple === null && !replace) {
     return html`<section class="card"><h2>${name}</h2>
       <p class="prohint small">${t('sc.pro.made')}</p>
-      <ul class="plist">${s.programs.map(p => html`<li class=${p.enabled ? '' : 'mut'}>${programText(p)}</li>`)}</ul>
+      <ul class="plist">${planLines(s).map(l => html`<li>${l}</li>`)}</ul>
       ${s.today && html`<p class="small mut">${t('sc.total', { ml: num(s.today.ml, 2) })}</p>`}
       <div class="row"><button onClick=${() => setMode('pro')}>${t('sc.pro.edit')}</button>
         <button class="sec" onClick=${() => setReplace(true)}>${t('sc.replace')}</button></div>
     </section>`;
   }
+  const draft = {
+    kind: 'spread', enabled: true, start: f.start, end: f.end, count: f.count, ml: f.ml, times: [],
+    days: { mode: 'daily', weekdays: [...WD], every: '2', anchor: '' },
+    power_loss: s.power_loss, catch_up: String(s.catch_up_min),
+  };
+  const typing = Number.isNaN(parseNum(f.ml)) || !(parseInt(f.count, 10) >= 1);
+  const ex = typing ? { slots: [] } : expand(draft, grid);
   const count = parseInt(f.count, 10);
-  const prog = { enabled: true, kind: count > 1 ? 'generator' : 'single', start: toMin(f.start), end: toMin(f.end), count, ul: ul(parseNum(f.ml)), days: { mode: 'daily' } };
-  const ex = Number.isNaN(parseNum(f.ml)) || !(count >= 1) ? { slots: [] } : expand(prog, grid);
   const submit = e => {
     e.preventDefault();
     if (ex.err || !ex.slots.length) { msg.err(t('err.' + (ex.err || 'invalid_param'), { g: grid })); return; }
-    const ml = parseNum(f.ml);
-    const p = count > 1 ? { kind: 'generator', start: f.start, end: f.end, count, ml, days: { mode: 'daily' } }
-      : { kind: 'single', time: f.start, ml, days: { mode: 'daily' } };
-    save({ power_loss: s.power_loss, catch_up_min: s.catch_up_min, programs: [{ enabled: true, ...p }] }, t('sc.saved'), grid);
+    save(bodyOf(draft), t('sc.saved'), grid);
   };
   const remove = () => {
-    if (confirm(t('sc.remove.ask', { n: pump }))) save({ power_loss: s.power_loss, catch_up_min: s.catch_up_min, programs: [] }, t('sc.removed'), grid);
+    if (confirm(t('sc.remove.ask', { n: pump }))) save(bodyOf({ ...draft, kind: 'none' }), t('sc.removed'), grid);
   };
-  const empty = simple && !s.programs.length;
+  const empty = s.kind === 'none';
   const planned = ex.slots.reduce((a, x) => a + x.ul, 0) / 1000;
   return html`<section class="card"><h2>${name}</h2>
     ${empty && html`<p class="small mut">${t('sc.none')}. ${t('sc.none.hint')}</p>`}
@@ -344,83 +366,90 @@ function SimpleEditor({ pump, name, s, onSaved, limit }) {
 }
 
 // ---------------------------------------------------------------------------
-// Pro view
+// Pro view: the whole plan of one pump
 
-function ProgramCard({ d, index, grid, today, onChange, onDelete }) {
-  const set = patch => onChange({ ...d, ...patch });
-  const setDays = patch => onChange({ ...d, days: { ...d.days, ...patch } });
-  const p = toProgram(d);
-  const ex = expand(p, grid);
-  const toggleWd = w => setDays({ weekdays: d.days.weekdays.includes(w) ? d.days.weekdays.filter(x => x !== w) : [...d.days.weekdays, w] });
-  const switchDays = mode => setDays({ mode, anchor: d.days.anchor || today || '', weekdays: d.days.weekdays.length ? d.days.weekdays : [...WD] });
-  return html`<div class=${'prog' + (d.enabled ? '' : ' off')}>
-    <div class="prog-head">
-      <b>${t('sc.prog', { n: index + 1 })}</b>
-      <label class="check"><input type="checkbox" checked=${d.enabled} onChange=${e => set({ enabled: e.target.checked })}/> ${t('sc.on')}</label>
-      <span class="spacer"></span>
-      <button type="button" class="ghost" title=${t('sc.del')} aria-label=${t('sc.del')} onClick=${onDelete}>✕</button>
+function TimesList({ d, grid, set }) {
+  const setRow = (i, patch) => set({ times: d.times.map((x, k) => (k === i ? { ...x, ...patch } : x)) });
+  const addRow = () => {
+    const last = d.times.length ? toMin(d.times[d.times.length - 1].time) : NaN;
+    const next = Number.isNaN(last) ? '08:00' : hhmm(Math.min(last + 60, 1440 - grid) - (Math.min(last + 60, 1440 - grid) % grid));
+    set({ times: [...d.times, newRow(next)] });
+  };
+  const sum = d.times.reduce((a, x) => a + (parseNum(x.ml) > 0 ? ul(parseNum(x.ml)) : 0), 0);
+  return html`<div class="tlist">
+    ${d.times.map((x, i) => html`<div class="trow" key=${i}>
+      <${TimeInput} value=${x.time} grid=${grid} onInput=${v => setRow(i, { time: v })}/>
+      <${Amount} value=${x.ml} onInput=${v => setRow(i, { ml: v })}/>
+      <button type="button" class="ghost" title=${t('sc.t.del')} aria-label=${t('sc.t.del')}
+        onClick=${() => set({ times: d.times.filter((_, k) => k !== i) })}>✕</button>
+    </div>`)}
+    <div class="row">
+      <button type="button" class="sec" onClick=${addRow} disabled=${d.times.length >= kMaxTimes}>+ ${t('sc.t.add')}</button>
+      ${d.times.length > 0 && html`<span class="mut small">${t('sc.t.sum', { n: d.times.length, ml: num(sum / 1000, 2) })}</span>`}
     </div>
-    <${Seg} value=${d.kind} onChange=${kind => set({ kind, end: d.end || '20:00', count: kind === 'generator' && d.count === '1' ? '4' : d.count })}
-      options=${[['single', t('sc.kind.single')], ['generator', t('sc.kind.generator')]]}/>
-    <div class="form-row">
-      ${d.kind === 'single' ? html`
-        <label>${t('sc.at')}<${TimeInput} value=${d.start} grid=${grid} onInput=${v => set({ start: v })}/></label>
-        <label>${t('sc.ml.single')}<${Amount} value=${d.ml} onInput=${v => set({ ml: v })}/></label>` : html`
-        <label>${t('sc.from')}<${TimeInput} value=${d.start} grid=${grid} onInput=${v => set({ start: v })}/></label>
-        <label>${t('sc.to')}<${TimeInput} value=${d.end} grid=${grid} onInput=${v => set({ end: v })}/></label>
-        <label>${t('sc.count')}<${Amount} value=${d.count} onInput=${v => set({ count: v })} unit=${t('sc.doses')}/></label>
-        <label>${t('sc.ml.total')}<${Amount} value=${d.ml} onInput=${v => set({ ml: v })}/></label>`}
-    </div>
-    <div class="field"><span class="lbl">${t('sc.days')}</span>
-      <${Seg} value=${d.days.mode} onChange=${switchDays}
-        options=${[['daily', t('sc.d.daily')], ['weekdays', t('sc.d.weekdays')], ['interval', t('sc.d.interval')]]}/>
-      ${d.days.mode === 'weekdays' && html`<div class="wd">${WD.map(w => html`
-        <button type="button" class=${d.days.weekdays.includes(w) ? 'on' : ''} aria-pressed=${d.days.weekdays.includes(w)}
-          onClick=${() => toggleWd(w)}>${t('sc.wd.' + w)}</button>`)}</div>`}
-      ${d.days.mode === 'interval' && html`<div class="form-row">
-        <label>${t('sc.d.every')}<${Amount} value=${d.days.every} onInput=${v => setDays({ every: v })} unit=${t('sc.d.days')}/></label>
-        <label>${t('sc.d.anchor')}<input type="date" value=${d.days.anchor} onInput=${e => setDays({ anchor: e.target.value })}/></label>
-      </div>`}
-    </div>
-    <${Preview} slots=${Number.isNaN(parseNum(d.ml)) || d.kind === 'single' ? [] : ex.slots} err=${Number.isNaN(parseNum(d.ml)) ? null : ex.err} grid=${grid}/>
   </div>`;
 }
 
-function ProEditor({ pump, name, s, draft, setDraft, onSaved, today, limit }) {
+function ProEditor({ pump, name, s, draft: d, setDraft, onSaved, today, limit }) {
   const grid = s.grid_min || 5;
   const { msg, busy, save } = useSave(pump, onSaved);
-  const dirty = JSON.stringify(bodyOf(draft)) !== JSON.stringify(bodyOf(draftOf(s)));
-  const setProg = (i, d) => setDraft({ ...draft, programs: draft.programs.map((x, k) => (k === i ? d : x)) });
-  const addProg = () => setDraft({
-    ...draft, programs: [...draft.programs, {
-      enabled: true, kind: 'single', start: '08:00', end: '', count: '1', ml: '', days: { mode: 'daily', weekdays: [...WD], every: '2', anchor: today || '' },
-    }],
-  });
-  const planned = today ? daySlots(draft, dayNum(today), grid).reduce((a, x) => a + x.ul, 0) / 1000 : 0;
+  const set = patch => setDraft(prev => ({ ...prev, ...patch }));
+  const setDays = patch => setDraft(prev => ({ ...prev, days: { ...prev.days, ...patch } }));
+  const dirty = JSON.stringify(bodyOf(d)) !== JSON.stringify(bodyOf(draftOf(s)));
+  const ex = expand(d, grid);
+  const planned = today ? daySlots(d, dayNum(today), grid).reduce((a, x) => a + x.ul, 0) / 1000 : 0;
+  const switchKind = kind => set({ kind, ...(kind === 'times' && !d.times.length ? { times: [newRow()] } : {}) });
+  const switchDays = mode => setDays({ mode, anchor: d.days.anchor || today || '', weekdays: d.days.weekdays.length ? d.days.weekdays : [...WD] });
+  const toggleWd = w => setDays({ weekdays: d.days.weekdays.includes(w) ? d.days.weekdays.filter(x => x !== w) : [...d.days.weekdays, w] });
+  const typing = d.kind === 'spread' && Number.isNaN(parseNum(d.ml));
   const submit = e => {
     e.preventDefault();
-    const bad = draft.programs.findIndex(d => Number.isNaN(parseNum(d.ml)) || expand(toProgram(d), grid).err);
-    if (bad >= 0) {
-      const d = draft.programs[bad];
-      msg.err(t('sc.err.prog', { n: bad + 1, e: t('err.' + (Number.isNaN(parseNum(d.ml)) ? 'invalid_param' : expand(toProgram(d), grid).err), { g: grid }) }));
-      return;
-    }
-    save(bodyOf(draft), t('sc.saved'), grid);
+    if (ex.err) { msg.err(localError(ex, grid)); return; }
+    save(bodyOf(d), d.kind === 'none' ? t('sc.removed') : t('sc.saved'), grid);
   };
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  return html`<form class="card plan" novalidate onSubmit=${submit}>
     <h2>${name}</h2>
-    ${!draft.programs.length && html`<p class="small mut">${t('sc.none')}. ${t('sc.none.hint')}</p>`}
-    <div class="progs">${draft.programs.map((d, i) => html`<${ProgramCard} key=${i} d=${d} index=${i} grid=${grid} today=${today}
-      onChange=${x => setProg(i, x)} onDelete=${() => setDraft({ ...draft, programs: draft.programs.filter((_, k) => k !== i) })}/>`)}</div>
-    <button type="button" class="sec" onClick=${addProg} disabled=${draft.programs.length >= kMaxPrograms}>+ ${t('sc.add')}</button>
-    <div class="field"><span class="lbl">${t('sc.power')}</span>
-      <${Seg} value=${draft.power_loss} onChange=${v => setDraft({ ...draft, power_loss: v })}
-        options=${[['skip_missed', t('sc.pl.skip_missed')], ['catch_up_window', t('sc.pl.catch_up_window')]]}/>
-      <span class="mut small">${t('sc.pl.hint.' + draft.power_loss)}</span>
-      ${draft.power_loss === 'catch_up_window' && html`<${Amount} value=${draft.catch_up} onInput=${v => setDraft({ ...draft, catch_up: v })} unit="min"/>`}
+    <div class="field"><span class="lbl">${t('sc.kind')}</span>
+      <${Seg} value=${d.kind} onChange=${switchKind}
+        options=${[['none', t('sc.kind.none')], ['spread', t('sc.kind.spread')], ['times', t('sc.kind.times')]]}/>
+      <span class="mut small">${d.kind === 'none' ? t('sc.none.hint') : t('sc.kind.hint.' + d.kind)}</span>
     </div>
-    ${today && html`<p class="small mut">${t('sc.total', { ml: num(planned, 2) })}</p>`}
-    ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}
+    ${d.kind !== 'none' && html`
+      <label class="check"><input type="checkbox" checked=${d.enabled} onChange=${e => set({ enabled: e.target.checked })}/>
+        <span>${t('sc.on')}<br/><span class="mut small">${t('sc.on.hint')}</span></span></label>
+      <div class=${'plan-body' + (d.enabled ? '' : ' off')}>
+        ${d.kind === 'spread' ? html`
+          <div class="form-row">
+            <label>${t('sc.ml.total')}<${Amount} value=${d.ml} onInput=${v => set({ ml: v })}/></label>
+            <label>${t('sc.count')}<${Amount} value=${d.count} onInput=${v => set({ count: v })} unit=${t('sc.doses')}/></label>
+          </div>
+          <div class="form-row">
+            <label>${parseInt(d.count, 10) > 1 ? t('sc.from') : t('sc.at')}<${TimeInput} value=${d.start} grid=${grid} onInput=${v => set({ start: v })}/></label>
+            ${parseInt(d.count, 10) > 1 && html`<label>${t('sc.to')}<${TimeInput} value=${d.end} grid=${grid} onInput=${v => set({ end: v })}/></label>`}
+          </div>
+          <${Preview} slots=${typing ? [] : ex.slots} err=${typing ? null : ex.err} grid=${grid}/>`
+        : html`<${TimesList} d=${d} grid=${grid} set=${set}/>`}
+        <div class="field"><span class="lbl">${t('sc.days')}</span>
+          <${Seg} value=${d.days.mode} onChange=${switchDays}
+            options=${[['daily', t('sc.d.daily')], ['weekdays', t('sc.d.weekdays')], ['interval', t('sc.d.interval')]]}/>
+          ${d.days.mode === 'weekdays' && html`<div class="wd">${WD.map(w => html`
+            <button type="button" class=${d.days.weekdays.includes(w) ? 'on' : ''} aria-pressed=${d.days.weekdays.includes(w)}
+              onClick=${() => toggleWd(w)}>${t('sc.wd.' + w)}</button>`)}</div>`}
+          ${d.days.mode === 'interval' && html`<div class="form-row">
+            <label>${t('sc.d.every')}<${Amount} value=${d.days.every} onInput=${v => setDays({ every: v })} unit=${t('sc.d.days')}/></label>
+            <label>${t('sc.d.anchor')}<input type="date" value=${d.days.anchor} onInput=${e => setDays({ anchor: e.target.value })}/></label>
+          </div>`}
+        </div>
+        <div class="field"><span class="lbl">${t('sc.power')}</span>
+          <${Seg} value=${d.power_loss} onChange=${v => set({ power_loss: v })}
+            options=${[['skip_missed', t('sc.pl.skip_missed')], ['catch_up_window', t('sc.pl.catch_up_window')]]}/>
+          <span class="mut small">${t('sc.pl.hint.' + d.power_loss)}</span>
+          ${d.power_loss === 'catch_up_window' && html`<${Amount} value=${d.catch_up} onInput=${v => set({ catch_up: v })} unit="min"/>`}
+        </div>
+      </div>
+      ${d.kind === 'times' && ex.err && ex.err !== 'invalid_param' && d.times.length > 0 && html`<p class="msg err">${localError(ex, grid)}</p>`}
+      ${today && html`<p class="small mut">${t('sc.total', { ml: num(planned, 2) })}</p>`}
+      ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}`}
     <div class="row savebar">
       <button type="submit" disabled=${busy || !dirty}>${t('sc.save')}</button>
       <button type="button" class="sec" disabled=${busy || !dirty} onClick=${() => { setDraft(draftOf(s)); msg.clear(); }}>${t('sc.discard')}</button>

@@ -43,13 +43,13 @@ bool valid_days(const DayRule& d) {
     return d.mode == DayMode::Weekdays && (d.weekdays & 0x7F) != 0 && (d.weekdays & 0x80) == 0;
 }
 
-int slots_of(const Program& p) { return p.kind == Kind::Generator ? p.count : 1; }
-
 bool before(int64_t utc_a, uint32_t tag_a, int64_t utc_b, uint32_t tag_b) {
     return utc_a < utc_b || (utc_a == utc_b && tag_a < tag_b);
 }
 
-uint32_t tag_of(const Slot& s) { return s.minute * 16u + s.program + 1u; }
+// Minutes are unique within a plan; the factor 16 keeps run-state cursors of
+// older firmware (minute * 16 + program + 1) valid.
+uint32_t tag_of(const Slot& s) { return s.minute * 16u + 1u; }
 
 // Duration of one move with a trapezoidal (or triangular) ramp
 double move_seconds(double revs, double rps, double accel_rps2) {
@@ -59,6 +59,16 @@ double move_seconds(double revs, double rps, double accel_rps2) {
 }
 
 }  // namespace
+
+const char* kind_str(Kind k) { return k == Kind::Spread ? "spread" : k == Kind::Times ? "times" : "none"; }
+
+bool parse_kind(const char* s, Kind* out) {
+    if (!std::strcmp(s, "none")) *out = Kind::None;
+    else if (!std::strcmp(s, "spread")) *out = Kind::Spread;
+    else if (!std::strcmp(s, "times")) *out = Kind::Times;
+    else return false;
+    return true;
+}
 
 const char* power_loss_str(PowerLoss p) { return p == PowerLoss::CatchUpWindow ? "catch_up_window" : "skip_missed"; }
 
@@ -105,81 +115,78 @@ bool can_coincide(const DayRule& a, const DayRule& b, int offset) {
 }
 
 // ---------------------------------------------------------------------------
-int expand(const Program& p, uint8_t index, uint16_t grid_min, uint32_t min_dose_ul, Slot* out, int max,
-           const char** err) {
-    auto fail = [&](const char* e) {
+int expand(const PumpSchedule& s, uint16_t grid_min, uint32_t min_dose_ul, Slot* out, int max, const char** err,
+           int* entry) {
+    auto fail = [&](const char* e, int at = -1) {
         if (err) *err = e;
+        if (entry) *entry = at;
         return -1;
     };
     if (grid_min == 0) grid_min = 1;
-    if (!valid_days(p.days)) return fail("invalid_days");
-    if (p.start_min >= kMinutesPerDay) return fail("invalid_time");
-    if (p.start_min % grid_min) return fail("off_grid");
+    if (s.kind == Kind::None) return 0;
+    if (!valid_days(s.days)) return fail("invalid_days");
 
-    if (p.kind == Kind::Single) {
-        if (p.amount_ul < min_dose_ul) return fail("dose_too_small");
-        if (p.amount_ul > dose::kMaxDoseUl) return fail("dose_too_large");
-        if (max < 1) return fail("too_many_slots");
-        out[0] = Slot{p.start_min, index, 0, p.amount_ul};
-        return 1;
+    if (s.kind == Kind::Times) {
+        const int n = s.time_count;
+        if (n < 1 || n > kMaxTimes) return fail("invalid_count");
+        if (n > max) return fail("too_many_slots");
+        for (int i = 0; i < n; ++i) {
+            const TimeDose& t = s.times[i];
+            if (t.minute >= kMinutesPerDay) return fail("invalid_time", i);
+            if (t.minute % grid_min) return fail("off_grid", i);
+            if (i > 0 && t.minute == s.times[i - 1].minute) return fail("duplicate_time", i);
+            if (i > 0 && t.minute < s.times[i - 1].minute) return fail("invalid_time", i);  // not sorted
+            if (t.ul < min_dose_ul) return fail("dose_too_small", i);
+            if (t.ul > dose::kMaxDoseUl) return fail("dose_too_large", i);
+            out[i] = Slot{t.minute, static_cast<uint8_t>(i), 0, t.ul};
+        }
+        return n;
     }
-    if (p.kind != Kind::Generator) return fail("invalid_kind");
-    const int n = p.count;
+    if (s.kind != Kind::Spread) return fail("invalid_kind");
+    if (s.start_min >= kMinutesPerDay) return fail("invalid_time");
+    if (s.start_min % grid_min) return fail("off_grid");
+    const int n = s.count;
     if (n < 1 || n > kMaxSlotsPerDay) return fail("invalid_count");
     if (n > max) return fail("too_many_slots");
     if (n > 1) {
-        if (p.end_min >= kMinutesPerDay) return fail("invalid_time");
-        if (p.end_min % grid_min) return fail("off_grid");
-        if (p.end_min <= p.start_min) return fail("invalid_range");
+        if (s.end_min >= kMinutesPerDay) return fail("invalid_time");
+        if (s.end_min % grid_min) return fail("off_grid");
+        if (s.end_min <= s.start_min) return fail("invalid_range");
     }
-    const uint32_t base = p.amount_ul / n, rest = p.amount_ul % n;
+    const uint32_t base = s.amount_ul / n, rest = s.amount_ul % n;
     if (base < min_dose_ul) return fail("dose_too_small");
     if (base + (rest ? 1 : 0) > dose::kMaxDoseUl) return fail("dose_too_large");
 
-    const uint32_t span = n > 1 ? p.end_min - p.start_min : 0;
+    const uint32_t span = n > 1 ? s.end_min - s.start_min : 0;
     for (int i = 0; i < n; ++i) {
-        uint16_t minute = p.start_min;
+        uint16_t minute = s.start_min;
         if (n > 1) {
             // even spacing, rounded to the grid (half up)
             const uint32_t num = 2u * i * span + uint32_t(n - 1) * grid_min;
             const uint32_t den = 2u * uint32_t(n - 1) * grid_min;
-            minute = static_cast<uint16_t>(p.start_min + num / den * grid_min);
+            minute = static_cast<uint16_t>(s.start_min + num / den * grid_min);
         }
         if (i > 0 && minute <= out[i - 1].minute) return fail("slots_too_dense");
-        out[i] = Slot{minute, index, 0, base + (uint32_t(i) < rest ? 1u : 0u)};
+        out[i] = Slot{minute, static_cast<uint8_t>(i), 0, base + (uint32_t(i) < rest ? 1u : 0u)};
     }
     return n;
+}
+
+bool runs_on(const PumpSchedule& s, int32_t day) {
+    return s.kind != Kind::None && s.enabled && active_on(s.days, day);
 }
 
 int day_slots(const PumpSchedule& s, int32_t day, uint16_t grid_min, Slot* out, int max) {
-    int n = 0;
-    Slot buf[kMaxSlotsPerDay];
-    const int programs = s.count < kMaxPrograms ? s.count : kMaxPrograms;
-    for (int i = 0; i < programs; ++i) {
-        const Program& p = s.programs[i];
-        if (!p.enabled || !active_on(p.days, day)) continue;
-        const int k = expand(p, static_cast<uint8_t>(i), grid_min, 0, buf, kMaxSlotsPerDay, nullptr);
-        for (int j = 0; j < k && n < max; ++j) {
-            // insertion sort by (minute, program)
-            int pos = n++;
-            while (pos > 0 && (out[pos - 1].minute > buf[j].minute ||
-                               (out[pos - 1].minute == buf[j].minute && out[pos - 1].program > buf[j].program))) {
-                out[pos] = out[pos - 1];
-                --pos;
-            }
-            out[pos] = buf[j];
-        }
-    }
-    return n;
+    if (!runs_on(s, day)) return 0;
+    const int n = expand(s, grid_min, 0, out, max, nullptr);
+    return n < 0 ? 0 : n;
 }
 
 uint32_t day_total(const PumpSchedule& s, int32_t day) {
+    if (!runs_on(s, day)) return 0;
+    if (s.kind == Kind::Spread) return s.amount_ul;
     uint32_t sum = 0;
-    const int programs = s.count < kMaxPrograms ? s.count : kMaxPrograms;
-    for (int i = 0; i < programs; ++i) {
-        const Program& p = s.programs[i];
-        if (p.enabled && active_on(p.days, day)) sum += p.amount_ul;
-    }
+    for (int i = 0; i < s.time_count && i < kMaxTimes; ++i) sum += s.times[i].ul;
     return sum;
 }
 
@@ -235,21 +242,21 @@ struct Checker {
         }
         Conflict& c = out[found++];
         c.code = code;
-        c.first = SlotRef{uint8_t(pa), a.program, a.minute};
-        c.second = SlotRef{uint8_t(pb), b.program, b.minute};
+        c.first = SlotRef{uint8_t(pa), 0, a.minute};
+        c.second = SlotRef{uint8_t(pb), 0, b.minute};
         c.next_day = static_cast<uint8_t>(next_day);
         c.gap_min = static_cast<uint16_t>(gap / 60);
     }
 
-    // Slot t of pump pb (on the same day or the next) starts while slot s of
+    // A slot of pump pb (on the same day or the next) starts while a slot of
     // pump pa is still running or within `gap` after its end.
-    void check_programs(int pa, int i, int pb, int j, int64_t gap, const char* code, bool same_order_twice) {
-        const Program& a = all[pa].programs[i];
-        const Program& b = all[pb].programs[j];
-        if (!a.enabled || !b.enabled) return;
+    void check_plans(int pa, int pb, int64_t gap, const char* code) {
+        const PumpSchedule& a = all[pa];
+        const PumpSchedule& b = all[pb];
+        if (a.kind == Kind::None || b.kind == Kind::None || !a.enabled || !b.enabled) return;
         Slot sa[kMaxSlotsPerDay], sb[kMaxSlotsPerDay];
-        const int na = expand(a, uint8_t(i), ctx.grid_min, 0, sa, kMaxSlotsPerDay, nullptr);
-        const int nb = expand(b, uint8_t(j), ctx.grid_min, 0, sb, kMaxSlotsPerDay, nullptr);
+        const int na = expand(a, ctx.grid_min, 0, sa, kMaxSlotsPerDay, nullptr);
+        const int nb = expand(b, ctx.grid_min, 0, sb, kMaxSlotsPerDay, nullptr);
         for (int next = 0; next <= 1; ++next) {
             if (!can_coincide(a.days, b.days, next)) continue;
             for (int x = 0; x < na; ++x) {
@@ -257,10 +264,10 @@ struct Checker {
                 const int64_t end = start + run_seconds(sa[x].ul, ctx.run[pa]) + gap;
                 for (int y = 0; y < nb; ++y) {
                     const int64_t other = sb[y].minute * 60 + next * 86400;
-                    if (pa == pb && i == j && x == y && !next) continue;
+                    if (pa == pb && x == y && !next) continue;
                     if (other < start || other >= end) continue;
                     // equal start times are found from both directions: report once
-                    if (other == start && !next && same_order_twice && (pa > pb || (pa == pb && i > j))) continue;
+                    if (other == start && !next && pa > pb) continue;
                     add(code, pa, sa[x], pb, sb[y], next, gap);
                 }
             }
@@ -274,43 +281,28 @@ Validation validate(const PumpSchedule (&all)[kPumps], const Locks& locks, const
                     int max_out) {
     Validation v;
     Slot buf[kMaxSlotsPerDay];
-    // 1. Every program on its own
+    // 1. Every plan on its own
     for (int p = 0; p < kPumps; ++p) {
-        if (all[p].count > kMaxPrograms) {
-            v.error = "too_many_programs";
-            v.pump = p;
-            return v;
-        }
         if (all[p].power_loss == PowerLoss::CatchUpWindow && (all[p].catch_up_min < 1 || all[p].catch_up_min > 1440)) {
             v.error = "invalid_catch_up";
             v.pump = p;
             return v;
         }
-        for (int i = 0; i < all[p].count; ++i) {
-            const char* err = nullptr;
-            if (expand(all[p].programs[i], uint8_t(i), ctx.grid_min, ctx.min_dose_ul, buf, kMaxSlotsPerDay, &err) < 0) {
-                v.error = err;
-                v.pump = p;
-                v.program = i;
-                return v;
-            }
+        const char* err = nullptr;
+        int entry = -1;
+        if (expand(all[p], ctx.grid_min, ctx.min_dose_ul, buf, kMaxSlotsPerDay, &err, &entry) < 0) {
+            v.error = err;
+            v.pump = p;
+            v.entry = entry;
+            return v;
         }
     }
-    // 2. Per day: number of slots and daily limit. Day rules repeat at most
-    //    every lcm(7, interval) days; one year covers every combination that
-    //    matters in practice.
+    // 2. Daily limit per day. Day rules repeat at most every lcm(7, interval)
+    //    days; one year covers every combination that matters in practice.
     for (int p = 0; p < kPumps; ++p) {
-        const PumpSchedule& s = all[p];
+        if (!ctx.daily_limit_ul[p] || all[p].kind == Kind::None) continue;
         for (int32_t d = ctx.today; d < ctx.today + 366; ++d) {
-            int slots = 0;
-            for (int i = 0; i < s.count; ++i)
-                if (s.programs[i].enabled && active_on(s.programs[i].days, d)) slots += slots_of(s.programs[i]);
-            if (slots > kMaxSlotsPerDay) {
-                v.error = "too_many_slots";
-                v.pump = p;
-                return v;
-            }
-            if (ctx.daily_limit_ul[p] && day_total(s, d) > ctx.daily_limit_ul[p]) {
+            if (day_total(all[p], d) > ctx.daily_limit_ul[p]) {
                 v.error = "exceeds_daily_limit";
                 v.pump = p;
                 return v;
@@ -322,22 +314,18 @@ Validation validate(const PumpSchedule (&all)[kPumps], const Locks& locks, const
         const LockRule& l = locks.rules[r];
         if (r >= kMaxLocks || l.a >= kPumps || l.b >= kPumps || l.a == l.b || l.gap_min < 1 || l.gap_min > 1440) {
             v.error = "invalid_lock";
-            v.program = r;
+            v.rule = r;
             return v;
         }
     }
     // 4. Overlaps on the same pump and lock times between pumps
     Checker c{all, ctx, out, max_out};
-    for (int p = 0; p < kPumps; ++p)
-        for (int i = 0; i < all[p].count; ++i)
-            for (int j = 0; j < all[p].count; ++j) c.check_programs(p, i, p, j, 0, "overlap", true);
+    for (int p = 0; p < kPumps; ++p) c.check_plans(p, p, 0, "overlap");
     for (int pa = 0; pa < kPumps; ++pa)
         for (int pb = 0; pb < kPumps; ++pb) {
             if (pa == pb) continue;
             const int64_t gap = lock_gap(locks, pa, pb);
-            if (!gap) continue;
-            for (int i = 0; i < all[pa].count; ++i)
-                for (int j = 0; j < all[pb].count; ++j) c.check_programs(pa, i, pb, j, gap, "collision_lock", true);
+            if (gap) c.check_plans(pa, pb, gap, "collision_lock");
         }
     if (c.found) {
         v.error = "conflict";
@@ -363,7 +351,7 @@ bool next_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, const
             const uint32_t tag = tag_of(slots[k]);
             if (!before(after.utc, after.tag, utc, tag) || utc > until) continue;
             if (found && !before(utc, tag, out->utc, out->tag)) continue;
-            *out = Due{utc, d, slots[k].minute, slots[k].program, slots[k].ul, tag, n - k};
+            *out = Due{utc, d, slots[k].minute, slots[k].ul, tag, n - k};
             found = true;
         }
         if (found && d >= day_of(tz::to_local(z, out->utc)) + 1) break;  // later days only get later

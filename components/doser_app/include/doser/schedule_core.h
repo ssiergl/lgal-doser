@@ -1,9 +1,10 @@
 #pragma once
 // Schedule logic (M3) without hardware/ESP dependencies (host tests: tests/host).
 //
-// Every pump has up to kMaxPrograms programs. A program runs on certain days
-// (weekdays or every N days) and is either a single time or a generator
-// ("X ml in N doses between A and B"). Times are local wall-clock minutes on
+// Every pump has exactly one plan. It runs on certain days (daily, weekdays
+// or every N days) and is either "spread" ("X ml in N doses between A and
+// B") or "times" (single times, each with its own amount); it can be paused
+// as a whole. Times are local wall-clock minutes on
 // a grid (default 5 min); the mapping to UTC around DST changes is done with
 // tz::to_utc (gap: shifted forward, ambiguous: first occurrence).
 //
@@ -17,8 +18,8 @@
 namespace doser::sched {
 
 constexpr int kPumps = 5;
-constexpr int kMaxPrograms = 8;       // per pump
-constexpr int kMaxSlotsPerDay = 96;   // per pump, all programs together
+constexpr int kMaxTimes = 24;         // single times of a "times" plan
+constexpr int kMaxSlotsPerDay = 96;   // per pump and day
 constexpr int kMaxLocks = 10;
 constexpr int kMaxInterval = 30;      // "every N days"
 constexpr uint16_t kMinutesPerDay = 1440;
@@ -41,7 +42,7 @@ struct DayRule {
     uint8_t weekdays = 0x7F;  // bit 0 = Monday .. bit 6 = Sunday
     uint8_t interval = 1;     // every N days (Interval), 1..kMaxInterval
     uint8_t reserved = 0;
-    int32_t anchor_day = 0;   // Interval: a day on which the program runs
+    int32_t anchor_day = 0;   // Interval: a day on which the plan runs
 };
 
 inline int weekday_index(int32_t day) { return static_cast<int>(((day % 7) + 7 + 3) % 7); }  // 0 = Monday
@@ -51,44 +52,53 @@ bool active_on(const DayRule& r, int32_t day);
 bool can_coincide(const DayRule& a, const DayRule& b, int offset);
 
 // ---------------------------------------------------------------------------
-// Programs and slots
-enum class Kind : uint8_t { Single = 0, Generator = 1 };
-
-struct Program {
-    uint8_t enabled = 1;
-    Kind kind = Kind::Single;
-    uint16_t count = 1;       // Generator: number of doses
-    uint16_t start_min = 0;   // Single: time; Generator: first dose
-    uint16_t end_min = 0;     // Generator: last dose (inclusive)
-    uint32_t amount_ul = 0;   // Single: dose; Generator: total per day
-    DayRule days;
-};
-static_assert(sizeof(Program) == 20);
+// Plan and slots
+enum class Kind : uint8_t { None = 0, Spread = 1, Times = 2 };  // None = no schedule
+const char* kind_str(Kind k);
+bool parse_kind(const char* s, Kind* out);
 
 enum class PowerLoss : uint8_t { SkipMissed = 0, CatchUpWindow = 1 };
 const char* power_loss_str(PowerLoss p);
 bool parse_power_loss(const char* s, PowerLoss* out);
 
-struct PumpSchedule {
-    uint8_t count = 0;  // used programs
-    PowerLoss power_loss = PowerLoss::SkipMissed;
-    uint16_t catch_up_min = 60;  // CatchUpWindow: only slots at most this old
-    Program programs[kMaxPrograms];
+struct TimeDose {
+    uint16_t minute = 0;
+    uint16_t reserved = 0;
+    uint32_t ul = 0;
 };
+
+struct PumpSchedule {
+    Kind kind = Kind::None;
+    uint8_t enabled = 1;          // 0 = paused
+    PowerLoss power_loss = PowerLoss::SkipMissed;
+    uint8_t time_count = 0;       // Times: used entries (ascending, distinct)
+    uint16_t catch_up_min = 60;   // CatchUpWindow: only slots at most this old
+    uint16_t count = 1;           // Spread: number of doses
+    uint16_t start_min = 0;       // Spread: first dose
+    uint16_t end_min = 0;         // Spread: last dose (inclusive)
+    uint32_t amount_ul = 0;       // Spread: total per day
+    DayRule days;
+    TimeDose times[kMaxTimes];
+};
+static_assert(sizeof(PumpSchedule) == 24 + 8 * kMaxTimes);
 
 struct Slot {
     uint16_t minute;
-    uint8_t program;
+    uint8_t index;     // position in the plan's day (0-based)
     uint8_t reserved;
     uint32_t ul;
 };
 
-// Slots of one program (sorted by time). Returns the number of slots or -1;
-// *err: "invalid_time", "off_grid", "invalid_range", "invalid_count",
-// "slots_too_dense", "dose_too_small", "dose_too_large", "invalid_days"
-int expand(const Program& p, uint8_t index, uint16_t grid_min, uint32_t min_dose_ul, Slot* out, int max,
-           const char** err);
-// All slots of the pump on a day (enabled, active programs), sorted by time
+// Slots of the plan on a day it runs (sorted by time), independent of days
+// and pause; a plan without kind has none. Returns the number of slots or
+// -1 with *err: "invalid_time", "off_grid", "invalid_range", "invalid_count",
+// "slots_too_dense", "duplicate_time", "dose_too_small", "dose_too_large",
+// "invalid_days", "invalid_kind"; *entry: affected entry of "times" or -1.
+int expand(const PumpSchedule& s, uint16_t grid_min, uint32_t min_dose_ul, Slot* out, int max, const char** err,
+           int* entry = nullptr);
+// Plan active on that day (has a kind, not paused, day rule)
+bool runs_on(const PumpSchedule& s, int32_t day);
+// Slots of the pump on a day (empty if it does not run), sorted by time
 int day_slots(const PumpSchedule& s, int32_t day, uint16_t grid_min, Slot* out, int max);
 // Planned amount of the pump on a day
 uint32_t day_total(const PumpSchedule& s, int32_t day);
@@ -140,7 +150,8 @@ struct Context {
 };
 
 struct SlotRef {
-    uint8_t pump, program;
+    uint8_t pump;
+    uint8_t reserved;
     uint16_t minute;
 };
 
@@ -152,9 +163,11 @@ struct Conflict {
 };
 
 struct Validation {
-    const char* error = nullptr;  // structural error (see expand) or "too_many_slots",
+    const char* error = nullptr;  // structural error (see expand) or "invalid_catch_up",
                                   // "exceeds_daily_limit", "invalid_lock", "conflict"
-    int pump = -1, program = -1;
+    int pump = -1;
+    int entry = -1;               // entry of "times" (0-based)
+    int rule = -1;                // invalid_lock: rule (0-based)
     int conflicts = 0;            // number of entries in the conflict array
 };
 Validation validate(const PumpSchedule (&all)[kPumps], const Locks& locks, const Context& ctx, Conflict* out,
@@ -166,7 +179,7 @@ Validation validate(const PumpSchedule (&all)[kPumps], const Locks& locks, const
 // a DST gap are both executed exactly once.
 struct Cursor {
     int64_t utc = 0;
-    uint32_t tag = 0;  // minute * 16 + program + 1, 0 = before all slots of that second
+    uint32_t tag = 0;  // minute * 16 + 1 (minutes are unique per plan), 0 = before all slots of that second
     uint32_t reserved = 0;  // explicit padding (CRC over defined bytes)
 };
 
@@ -174,7 +187,6 @@ struct Due {
     int64_t utc;
     int32_t day;
     uint16_t minute;
-    uint8_t program;
     uint32_t ul;
     uint32_t tag;
     int remaining_today;  // slots of the same local day from this one on (incl.)

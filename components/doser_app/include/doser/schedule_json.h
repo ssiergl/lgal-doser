@@ -15,7 +15,7 @@ namespace doser::sched_json {
 
 struct Error {
     const char* code = nullptr;  // "invalid_param", "time_invalid" (interval without anchor and clock)
-    int program = -1;            // 0-based, -1 = not program-specific
+    int entry = -1;              // entry of "times", 0-based, -1 = whole plan
     int rule = -1;               // lock rule, 0-based
     const char* field = nullptr;
 };
@@ -28,7 +28,7 @@ void write_schedule(lgal::Json& j, const sched::PumpSchedule& s);
 bool parse_locks(const lgal::JsonValue& v, sched::Locks* out, Error* err);
 void write_locks(lgal::Json& j, const sched::Locks& l);
 
-// One conflict as an object (pumps/programs 1-based)
+// One conflict as an object (pumps 1-based)
 void write_conflict(lgal::Json& j, const sched::Conflict& c);
 
 // "HH:MM" (00:00..23:59)

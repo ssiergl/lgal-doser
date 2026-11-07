@@ -1,5 +1,5 @@
 #pragma once
-// Scheduler (M3): runs the programs of all pumps via the dosing engine.
+// Scheduler (M3): runs the plans of all pumps via the dosing engine.
 //
 // A task checks once per second whether the next slot of a pump is due (the
 // slot itself is computed from the schedule; nothing runs every second).
@@ -53,7 +53,6 @@ struct Status {
     bool has_next;
     int64_t next_utc;
     uint32_t next_ul;  // incl. no boost share (decided when due)
-    uint8_t next_program;
     // delayed slot
     bool delayed;
     int64_t delayed_since;
