@@ -328,7 +328,7 @@ label.check input { margin-top: 3px; }
 input[type=time], input[type=date], .amount { min-height: 38px; }
 .msg { white-space: pre-line; }
 
-/* ---- settings: time, network ---- */
+/* ---- settings: time, network, account ---- */
 fieldset.sub { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; margin: 16px 0 0; min-width: 0; }
 fieldset.sub legend { font-size: 13px; font-weight: 650; padding: 0 6px; }
 fieldset.sub > button { margin-top: 14px; }
@@ -341,3 +341,9 @@ fieldset.sub > button { margin-top: 14px; }
 .stats.net dd { overflow-wrap: anywhere; }
 .settings .card > h2 + .stats { margin-top: 10px; }
 input.bad, select.bad { border-color: var(--err); }
+.keys { list-style: none; padding: 0; margin: 8px 0 0; }
+.keys li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.keys li:first-child { border-top: 0; }
+.keys li b { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.newkey { display: grid; gap: 8px; margin-top: 10px; padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.newkey code { font-size: 13px; overflow-wrap: anywhere; user-select: all; }
