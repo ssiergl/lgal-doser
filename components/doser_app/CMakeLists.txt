@@ -7,6 +7,8 @@ idf_component_register(
         "src/history_api.cpp"
         "src/backup_json.cpp"
         "src/backup_api.cpp"
+        "src/ha_core.cpp"
+        "src/mqtt_ha.cpp"
         "src/hwconfig.cpp"
         "src/hwtest_api.cpp"
         "src/dosing_core.cpp"
