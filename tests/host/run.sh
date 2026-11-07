@@ -121,3 +121,12 @@ $CXX \
     components/doser_hal/src/tmc2209_proto.cpp \
     -o "$OUT/scheduler"
 "$OUT/scheduler" $1
+
+echo
+$CXX \
+    -I components/doser_app/include \
+    -I components/lgal_core/include \
+    tests/host/test_alarms.cpp \
+    components/doser_app/src/alarms.cpp \
+    -o "$OUT/alarms"
+"$OUT/alarms"

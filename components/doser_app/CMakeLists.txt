@@ -1,5 +1,6 @@
 idf_component_register(
     SRCS
+        "src/alarms.cpp"
         "src/hwconfig.cpp"
         "src/hwtest_api.cpp"
         "src/dosing_core.cpp"

@@ -14,7 +14,7 @@ components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Sc
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
-tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik)
+tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
@@ -194,7 +194,7 @@ nicht, `idf.py build` reicht.
 | Thema | Verhalten |
 |---|---|
 | Seiten | Übersicht, Pumpe (Detail mit Zeitplan), Einstellungen, Wartung (`/#/maintenance`, aus den Einstellungen und dem Fuß). Adressen als Hash-Routen, z. B. `/#/pump/3`; alte Links `/#/schedule/3` öffnen die Pumpe. |
-| Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
+| Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Treiberfehler im letzten Lauf, Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
 | Pumpe | Große Behälter-Grafik mit „Nachgefüllt“ und „Ändern“ (Größe 0 = ohne Erfassung), jetzt dosieren mit Fortschritt und Stopp (Sperrzeit: Meldung mit Ende bzw. „startet danach“), Schlauch füllen per Halten (WebSocket mit Totmann, sonst REST), Kalibrier-Assistent (Start → Messbecher → gemessene Menge übernehmen oder verwerfen), Verbrauch (heute, geplant, nächste Dosis, letzter Lauf, gesamt, Schlauchstunden mit Zurücksetzen) und Einstellungen. Name und Betrieb (automatisch / nur manuell / aus) für alle; Geschwindigkeit beim Dosieren, Zielmenge der Kalibrierung und Feintuning nur in Profi. Einfach zeigt aktive Profi-Werte als Hinweis. |
 | Zeitplan | Karte im Pumpen-Detail: die Dosen von heute auf einer 24-h-Leiste mit aktueller Uhrzeit, darunter der Plan – genau einer pro Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** Planart „Verteilt“ (Tagesmenge in N Dosen) oder „Einzelzeiten“ (bis 24 Uhrzeiten mit eigener Menge), täglich / Wochentage / alle N Tage, pausierbar, sowie das Verhalten nach Stromausfall. Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Uhrzeit bzw. Pumpen und Uhrzeiten gemeldet. |
 | Boost | Karte im Pumpen-Detail (Einfach und Profi): Zusatzmenge über 1–30 Tage mit Vorschau „≈ X ml zusätzlich pro Tag“, Hinweis bei fehlendem Zeitplan, Betrieb ≠ automatisch oder Überschreiten des Tageslimits. Ein laufender Boost zeigt Rest, Fortschritt und Enddatum und lässt sich beenden; Übersicht und Kopfzeile zeigen ihn ebenfalls. |
@@ -404,9 +404,21 @@ und bearbeitet Zeitpläne, Sperrzeiten und die Scheduler-Parameter.
 Beim Einschalten gedrückt = ESP-Download-Modus (Hardware). Ein dauerhaft gedrückter
 Taster löst nichts aus, solange er nicht einmal losgelassen wurde.
 
-LED-Zustände: Weiß aufblenden (Start), Orange pulsierend (Setup-WLAN),
-Grün (LAN mit IP), Türkis (WLAN mit IP), Gelb blinkend (kein Netz), Magenta/Weiß (OTA), Cyan (Pumpe läuft),
-Violett pulsierend (Kalibrierung/Entlüften).
+LED-Zustände, höchste Priorität zuerst:
+
+| Farbe | Bedeutung |
+|---|---|
+| Rot, schnell blinkend | Alarm: heute eine geplante Dosis wegen Tageslimit ausgelassen, letzter Lauf mit Treiberfehler, Uhrenmodul antwortet nicht |
+| Magenta/Weiß | Firmware-Update läuft |
+| Violett pulsierend | Kalibrierung oder Entlüften |
+| Cyan pulsierend | Pumpe läuft |
+| Orange pulsierend | Setup-WLAN an |
+| Gelb, langsam blinkend | Warnung: Behälter ≤ 10 % oder < 3 Tage, Schlauch-Lebensdauer erreicht, kein Netz, keine gültige Uhrzeit |
+| Grün / Türkis | bereit, per LAN / WLAN verbunden |
+| Weiß aufblendend | Start |
+
+Ausgeschaltete Pumpen (Betrieb „aus“) lösen weder Alarm noch Warnung aus. Die Regel steht in
+`doser/alarms.h` (Host-getestet); `main.cpp` wertet sie alle 2 s aus.
 
 ## Meilensteine
 
