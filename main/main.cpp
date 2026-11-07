@@ -22,6 +22,7 @@
 #include "freertos/task.h"
 #include "lgal/auth.h"
 #include "lgal/button.h"
+#include "lgal/captive.h"
 #include "lgal/device.h"
 #include "lgal/http.h"
 #include "lgal/led.h"
@@ -123,6 +124,7 @@ extern "C" void app_main(void) {
     eth.int_gpio = doser::pins::kEthInt;
     eth.clock_mhz = CONFIG_LGAL_ETH_SPI_CLOCK_MHZ;
     ESP_ERROR_CHECK(lgal::net::init(eth));
+    lgal::captive::start();
     init_time();
     // Schedules: needs the dosing engine and the time zone
     if (doser::scheduler::init() != ESP_OK) ESP_LOGE(TAG, "Scheduler not ready");
@@ -138,6 +140,7 @@ extern "C" void app_main(void) {
     lgal::auth::register_handlers(lgal::http::handle());
     lgal::sysapi::register_handlers(lgal::http::handle());
     lgal::netapi::register_handlers(lgal::http::handle());
+    lgal::captive::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
     doser::dosing_api::register_handlers(lgal::http::handle());
     doser::schedule_api::register_handlers(lgal::http::handle());

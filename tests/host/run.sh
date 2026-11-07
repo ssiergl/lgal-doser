@@ -48,6 +48,14 @@ $CXX \
 "$OUT/net_config"
 
 echo
+$CXX \
+    -I components/lgal_core/include \
+    tests/host/test_dns.cpp \
+    components/lgal_core/src/dns_reply.cpp \
+    -o "$OUT/dns"
+"$OUT/dns"
+
+echo
 # Dosing engine unchanged against simulated motor/storage (stubs first)
 $CXX \
     -I tests/host/stubs \

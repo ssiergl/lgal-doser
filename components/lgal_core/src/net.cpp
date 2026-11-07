@@ -783,6 +783,12 @@ bool is_setup_ap_client(uint32_t ip) {
     return (ip & info.netmask.addr) == (info.ip.addr & info.netmask.addr);
 }
 
+uint32_t setup_ap_ip() {
+    esp_netif_ip_info_t info{};
+    if (!s_ap_netif || esp_netif_get_ip_info(s_ap_netif, &info) != ESP_OK) return 0;
+    return info.ip.addr;
+}
+
 Status status() {
     taskENTER_CRITICAL(&s_mux);
     Status copy = s_status;

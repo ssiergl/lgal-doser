@@ -16,6 +16,8 @@ idf_component_register(
         "src/auth.cpp"
         "src/net_config.cpp"
         "src/netapi.cpp"
+        "src/dns_reply.cpp"
+        "src/captive.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
     EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/login.html" "www/network.html"
