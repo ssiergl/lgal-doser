@@ -5,6 +5,8 @@ idf_component_register(
         "src/history.cpp"
         "src/history_json.cpp"
         "src/history_api.cpp"
+        "src/backup_json.cpp"
+        "src/backup_api.cpp"
         "src/hwconfig.cpp"
         "src/hwtest_api.cpp"
         "src/dosing_core.cpp"
@@ -18,6 +20,6 @@ idf_component_register(
         "src/schedule_api.cpp"
     INCLUDE_DIRS "include"
     EMBED_TXTFILES "www/hwtest.html" "www/dosing.html" "www/schedule.html"
-    REQUIRES doser_hal lgal_core esp_http_server nvs_flash esp_timer
+    REQUIRES doser_hal lgal_core esp_http_server nvs_flash esp_timer esp_app_format
     PRIV_REQUIRES littlefs
 )

@@ -28,6 +28,8 @@
 #include "esp_err.h"
 #include "esp_http_server.h"
 #include "lgal/auth_core.h"
+#include "lgal/json.h"
+#include "lgal/json_reader.h"
 
 namespace lgal::auth {
 
@@ -39,6 +41,14 @@ enum class Result { Ok, Unauthorized, EngineeringLocked, Throttled };
 Result check(httpd_req_t* req, bool engineering);
 
 bool password_set();
+
+// Engineering backup (spec 11.1): the stored password record and API key
+// hashes as hex members "password" ("" = not set) and "keys" into the open
+// JSON object. No plain passwords or keys exist on the device.
+void write_secrets(Json& j);
+// Checks both members (format of this firmware), stores them and signs out
+// every session. nullptr = done, otherwise "invalid_param" / "storage_error".
+const char* restore_secrets(const JsonValue& v);
 
 // Identity of an authenticated request, kept by long-lived connections
 // (WebSocket) and checked again later: logout, a password change or a

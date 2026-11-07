@@ -157,3 +157,22 @@ $CXX \
     components/lgal_core/src/json_reader.cpp \
     -o "$OUT/history_json"
 "$OUT/history_json"
+
+echo
+$CXX \
+    -I tests/host/stubs \
+    -I components/doser_app/include \
+    -I components/doser_hal/include \
+    -I components/lgal_core/include \
+    tests/host/test_backup_json.cpp \
+    components/doser_app/src/backup_json.cpp \
+    components/doser_app/src/schedule_json.cpp \
+    components/doser_app/src/schedule_core.cpp \
+    components/doser_app/src/dosing_core.cpp \
+    components/doser_hal/src/posix_tz.cpp \
+    components/doser_hal/src/tmc2209_proto.cpp \
+    components/lgal_core/src/net_config.cpp \
+    components/lgal_core/src/json.cpp \
+    components/lgal_core/src/json_reader.cpp \
+    -o "$OUT/backup_json"
+"$OUT/backup_json"
