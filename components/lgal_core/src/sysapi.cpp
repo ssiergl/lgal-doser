@@ -95,6 +95,8 @@ void write_language(Json& j) {
     j.end();
 }
 
+esp_err_t (*s_home)(httpd_req_t*) = nullptr;  // web UI, maintenance page if unset
+
 esp_err_t get_root(httpd_req_t* req) {
     // factory state: the start page is the setup wizard (/recovery stays reachable)
     if (!settings::setup_completed() && std::strcmp(req->uri, "/") == 0) {
@@ -104,6 +106,7 @@ esp_err_t get_root(httpd_req_t* req) {
         return httpd_resp_send(req, nullptr, 0);
     }
     if (!http::authorize(req)) return ESP_OK;
+    if (s_home && std::strcmp(req->uri, "/") == 0) return s_home(req);
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     // EMBED_TXTFILES appends a terminating 0 – do not send it
@@ -290,6 +293,8 @@ void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(htt
 }  // namespace
 
 void add_link(const char* id, const char* name, const char* path) { s_links.push_back({id, name, path}); }
+
+void set_home_page(esp_err_t (*send)(httpd_req_t* req)) { s_home = send; }
 
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;

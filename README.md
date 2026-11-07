@@ -11,6 +11,7 @@ Framework: **ESP-IDF v6.0.3**, C++ (gnu++2b), FreeRTOS.
 components/lgal_core/   LG Aquatic Life Core: Netz, HTTP, OTA, LED, Taster, Einstellungen, Log
 components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte, Pumpen, RTC/EEPROM
 components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Scheduler) und ihre REST-APIs
+components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik)
@@ -181,9 +182,28 @@ gespeicherte. Fehler: 400 `invalid_param` mit `field` (z. B. `lan.gateway`), 400
 Die Dosiertest-Seite nutzt den WebSocket (Chip „Live“) und fällt ohne ihn auf Abfragen
 und REST-Entlüften zurück („Abfrage“).
 
+## Weboberfläche (M5)
+
+`http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
+Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
+gzip-komprimiert (≈ 21 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
+unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
+nicht, `idf.py build` reicht.
+
+| Thema | Verhalten |
+|---|---|
+| Seiten | Übersicht, Pumpe (Detail), Zeitplan, Einstellungen. Adressen als Hash-Routen, z. B. `/#/pump/3`. |
+| Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
+| Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
+| Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
+| Service | 7× schnell auf die Firmware-Version im Fuß klicken → Engineering-Anmeldung. |
+| Notfall | `/recovery` bleibt als Wartungsseite (Firmware-Upload, Neustart, Log, Testseiten). |
+| Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
+
 ## OTA-Update
 
-Über die Wartungsseite (`/`) per Datei-Upload oder per Skript:
+Über die Wartungsseite (`/recovery`) per Datei-Upload oder per Skript:
 
 ```bash
 python3 tools/ota_upload.py lgal-doser-xxxx.local --key lgal_...
@@ -217,7 +237,9 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 
 | Methode | Pfad | Funktion |
 |---|---|---|
-| GET | `/` | Wartungsseite (im Firmware-Image) |
+| GET | `/` | Weboberfläche (M5); im Werkszustand Weiterleitung auf `/setup` |
+| GET | `/recovery` | Wartungsseite (Notfall, im Firmware-Image) |
+| GET | `/ui/…` | Dateien der Weboberfläche (ohne Anmeldung) |
 | GET | `/login` | Anmeldung, Passwort, API-Keys, Engineering |
 | GET | `/network` | Netzwerk-Seite |
 | GET | `/api/v1/net/status` | aktive Schnittstelle, LAN, WLAN (Zustand, RSSI, Fehlergrund), Setup-WLAN, `fallback_in_s` |
