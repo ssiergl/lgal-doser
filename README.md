@@ -200,6 +200,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` freischalten / sperren |
 | GET | `/api/v1/system/info` | Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
+| GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` (alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
 | GET | `/i18n.js` | gemeinsame Übersetzungsbasis der Seiten (ohne Anmeldung) |
 | GET | `/api/v1/system/log` | RAM-Log der letzten ~32 KB |
 | POST | `/api/v1/system/reboot` | Neustart |
@@ -245,7 +246,7 @@ idf.py coredump-info -c coredump.elf
 | Schritt-Takte | Pumpe 1–4: RMT (exakte Schrittzahl per Encoder). Pumpe 5: MCPWM + PCNT (Zähler stoppt beim Zielwert). Trapezrampe in Ganzzahl-Arithmetik, alle 5 parallel, IRAM-sicher. |
 | EN | gemeinsam: an, sobald eine Pumpe fährt; 0,5 s nach der letzten Fahrt aus (außer Haltestrom > 0). |
 | Überwachung | alle 100 ms während der Fahrt: SG_RESULT, DRV_STATUS (Kurzschluss/Übertemperatur → Stopp). Reihum jede Sekunde: Treiber vorhanden, GSTAT. |
-| Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`). |
+| Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`) und NTP-Server (Standard `pool.ntp.org`, leer = aus) über `/api/v1/system/time` einstellbar, gespeichert in NVS. |
 | EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). |
 
 Standardwerte pro Pumpe (über `/hwtest` änderbar, in NVS gespeichert): 600 mA Laufstrom,

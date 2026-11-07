@@ -24,6 +24,7 @@
 #include "lgal/net.h"
 #include "lgal/settings.h"
 #include "lgal/json.h"
+#include "lgal/json_reader.h"
 #include "lgal/timesync.h"
 
 extern const char recovery_html_start[] asm("_binary_recovery_html_start");
@@ -65,6 +66,26 @@ const char* ota_state_str(esp_ota_img_states_t s) {
         case ESP_OTA_IMG_ABORTED: return "ABORTED";
         default: return "UNDEFINED";
     }
+}
+
+// Members of the time object (system/info and system/time)
+void write_time(Json& j) {
+    const auto ts = timesync::status();
+    char local[40] = "";
+    if (ts.valid) {
+        time_t t = static_cast<time_t>(ts.utc);
+        tm lt{};
+        localtime_r(&t, &lt);
+        strftime(local, sizeof(local), "%Y-%m-%d %H:%M:%S %Z", &lt);
+    }
+    j.kv("valid", ts.valid)
+        .kv("utc", ts.utc)
+        .kv("local", local)
+        .kv("source", timesync::source_str(ts.source))
+        .kv("last_ntp_sync", ts.last_ntp_sync)
+        .kv("rtc_ok", ts.rtc_ok)
+        .kv("timezone", timesync::timezone())
+        .kv("ntp_server", timesync::ntp_server());
 }
 
 void write_language(Json& j) {
@@ -131,24 +152,10 @@ esp_err_t get_info(httpd_req_t* req) {
              ns.wlan_ip ? "\"" : "", ns.ap_active ? "true" : "false", ns.ap_clients);
 
     // Append time and device-specific pages
-    const auto ts = timesync::status();
-    char local[40] = "";
-    if (ts.valid) {
-        time_t t = static_cast<time_t>(ts.utc);
-        tm lt{};
-        localtime_r(&t, &lt);
-        strftime(local, sizeof(local), "%Y-%m-%d %H:%M:%S %Z", &lt);
-    }
     Json extra;
-    extra.obj("time")
-        .kv("valid", ts.valid)
-        .kv("utc", ts.utc)
-        .kv("local", local)
-        .kv("source", timesync::source_str(ts.source))
-        .kv("last_ntp_sync", ts.last_ntp_sync)
-        .kv("rtc_ok", ts.rtc_ok)
-        .kv("timezone", timesync::timezone())
-        .end();
+    extra.obj("time");
+    write_time(extra);
+    extra.end();
     write_language(extra);
     extra.arr("links");
     for (const auto& l : s_links) extra.obj().kv("id", l.id).kv("name", l.name).kv("path", l.path).end();
@@ -227,6 +234,44 @@ esp_err_t post_language(httpd_req_t* req) {
     return get_language(req);
 }
 
+esp_err_t get_time(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    Json j;
+    j.obj();
+    write_time(j);
+    j.end();
+    return http::send_json(req, j.c_str());
+}
+
+esp_err_t time_error(httpd_req_t* req, const char* field) {
+    Json j;
+    j.obj().obj("error").kv("code", "invalid_param").kv("message", field).kv("field", field).end().end();
+    return http::send_json(req, j.c_str(), "400 Bad Request");
+}
+
+// {"timezone"?, "ntp_server"?, "utc"?}: all members are checked before any is applied
+esp_err_t put_time(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    std::string body;
+    JsonReader doc;
+    JsonToken tok[16];
+    if (!http::read_json(req, 512, &body, &doc, tok, 16)) return ESP_OK;
+    const JsonValue root = doc.root();
+    char tz[timesync::kMaxTz + 2] = "", ntp[timesync::kMaxNtp + 2] = "";
+    int64_t utc = 0;
+    const JsonValue vtz = root["timezone"], vntp = root["ntp_server"], vutc = root["utc"];
+    if (vtz.valid() && (!vtz.get(tz, sizeof(tz)) || !timesync::timezone_valid(tz))) return time_error(req, "timezone");
+    if (vntp.valid() && (!vntp.get(ntp, sizeof(ntp)) || !timesync::ntp_server_valid(ntp)))
+        return time_error(req, "ntp_server");
+    if (vutc.valid() && (!vutc.get(&utc) || utc < 1735689600)) return time_error(req, "utc");
+    esp_err_t err = ESP_OK;
+    if (vtz.valid()) err = timesync::set_timezone(tz);
+    if (err == ESP_OK && vntp.valid()) err = timesync::set_ntp_server(ntp);
+    if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", esp_err_to_name(err));
+    if (vutc.valid()) timesync::set_manual(utc);
+    return get_time(req);
+}
+
 void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(httpd_req_t*)) {
     httpd_uri_t u{};
     u.uri = uri;
@@ -250,6 +295,8 @@ esp_err_t register_handlers(httpd_handle_t server) {
     reg(server, "/i18n.js", HTTP_GET, get_i18n);
     reg(server, "/api/v1/system/language", HTTP_GET, get_language);
     reg(server, "/api/v1/system/language", HTTP_POST, post_language);
+    reg(server, "/api/v1/system/time", HTTP_GET, get_time);
+    reg(server, "/api/v1/system/time", HTTP_PUT, put_time);
     return ESP_OK;
 }
 

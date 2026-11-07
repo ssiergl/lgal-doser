@@ -12,6 +12,7 @@
 #include "doser/i2c_devices.h"
 #include "doser/motion.h"
 #include "doser/pins.h"
+#include "doser/posix_tz.h"
 #include "doser/safe_init.h"
 #include "doser/schedule_api.h"
 #include "doser/scheduler.h"
@@ -84,7 +85,10 @@ void init_time() {
         return doser::rtc::present() && doser::rtc::read(utc, &lost) == ESP_OK && !lost;
     };
     hooks.write = [](int64_t utc) { return doser::rtc::present() && doser::rtc::write(utc) == ESP_OK; };
-    lgal::timesync::init(hooks, CONFIG_LGAL_TIMEZONE, CONFIG_LGAL_NTP_SERVER);
+    lgal::timesync::init(hooks, CONFIG_LGAL_TIMEZONE, CONFIG_LGAL_NTP_SERVER, [](const char* tz) {
+        doser::tz::Zone z;
+        return doser::tz::parse(tz, &z);
+    });
 }
 }  // namespace
 
