@@ -8,13 +8,11 @@ import { setMode, usePrefs } from './lib/prefs.js';
 import { start, useStore } from './lib/store.js';
 import { Dashboard } from './views/dashboard.js';
 import { PumpView } from './views/pump.js';
-import { LocksView } from './views/locks.js';
-import { ScheduleView } from './views/schedule.js';
 import { SettingsView } from './views/settings.js';
 
 add({
   en: {
-    'nav.home': 'Overview', 'nav.schedule': 'Schedule', 'nav.settings': 'Settings',
+    'nav.home': 'Overview', 'nav.settings': 'Settings',
     'mode.beginner': 'Simple', 'mode.pro': 'Pro', 'mode.title': 'View',
     'live.on': 'Live', 'live.off': 'Connecting …',
     'stop.all': 'Stop all', 'stop.title': 'Stop all pumps now',
@@ -23,7 +21,7 @@ add({
     'footer.maint': 'Maintenance', 'notfound': 'Page not found',
   },
   de: {
-    'nav.home': 'Übersicht', 'nav.schedule': 'Zeitplan', 'nav.settings': 'Einstellungen',
+    'nav.home': 'Übersicht', 'nav.settings': 'Einstellungen',
     'mode.beginner': 'Einfach', 'mode.pro': 'Profi', 'mode.title': 'Ansicht',
     'live.on': 'Live', 'live.off': 'Verbinde …',
     'stop.all': 'Alle stoppen', 'stop.title': 'Alle Pumpen sofort stoppen',
@@ -34,7 +32,7 @@ add({
 });
 
 // ---------------------------------------------------------------------------
-// Router: #/, #/pump/3, #/schedule[/3], #/schedule/locks, #/settings
+// Router: #/, #/pump/3, #/settings (#/schedule/3 opens the pump)
 
 function parse() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -53,13 +51,12 @@ function useRoute() {
 
 const icons = {
   home: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z',
-  schedule: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 4v5l3.5 2',
   settings: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm8 3-2-.6-.6-1.5 1-1.8-1.5-1.5-1.8 1-1.5-.6L13 4h-2l-.6 2-1.5.6-1.8-1L5.6 7.1l1 1.8L6 10.4 4 11v2l2 .6.6 1.5-1 1.8 1.5 1.5 1.8-1 1.5.6.6 2h2l.6-2 1.5-.6 1.8 1 1.5-1.5-1-1.8.6-1.5 2-.6z',
 };
-const navItems = [['home', '#/'], ['schedule', '#/schedule'], ['settings', '#/settings']];
+const navItems = [['home', '#/'], ['settings', '#/settings']];
 
 function Nav({ route, cls }) {
-  const active = route.name === 'pump' ? 'home' : route.name;
+  const active = route.name === 'pump' || route.name === 'schedule' ? 'home' : route.name;
   return html`<nav class=${cls}>${navItems.map(([n, href]) => html`
     <a href=${href} class=${active === n ? 'on' : ''}>
       ${cls === 'bottom' && html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d=${icons[n]}/></svg>`}
@@ -114,7 +111,7 @@ function App() {
   switch (route.name) {
     case 'home': page = html`<${Dashboard}/>`; break;
     case 'pump': page = html`<${PumpView} pump=${+route.arg}/>`; break;
-    case 'schedule': page = route.arg === 'locks' ? html`<${LocksView}/>` : html`<${ScheduleView} pump=${+route.arg || 1}/>`; break;
+    case 'schedule': page = html`<${PumpView} pump=${+route.arg || 1}/>`; break;  // old links
     case 'settings': page = html`<${SettingsView}/>`; break;
     default: page = html`<div class="empty">${t('notfound')}</div>`;
   }

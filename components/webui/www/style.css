@@ -291,30 +291,17 @@ label.check input { margin-top: 3px; }
 .field > .seg, .field > .amount { justify-self: start; }
 
 /* ---- schedule ---- */
-.timeline { margin-bottom: var(--gap); display: grid; gap: 2px; }
-.tl-head, .tl-row { display: grid; grid-template-columns: minmax(70px, 150px) 1fr 64px; gap: 10px; align-items: center; }
+.daybar { display: grid; gap: 2px; margin: 0 0 12px; }
 .tl-axis { position: relative; height: 16px; font-size: 11px; color: var(--mut); }
 .tl-axis span { position: absolute; transform: translateX(-50%); }
 .tl-axis span:first-child { transform: none; }
 .tl-axis span:last-child { transform: translateX(-100%); }
-.tl-row { padding: 6px 0; border-radius: 8px; color: var(--text); text-decoration: none; }
-.tl-row.on { background: var(--card-2); }
-.tl-row.dim { opacity: .55; }
-.tl-name { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; font-weight: 600; padding-left: 4px; }
-.tl-name .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl-track {
-  position: relative; height: 18px; border-radius: 9px; background:
+  position: relative; height: 18px; border-radius: 9px; margin-bottom: 4px; background:
     repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), var(--line) calc(25% - 1px) 25%), var(--card-2);
 }
-.tl-row.on .tl-track { background:
-    repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), var(--line) calc(25% - 1px) 25%), var(--bg); }
 .tl-dot { position: absolute; top: 4px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 0 2px var(--card); }
 .tl-now { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--err); border-radius: 1px; opacity: .8; }
-.tl-sum { font-size: 13px; text-align: right; color: var(--mut); padding-right: 4px; }
-@media (max-width: 560px) {
-  .tl-head, .tl-row { grid-template-columns: 34px 1fr 52px; gap: 8px; }
-  .tl-name .nm { display: none; }
-}
 .preview { display: grid; gap: 6px; margin: 4px 0 8px; }
 .times { display: flex; flex-wrap: wrap; gap: 4px; }
 .times .chip { font-variant-numeric: tabular-nums; }
@@ -338,5 +325,3 @@ label.check input { margin-top: 3px; }
 .savebar { margin-top: 16px; }
 input[type=time], input[type=date], .amount { min-height: 38px; }
 .msg { white-space: pre-line; }
-.timeline > h2 { margin-bottom: 4px; }
-.sc > .card > h2 { margin-bottom: 10px; }

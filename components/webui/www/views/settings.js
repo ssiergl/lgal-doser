@@ -1,7 +1,8 @@
-// Settings: appearance and device pages.
+// Settings: appearance, rules between pumps (pro) and device pages.
 import { html } from '../lib/html.js';
 import { add, languages, setLang, t, useLang } from '../lib/i18n.js';
 import { setMode, setTheme, usePrefs } from '../lib/prefs.js';
+import { LocksCard } from './locks.js';
 
 add({
   en: {
@@ -35,6 +36,7 @@ export function SettingsView() {
           ${seg(prefs.mode, ['beginner', 'pro'].map(v => [v, t('mode.' + v)]), setMode)}
           <p class="mut small">${t('set.mode.hint')}</p></div>
       </section>
+      ${prefs.mode === 'pro' && html`<${LocksCard}/>`}
       <section class="card"><h2>${t('set.device')}</h2>
         <ul class="links">
           <li><a href="/network">${t('set.network')}</a></li>
