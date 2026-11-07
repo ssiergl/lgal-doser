@@ -11,6 +11,7 @@
 
 #include "doser/dosing.h"
 #include "doser/dosing_store.h"
+#include "doser/history.h"
 #include "doser/motion.h"
 #include "freertos/task.h"
 #include "lgal/timesync.h"
@@ -39,6 +40,7 @@ Motor motor[5];
 bool locked = false;
 int saves[5];
 dose::PumpState stored[5];
+std::vector<history::Event> events;  // recorded history (utc 0 = "now" on the device)
 
 void advance(int64_t dt_us) {
     now_us += dt_us;
@@ -113,8 +115,20 @@ void reset() {
     for (auto& m : motor) m = Motor{};
     locked = false;
     time_valid = true;
+    events.clear();
+}
+
+// Last recorded event of a kind for pump (1-based), nullptr = none
+const history::Event* last_event(history::Kind k, int pump) {
+    for (auto it = events.rbegin(); it != events.rend(); ++it)
+        if (it->kind == k && it->pump == pump) return &*it;
+    return nullptr;
 }
 }  // namespace sim
+
+namespace doser::history {
+void record(const Event& e) { sim::events.push_back(e); }
+}  // namespace doser::history
 
 // --- Stubs of the dependencies ----------------------------------------------
 int64_t esp_timer_get_time() { return sim::now_us; }

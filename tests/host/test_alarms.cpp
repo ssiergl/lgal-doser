@@ -1,5 +1,6 @@
 // Host tests for the status LED alarms and the night mode window.
 #include <cstdio>
+#include <string>
 
 #include "doser/alarms.h"
 #include "lgal/led_night.h"
@@ -124,8 +125,29 @@ static void test_night() {
     CHECK(!lgal::led::valid(n));
 }
 
+static void test_conditions() {
+    std::printf("Alarm conditions\n");
+    alarms::Input in;
+    CHECK(alarms::conditions(in) == 0);
+    in.rtc_ok = false;
+    in.pumps[0].tracked = true;
+    in.pumps[0].percent = 5.0f;
+    in.pumps[2].tracked = true;
+    in.pumps[2].percent = 8.0f;
+    in.pumps[4].tube_percent = 120.0f;
+    in.pumps[3].fault = true;  // logged as dose result, no condition
+    const uint16_t m = alarms::conditions(in);
+    CHECK(m == (uint16_t(1u << alarms::kRtcBit) | alarms::cond_bit(0, alarms::Cond::ContainerLow) |
+                alarms::cond_bit(2, alarms::Cond::ContainerLow) | alarms::cond_bit(4, alarms::Cond::TubeWorn)));
+    CHECK(alarms::cond_bit(4, alarms::Cond::TubeWorn) < (1u << alarms::kRtcBit));
+    in.pumps[0].active = false;
+    CHECK(!(alarms::conditions(in) & alarms::cond_bit(0, alarms::Cond::ContainerLow)));
+    CHECK(std::string(alarms::cond_code(alarms::Cond::ContainerLow)) == "container_low");
+}
+
 int main() {
     test_alarms();
+    test_conditions();
     test_night();
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;

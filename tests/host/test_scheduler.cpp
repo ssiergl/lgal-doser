@@ -175,6 +175,9 @@ static void test_delay_timeout() {
     CHECK(s0.last_skip_at == local(11, 9, 8, 30, 1));
     CHECK(!s1.delayed && s1.skipped == 1 && std::strcmp(s1.last_skip_reason, "delay_timeout") == 0);
     CHECK(total(0) == b0 && total(1) == b1);
+    auto* e = sim::last_event(history::Kind::Skip, 1);
+    CHECK(e && e->source == history::Source::Schedule && e->value == 1 && e->target_ul > 0);
+    CHECK(e && e->utc == uint32_t(local(11, 9, 8, 30, 1)) && std::strcmp(history::code_str(e->code), "delay_timeout") == 0);
     sim::locked = false;
 }
 
@@ -185,6 +188,8 @@ static void test_power_loss() {
     sim::run_for(3);
     auto s0 = scheduler::status(0);
     CHECK(s0.skipped == 2 && std::strcmp(s0.last_skip_reason, "missed") == 0 && total(0) == b0);
+    auto* e = sim::last_event(history::Kind::Skip, 1);
+    CHECK(e && std::strcmp(history::code_str(e->code), "missed") == 0);
     CHECK(scheduler::status(1).skipped == 2);
     CHECK(s0.next_utc == local(11, 11, 8, 0));
     // pump 1 catches up slots up to 3 h old
