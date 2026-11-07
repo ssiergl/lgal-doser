@@ -171,7 +171,9 @@ const char* timezone() { return sim::tz; }
 namespace doser::dosing_store {
 void load_engineering(dose::Engineering*) {}
 esp_err_t save_engineering(const dose::Engineering&) { return ESP_OK; }
-void load_settings(int, dose::PumpSettings*) {}
+// Stored settings use the global retraction, so the flows below run with it
+// (the factory default of a pump is off, see test_retract_off)
+void load_settings(int, dose::PumpSettings* p) { p->retract_mrev = -1; }
 esp_err_t save_settings(int, const dose::PumpSettings&) { return ESP_OK; }
 bool load_state(int, dose::PumpState*) { return false; }
 esp_err_t save_state(int pump, const dose::PumpState& s) {

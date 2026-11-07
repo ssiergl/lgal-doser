@@ -42,7 +42,8 @@ add({
     'mode.auto': 'Automatic', 'mode.manual_only': 'Manual only', 'mode.disabled': 'Off',
     'mode.hint.auto': 'Schedule and manual doses.', 'mode.hint.manual_only': 'Only manual doses, the schedule is paused.',
     'mode.hint.disabled': 'The pump does not run.',
-    'pset.pro': 'Fine-tuning', 'pset.tier': 'Speed', 'pset.retract': 'Anti-drip retraction', 'pset.retract.def': 'Standard ({r} rev.)', 'pset.retract.std': 'Standard',
+    'pset.pro': 'Fine-tuning', 'pset.tier': 'Speed', 'pset.retract': 'Anti-drip retraction', 'pset.retract.def': 'Standard ({r} rev.)', 'pset.retract.off': 'Off',
+    'pset.retract.hint': 'Pulls the liquid back a little after each dose so the tube end does not drip.',
     'pset.retract.own': 'Own value', 'pset.rev': 'revolutions', 'pset.limit': 'Daily limit', 'pset.limit.hint': '0 = no limit',
     'pset.save': 'Save', 'pset.ok': 'Settings saved',
     'pset.prohint': 'Pro settings active: {list}', 
@@ -80,7 +81,8 @@ add({
     'mode.auto': 'Automatisch', 'mode.manual_only': 'Nur manuell', 'mode.disabled': 'Aus',
     'mode.hint.auto': 'Zeitplan und manuelle Dosen.', 'mode.hint.manual_only': 'Nur manuelle Dosen, der Zeitplan ruht.',
     'mode.hint.disabled': 'Die Pumpe läuft nicht.',
-    'pset.pro': 'Feintuning', 'pset.tier': 'Geschwindigkeit', 'pset.retract': 'Anti-Tropf-Rückzug', 'pset.retract.def': 'Standard ({r} U)', 'pset.retract.std': 'Standard',
+    'pset.pro': 'Feintuning', 'pset.tier': 'Geschwindigkeit', 'pset.retract': 'Anti-Tropf-Rückzug', 'pset.retract.def': 'Standard ({r} U)', 'pset.retract.off': 'Aus',
+    'pset.retract.hint': 'Zieht die Flüssigkeit nach jeder Dosis etwas zurück, damit das Schlauchende nicht tropft.',
     'pset.retract.own': 'Eigener Wert', 'pset.rev': 'Umdrehungen', 'pset.limit': 'Tageslimit', 'pset.limit.hint': '0 = kein Limit',
     'pset.save': 'Speichern', 'pset.ok': 'Einstellungen gespeichert',
     'pset.prohint': 'Profi-Einstellungen aktiv: {list}', 
@@ -297,7 +299,7 @@ function UsageCard({ p, sp, nowLocal }) {
 function proActive(p) {
   const out = [];
   if (p.speed.tier !== 1) out.push(t('pset.tier') + ': ' + t('tier.' + p.speed.tier));
-  if (p.retract.custom) out.push(t('pset.retract') + ': ' + num(p.retract.rev, 2) + ' ' + t('pset.rev'));
+  if (p.retract.setting !== 'off') out.push(t('pset.retract') + ': ' + num(p.retract.rev, 2) + ' ' + t('pset.rev'));
   if (p.daily.limit_ml) out.push(t('pset.limit') + ': ' + num(p.daily.limit_ml, 1) + ' ml');
   return out;
 }
@@ -308,8 +310,8 @@ function SettingsCard({ p, pro }) {
   // Form values from the device; again after switching pump
   useEffect(() => {
     setF({
-      name: p.name, mode: p.mode, tier: p.speed.tier, retractOwn: p.retract.custom,
-      retract: String(p.retract.rev), limit: p.daily.limit_ml ? String(p.daily.limit_ml) : '0',
+      name: p.name, mode: p.mode, tier: p.speed.tier, retract: p.retract.setting,
+      retractRev: String(p.retract.setting === 'own' ? p.retract.rev : p.retract.global_rev), limit: p.daily.limit_ml ? String(p.daily.limit_ml) : '0',
     });
     msg.clear();
   }, [p.pump]);
@@ -320,9 +322,9 @@ function SettingsCard({ p, pro }) {
     const q = { pump: p.pump, name: f.name.trim(), mode: f.mode };
     if (pro) {
       const lim = f.limit.trim() === '' ? 0 : parseNum(f.limit);
-      const rr = f.retractOwn ? parseNum(f.retract) : 0;
-      if (Number.isNaN(lim) || Number.isNaN(rr) || rr > 2) { msg.err({ code: 'invalid_param' }); return; }
-      Object.assign(q, { tier: f.tier, daily_limit_ml: dec(lim), retract_rev: f.retractOwn ? dec(rr) : 'default' });
+      const rr = f.retract === 'own' ? parseNum(f.retractRev) : 0;
+      if (Number.isNaN(lim) || Number.isNaN(rr) || rr > 2 || (f.retract === 'own' && !(rr > 0))) { msg.err({ code: 'invalid_param' }); return; }
+      Object.assign(q, { tier: f.tier, daily_limit_ml: dec(lim), retract_rev: f.retract === 'own' ? dec(rr) : f.retract });
     }
     api('POST', '/api/v1/pumps/settings?' + qs(q)).then(() => { msg.ok(t('pset.ok')); refresh(); }).catch(msg.err);
   };
@@ -339,9 +341,10 @@ function SettingsCard({ p, pro }) {
           <${Seg} value=${f.tier} onChange=${v => set({ tier: v })}
             options=${p.speed.tiers.map((x, i) => [i, `${t('tier.' + i)} · ${num(x.ml_min, 0)} ml/min`])}/></div>
         <div class="field"><span class="lbl">${t('pset.retract')}</span>
-          <${Seg} value=${f.retractOwn} onChange=${v => set({ retractOwn: v })}
-            options=${[[false, p.retract.custom ? t('pset.retract.std') : t('pset.retract.def', { r: num(p.retract.rev, 2) })], [true, t('pset.retract.own')]]}/>
-          ${f.retractOwn && html`<${Amount} value=${f.retract} onInput=${v => set({ retract: v })} unit=${t('pset.rev')}/>`}</div>
+          <${Seg} value=${f.retract} onChange=${v => set({ retract: v })} options=${[['off', t('pset.retract.off')],
+            ['global', t('pset.retract.def', { r: num(p.retract.global_rev, 2) })], ['own', t('pset.retract.own')]]}/>
+          ${f.retract === 'own' && html`<${Amount} value=${f.retractRev} onInput=${v => set({ retractRev: v })} unit=${t('pset.rev')}/>`}
+          <span class="mut small">${t('pset.retract.hint')}</span></div>
         <label class="field">${t('pset.limit')}<${Amount} value=${f.limit} onInput=${v => set({ limit: v })}/>
           <span class="mut small">${t('pset.limit.hint')}</span></label>
       </fieldset>`}

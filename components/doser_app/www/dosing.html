@@ -98,7 +98,7 @@ en:{
  'ct.title':'Container','ct.capacity':'Capacity ml','ct.remaining':'Remaining ml','ct.refill':'Refill (full)','ct.set':'Set',
  'ct.ok':'Container updated',
  'st.title':'Settings','st.name':'Name','st.mode':'Mode','st.tier':'Default speed','st.limit':'Daily limit ml (0 = none)',
- 'st.retract':'Retraction rev (empty = global)','st.ok':'Settings saved',
+ 'st.retract':'Retraction rev (empty = global, 0 = off)','st.ok':'Settings saved',
  'tb.reset':'Reset tube counter','tb.confirm':'Reset tube runtime of pump {n}?','tb.ok':'Tube counter reset',
  'dose.ok':'Dosing {ml} ml','stopping':'Stopping …',
  'eng.title':'Engineering (super admin)','eng.hint':'Global defaults for all pumps. Will be protected by a separate engineering key later.',
@@ -139,7 +139,7 @@ de:{
  'ct.title':'Behälter','ct.capacity':'Kapazität ml','ct.remaining':'Restinhalt ml','ct.refill':'Nachgefüllt (voll)','ct.set':'Setzen',
  'ct.ok':'Behälter aktualisiert',
  'st.title':'Einstellungen','st.name':'Name','st.mode':'Betriebsart','st.tier':'Standard-Geschwindigkeit','st.limit':'Tageslimit ml (0 = keins)',
- 'st.retract':'Rückzug U (leer = global)','st.ok':'Einstellungen gespeichert',
+ 'st.retract':'Rückzug U (leer = global, 0 = aus)','st.ok':'Einstellungen gespeichert',
  'tb.reset':'Schlauchzähler zurücksetzen','tb.confirm':'Schlauch-Laufzeit von Pumpe {n} zurücksetzen?','tb.ok':'Schlauchzähler zurückgesetzt',
  'dose.ok':'Dosiere {ml} ml','stopping':'Stoppt …',
  'eng.title':'Engineering (Super-Admin)','eng.hint':'Globale Vorgaben für alle Pumpen. Wird später durch einen eigenen Engineering-Schlüssel geschützt.',
@@ -228,14 +228,14 @@ function buildPump(p){
   $('kf'+n).onclick=()=>api('POST','/api/v1/pumps/container?'+q({pump:n,remaining_ml:$('kc'+n).value,capacity_ml:$('kc'+n).value})).then(done(t('ct.ok'))).catch(err);
   $('ks'+n).onclick=()=>api('POST','/api/v1/pumps/container?'+q({pump:n,capacity_ml:$('kc'+n).value,remaining_ml:$('kr'+n).value})).then(done(t('ct.ok'))).catch(err);
   $('ss'+n).onclick=()=>api('POST','/api/v1/pumps/settings?'+q({pump:n,name:$('sn'+n).value,mode:$('sm'+n).value,tier:$('st'+n).value,
-     daily_limit_ml:$('sl'+n).value||0,retract_rev:$('sr'+n).value===''?'default':$('sr'+n).value}))
+     daily_limit_ml:$('sl'+n).value||0,retract_rev:$('sr'+n).value===''?'global':$('sr'+n).value}))
      .then(done(t('st.ok'))).catch(err);
   $('tb'+n).onclick=()=>{if(confirm(t('tb.confirm',{n})))api('POST','/api/v1/pumps/tube?'+q({pump:n,hours:0})).then(done(t('tb.ok'))).catch(err)};
 }
 function fillForms(p){
   const n=p.pump;
   $('tr'+n).value=p.speed.tier;$('st'+n).value=p.speed.tier;$('sn'+n).value=p.name;$('sm'+n).value=p.mode;
-  $('sl'+n).value=p.daily.limit_ml||0;$('sr'+n).value=p.retract.custom?p.retract.rev:'';
+  $('sl'+n).value=p.daily.limit_ml||0;$('sr'+n).value=p.retract.setting==='global'?'':p.retract.rev;
   $('kc'+n).value=p.container.capacity_ml||'';$('kr'+n).value=p.container.tracked?Math.round(p.container.remaining_ml):'';
 }
 function renderPump(p){
@@ -259,7 +259,7 @@ function renderPump(p){
       (p.last.activity==='priming'?`${f(p.last.done_ml,2)} ml`:`${f(p.last.done_ml,2)} / ${f(p.last.target_ml,2)} ml`)]);}
   rows.push(['r.calib',t('r.calib.v',{mlrev:f(p.calibration.ml_per_rev,3),spm:f(p.calibration.steps_per_ml,0)})]);
   rows.push(['r.speed',`${t('tier.'+p.speed.tier)} · ${tier.rpm} ${t('rpm')} ≈ ${f(tier.ml_min,1)} ml/min`]);
-  rows.push(['r.retract',t('r.retract.v',{rev:f(p.retract.rev,2),ml:f(p.retract.ml,3),g:p.retract.custom?'':t('r.global')})]);
+  rows.push(['r.retract',t('r.retract.v',{rev:f(p.retract.rev,2),ml:f(p.retract.ml,3),g:p.retract.setting==='global'?t('r.global'):''})]);
   rows.push(['r.daily',d.limit_ml?t('r.daily.v',{used:f(d.used_ml,2),limit:f(d.limit_ml,1)})+`<div class="bar"><i style="width:${Math.min(100,d.used_ml/d.limit_ml*100)}%"></i></div>`:t('r.daily.off',{used:f(d.used_ml,2)})]);
   rows.push(['r.container',c.tracked?t('r.container.v',{rem:f(c.remaining_ml,1),cap:f(c.capacity_ml,0),pct:f(c.percent,0)})+`<div class="bar"><i style="width:${c.percent}%"></i></div>`:t('r.container.off')]);
   rows.push(['r.tube',t('r.tube.v',{h:f(tb.hours,1),lim:tb.limit_h})]);
