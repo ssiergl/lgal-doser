@@ -34,6 +34,7 @@
 #include "lgal/setup.h"
 #include "lgal/sysapi.h"
 #include "lgal/timesync.h"
+#include "lgal/ws.h"
 #include "sdkconfig.h"
 
 namespace {
@@ -143,6 +144,7 @@ extern "C" void app_main(void) {
     lgal::netapi::register_handlers(lgal::http::handle());
     lgal::captive::register_handlers(lgal::http::handle());
     lgal::setup::register_handlers(lgal::http::handle());
+    lgal::ws::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
     doser::dosing_api::register_handlers(lgal::http::handle());
     doser::schedule_api::register_handlers(lgal::http::handle());
