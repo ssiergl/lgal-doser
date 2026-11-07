@@ -324,6 +324,14 @@ label.check input { margin-top: 3px; }
 .plan label.check { margin: 10px 0 6px; }
 .tlist { display: grid; gap: 6px; margin: 8px 0 4px; }
 .trow { display: grid; grid-template-columns: 120px minmax(0, 160px) auto; justify-content: start; gap: 8px; align-items: center; }
+.lrules { display: grid; gap: 8px; margin: 8px 0 10px; }
+.lrow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; }
+.lrow select { border-left: 3px solid var(--pc); min-width: 0; }
+.lrow.bad select, .lrow.bad .amount { border-color: var(--err); }
+@media (max-width: 560px) {
+  .lrow { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; }
+  .lrow .amount { grid-column: 1 / 4; grid-row: 2; }
+}
 .wd { display: flex; flex-wrap: wrap; gap: 4px; }
 .wd button { min-width: 42px; padding: 6px 8px; font-size: 13px; background: var(--card-2); color: var(--mut); border-color: var(--line); }
 .wd button.on { background: color-mix(in srgb, var(--pc) 25%, var(--card)); color: var(--text); border-color: var(--pc); }
