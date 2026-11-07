@@ -17,6 +17,7 @@
 #include "doser/hwtest_api.h"
 #include "doser/i2c_devices.h"
 #include "doser/motion.h"
+#include "doser/mqtt_ha.h"
 #include "doser/pins.h"
 #include "doser/posix_tz.h"
 #include "doser/safe_init.h"
@@ -124,7 +125,9 @@ void update_status_led() {
     if (tick++ % 4 == 0) {
         const auto in = alarm_input(ts);
         al = doser::alarms::evaluate(in);
-        log_alarm_onsets(doser::alarms::conditions(in));
+        const uint16_t conditions = doser::alarms::conditions(in);
+        log_alarm_onsets(conditions);
+        doser::mqtt_ha::set_alarms(al.critical, al.warning, conditions);
     }
     lgal::led::set(State::Critical, al.critical);
     lgal::led::set(State::SetupAp, ns.ap_active);
@@ -213,6 +216,7 @@ extern "C" void app_main(void) {
     init_time();
     // Schedules: needs the dosing engine and the time zone
     if (doser::scheduler::init() != ESP_OK) ESP_LOGE(TAG, "Scheduler not ready");
+    doser::mqtt_ha::init();
     if (lgal::mqtt::init() != ESP_OK) ESP_LOGE(TAG, "MQTT not available");
 
     if (!lgal::settings::setup_completed()) {

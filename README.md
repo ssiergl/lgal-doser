@@ -14,7 +14,7 @@ components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Sc
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
-tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung)
+tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
@@ -426,6 +426,41 @@ Werkseinstellungen (Taster 10 s) löschen die Historie mit.
 Die CSV hat die Spalten `utc,local,kind,pump,source,code,target_ml,done_ml,value`; `value` ist
 der Inhalt (Behälter), µl pro Umdrehung (Kalibrierung), Stunden (Schlauch) oder die Anzahl
 (ausgelassen).
+
+## MQTT / Home Assistant (M6)
+
+Ab Werk aus. In den Einstellungen (Profi) Broker eintragen; das Gerät verbindet sich, meldet sich
+mit Last Will ab und baut die Verbindung nach Fehlern alle 10 s neu auf. Verschlüsselung:
+
+| Einstellung | Verwendung |
+|---|---|
+| keine | Port 1883, nur im eigenen Netz |
+| TLS, öffentliches Zertifikat | Port 8883, Server-Zertifikat gegen die in der Firmware enthaltene Liste öffentlicher Zertifizierungsstellen geprüft (z. B. Cloud-Broker) |
+| TLS, eigenes CA-Zertifikat | Port 8883, gegen ein hochgeladenes CA-Zertifikat (PEM, z. B. vom eigenen Mosquitto mit selbst signiertem Zertifikat) |
+
+Topics unter dem Basis-Topic (Standard: `lg-aquatic-life/<gerätetyp>/<hostname>`, z. B.
+`lg-aquatic-life/doser/lgal-doser-e4f5`), Zustände `retained`:
+
+| Topic | Inhalt |
+|---|---|
+| `<basis>/status` | `online` / `offline` (Last Will) |
+| `<basis>/state` | `{"critical","warning","conditions":["pump1_container_low","rtc_fault",…]}` |
+| `<basis>/pump/<n>/state` | `{"activity","total_ml","planned_ml","remaining_ml","days","next","schedule","amount_ml","tube_h","last"}` – bei Änderung, sonst alle 5 min |
+| `<basis>/pump/<n>/dose/set` | `PRESS` = eingestellte Menge, oder Menge in ml (`2.5`) – nur mit Steuerung |
+| `<basis>/pump/<n>/amount/set` | Menge für `PRESS` in ml (im RAM, Start 1 ml) – nur mit Steuerung |
+| `<basis>/pump/<n>/schedule/set` | `ON` / `OFF` – Zeitplan fortsetzen / pausieren – nur mit Steuerung |
+| `<basis>/stop/set` | beliebig – alle Pumpen stoppen – nur mit Steuerung |
+
+**Home-Assistant-Erkennung** (Standard an): ein Gerät „LGAL Doser XXXX“ per Device-Discovery
+(`homeassistant/device/lgal_doser_xxxx/config`) mit je Pumpe Status, dosiert gesamt
+(`total_increasing`, Tageswerte bildet Home Assistant), geplant heute, Vorrat, Reichweite in
+Tagen, nächste Dosierung und Schlauch-Betriebsstunden (Diagnose); dazu Alarm und
+Warnung des Geräts. Namen folgen der Gerätesprache und den Pumpennamen. Mit **Steuerung**
+kommen je Pumpe Zeitplan-Schalter, Dosiermenge und „Dosieren“ sowie „Alle stoppen“ hinzu; ohne
+Steuerung entfernt das Gerät diese Entitäten wieder und ignoriert Befehle. Startet Home
+Assistant neu (`homeassistant/status` = `online`), sendet das Gerät Discovery und Zustände erneut.
+Dosen über MQTT laufen wie manuelle Dosen (Tageslimit, Sperrzeiten, Behälter) und stehen
+mit Quelle `mqtt` im Verlauf.
 
 ## Datensicherung (M6)
 

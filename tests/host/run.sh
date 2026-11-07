@@ -171,13 +171,25 @@ $CXX \
 
 echo
 $CXX \
+    -I components/doser_app/include \
+    -I components/doser_hal/include \
+    -I components/lgal_core/include \
+    tests/host/test_ha.cpp \
+    components/doser_app/src/ha_core.cpp \
+    components/doser_app/src/alarms.cpp \
+    components/lgal_core/src/json.cpp \
+    components/lgal_core/src/json_reader.cpp \
+    -o "$OUT/ha"
+"$OUT/ha"
+
+echo
+$CXX \
     -I tests/host/stubs \
     -I components/doser_app/include \
     -I components/doser_hal/include \
     -I components/lgal_core/include \
     tests/host/test_backup_json.cpp \
     components/doser_app/src/backup_json.cpp \
-    components/lgal_core/src/mqtt_config.cpp \
     components/doser_app/src/schedule_json.cpp \
     components/doser_app/src/schedule_core.cpp \
     components/doser_app/src/dosing_core.cpp \
