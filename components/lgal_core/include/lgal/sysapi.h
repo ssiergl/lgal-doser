@@ -8,6 +8,9 @@
 //   DELETE /api/v1/system/coredump  delete core dump
 //   GET    /api/v1/system/language  current and available languages
 //   POST   /api/v1/system/language  ?lang=en|de  language of the web UI
+//   GET    /api/v1/system/time      time, source, time zone, NTP server
+//   PUT    /api/v1/system/time      {"timezone"?, "ntp_server"?, "utc"?} POSIX TZ string,
+//                                   NTP host ("" = off), manual time (tertiary source)
 //   GET    /i18n.js                 shared translation base of the pages
 
 #include "esp_err.h"

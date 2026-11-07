@@ -9,6 +9,8 @@
 // The RTC stores UTC.
 
 #include <cstdint>
+
+#include "esp_err.h"
 #include <functional>
 
 namespace lgal::timesync {
@@ -29,11 +31,26 @@ struct Status {
     bool rtc_ok;
 };
 
-void init(const RtcHooks& rtc, const char* tz_posix, const char* ntp_server);
+// Time zone and NTP server come from NVS ("lgal": "tz", "ntp"); the given
+// values are the defaults until they are set. tz_valid checks POSIX TZ
+// strings (the application provides the parser).
+void init(const RtcHooks& rtc, const char* default_tz, const char* default_ntp, bool (*tz_valid)(const char*));
 Status status();
 const char* source_str(Source s);
 // Tertiary source (WebUI/browser): sets system and RTC
 bool set_manual(int64_t utc);
+
+inline constexpr int kMaxTz = 63;
+inline constexpr int kMaxNtp = 63;
+// Current POSIX TZ string. The pointer stays valid; a later change
+// switches to a second buffer, so readers never see a half-written string.
 const char* timezone();
+const char* ntp_server();  // "" = NTP off
+bool timezone_valid(const char* tz);
+// Host name or IPv4 address, "" = off
+bool ntp_server_valid(const char* host);
+// Validate, store and apply (ESP_ERR_INVALID_ARG if invalid)
+esp_err_t set_timezone(const char* tz);
+esp_err_t set_ntp_server(const char* host);
 
 }  // namespace lgal::timesync
