@@ -142,7 +142,7 @@ esp_err_t send_schedule(httpd_req_t* req, int p) {
     const sched::PumpSchedule s = scheduler::schedule(p);
     const int32_t day = scheduler::today();
     Json j;
-    j.obj().kv("pump", p + 1);
+    j.obj().kv("pump", p + 1).kv("grid_min", scheduler::config().grid_min);  // times must be on this grid
     sj::write_schedule(j, s);
     if (day >= 0) {
         char d[11], t[6];

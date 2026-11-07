@@ -6,7 +6,7 @@
 // All require login.
 //
 //   GET  /schedule                              scheduler test page
-//   GET  /api/v1/pumps/schedule ?pump=1..5      schedule + today's slots
+//   GET  /api/v1/pumps/schedule ?pump=1..5      schedule, grid_min, today's slots
 //   PUT  /api/v1/pumps/schedule ?pump=1..5      JSON body, see below
 //   POST /api/v1/pumps/boost    ?pump=&ml=30&days=3
 //                               ?pump=&action=stop

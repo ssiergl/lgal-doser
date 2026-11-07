@@ -186,16 +186,17 @@ und REST-Entlüften zurück („Abfrage“).
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
 Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 34 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+gzip-komprimiert (≈ 43 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
 
 | Thema | Verhalten |
 |---|---|
-| Seiten | Übersicht, Pumpe (Detail), Zeitplan, Einstellungen. Adressen als Hash-Routen, z. B. `/#/pump/3`. |
+| Seiten | Übersicht, Pumpe (Detail), Zeitplan, Einstellungen. Adressen als Hash-Routen, z. B. `/#/pump/3`, `/#/schedule/2`. |
 | Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
 | Pumpe | Große Behälter-Grafik mit „Nachgefüllt“ und „Ändern“ (Größe 0 = ohne Erfassung), jetzt dosieren mit Fortschritt und Stopp (Sperrzeit: Meldung mit Ende bzw. „startet danach“), Schlauch füllen per Halten (WebSocket mit Totmann, sonst REST), Kalibrier-Assistent (Start → Messbecher → gemessene Menge übernehmen oder verwerfen), Verbrauch (heute, geplant, nächste Dosis, letzter Lauf, gesamt, Schlauchstunden mit Zurücksetzen) und Einstellungen. Name und Betrieb (automatisch / nur manuell / aus) für alle; Geschwindigkeit beim Dosieren, Zielmenge der Kalibrierung und Feintuning nur in Profi. Einfach zeigt aktive Profi-Werte als Hinweis. |
+| Zeitplan | Oben „Heute“: alle Pumpen auf einer 24-h-Leiste mit ihren Dosen und der aktuellen Uhrzeit. Darunter der Plan der gewählten Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** bis zu 8 Programme – Einzelzeit oder verteilt, täglich / Wochentage / alle N Tage, einzeln abschaltbar – sowie das Verhalten nach Stromausfall. Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Programm bzw. Pumpen und Uhrzeiten gemeldet. |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
@@ -278,7 +279,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
 | GET | `/schedule` | Zeitplantest-Seite |
-| GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + heutige Dosen |
+| GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |
 | POST | `/api/v1/pumps/boost?pump=1&ml=30&days=3` | Boost starten; `action=stop` beendet ihn |
 | GET | `/api/v1/schedule/status` | nächste Dosis, Verzögerung, Warteschlange, Übersprungene, Boost, Reichweite aller Pumpen |
 | GET / PUT | `/api/v1/schedule/locks` | Sperrzeiten zwischen Pumpen + Regel für manuelle Dosen (JSON) |
