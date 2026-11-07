@@ -9,6 +9,16 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 1.15.1
+  espressif/mqtt:
+    component_hash: fb18bc3b65aa8c94693a9811ffc322cca8a65d92d5ec84983d3e385080e3969c
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.3'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.1.0
   espressif/w5500:
     component_hash: f76a95ce7a6029cf93aa39d47067588b24263852031f11c71e5d192ad915ec07
     dependencies:
@@ -49,9 +59,10 @@ dependencies:
     version: 1.22.3
 direct_dependencies:
 - espressif/mdns
+- espressif/mqtt
 - espressif/w5500
 - idf
 - joltwallet/littlefs
-manifest_hash: 891ff8603521023137d331c59551c9118b21d602eb76c644b1e2894526a58041
+manifest_hash: 2efbe8e07fe4fa272ee4ec0e6af6e2c83f4cf4152dba144d5b48c01b0537597d
 target: esp32s3
 version: 3.0.0

@@ -179,15 +179,14 @@ bool query_int(httpd_req_t* req, const char* key, int64_t* out) {
     return true;
 }
 
-bool read_json(httpd_req_t* req, size_t max_len, std::string* body, JsonReader* doc, JsonToken* tokens,
-               int max_tokens) {
+bool read_body(httpd_req_t* req, size_t max_len, std::string* body) {
     const size_t len = req->content_len;
     if (len == 0) {
-        send_error(req, "400 Bad Request", "body_missing", "JSON body required");
+        send_error(req, "400 Bad Request", "body_missing", "Body required");
         return false;
     }
     if (len > max_len) {
-        send_error(req, "413 Content Too Large", "body_too_large", "JSON body too large");
+        send_error(req, "413 Content Too Large", "body_too_large", "Body too large");
         return false;
     }
     body->resize(len);
@@ -202,6 +201,12 @@ bool read_json(httpd_req_t* req, size_t max_len, std::string* body, JsonReader* 
         }
         got += static_cast<size_t>(n);
     }
+    return true;
+}
+
+bool read_json(httpd_req_t* req, size_t max_len, std::string* body, JsonReader* doc, JsonToken* tokens,
+               int max_tokens) {
+    if (!read_body(req, max_len, body)) return false;
     if (!doc->parse(body->data(), body->size(), tokens, max_tokens)) {
         char msg[64];
         snprintf(msg, sizeof(msg), "%s at offset %u", doc->error(), static_cast<unsigned>(doc->error_pos()));

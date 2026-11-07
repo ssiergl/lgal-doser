@@ -292,6 +292,8 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | DELETE | `/api/v1/history` | Historie löschen (Engineering) |
 | GET | `/api/v1/backup?secrets=0\|1` | Datensicherung der ganzen Konfiguration (Engineering, siehe [Datensicherung](#datensicherung-m6)) |
 | POST | `/api/v1/backup?parts=system,network,pumps,engineering,auth` | Sicherung einspielen (Engineering); erst alles prüfen, dann die gewählten Teile übernehmen; 409 `pump_busy` solange eine Pumpe läuft |
+| GET / PUT | `/api/v1/mqtt` | MQTT-Einstellungen (ohne Passwort, `password_set`), Basis-Topic und Port in Gebrauch, Verbindungsstatus `disabled\|connecting\|connected` mit letztem Fehler, CA-Info; PUT teilweise, Passwort weglassen = behalten, `""` = löschen |
+| PUT / DELETE | `/api/v1/mqtt/ca` | CA-Zertifikat(e) als PEM-Text im Body (max. 8 KB, wird geprüft) bzw. entfernen (409 `ca_in_use`, solange TLS „eigenes CA-Zertifikat“ aktiv ist) |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
 | GET | `/schedule` | Zeitplantest-Seite |
 | GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |
