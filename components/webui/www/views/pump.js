@@ -1,5 +1,5 @@
-// Detail view of one pump: container, manual dose, priming, calibration,
-// consumption and settings (fine-tuning only in the pro view).
+// Detail view of one pump: container, schedule, manual dose, priming,
+// calibration, consumption and settings (fine-tuning only in the pro view).
 import { useEffect, useState } from 'preact/hooks';
 import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
@@ -8,6 +8,7 @@ import { usePrefs } from '../lib/prefs.js';
 import { Container, PumpTabs, alerts, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
 import { Amount, HoldButton, Seg, parseNum, useMsg } from '../lib/ui.js';
+import { ScheduleCard } from './schedule.js';
 
 add({
   en: {
@@ -369,6 +370,7 @@ export function PumpView({ pump }) {
     <div class="detail" key=${pump} style=${{ '--pc': pumpColor(p.pump) }}>
       <div class="col">
         <${ContainerCard} p=${p} sp=${sp}/>
+        <${ScheduleCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
         <${UsageCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
       </div>
       <div class="col">

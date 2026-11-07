@@ -1,5 +1,5 @@
-// Schedules: day overview of all pumps and the editor of one pump. Every
-// pump has exactly one plan: "spread" (daily amount in N doses between two
+// Schedule card of the pump detail view: today's doses of this pump on a
+// 24 h bar and the editor of its plan. Every pump has exactly one plan: "spread" (daily amount in N doses between two
 // times) or "times" (single times, each with its own amount).
 // Simple view: spread, every day. Pro view: both kinds, days (daily,
 // weekdays, every N days), pause and the behaviour after a power loss.
@@ -7,9 +7,8 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
-import { setMode, usePrefs } from '../lib/prefs.js';
-import { PumpTabs, pumpColor, pumpName } from '../lib/pumps.js';
-import { reloadSched, useStore } from '../lib/store.js';
+import { setMode } from '../lib/prefs.js';
+import { reloadSched } from '../lib/store.js';
 import { Amount, Seg, parseNum, useMsg } from '../lib/ui.js';
 
 const WD = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -17,7 +16,7 @@ const kMaxTimes = 24;
 
 add({
   en: {
-    'sched.title': 'Schedule', 'sc.today': 'Today', 'sc.loading': 'Loading …',
+    'sched.title': 'Schedule', 'sc.loading': 'Loading …',
     'sc.none': 'No schedule', 'sc.none.hint': 'This pump only doses when you start it by hand.',
     'sc.daily': 'Daily amount', 'sc.count': 'Doses per day', 'sc.from': 'From', 'sc.to': 'To', 'sc.at': 'Time',
     'sc.doses': 'doses', 'sc.every': 'every {m} min', 'sc.everyh': 'every {h} h', 'sc.each': '{n} × {ml} ml',
@@ -51,7 +50,7 @@ add({
     'err.exceeds_daily_limit': 'The planned amount exceeds the daily limit', 'err.conflict': 'Doses collide',
   },
   de: {
-    'sched.title': 'Zeitplan', 'sc.today': 'Heute', 'sc.loading': 'Lädt …',
+    'sched.title': 'Zeitplan', 'sc.loading': 'Lädt …',
     'sc.none': 'Kein Zeitplan', 'sc.none.hint': 'Diese Pumpe dosiert nur, wenn du sie von Hand startest.',
     'sc.daily': 'Tagesmenge', 'sc.count': 'Dosen pro Tag', 'sc.from': 'Von', 'sc.to': 'Bis', 'sc.at': 'Uhrzeit',
     'sc.doses': 'Dosen', 'sc.every': 'alle {m} Min.', 'sc.everyh': 'alle {h} Std.', 'sc.each': '{n} × {ml} ml',
@@ -225,43 +224,19 @@ const localError = (ex, grid) => {
 };
 
 // ---------------------------------------------------------------------------
-// Schedules of all pumps (GET /api/v1/pumps/schedule), shared while the page is open
+// Today's doses of this pump on a 24 h bar (live while editing in pro)
 
-export const cache = {};
-
-export async function loadAll(setTick) {
-  for (let n = 1; n <= 5; ++n) {
-    try { cache[n] = await api('GET', '/api/v1/pumps/schedule?pump=' + n); } catch (e) { cache[n] = { error: e }; }
-    setTick(x => x + 1);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Day overview: one row per pump, today's doses as dots
-
-export function Timeline({ pumps, current, draft, today, grid, nowMin }) {
-  const day = today ? dayNum(today) : null;
-  return html`<section class="card timeline">
-    <h2>${t('sc.today')}</h2>
-    <div class="tl-head"><span></span>
-      <div class="tl-axis">${[0, 6, 12, 18, 24].map(h => html`<span style=${{ left: (h / 24) * 100 + '%' }}>${h}</span>`)}</div></div>
-    ${pumps.map(p => {
-      const s = cache[p.pump];
-      const slots = p.pump === current && draft && day !== null ? daySlots(draft, day, grid)
-        : s && s.today ? s.today.slots.map(x => ({ min: toMin(x.time), ul: ul(x.ml) })) : [];
-      const total = slots.reduce((a, x) => a + x.ul, 0);
-      return html`<a class=${'tl-row' + (p.pump === current ? ' on' : '') + (p.mode !== 'auto' ? ' dim' : '')}
-          href=${'#/schedule/' + p.pump} style=${{ '--pc': pumpColor(p.pump) }}>
-        <span class="tl-name"><span class="badge">${p.pump}</span><span class="nm">${pumpName(p)}</span></span>
-        <span class="tl-track">
-          ${nowMin !== null && html`<i class="tl-now" style=${{ left: (nowMin / 1440) * 100 + '%' }}></i>`}
-          ${slots.map(x => html`<i class="tl-dot" title=${hhmm(x.min) + ' · ' + num(x.ul / 1000, 2) + ' ml'}
-            style=${{ left: (x.min / 1440) * 100 + '%' }}></i>`)}
-        </span>
-        <span class="tl-sum num">${total ? num(total / 1000, 1) + ' ml' : '–'}</span>
-      </a>`;
-    })}
-  </section>`;
+function DayBar({ slots, nowMin }) {
+  const total = slots.reduce((a, x) => a + x.ul, 0);
+  return html`<div class="daybar">
+    <div class="tl-axis">${[0, 6, 12, 18, 24].map(h => html`<span style=${{ left: (h / 24) * 100 + '%' }}>${h}</span>`)}</div>
+    <div class="tl-track">
+      ${nowMin !== null && html`<i class="tl-now" style=${{ left: (nowMin / 1440) * 100 + '%' }}></i>`}
+      ${slots.map(x => html`<i class="tl-dot" title=${hhmm(x.min) + ' · ' + num(x.ul / 1000, 2) + ' ml'}
+        style=${{ left: (x.min / 1440) * 100 + '%' }}></i>`)}
+    </div>
+    <span class="small mut">${t('sc.total', { ml: num(total / 1000, 2) })}</span>
+  </div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,7 +263,7 @@ function useSave(pump, onSaved) {
   const save = (body, okText, grid) => {
     setBusy(true);
     return api('PUT', '/api/v1/pumps/schedule?pump=' + pump, body)
-      .then(j => { cache[pump] = j; msg.ok(okText); onSaved(j); reloadSched(); })
+      .then(j => { msg.ok(okText); onSaved(j); reloadSched(); })
       .catch(e => msg.err(errorText(e, grid, body)))
       .finally(() => setBusy(false));
   };
@@ -298,7 +273,7 @@ function useSave(pump, onSaved) {
 // ---------------------------------------------------------------------------
 // Simple view: daily amount in N doses, every day
 
-function SimpleEditor({ pump, name, s, onSaved, limit }) {
+function SimpleEditor({ pump, s, onSaved, limit }) {
   const grid = s.grid_min || 5;
   const simple = simpleOf(s);
   const [replace, setReplace] = useState(false);
@@ -316,13 +291,12 @@ function SimpleEditor({ pump, name, s, onSaved, limit }) {
   const set = patch => setF(prev => ({ ...prev, ...patch }));
 
   if (simple === null && !replace) {
-    return html`<section class="card"><h2>${name}</h2>
+    return html`<div>
       <p class="prohint small">${t('sc.pro.made')}</p>
       <ul class="plist">${planLines(s).map(l => html`<li>${l}</li>`)}</ul>
-      ${s.today && html`<p class="small mut">${t('sc.total', { ml: num(s.today.ml, 2) })}</p>`}
       <div class="row"><button onClick=${() => setMode('pro')}>${t('sc.pro.edit')}</button>
         <button class="sec" onClick=${() => setReplace(true)}>${t('sc.replace')}</button></div>
-    </section>`;
+    </div>`;
   }
   const draft = {
     kind: 'spread', enabled: true, start: f.start, end: f.end, count: f.count, ml: f.ml, times: [],
@@ -342,7 +316,7 @@ function SimpleEditor({ pump, name, s, onSaved, limit }) {
   };
   const empty = s.kind === 'none';
   const planned = ex.slots.reduce((a, x) => a + x.ul, 0) / 1000;
-  return html`<section class="card"><h2>${name}</h2>
+  return html`<div>
     ${empty && html`<p class="small mut">${t('sc.none')}. ${t('sc.none.hint')}</p>`}
     <form novalidate onSubmit=${submit}>
       <div class="form-row">
@@ -362,7 +336,7 @@ function SimpleEditor({ pump, name, s, onSaved, limit }) {
       </div>
     </form>
     ${msg.node}
-  </section>`;
+  </div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -390,7 +364,7 @@ function TimesList({ d, grid, set }) {
   </div>`;
 }
 
-function ProEditor({ pump, name, s, draft: d, setDraft, onSaved, today, limit }) {
+function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
   const grid = s.grid_min || 5;
   const { msg, busy, save } = useSave(pump, onSaved);
   const set = patch => setDraft(prev => ({ ...prev, ...patch }));
@@ -407,8 +381,7 @@ function ProEditor({ pump, name, s, draft: d, setDraft, onSaved, today, limit })
     if (ex.err) { msg.err(localError(ex, grid)); return; }
     save(bodyOf(d), d.kind === 'none' ? t('sc.removed') : t('sc.saved'), grid);
   };
-  return html`<form class="card plan" novalidate onSubmit=${submit}>
-    <h2>${name}</h2>
+  return html`<form class="plan" novalidate onSubmit=${submit}>
     <div class="field"><span class="lbl">${t('sc.kind')}</span>
       <${Seg} value=${d.kind} onChange=${switchKind}
         options=${[['none', t('sc.kind.none')], ['spread', t('sc.kind.spread')], ['times', t('sc.kind.times')]]}/>
@@ -448,7 +421,6 @@ function ProEditor({ pump, name, s, draft: d, setDraft, onSaved, today, limit })
         </div>
       </div>
       ${d.kind === 'times' && ex.err && ex.err !== 'invalid_param' && d.times.length > 0 && html`<p class="msg err">${localError(ex, grid)}</p>`}
-      ${today && html`<p class="small mut">${t('sc.total', { ml: num(planned, 2) })}</p>`}
       ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}`}
     <div class="row savebar">
       <button type="submit" disabled=${busy || !dirty}>${t('sc.save')}</button>
@@ -461,34 +433,29 @@ function ProEditor({ pump, name, s, draft: d, setDraft, onSaved, today, limit })
 
 // ---------------------------------------------------------------------------
 
-export function ScheduleView({ pump }) {
-  const st = useStore();
-  const prefs = usePrefs();
-  const [, setTick] = useState(0);
+export function ScheduleCard({ p, pro, nowLocal }) {
+  const [s, setS] = useState(null);
   const [draft, setDraft] = useState(null);
-  const cur = pump >= 1 && pump <= 5 ? pump : 1;
-  useEffect(() => { loadAll(setTick); }, []);
-  const s = cache[cur];
-  // Fresh draft when the pump or the saved schedule changes
-  useEffect(() => { setDraft(s && !s.error ? draftOf(s) : null); }, [cur, s]);
-  if (!st.pumps) return html`<div class="empty">…</div>`;
-  const p = st.pumps[cur - 1];
-  const now = st.sched && st.sched.now_local;
-  const today = now ? now.slice(0, 10) : s && s.today ? s.today.date : null;
-  const nowMin = now ? toMin(now.slice(11, 16)) : null;
-  const pro = prefs.mode === 'pro';
+  const pump = p.pump;
+  useEffect(() => {
+    setS(null);
+    api('GET', '/api/v1/pumps/schedule?pump=' + pump).then(setS).catch(e => setS({ error: e }));
+  }, [pump]);
+  // Fresh draft when the saved schedule changes
+  useEffect(() => { setDraft(s && !s.error ? draftOf(s) : null); }, [s]);
+  const today = nowLocal ? nowLocal.slice(0, 10) : s && s.today ? s.today.date : null;
+  const nowMin = nowLocal ? toMin(nowLocal.slice(11, 16)) : null;
   const grid = (s && s.grid_min) || 5;
-  const onSaved = j => { setDraft(draftOf(j)); setTick(x => x + 1); };
-  return html`<div class="page-head"><h1>${t('sched.title')}</h1>
-      ${pro && html`<span class="spacer"></span><a class="btn sec" href="#/schedule/locks">${t('lk.title')}</a>`}</div>
-    <${Timeline} pumps=${st.pumps} current=${cur} draft=${pro ? draft : null} today=${today} grid=${grid} nowMin=${nowMin}/>
-    <${PumpTabs} current=${cur} pumps=${st.pumps} base="#/schedule/"/>
-    <div class="sc" style=${{ '--pc': pumpColor(cur) }}>
-    ${p.mode !== 'auto' && html`<div class="banner">${t('sc.mode.' + p.mode)}</div>`}
-    ${!s ? html`<div class="empty">${t('sc.loading')}</div>`
-      : s.error ? html`<div class="banner err">${errText(s.error)}</div>`
-        : pro ? draft && html`<${ProEditor} key=${cur} pump=${cur} name=${pumpName(p)} s=${s} draft=${draft} setDraft=${setDraft} onSaved=${onSaved}
-            today=${today} limit=${p.daily.limit_ml}/>`
-          : html`<${SimpleEditor} key=${cur} pump=${cur} name=${pumpName(p)} s=${s} onSaved=${onSaved} limit=${p.daily.limit_ml}/>`}
-    </div>`;
+  const slots = !s || s.error ? []
+    : pro && draft && today ? daySlots(draft, dayNum(today), grid)
+      : s.today ? s.today.slots.map(x => ({ min: toMin(x.time), ul: ul(x.ml) })) : [];
+  return html`<section class="card sched"><h2>${t('sched.title')}</h2>
+    ${p.mode !== 'auto' && html`<p class="small warn">${t('sc.mode.' + p.mode)}</p>`}
+    ${!s ? html`<p class="mut">${t('sc.loading')}</p>`
+      : s.error ? html`<p class="msg err">${errText(s.error)}</p>`
+        : html`<${DayBar} slots=${slots} nowMin=${nowMin}/>
+          ${pro ? draft && html`<${ProEditor} pump=${pump} s=${s} draft=${draft} setDraft=${setDraft} onSaved=${setS}
+              today=${today} limit=${p.daily.limit_ml}/>`
+            : html`<${SimpleEditor} pump=${pump} s=${s} onSaved=${setS} limit=${p.daily.limit_ml}/>`}`}
+  </section>`;
 }

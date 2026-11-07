@@ -1,4 +1,4 @@
-// Lock times between pumps (pro view): pairs of pumps that must not dose
+// Lock times between pumps (settings page, pro view): pairs of pumps that must not dose
 // close together (e.g. calcium and alkalinity), and what a manual dose does
 // while a lock time is running. Saved schedules are checked against the
 // rules by the device; collisions come back as conflicts.
@@ -9,15 +9,15 @@ import { add, errText, t } from '../lib/i18n.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
 import { reloadSched, useStore } from '../lib/store.js';
 import { Amount, Seg, useMsg } from '../lib/ui.js';
-import { Timeline, errorText, loadAll } from './schedule.js';
+import { errorText } from './schedule.js';
 
 const kMaxLocks = 10;
 
 add({
   en: {
-    'lk.title': 'Lock times', 'lk.back': 'Back to the schedule',
+    'lk.title': 'Lock times between pumps',
     'lk.intro': 'A lock time keeps two pumps apart: after a dose of one pump ends, the other one starts at the earliest once the lock time has passed. Use it for additives that must not meet in the same water flow.',
-    'lk.rules': 'Rules', 'lk.none': 'No lock times – all pumps may dose at the same time.',
+    'lk.none': 'No lock times – all pumps may dose at the same time.',
     'lk.add': 'Add rule', 'lk.del': 'Delete rule',
     'lk.manual': 'Manual dose during a lock time', 'lk.m.reject': 'Reject', 'lk.m.queue': 'Wait',
     'lk.m.hint.reject': 'The dose is refused with a note when it may start.',
@@ -28,9 +28,9 @@ add({
     'err.invalid_lock': 'Invalid lock rule',
   },
   de: {
-    'lk.title': 'Sperrzeiten', 'lk.back': 'Zurück zum Zeitplan',
+    'lk.title': 'Sperrzeiten zwischen Pumpen',
     'lk.intro': 'Eine Sperrzeit hält zwei Pumpen auseinander: Endet eine Dosis der einen Pumpe, startet die andere frühestens nach Ablauf der Sperrzeit. Gedacht für Zusätze, die sich nicht im selben Wasserstrom treffen sollen.',
-    'lk.rules': 'Regeln', 'lk.none': 'Keine Sperrzeiten – alle Pumpen dürfen gleichzeitig dosieren.',
+    'lk.none': 'Keine Sperrzeiten – alle Pumpen dürfen gleichzeitig dosieren.',
     'lk.add': 'Regel hinzufügen', 'lk.del': 'Regel löschen',
     'lk.manual': 'Manuelle Dosis während einer Sperrzeit', 'lk.m.reject': 'Ablehnen', 'lk.m.queue': 'Warten',
     'lk.m.hint.reject': 'Die Dosis wird abgelehnt, mit Hinweis, ab wann sie möglich ist.',
@@ -64,23 +64,19 @@ function PumpSelect({ value, pumps, onChange }) {
     ${pumps.map(p => html`<option value=${p.pump}>${p.pump} · ${pumpName(p)}</option>`)}</select>`;
 }
 
-export function LocksView() {
+export function LocksCard() {
   const st = useStore();
-  const [, setTick] = useState(0);
   const [saved, setSaved] = useState(null);
   const [d, setDraft] = useState(null);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
   useEffect(() => {
     api('GET', '/api/v1/schedule/locks').then(l => { setSaved(l); setDraft(draftOf(l)); }).catch(e => setSaved({ error: e }));
-    loadAll(setTick);
   }, []);
-  if (!st.pumps || !saved) return html`<div class="empty">…</div>`;
-  const head = html`<div class="page-head"><h1>${t('lk.title')}</h1><span class="spacer"></span>
-    <a class="btn sec" href="#/schedule">${t('lk.back')}</a></div>`;
-  if (saved.error) return html`${head}<div class="banner err">${errText(saved.error)}</div>`;
+  const head = html`<h2>${t('lk.title')}</h2><p class="small mut">${t('lk.intro')}</p>`;
+  if (!st.pumps || !saved) return html`<section class="card">${head}<p class="mut">…</p></section>`;
+  if (saved.error) return html`<section class="card">${head}<p class="msg err">${errText(saved.error)}</p></section>`;
 
-  const now = st.sched && st.sched.now_local;
   const set = patch => setDraft(prev => ({ ...prev, ...patch }));
   const setRule = (i, patch) => setDraft(prev => ({ ...prev, rules: prev.rules.map((r, k) => (k === i ? { ...r, ...patch } : r)) }));
   const addRule = () => {
@@ -106,12 +102,8 @@ export function LocksView() {
       })
       .finally(() => setBusy(false));
   };
-  return html`${head}
-    <${Timeline} pumps=${st.pumps} current=${0} draft=${null} today=${now ? now.slice(0, 10) : null} grid=${5}
-      nowMin=${now ? +now.slice(11, 13) * 60 + +now.slice(14, 16) : null}/>
-    <form class="card locks" novalidate onSubmit=${submit}>
-      <p class="small mut">${t('lk.intro')}</p>
-      <h2>${t('lk.rules')}</h2>
+  return html`<form class="card locks" novalidate onSubmit=${submit}>
+      ${head}
       ${!d.rules.length && html`<p class="small mut">${t('lk.none')}</p>`}
       <div class="lrules">${d.rules.map((r, i) => html`<div class=${'lrow' + (bad && bad.i === i ? ' bad' : '')} key=${i}>
         <${PumpSelect} value=${r.a} pumps=${st.pumps} onChange=${v => setRule(i, { a: v })}/>
