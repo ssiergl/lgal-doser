@@ -1,7 +1,13 @@
-// Small shared UI pieces: messages, decimal input, segmented control, hold button.
+// Small shared UI pieces: messages, decimal input, segmented control, save bar,
+// hold button.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from './html.js';
-import { errText } from './i18n.js';
+import { add, errText, t } from './i18n.js';
+
+add({
+  en: { 'ui.save': 'Save', 'ui.discard': 'Discard', 'ui.unsaved': 'Unsaved changes' },
+  de: { 'ui.save': 'Speichern', 'ui.discard': 'Verwerfen', 'ui.unsaved': 'Ungespeicherte Änderungen' },
+});
 
 // Decimal text ("2,5" or "2.5") -> number, NaN if invalid
 export function parseNum(s) {
@@ -30,6 +36,15 @@ export function Seg({ value, options, onChange, disabled }) {
 export function Amount({ value, onInput, unit = 'ml', id, placeholder }) {
   return html`<div class="amount"><input id=${id} type="text" inputmode="decimal" autocomplete="off"
     value=${value} placeholder=${placeholder} onInput=${e => onInput(e.target.value)}/><span>${unit}</span></div>`;
+}
+
+// Save / discard row at the end of a settings form (type=submit saves)
+export function SaveBar({ busy, dirty, onDiscard }) {
+  return html`<div class="row savebar">
+    <button type="submit" disabled=${busy || !dirty}>${t('ui.save')}</button>
+    <button type="button" class="sec" disabled=${busy || !dirty} onClick=${onDiscard}>${t('ui.discard')}</button>
+    ${dirty && html`<span class="chip warn">${t('ui.unsaved')}</span>`}
+  </div>`;
 }
 
 // Hold-to-run button: onStart once on press, onBeat every `every` ms while
