@@ -190,6 +190,7 @@ $CXX \
     -I components/lgal_core/include \
     tests/host/test_backup_json.cpp \
     components/doser_app/src/backup_json.cpp \
+    components/lgal_core/src/mqtt_config.cpp \
     components/doser_app/src/schedule_json.cpp \
     components/doser_app/src/schedule_core.cpp \
     components/doser_app/src/dosing_core.cpp \

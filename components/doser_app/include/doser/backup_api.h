@@ -2,9 +2,9 @@
 // Full backup and restore (M6, engineering area only; format: backup_json.h).
 //
 //   GET  /api/v1/backup?secrets=0|1     download of the whole configuration;
-//                                       secrets=1 adds the Wi-Fi password, the admin
-//                                       password record and the API key hashes
-//   POST /api/v1/backup?parts=system,network,pumps,engineering,auth
+//                                       secrets=1 adds the Wi-Fi and MQTT password,
+//                                       the admin password record and the API key hashes
+//   POST /api/v1/backup?parts=system,network,pumps,engineering,mqtt,auth
 //                                       JSON body = a backup document. Restores the
 //                                       chosen parts that the document contains
 //                                       (default: all of them). Everything is

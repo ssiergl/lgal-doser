@@ -17,6 +17,7 @@
 #include "lgal/device.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
+#include "lgal/mqtt.h"
 #include "lgal/net.h"
 #include "lgal/settings.h"
 #include "lgal/timesync.h"
@@ -46,6 +47,8 @@ void collect(bk::Data* d) {
     d->locks = scheduler::locks();
     d->dosing = dosing::engineering();
     d->scheduler = scheduler::config();
+    d->mqtt = lgal::mqtt::config();
+    d->mqtt_ca = lgal::mqtt::ca_pem();
 }
 
 esp_err_t get_backup(httpd_req_t* req) {
@@ -55,8 +58,9 @@ esp_err_t get_backup(httpd_req_t* req) {
     auto d = std::unique_ptr<bk::Data>(new (std::nothrow) bk::Data);
     if (!d) return http::send_error(req, "500 Internal Server Error", "internal_error", "Out of memory");
     collect(d.get());
-    d->parts = bk::kSystem | bk::kNetwork | bk::kPumps | bk::kEngineering | (secrets ? bk::kAuth : 0);
+    d->parts = bk::kSystem | bk::kNetwork | bk::kPumps | bk::kEngineering | bk::kMqtt | (secrets ? bk::kAuth : 0);
     d->wlan_password = secrets != 0;
+    d->mqtt_password = secrets != 0;
     const auto ts = lgal::timesync::status();
     const std::string& host = lgal::device::hostname();
     Json j;
@@ -74,8 +78,8 @@ esp_err_t get_backup(httpd_req_t* req) {
 
 void write_applied(Json& j, uint8_t applied) {
     j.arr("applied");
-    for (int b = 0; b < 5; ++b)
-        if (applied & (1 << b)) j.v(bk::part_str(static_cast<bk::Part>(1 << b)));
+    for (int b = 0; b < 8; ++b)
+        if ((applied & (1 << b)) && bk::part_str(static_cast<bk::Part>(1 << b))[0]) j.v(bk::part_str(static_cast<bk::Part>(1 << b)));
     j.end();
 }
 
@@ -161,6 +165,17 @@ esp_err_t post_backup(httpd_req_t* req) {
         if (net_changed && lgal::net::set_config(d->net, 2000) != ESP_OK)
             return apply_failed(req, bk::kNetwork, "invalid_param", applied);
         applied |= bk::kNetwork;
+    }
+    if (todo & bk::kMqtt) {
+        // a new certificate first, so that the settings may use it; an old one last
+        const std::string cur_ca = lgal::mqtt::ca_pem();
+        if (!d->mqtt_ca.empty() && d->mqtt_ca != cur_ca)
+            if (const char* e = lgal::mqtt::set_ca(d->mqtt_ca.data(), d->mqtt_ca.size()))
+                return apply_failed(req, bk::kMqtt, e, applied);
+        if (lgal::mqtt::set_config(d->mqtt) != ESP_OK) return apply_failed(req, bk::kMqtt, "storage_failed", applied);
+        if (d->mqtt_ca.empty() && !cur_ca.empty())
+            if (const char* e = lgal::mqtt::clear_ca()) return apply_failed(req, bk::kMqtt, e, applied);
+        applied |= bk::kMqtt;
     }
     bool signed_out = false;
     if (todo & bk::kAuth) {

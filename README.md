@@ -292,7 +292,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/history/daily?days=14` | dosierte Menge, Anzahl Dosen und ausgelassene Dosen je Ortstag und Pumpe (1–60 Tage, älteste zuerst; ohne gültige Uhrzeit leer) |
 | DELETE | `/api/v1/history` | Historie löschen (Engineering) |
 | GET | `/api/v1/backup?secrets=0\|1` | Datensicherung der ganzen Konfiguration (Engineering, siehe [Datensicherung](#datensicherung-m6)) |
-| POST | `/api/v1/backup?parts=system,network,pumps,engineering,auth` | Sicherung einspielen (Engineering); erst alles prüfen, dann die gewählten Teile übernehmen; 409 `pump_busy` solange eine Pumpe läuft |
+| POST | `/api/v1/backup?parts=system,network,pumps,engineering,mqtt,auth` | Sicherung einspielen (Engineering); erst alles prüfen, dann die gewählten Teile übernehmen; 409 `pump_busy` solange eine Pumpe läuft |
 | GET / PUT | `/api/v1/mqtt` | MQTT-Einstellungen (ohne Passwort, `password_set`), Basis-Topic und Port in Gebrauch, Verbindungsstatus `disabled\|connecting\|connected` mit letztem Fehler, CA-Info; PUT teilweise, Passwort weglassen = behalten, `""` = löschen |
 | PUT / DELETE | `/api/v1/mqtt/ca` | CA-Zertifikat(e) als PEM-Text im Body (max. 8 KB, wird geprüft) bzw. entfernen (409 `ca_in_use`, solange TLS „eigenes CA-Zertifikat“ aktiv ist) |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
@@ -470,13 +470,14 @@ auf eine andere Pumpe (`{"format":"lgal-doser-schedule","version":1,…,"schedul
 
 **Ganzes Gerät** (nur Engineering, Service-Dialog): eine Datei mit Sprache, Zeitzone,
 Zeitserver, LED-Nachtmodus, Netzwerk, allen Pumpen-Einstellungen inkl. Kalibrierung, Zeitplänen,
-Sperrzeiten, Servicewerten und Hardware-Parametern (Ströme, Mikroschritte).
+Sperrzeiten, Servicewerten, Hardware-Parametern (Ströme, Mikroschritte) und
+den MQTT-Einstellungen samt CA-Zertifikat.
 Behälterinhalt, Zähler und Verlauf gehören nicht dazu. Beim Export wählbar:
 
 | Variante | Inhalt |
 |---|---|
-| ohne Passwörter | kein WLAN-Passwort, keine Zugangsdaten; beim Einspielen bleibt das gespeicherte WLAN-Passwort, wenn das Netz (SSID) gleich ist |
-| mit Passwörtern | zusätzlich WLAN-Passwort (Klartext) sowie Admin-Passwort und API-Keys (nur als PBKDF2- bzw. SHA-256-Hash, wie im Gerät gespeichert) |
+| ohne Passwörter | kein WLAN- und MQTT-Passwort, keine Zugangsdaten; beim Einspielen bleibt das gespeicherte WLAN-Passwort, wenn das Netz (SSID) gleich ist, und das MQTT-Passwort bei gleichem Broker und Benutzer |
+| mit Passwörtern | zusätzlich WLAN- und MQTT-Passwort (Klartext) sowie Admin-Passwort und API-Keys (nur als PBKDF2- bzw. SHA-256-Hash, wie im Gerät gespeichert) |
 
 Beim Einspielen zeigt der Dialog Gerät, Firmware und Datum der Sicherung und lässt die Teile
 wählen; Netzwerk und Zugangsdaten sind vorab abgewählt. Die Firmware prüft das ganze Dokument
