@@ -347,3 +347,8 @@ input.bad, select.bad { border-color: var(--err); }
 .keys li b { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
 .newkey { display: grid; gap: 8px; margin-top: 10px; padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--ok) 10%, transparent); }
 .newkey code { font-size: 13px; overflow-wrap: anywhere; user-select: all; }
+
+/* ---- maintenance ---- */
+.btn.small { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; border-radius: 10px; background: var(--card-2); font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.emergency { margin-top: var(--gap); }

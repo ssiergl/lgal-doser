@@ -7,6 +7,7 @@ import { add, initLang, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
 import { start, useStore } from './lib/store.js';
 import { Dashboard } from './views/dashboard.js';
+import { MaintenanceView } from './views/maintenance.js';
 import { PumpView } from './views/pump.js';
 import { SettingsView } from './views/settings.js';
 
@@ -32,7 +33,7 @@ add({
 });
 
 // ---------------------------------------------------------------------------
-// Router: #/, #/pump/3, #/settings (#/schedule/3 opens the pump)
+// Router: #/, #/pump/3, #/settings, #/maintenance (#/schedule/3 opens the pump)
 
 function parse() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -56,7 +57,7 @@ const icons = {
 const navItems = [['home', '#/'], ['settings', '#/settings']];
 
 function Nav({ route, cls }) {
-  const active = route.name === 'pump' || route.name === 'schedule' ? 'home' : route.name;
+  const active = route.name === 'pump' || route.name === 'schedule' ? 'home' : route.name === 'maintenance' ? 'settings' : route.name;
   return html`<nav class=${cls}>${navItems.map(([n, href]) => html`
     <a href=${href} class=${active === n ? 'on' : ''}>
       ${cls === 'bottom' && html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d=${icons[n]}/></svg>`}
@@ -93,7 +94,7 @@ function Footer() {
   return html`<footer>
     <span>© LG Aquatic Life</span>
     <button class="ver" onClick=${tap}>Firmware ${ver}</button>
-    <a href="/recovery">${t('footer.maint')}</a>
+    <a href="#/maintenance">${t('footer.maint')}</a>
   </footer>`;
 }
 
@@ -113,6 +114,7 @@ function App() {
     case 'pump': page = html`<${PumpView} pump=${+route.arg}/>`; break;
     case 'schedule': page = html`<${PumpView} pump=${+route.arg || 1}/>`; break;  // old links
     case 'settings': page = html`<${SettingsView}/>`; break;
+    case 'maintenance': page = html`<${MaintenanceView}/>`; break;
     default: page = html`<div class="empty">${t('notfound')}</div>`;
   }
   return html`

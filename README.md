@@ -186,14 +186,14 @@ und REST-Entlüften zurück („Abfrage“).
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
 Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 61 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+gzip-komprimiert (≈ 68 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
 
 | Thema | Verhalten |
 |---|---|
-| Seiten | Übersicht, Pumpe (Detail mit Zeitplan), Einstellungen. Adressen als Hash-Routen, z. B. `/#/pump/3`; alte Links `/#/schedule/3` öffnen die Pumpe. |
+| Seiten | Übersicht, Pumpe (Detail mit Zeitplan), Einstellungen, Wartung (`/#/maintenance`, aus den Einstellungen und dem Fuß). Adressen als Hash-Routen, z. B. `/#/pump/3`; alte Links `/#/schedule/3` öffnen die Pumpe. |
 | Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
 | Pumpe | Große Behälter-Grafik mit „Nachgefüllt“ und „Ändern“ (Größe 0 = ohne Erfassung), jetzt dosieren mit Fortschritt und Stopp (Sperrzeit: Meldung mit Ende bzw. „startet danach“), Schlauch füllen per Halten (WebSocket mit Totmann, sonst REST), Kalibrier-Assistent (Start → Messbecher → gemessene Menge übernehmen oder verwerfen), Verbrauch (heute, geplant, nächste Dosis, letzter Lauf, gesamt, Schlauchstunden mit Zurücksetzen) und Einstellungen. Name und Betrieb (automatisch / nur manuell / aus) für alle; Geschwindigkeit beim Dosieren, Zielmenge der Kalibrierung und Feintuning nur in Profi. Einfach zeigt aktive Profi-Werte als Hinweis. |
 | Zeitplan | Karte im Pumpen-Detail: die Dosen von heute auf einer 24-h-Leiste mit aktueller Uhrzeit, darunter der Plan – genau einer pro Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** Planart „Verteilt“ (Tagesmenge in N Dosen) oder „Einzelzeiten“ (bis 24 Uhrzeiten mit eigener Menge), täglich / Wochentage / alle N Tage, pausierbar, sowie das Verhalten nach Stromausfall. Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Uhrzeit bzw. Pumpen und Uhrzeiten gemeldet. |
@@ -202,16 +202,17 @@ nicht, `idf.py build` reicht.
 | Uhrzeit | In den Einstellungen: Gerätezeit und Quelle (Zeitserver, Uhrenmodul, von Hand), Warnung bei mehr als 2 min Abweichung zum Browser oder stummem Uhrenmodul, „Uhrzeit von diesem Browser übernehmen“. Zeitzone (Liste wie im Einrichtungsassistenten oder POSIX-Angabe, Vorschlag aus dem Browser) für alle; Zeitserver (NTP) und letzter Abgleich nur in Profi. |
 | Netzwerk | In den Einstellungen: Status (aktive Schnittstelle, LAN- und WLAN-Adresse, Signal, Setup-WLAN, Countdown bis zum WLAN-Ersatz) für alle. Nur Profi: Schnittstelle (automatisch / nur LAN / nur WLAN), DHCP oder feste Adressen je Schnittstelle (vorbelegt mit den aktuellen), WLAN-Suche, Passwort, Verbindungstest und Speichern; ändert sich die feste LAN-Adresse, nennt die Seite die neue. `/network` bleibt als Notfallseite. |
 | Anmeldung | In den Einstellungen: Passwort ändern (bzw. erstmals festlegen) und Abmelden für alle; API-Schlüssel (Liste, erzeugen mit einmaliger Anzeige und Kopieren, löschen) nur in Profi. `/login` bleibt für Anmeldung, Passwort vergessen und Engineering. |
+| Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage. Nur Profi: Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Engineering-Anmeldung. |
-| Notfall | `/recovery` bleibt als Wartungsseite (Firmware-Upload, Neustart, Log, Testseiten). |
+| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Testseiten). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
 
 ## OTA-Update
 
-Über die Wartungsseite (`/recovery`) per Datei-Upload oder per Skript:
+In der Weboberfläche unter Wartung, über die Notfallseite (`/recovery`) per Datei-Upload oder per Skript:
 
 ```bash
 python3 tools/ota_upload.py lgal-doser-xxxx.local --key lgal_...

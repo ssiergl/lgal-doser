@@ -46,7 +46,7 @@ export function SettingsView() {
       <section class="card"><h2>${t('set.device')}</h2>
         <ul class="links">
           <li><a href="/setup">${t('set.setup')}</a></li>
-          <li><a href="/recovery">${t('set.maint')}</a></li>
+          <li><a href="#/maintenance">${t('set.maint')}</a></li>
         </ul>
       </section>
     </div>`;
