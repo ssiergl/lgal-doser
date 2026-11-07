@@ -429,6 +429,15 @@ const char* prime_beat(int pump) {
     return nullptr;
 }
 
+const char* prime_stop(int pump) {
+    if (!valid_pump(pump)) return "invalid_param";
+    Guard g;
+    Job& j = s_p[pump].job;
+    if (j.act != Activity::Priming) return "not_priming";
+    j.stop_req = true;
+    return nullptr;
+}
+
 const char* calibrate_start(int pump, uint32_t target_ul, int tier) {
     if (!valid_pump(pump)) return "invalid_param";
     Guard g;

@@ -166,6 +166,21 @@ Das WLAN-Passwort wird nie zurückgegeben (`"password_set": true`); ohne `passwo
 gespeicherte. Fehler: 400 `invalid_param` mit `field` (z. B. `lan.gateway`), 400
 `wlan_not_configured` für `wlan` ohne SSID.
 
+## WebSocket (M4)
+
+**`/api/v1/ws`** für Echtzeit-Werte und das Entlüften. Anmeldung wie bei der REST-API
+(Sitzungs-Cookie oder API-Key-Header). Nachrichten sind JSON-Textframes.
+
+| Thema | Verhalten |
+|---|---|
+| Status-Push | `{"type":"status","seq","utc","time_valid","pumps":[…]}` direkt nach dem Verbinden, bei jeder Änderung (geprüft alle 250 ms) und mindestens alle 10 s. Pro Pumpe nur die Live-Werte: Tätigkeit, Phase, Fortschritt (`done_ml`, `target_ml`, `rpm`, `prime_s`), Behälter, Tagesmenge, letzter Lauf. Alles andere liefert `GET /api/v1/pumps`. |
+| Anfragen | `{"type":"…","id"?:n,…}` → Antwort mit gleichem `type`/`id`, `"ok"` und bei Fehler `"error"` (Code). `{"type":"ping"}` zum Testen. |
+| Entlüften | `{"type":"prime","pump":1,"action":"start\|beat\|stop","tier"?:0..2}`. Beim Halten alle 150 ms `beat`. Bricht die Verbindung ab, stoppt die Pumpe sofort (zusätzlich nach `prime_heartbeat_ms` ohne Heartbeat). |
+| Sicherheit | Browser nur von den eigenen Seiten (Origin = Host, sonst 403 `forbidden_origin`). Max. 4 Verbindungen (503 `too_many_clients`). Abmelden, Passwortwechsel oder gelöschter API-Key beenden die Verbindung (Prüfung alle 5 s und bei jeder Nachricht). |
+
+Die Dosiertest-Seite nutzt den WebSocket (Chip „Live“) und fällt ohne ihn auf Abfragen
+und REST-Entlüften zurück („Abfrage“).
+
 ## OTA-Update
 
 Über die Wartungsseite (`/`) per Datei-Upload oder per Skript:
@@ -231,7 +246,8 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
 | POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle); verwirft eine vorgemerkte Dosis |
-| POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat |
+| POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat (besser per WebSocket) |
+| GET | `/api/v1/ws` | WebSocket: Status-Push und Entlüften (siehe [WebSocket](#websocket-m4)) |
 | POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=20]` | Kalibrierlauf; danach `action=apply&measured_ml=…` oder `cancel` |
 | POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (oder `default`) |
 | POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter) |
@@ -288,7 +304,7 @@ Oszilloskop/Logikanalysator).
 | Verbuchung | Beim Start wird die volle Menge auf Tageslimit, Behälter und Gesamtzähler gebucht und gesichert; ein Abbruch schreibt die nicht geförderte Menge gut. Stromausfall während der Fahrt → Menge bleibt gebucht (sichere Seite). |
 | Tageslimit | hart pro Pumpe; Fenster Kalendertag oder rollierend 24 h (Engineering). Stunden-Töpfe über 26 h, angebrochene Stunden zählen voll. Ohne gültige Uhrzeit werden Pumpen mit Limit gesperrt. |
 | Kalibrierung | Lauf mit Zielmenge (Standard 20 ml), dann gemessene Menge eintragen. Plausibel: 0,25- bis 4-facher Nennwert. Die aufgefangene Menge wird vom Behälter abgezogen. |
-| Entlüften | läuft, solange der Button gehalten wird (Heartbeat alle 150 ms, Stopp nach 500 ms ohne Heartbeat, max. 60 s). Zählt nicht für Behälter/Limit, aber für die Schlauch-Laufzeit. |
+| Entlüften | läuft, solange der Button gehalten wird (Heartbeat alle 150 ms, Stopp nach 500 ms ohne Heartbeat oder sofort bei Abbruch der WebSocket-Verbindung, max. 60 s). Zählt nicht für Behälter/Limit, aber für die Schlauch-Laufzeit. |
 | Sperren | Betriebsart `disabled`, OTA-Update, Treiberfehler. |
 | Speicher | Einstellungen in NVS (`dose`). Laufzustand je Pumpe im EEPROM als A/B-Datensätze (Folgenummer + CRC32, ab 0x000), Rückfall auf NVS ohne EEPROM. |
 
@@ -366,6 +382,6 @@ Violett pulsierend (Kalibrierung/Entlüften).
 - [x] **M1** Hardware-Ebene: TMC2209-UART, Schritt-Takte (RMT + MCPWM/PCNT), RTC, Raw-Stepper-Test
 - [x] **M2** Dosier-Engine: Rückzug, Kalibrierung, Priming, Behälter, Tageslimit, Schlauch-Laufzeit; Mehrsprachigkeit (en/de)
 - [x] **M3** Zeitplan, Zeitumstellung, Kollisionsschutz, Boost, Verhalten nach Stromausfall (mit Host-Tests)
-- [ ] **M4** WLAN-Client, Captive Portal, Ersteinrichtung, Auth, REST, WebSocket
+- [x] **M4** WLAN-Client, Captive Portal, Ersteinrichtung, Auth, REST, WebSocket
 - [ ] **M5** WebUI (SPA, eingebettet ins Firmware-Image)
 - [ ] **M6** MQTT + Home-Assistant-Discovery, Historie, Backup, Engineering-Modus

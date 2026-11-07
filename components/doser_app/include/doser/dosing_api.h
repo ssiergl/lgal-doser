@@ -23,6 +23,14 @@
 //                                 &limit_mode=calendar_day|rolling_24h
 //
 // The engineering endpoints need the unlocked engineering area (auth.h, spec 11.1).
+//
+// WebSocket /api/v1/ws (lgal/ws.h):
+//   status push      "pumps":[{"pump","activity","phase","trigger"?,"target_ml"?,
+//                    "done_ml"?,"rpm"?,"prime_s"?,"remaining_ml","percent"?,
+//                    "used_today_ml","last"?}]
+//   {"type":"prime","pump":1..5,"action":"start|beat|stop","tier"?}
+//                    hold-to-run priming (dead man): beat every ~150 ms; a
+//                    missing beat or a closed connection stops the pump
 
 #include "esp_err.h"
 #include "esp_http_server.h"
