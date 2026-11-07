@@ -13,7 +13,8 @@ using lgal::Json;
 using lgal::JsonValue;
 
 namespace {
-constexpr const char* kParts[] = {"system", "network", "pumps", "engineering", "auth"};
+constexpr const char* kParts[] = {"system", "network", "pumps", "engineering", "auth", "mqtt"};
+constexpr int kPartCount = sizeof(kParts) / sizeof(kParts[0]);
 constexpr uint16_t kMaxRpm = 600;
 
 double ml(int64_t ul) { return static_cast<double>(ul) / 1000.0; }
@@ -153,6 +154,41 @@ bool parse_network(const JsonValue& v, Data* d, Error* err) {
     return true;
 }
 
+void write_mqtt(Json& j, const Data& d) {
+    j.obj("mqtt");
+    lgal::mqttcfg::write(j, d.mqtt);
+    if (d.mqtt_password) j.kv("password", d.mqtt.password);
+    j.kv("ca_pem", d.mqtt_ca).end();
+}
+
+bool parse_mqtt(const JsonValue& v, Data* d, Error* err) {
+    if (v.type() != lgal::JsonType::Object) return fail(err, "invalid_param", "mqtt");
+    const JsonValue ca = v["ca_pem"];
+    if (ca.valid()) {
+        std::string pem(lgal::mqttcfg::kCaMax, '\0');
+        if (ca.type() != lgal::JsonType::String || !ca.get(pem.data(), pem.size()))
+            return fail(err, "invalid_param", "mqtt.ca_pem");
+        pem.resize(std::strlen(pem.c_str()));
+        if (!pem.empty() && !lgal::mqttcfg::looks_like_pem(pem.data(), static_cast<unsigned>(pem.size())))
+            return fail(err, "invalid_certificate", "mqtt.ca_pem");
+        d->mqtt_ca = pem;
+    }
+    // without the password, keep the stored one only for the same broker and user
+    const lgal::mqttcfg::Config old = d->mqtt;
+    lgal::mqttcfg::Error me;
+    if (!lgal::mqttcfg::parse(v, !d->mqtt_ca.empty(), &d->mqtt, &me)) {
+        if (err) {
+            err->code = me.code ? me.code : "invalid_param";
+            std::snprintf(err->field, sizeof(err->field), "mqtt.%s", me.field ? me.field : "");
+        }
+        return false;
+    }
+    d->mqtt_password = v["password"].valid();
+    if (!d->mqtt_password && (std::strcmp(old.host, d->mqtt.host) != 0 || std::strcmp(old.username, d->mqtt.username) != 0))
+        d->mqtt.password[0] = 0;
+    return true;
+}
+
 bool parse_pump(const JsonValue& v, int i, int32_t today, Data* d, Error* err) {
     auto& p = d->pumps[i];
     char buf[24];
@@ -265,7 +301,7 @@ bool parse_engineering(const JsonValue& v, Data* d, Error* err) {
 }  // namespace
 
 const char* part_str(Part p) {
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < kPartCount; ++i)
         if (p == (1 << i)) return kParts[i];
     return "";
 }
@@ -276,7 +312,7 @@ bool parse_parts(const char* s, uint8_t* out) {
         const char* comma = std::strchr(s, ',');
         const size_t n = comma ? size_t(comma - s) : std::strlen(s);
         int found = -1;
-        for (int i = 0; i < 5; ++i)
+        for (int i = 0; i < kPartCount; ++i)
             if (std::strlen(kParts[i]) == n && std::strncmp(s, kParts[i], n) == 0) found = i;
         if (found < 0) return false;
         m = static_cast<uint8_t>(m | (1u << found));
@@ -294,6 +330,7 @@ void write(Json& j, const Data& d, const Meta& m, void (*write_auth)(Json&)) {
     if (d.parts & kNetwork) write_network(j, d);
     if (d.parts & kPumps) write_pumps(j, d);
     if (d.parts & kEngineering) write_engineering(j, d);
+    if (d.parts & kMqtt) write_mqtt(j, d);
     if ((d.parts & kAuth) && write_auth) {
         j.obj("auth");
         write_auth(j);
@@ -310,6 +347,7 @@ bool parse(const JsonValue& v, const Data& base, int32_t today, Data* out, Error
     *out = base;
     out->parts = 0;
     out->wlan_password = false;
+    out->mqtt_password = false;
     if (v["system"].valid()) {
         if (!parse_system(v["system"], out, err)) return false;
         out->parts |= kSystem;
@@ -325,6 +363,10 @@ bool parse(const JsonValue& v, const Data& base, int32_t today, Data* out, Error
     if (v["engineering"].valid()) {
         if (!parse_engineering(v["engineering"], out, err)) return false;
         out->parts |= kEngineering;
+    }
+    if (v["mqtt"].valid()) {
+        if (!parse_mqtt(v["mqtt"], out, err)) return false;
+        out->parts |= kMqtt;
     }
     if (v["auth"].valid()) out->parts |= kAuth;
     return true;

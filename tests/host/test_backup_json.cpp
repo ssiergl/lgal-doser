@@ -37,6 +37,15 @@ static void sample(bk::Data* d) {
     std::strcpy(d->net.ssid, "Reef");
     std::strcpy(d->net.password, "test-wlan-pw");
     d->wlan_password = true;
+    d->mqtt.enabled = true;
+    std::strcpy(d->mqtt.host, "broker.local");
+    d->mqtt.tls = lgal::mqttcfg::Tls::Custom;
+    std::strcpy(d->mqtt.username, "doser");
+    std::strcpy(d->mqtt.password, "test-mqtt-pw");
+    std::strcpy(d->mqtt.base_topic, "aq/doser");
+    d->mqtt.control = true;
+    d->mqtt_password = true;
+    d->mqtt_ca = "-----BEGIN CERTIFICATE-----\nMIIBtest\n-----END CERTIFICATE-----\n";
     std::strcpy(d->pumps[0].name, "KH \"Balling\"");
     d->pumps[0].mode = dose::Mode::Auto;
     d->pumps[0].speed_tier = 2;
@@ -109,6 +118,10 @@ static void test_round_trip() {
     CHECK(out.led.enabled && out.led.start_min == 22 * 60 + 30 && out.led.end_min == 360 && out.led.brightness == 10);
     CHECK(!out.net.lan.dhcp && out.net.lan.ip == d.net.lan.ip && out.net.lan.gateway == d.net.lan.gateway);
     CHECK(!std::strcmp(out.net.ssid, "Reef") && !std::strcmp(out.net.password, "test-wlan-pw") && out.wlan_password);
+    CHECK(out.mqtt.enabled && !std::strcmp(out.mqtt.host, "broker.local") && out.mqtt.tls == lgal::mqttcfg::Tls::Custom);
+    CHECK(!std::strcmp(out.mqtt.username, "doser") && !std::strcmp(out.mqtt.password, "test-mqtt-pw") && out.mqtt_password);
+    CHECK(!std::strcmp(out.mqtt.base_topic, "aq/doser") && out.mqtt.control && out.mqtt.discovery);
+    CHECK(out.mqtt_ca == d.mqtt_ca);
     bool pumps_ok = true;
     for (int i = 0; i < 5; ++i) {
         const auto &a = d.pumps[i], &b = out.pumps[i];
@@ -154,7 +167,29 @@ static void test_parts_and_secrets() {
     CHECK(parse_str(doc, base, &out, &err, &r));
     CHECK(!std::strcmp(out.net.ssid, "Reef") && out.net.password[0] == 0);
 
+    // MQTT without password: kept for the same broker and user only
+    sample(&d);
+    d.mqtt_password = false;
+    d.parts = bk::kMqtt;
+    doc = doc_of(d);
+    CHECK(doc.find("test-mqtt-pw") == std::string::npos && doc.find("\"ca_pem\":\"-----BEGIN") != std::string::npos);
+    base = bk::Data{};
+    std::strcpy(base.mqtt.host, "broker.local");
+    std::strcpy(base.mqtt.username, "doser");
+    std::strcpy(base.mqtt.password, "stored-mqtt");
+    CHECK(parse_str(doc, base, &out, &err, &r));
+    CHECK(out.parts == bk::kMqtt && !out.mqtt_password && !std::strcmp(out.mqtt.password, "stored-mqtt"));
+    std::strcpy(base.mqtt.username, "other");
+    CHECK(parse_str(doc, base, &out, &err, &r));
+    CHECK(!std::strcmp(out.mqtt.username, "doser") && out.mqtt.password[0] == 0);
+    // a document without certificate removes it
+    d.mqtt_ca.clear();
+    d.mqtt.tls = lgal::mqttcfg::Tls::Bundle;
+    base.mqtt_ca = "x";
+    CHECK(parse_str(doc_of(d), base, &out, &err, &r) && out.mqtt_ca.empty());
+
     uint8_t m = 0;
+    CHECK(bk::parse_parts("system,pumps,mqtt,auth", &m) && m == (bk::kSystem | bk::kPumps | bk::kMqtt | bk::kAuth));
     CHECK(bk::parse_parts("system,pumps,auth", &m) && m == (bk::kSystem | bk::kPumps | bk::kAuth));
     CHECK(bk::parse_parts("", &m) && m == 0);
     CHECK(!bk::parse_parts("system,", &m) && !bk::parse_parts("sys", &m) && !bk::parse_parts("pumps,foo", &m));
@@ -196,6 +231,11 @@ static void test_errors() {
     expect_error("\"run_ma\":700", "\"run_ma\":1600", "invalid_param", "engineering.hardware.pumps[1].run_ma");
     expect_error("\"hold_ma\":100", "\"hold_ma\":800", "invalid_param", "engineering.hardware.pumps[1].hold_ma");
     expect_error("\"microsteps\":32", "\"microsteps\":12", "invalid_param", "engineering.hardware.pumps[1].microsteps");
+    expect_error("\"host\":\"broker.local\"", "\"host\":\"bro ker\"", "invalid_param", "mqtt.host");
+    expect_error("\"base_topic\":\"aq/doser\"", "\"base_topic\":\"aq/#\"", "invalid_param", "mqtt.base_topic");
+    expect_error("MIIBtest\\n-----END CERTIFICATE-----", "MIIBtest", "invalid_certificate", "mqtt.ca_pem");
+    expect_error("\"ca_pem\":\"-----BEGIN CERTIFICATE-----\\nMIIBtest\\n-----END CERTIFICATE-----\\n\"", "\"ca_pem\":\"\"",
+                 "ca_missing", "mqtt.tls");
 }
 
 int main() {

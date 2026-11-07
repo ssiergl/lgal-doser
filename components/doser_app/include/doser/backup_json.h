@@ -13,12 +13,14 @@
 //    "engineering":{"dosing":{...},"scheduler":{"grid_min","max_delay_min"},
 //                   "hardware":{"pumps":[{"run_ma","hold_ma","microsteps",
 //                   "invert","full_steps","accel","v_start"}]}},
+//    "mqtt":{"enabled","host",...(see mqtt_config.h),"password"?,"ca_pem"},
 //    "auth":{"password","keys"}?}
-// Secrets (Wi-Fi password, admin password record, API key hashes) are only
-// included on request. Runtime state (container content, counters, history)
+// Secrets (Wi-Fi and MQTT password, admin password record, API key hashes)
+// are only included on request. Runtime state (container content, counters, history)
 // is not part of the backup.
 
 #include <cstdint>
+#include <string>
 
 #include "doser/dosing_core.h"
 #include "doser/motion.h"
@@ -26,6 +28,7 @@
 #include "lgal/json.h"
 #include "lgal/json_reader.h"
 #include "lgal/led_night.h"
+#include "lgal/mqtt_config.h"
 #include "lgal/net_config.h"
 
 namespace doser::backup {
@@ -39,8 +42,9 @@ enum Part : uint8_t {
     kPumps = 4,        // pump settings, schedules, lock rules
     kEngineering = 8,  // dosing/scheduler parameters, hardware
     kAuth = 16,        // admin password and API keys
+    kMqtt = 32,        // broker settings and CA certificate
 };
-constexpr uint8_t kAllParts = kSystem | kNetwork | kPumps | kEngineering | kAuth;
+constexpr uint8_t kAllParts = kSystem | kNetwork | kPumps | kEngineering | kAuth | kMqtt;
 const char* part_str(Part p);
 // "system,pumps" -> bits; false on an unknown name
 bool parse_parts(const char* s, uint8_t* out);
@@ -63,6 +67,10 @@ struct Data {
     dose::Engineering dosing;
     sched::Config scheduler;
     motion::PumpConfig hw[5];
+    // mqtt
+    lgal::mqttcfg::Config mqtt;
+    bool mqtt_password = false;  // mqtt.password is part of the document
+    std::string mqtt_ca;         // PEM, "" = none
 };
 
 struct Meta {

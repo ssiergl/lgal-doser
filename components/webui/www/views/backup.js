@@ -10,16 +10,17 @@ import { useMsg } from '../lib/ui.js';
 add({
   en: {
     'bk.title': 'Backup', 'bk.hint': 'All settings, pumps, schedules, lock times, service values and hardware parameters as one file. Container contents, counters and the history are not included.',
-    'bk.secrets': 'Include Wi-Fi password, admin password and API keys',
-    'bk.secrets.hint': 'Admin password and API keys are only included as hashes, the Wi-Fi password in plain text – keep the file safe.',
+    'bk.secrets': 'Include Wi-Fi and MQTT password, admin password and API keys',
+    'bk.secrets.hint': 'Admin password and API keys are only included as hashes, the Wi-Fi and MQTT passwords in plain text – keep the file safe.',
     'bk.export': 'Download backup', 'bk.exported': 'Backup downloaded',
     'bk.import': 'Restore from file …', 'bk.from': '{dev} · firmware {fw} · {d}', 'bk.parts': 'Restore these parts:',
     'bk.p.system': 'Language, time zone, time server, LED night mode', 'bk.p.network': 'Network (LAN/Wi-Fi)',
     'bk.p.pumps': 'Pumps, schedules and lock times', 'bk.p.engineering': 'Service values and hardware',
-    'bk.p.auth': 'Admin password and API keys',
+    'bk.p.auth': 'Admin password and API keys', 'bk.p.mqtt': 'MQTT / Home Assistant',
     'bk.w.network': 'The device may get another address and the page loses the connection.',
     'bk.w.auth': 'Everyone is signed out, including you; afterwards the password from the backup applies.',
     'bk.nopw': 'without Wi-Fi password – the stored one stays for the same network',
+    'bk.nopw.mqtt': 'without password – the stored one stays for the same broker and user',
     'bk.restore': 'Restore', 'bk.cancel': 'Cancel', 'bk.ask': 'Restore the chosen parts now? Current values are overwritten.',
     'bk.done': 'Restored: {list}.', 'bk.relogin': 'Please sign in again.',
     'bk.bad': 'This file is not a backup of this device type.', 'bk.newer': 'This backup is from a newer firmware and cannot be read.',
@@ -28,16 +29,17 @@ add({
   },
   de: {
     'bk.title': 'Datensicherung', 'bk.hint': 'Alle Einstellungen, Pumpen, Zeitpläne, Sperrzeiten, Servicewerte und Hardware-Parameter als eine Datei. Behälterinhalt, Zähler und Verlauf gehören nicht dazu.',
-    'bk.secrets': 'Mit WLAN-Passwort, Admin-Passwort und API-Keys',
-    'bk.secrets.hint': 'Admin-Passwort und API-Keys stehen nur als Hash drin, das WLAN-Passwort im Klartext – Datei sicher aufbewahren.',
+    'bk.secrets': 'Mit WLAN- und MQTT-Passwort, Admin-Passwort und API-Keys',
+    'bk.secrets.hint': 'Admin-Passwort und API-Keys stehen nur als Hash drin, WLAN- und MQTT-Passwort im Klartext – Datei sicher aufbewahren.',
     'bk.export': 'Sicherung herunterladen', 'bk.exported': 'Sicherung heruntergeladen',
     'bk.import': 'Aus Datei wiederherstellen …', 'bk.from': '{dev} · Firmware {fw} · {d}', 'bk.parts': 'Diese Teile wiederherstellen:',
     'bk.p.system': 'Sprache, Zeitzone, Zeitserver, LED-Nachtmodus', 'bk.p.network': 'Netzwerk (LAN/WLAN)',
     'bk.p.pumps': 'Pumpen, Zeitpläne und Sperrzeiten', 'bk.p.engineering': 'Servicewerte und Hardware',
-    'bk.p.auth': 'Admin-Passwort und API-Keys',
+    'bk.p.auth': 'Admin-Passwort und API-Keys', 'bk.p.mqtt': 'MQTT / Home Assistant',
     'bk.w.network': 'Das Gerät bekommt eventuell eine andere Adresse und die Seite verliert die Verbindung.',
     'bk.w.auth': 'Alle werden abgemeldet, auch du; danach gilt das Passwort aus der Sicherung.',
     'bk.nopw': 'ohne WLAN-Passwort – für dasselbe Netz bleibt das gespeicherte',
+    'bk.nopw.mqtt': 'ohne Passwort – für denselben Broker und Benutzer bleibt das gespeicherte',
     'bk.restore': 'Wiederherstellen', 'bk.cancel': 'Abbrechen', 'bk.ask': 'Die gewählten Teile jetzt wiederherstellen? Aktuelle Werte werden überschrieben.',
     'bk.done': 'Wiederhergestellt: {list}.', 'bk.relogin': 'Bitte neu anmelden.',
     'bk.bad': 'Diese Datei ist keine Sicherung dieses Gerätetyps.', 'bk.newer': 'Diese Sicherung stammt von einer neueren Firmware und kann nicht gelesen werden.',
@@ -47,7 +49,7 @@ add({
 });
 
 const kFormat = 'lgal-doser-backup';
-const kParts = ['system', 'pumps', 'engineering', 'network', 'auth'];
+const kParts = ['system', 'pumps', 'engineering', 'mqtt', 'network', 'auth'];
 const kRisky = ['network', 'auth'];  // not chosen by default
 const partName = p => t('bk.p.' + p);
 const listOf = a => (a && a.length ? a.map(partName).join(', ') : '–');
@@ -132,7 +134,7 @@ export function BackupSection() {
       <p class="small">${t('bk.from', { dev: doc.device || '?', fw: doc.firmware || '?', d: when })}</p>
       <p class="small mut">${t('bk.parts')}</p>
       ${present.map(p => html`<label class="check"><input type="checkbox" checked=${pick.includes(p)} onChange=${() => toggle(p)}/>
-        <span>${partName(p)}${p === 'network' && doc.network && doc.network.wlan_password === undefined ? html` <span class="small mut">(${t('bk.nopw')})</span>` : ''}</span></label>
+        <span>${partName(p)}${p === 'network' && doc.network && doc.network.wlan_password === undefined ? html` <span class="small mut">(${t('bk.nopw')})</span>` : ''}${p === 'mqtt' && doc.mqtt && doc.mqtt.username && doc.mqtt.password === undefined ? html` <span class="small mut">(${t('bk.nopw.mqtt')})</span>` : ''}</span></label>
         ${pick.includes(p) && kRisky.includes(p) && html`<p class="small warn">${t('bk.w.' + p)}</p>`}`)}
       <div class="row savebar">
         <button type="button" disabled=${busy || !pick.length} onClick=${restore}>${t('bk.restore')}</button>
