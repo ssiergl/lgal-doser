@@ -1,6 +1,7 @@
 // Detail view of one pump.
 import { html } from '../lib/html.js';
 import { add, t } from '../lib/i18n.js';
+import { pumpName } from '../lib/pumps.js';
 import { useStore } from '../lib/store.js';
 
 add({
@@ -14,5 +15,5 @@ export function PumpView({ pump }) {
   if (!s.pumps) return html`<div class="empty">…</div>`;
   if (!p) return html`<div class="empty">${t('pump.none', { n: pump })}</div>`;
   return html`<div class="page-head"><a href="#/">${t('back')}</a></div>
-    <h1>${p.name || t('pump', { n: p.pump })}</h1>`;
+    <h1>${pumpName(p)}</h1>`;
 }

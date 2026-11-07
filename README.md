@@ -194,6 +194,7 @@ nicht, `idf.py build` reicht.
 | Thema | Verhalten |
 |---|---|
 | Seiten | Übersicht, Pumpe (Detail), Zeitplan, Einstellungen. Adressen als Hash-Routen, z. B. `/#/pump/3`. |
+| Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
