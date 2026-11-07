@@ -40,6 +40,10 @@ static void test_dose_and_retract() {
     auto s = dosing::status(0);
     CHECK_STR(s.last_result, "success");
     CHECK(s.last_done_ul == 1000 && s.state.retracted_mrev == 250 && s.state.total_ul == 1000);
+    // history: one dose entry, manual, success
+    auto* ev = sim::last_event(history::Kind::Dose, 1);
+    CHECK(sim::events.size() == 1 && ev && ev->source == history::Source::Manual);
+    CHECK(ev && std::strcmp(history::code_str(ev->code), "success") == 0 && ev->target_ul == 1000 && ev->done_ul == 1000);
     CHECK(sim::stored[0].retracted_mrev == 250);
     // 2. Second dose: compensate retraction first, then pump, then retract
     m.moves.clear();
@@ -62,6 +66,8 @@ static void test_abort_and_container() {
     const int p = 1;
     CHECK(dosing::set_container(p, -1, 500000) == nullptr);  // new container 500 ml, full
     CHECK(dosing::status(p).state.remaining_ul == 500000);
+    auto* c = sim::last_event(history::Kind::Container, 2);
+    CHECK(c && c->value == 500000 && c->target_ul == 500000 && std::strcmp(history::code_str(c->code), "refilled") == 0);
     CHECK(dosing::dose(p, 2000, dosing::Trigger::Api) == nullptr);
     CHECK(dosing::status(p).state.remaining_ul == 498000);  // booked at once
     CHECK(sim::run_until_idle(p));
@@ -80,6 +86,9 @@ static void test_abort_and_container() {
     CHECK(s.state.remaining_ul == int32_t(498000 - s.last_done_ul));
     CHECK(s.state.retracted_mrev == 250);  // retraction executed anyway
     CHECK(sim::motor[p].moves.back() == -int32_t(kRetract));
+    auto* d = sim::last_event(history::Kind::Dose, 2);
+    CHECK(d && d->source == history::Source::Api && std::strcmp(history::code_str(d->code), "aborted") == 0);
+    CHECK(d && d->target_ul == 20000 && d->done_ul == s.last_done_ul);
     // changing the container while moving is locked
     CHECK(dosing::dose(p, 1000, dosing::Trigger::Api) == nullptr);
     CHECK_STR(dosing::set_container(p, 100000, -1), "pump_busy");
@@ -192,6 +201,10 @@ static void test_calibration() {
     CHECK(dosing::calibrate_apply(p, 18500) == nullptr);
     s = dosing::status(p);
     CHECK(!s.calib_pending && std::fabs(s.settings.ul_per_rev - 342.25f) < 0.1f);
+    auto* run = sim::last_event(history::Kind::CalibRun, 1);
+    auto* cal = sim::last_event(history::Kind::Calibration, 1);
+    CHECK(run && run->target_ul == 20000 && std::strcmp(history::code_str(run->code), "success") == 0);
+    CHECK(cal && cal->target_ul == 20000 && cal->done_ul == 18500 && cal->value >= 342150 && cal->value <= 342350);
     // next dose uses the new value
     m.moves.clear();
     CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
@@ -204,6 +217,8 @@ static void test_calibration() {
     CHECK(sim::run_until_idle(p));
     CHECK(!dosing::status(p).calib_pending);
     CHECK_STR(dosing::status(p).last_result, "aborted");
+    run = sim::last_event(history::Kind::CalibRun, 1);
+    CHECK(run && std::strcmp(history::code_str(run->code), "aborted") == 0 && run->done_ul < 5000);
 }
 
 static void test_fault() {

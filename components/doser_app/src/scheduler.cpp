@@ -3,6 +3,7 @@
 #include <cinttypes>
 #include <cstring>
 
+#include "doser/history.h"
 #include "doser/schedule_store.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -76,6 +77,18 @@ int32_t local_day(int64_t utc) { return sched::day_of(tz::to_local(s_zone, utc))
 
 void save(int p) { schedule_store::save_run(p, s_rt[p].run); }
 
+void log_skip(int p, const char* reason, uint32_t ul, int count, int64_t now) {
+    history::Event e;
+    e.utc = static_cast<uint32_t>(now);
+    e.kind = history::Kind::Skip;
+    e.pump = static_cast<uint8_t>(p + 1);
+    e.source = history::Source::Schedule;
+    e.code = history::code_of(reason);
+    e.target_ul = ul;
+    e.value = count;
+    history::record(e);
+}
+
 void skip(int p, const char* reason, const sched::Due& d, int64_t now) {
     PumpRt& r = s_rt[p];
     r.run.cursor = sched::cursor_of(d);
@@ -83,6 +96,7 @@ void skip(int p, const char* reason, const sched::Due& d, int64_t now) {
     r.last_skip_reason = reason;
     r.last_skip_at = now;
     save(p);
+    log_skip(p, reason, d.ul, 1, now);
     ESP_LOGW(TAG, "Pump %d: slot %02u:%02u (%" PRIu32 " ul) skipped: %s", p + 1, d.minute / 60, d.minute % 60, d.ul,
              reason);
 }
@@ -186,6 +200,7 @@ void process(int p, int64_t now) {
             r.last_skip_reason = "missed";
             r.last_skip_at = now;
             save(p);
+            log_skip(p, "missed", 0, n, now);
             ESP_LOGW(TAG, "Pump %d: %d missed slots skipped", p + 1, n);
         }
     }

@@ -72,6 +72,7 @@ $CXX \
     -I components/lgal_core/include \
     tests/host/test_dosing.cpp \
     components/doser_app/src/dosing.cpp \
+    components/doser_app/src/history_core.cpp \
     components/doser_app/src/dosing_core.cpp \
     components/doser_app/src/schedule_core.cpp \
     components/doser_hal/src/posix_tz.cpp \
@@ -114,6 +115,7 @@ $CXX \
     -I components/lgal_core/include \
     tests/host/test_scheduler.cpp \
     components/doser_app/src/scheduler.cpp \
+    components/doser_app/src/history_core.cpp \
     components/doser_app/src/schedule_core.cpp \
     components/doser_app/src/dosing.cpp \
     components/doser_app/src/dosing_core.cpp \
@@ -130,3 +132,11 @@ $CXX \
     components/doser_app/src/alarms.cpp \
     -o "$OUT/alarms"
 "$OUT/alarms"
+
+echo
+$CXX \
+    -I components/doser_app/include \
+    tests/host/test_history.cpp \
+    components/doser_app/src/history_core.cpp \
+    -o "$OUT/history"
+"$OUT/history"

@@ -5,6 +5,7 @@
 #include <ctime>
 
 #include "doser/dosing_store.h"
+#include "doser/history.h"
 #include "doser/motion.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -72,6 +73,23 @@ struct Guard {
 };
 
 bool valid_pump(int i) { return i >= 0 && i < kN && s_mx; }
+
+void log_event(history::Kind kind, int i, Trigger trigger, const char* code, uint32_t target_ul, uint32_t done_ul,
+               int32_t value = 0) {
+    history::Event e;
+    e.kind = kind;
+    e.pump = static_cast<uint8_t>(i + 1);
+    e.source = static_cast<history::Source>(static_cast<uint8_t>(trigger) + 1);
+    e.code = history::code_of(code);
+    e.target_ul = target_ul;
+    e.done_ul = done_ul;
+    e.value = value;
+    history::record(e);
+}
+
+void log_setting(history::Kind kind, int i, const char* code, uint32_t target_ul, uint32_t done_ul, int32_t value) {
+    log_event(kind, i, Trigger::Manual, code, target_ul, done_ul, value);
+}
 
 bool time_valid() { return lgal::timesync::status().valid; }
 int64_t now_utc() { return lgal::timesync::status().utc; }
@@ -173,6 +191,10 @@ void finish(int i, bool fault) {
     p.last_at = now_utc();
     ESP_LOGI(TAG, "Pump %d: %s %s, %" PRIu32 " of %" PRIu32 " ul", i + 1, activity_str(j.act), result, j.done_ul,
              j.target_ul);
+    const auto kind = j.act == Activity::Priming       ? history::Kind::Prime
+                      : j.act == Activity::Calibrating ? history::Kind::CalibRun
+                                                       : history::Kind::Dose;
+    log_event(kind, i, j.trigger, result, j.target_ul, j.done_ul);
     j = Job{};
 }
 
@@ -472,6 +494,8 @@ const char* calibrate_apply(int pump, uint32_t measured_ul) {
         p.st.remaining_ul -= static_cast<int32_t>(measured_ul);
         dosing_store::save_state(pump, p.st);
     }
+    log_setting(history::Kind::Calibration, pump, "set", p.calib_target, measured_ul,
+                static_cast<int32_t>(r.ul_per_rev * 1000.0f + 0.5f));
     ESP_LOGI(TAG, "Pump %d: calibrated %.1f ul/rev (%.2f ml/min at %u rpm)", pump + 1, r.ul_per_rev,
              dose::flow_ml_min(s_eng.tier_rpm[p.set.speed_tier], r.ul_per_rev), s_eng.tier_rpm[p.set.speed_tier]);
     return nullptr;
@@ -549,6 +573,8 @@ const char* set_container(int pump, int64_t remaining_ul, int64_t capacity_ul) {
     if (remaining_ul >= 0) p.st.remaining_ul = static_cast<int32_t>(remaining_ul);
     else if (capacity_ul >= 0) p.st.remaining_ul = static_cast<int32_t>(cap);  // new container: full
     dosing_store::save_state(pump, p.st);
+    log_setting(history::Kind::Container, pump, remaining_ul < 0 ? "refilled" : "set", p.set.capacity_ul, 0,
+                p.st.remaining_ul);
     ESP_LOGI(TAG, "Pump %d: container %" PRId32 " of %" PRIu32 " ul", pump + 1, p.st.remaining_ul, p.set.capacity_ul);
     return nullptr;
 }
@@ -558,6 +584,7 @@ const char* set_tube_hours(int pump, uint32_t hours) {
     Guard g;
     s_p[pump].st.tube_ms = uint64_t(hours) * 3600000ULL;
     dosing_store::save_state(pump, s_p[pump].st);
+    log_setting(history::Kind::Tube, pump, "set", 0, 0, static_cast<int32_t>(hours));
     return nullptr;
 }
 

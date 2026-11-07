@@ -37,4 +37,13 @@ struct Output {
 
 Output evaluate(const Input& in);
 
+// Conditions for the history: an entry is written when one starts. Faults
+// and the daily limit are already logged as dose result / skipped slot.
+enum class Cond : uint8_t { ContainerLow, TubeWorn };
+constexpr int kConds = 2;
+constexpr int kRtcBit = 15;  // device: clock module not answering
+inline uint16_t cond_bit(int pump, Cond c) { return uint16_t(1u << (pump * kConds + static_cast<int>(c))); }
+uint16_t conditions(const Input& in);
+const char* cond_code(Cond c);  // history code string
+
 }  // namespace doser::alarms

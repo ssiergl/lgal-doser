@@ -8,6 +8,7 @@
 #include <ctime>
 
 #include "doser/alarms.h"
+#include "doser/history.h"
 #include "doser/dosing.h"
 #include "doser/dosing_api.h"
 #include "doser/hwconfig.h"
@@ -81,6 +82,35 @@ doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
     return in;
 }
 
+// History entry when an alarm condition starts. Conditions already present at
+// boot were logged before the restart; without a valid clock record() drops.
+void log_alarm_onsets(uint16_t now) {
+    using doser::alarms::Cond;
+    static bool first = true;
+    static uint16_t prev = 0;
+    if (first) {
+        first = false;
+        prev = now;
+        return;
+    }
+    const uint16_t started = now & ~prev;
+    prev = now;
+    if (!started) return;
+    doser::history::Event e;
+    e.kind = doser::history::Kind::Alarm;
+    if (started & (1u << doser::alarms::kRtcBit)) {
+        e.code = doser::history::code_of("rtc_fault");
+        doser::history::record(e);
+    }
+    for (int i = 0; i < 5; ++i)
+        for (int c = 0; c < doser::alarms::kConds; ++c) {
+            if (!(started & doser::alarms::cond_bit(i, static_cast<Cond>(c)))) continue;
+            e.pump = static_cast<uint8_t>(i + 1);
+            e.code = doser::history::code_of(doser::alarms::cond_code(static_cast<Cond>(c)));
+            doser::history::record(e);
+        }
+}
+
 void update_status_led() {
     using lgal::led::State;
     const auto ns = lgal::net::status();
@@ -88,7 +118,11 @@ void update_status_led() {
     // alarms every 2 s (the schedule status computes the remaining days)
     static doser::alarms::Output al;
     static int tick = 0;
-    if (tick++ % 4 == 0) al = doser::alarms::evaluate(alarm_input(ts));
+    if (tick++ % 4 == 0) {
+        const auto in = alarm_input(ts);
+        al = doser::alarms::evaluate(in);
+        log_alarm_onsets(doser::alarms::conditions(in));
+    }
     lgal::led::set(State::Critical, al.critical);
     lgal::led::set(State::SetupAp, ns.ap_active);
     lgal::led::set(State::IdleLan, ns.active == lgal::net::Iface::Lan);
@@ -156,6 +190,8 @@ extern "C" void app_main(void) {
     lgal::device::init();
     lgal::auth::init();
     print_banner();
+    // event history on the LittleFS partition
+    if (doser::history::init() != ESP_OK) ESP_LOGE(TAG, "History not available");
 
     // 4. Pumps, RTC (drivers stay off until a move starts)
     init_hardware();
