@@ -27,6 +27,7 @@
 
 #include "esp_err.h"
 #include "esp_http_server.h"
+#include "lgal/auth_core.h"
 
 namespace lgal::auth {
 
@@ -38,5 +39,16 @@ enum class Result { Ok, Unauthorized, EngineeringLocked, Throttled };
 Result check(httpd_req_t* req, bool engineering);
 
 bool password_set();
+
+// Identity of an authenticated request, kept by long-lived connections
+// (WebSocket) and checked again later: logout, a password change or a
+// deleted API key end it.
+struct Principal {
+    char session[kTokenChars + 1] = "";  // session token, or
+    int key_slot = -1;                   // API key slot
+    uint8_t key_hash[32] = {};
+};
+bool principal(httpd_req_t* req, Principal* out);  // false = not logged in
+bool still_valid(const Principal& p);
 
 }  // namespace lgal::auth

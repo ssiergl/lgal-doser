@@ -56,6 +56,14 @@ $CXX \
 "$OUT/dns"
 
 echo
+$CXX \
+    -I components/lgal_core/include \
+    tests/host/test_ws.cpp \
+    components/lgal_core/src/ws_core.cpp \
+    -o "$OUT/ws"
+"$OUT/ws"
+
+echo
 # Dosing engine unchanged against simulated motor/storage (stubs first)
 $CXX \
     -I tests/host/stubs \

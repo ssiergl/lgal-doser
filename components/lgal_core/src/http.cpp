@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "lgal/auth.h"
 #include "lgal/json.h"
+#include "lgal/ws.h"
 #include "lwip/sockets.h"
 
 namespace lgal::http {
@@ -58,6 +59,12 @@ bool deny(httpd_req_t* req, auth::Result r) {
     }
     return false;
 }
+// Every closed connection (also LRU purge): WebSocket clients are forgotten
+// (priming of that client stops). The hook has to close the socket itself.
+void on_close(httpd_handle_t, int fd) {
+    ws::socket_closed(fd);
+    close(fd);
+}
 }  // namespace
 
 esp_err_t start() {
@@ -70,6 +77,7 @@ esp_err_t start() {
     cfg.core_id = 0;          // network core; core 1 later belongs to the dosing engine
     cfg.recv_wait_timeout = 15;
     cfg.send_wait_timeout = 15;
+    cfg.close_fn = on_close;
     esp_err_t err = httpd_start(&s_server, &cfg);
     if (err == ESP_OK) ESP_LOGI(TAG, "HTTP server running on port 80");
     return err;

@@ -388,6 +388,33 @@ esp_err_t init() {
     return ESP_OK;
 }
 
+bool principal(httpd_req_t* req, Principal* out) {
+    if (!s_mx || !out) return false;
+    *out = Principal{};
+    char cookies[256], token[kTokenChars + 2];
+    const int64_t now = now_s();
+    Guard g;
+    if (header(req, "Cookie", cookies, sizeof(cookies)) && cookie_value(cookies, kCookie, token, sizeof(token)) &&
+        s_sessions.find(token, now) >= 0) {
+        std::strcpy(out->session, token);
+        return true;
+    }
+    const int k = key_of(req);
+    if (k < 0) return false;
+    out->key_slot = k;
+    std::memcpy(out->key_hash, s_keys.keys[k].hash, sizeof(out->key_hash));
+    return true;
+}
+
+bool still_valid(const Principal& p) {
+    if (!s_mx) return false;
+    Guard g;
+    if (p.session[0]) return s_sessions.find(p.session, now_s()) >= 0;
+    if (p.key_slot < 0 || p.key_slot >= kMaxKeys) return false;
+    const ApiKey& k = s_keys.keys[p.key_slot];
+    return k.name[0] && std::memcmp(k.hash, p.key_hash, sizeof(p.key_hash)) == 0;
+}
+
 bool password_set() {
     if (!s_mx) return false;
     Guard g;
