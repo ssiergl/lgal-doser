@@ -37,6 +37,7 @@ select.lang{width:auto}
 <h1><span data-i18n="title"></span> <span class="mut" style="font-size:14px" data-i18n="subtitle"></span></h1>
 <div class="row" style="align-items:center;margin-top:0">
 <span id="clock" class="chip">…</span>
+<span id="live" class="chip"></span>
 <span style="flex:1"></span>
 <button class="stop" id="stopall" data-i18n="btn.stopall"></button>
 <a href="/hwtest"><button class="sec" data-i18n="btn.hwtest"></button></a>
@@ -105,7 +106,7 @@ en:{
  'eng.tier1':'Slow rpm','eng.tier2':'Normal rpm','eng.tier3':'Fast rpm','eng.prime_max':'Priming max. s',
  'eng.prime_hb':'Priming heartbeat ms','eng.tube':'Tube lifetime h','eng.limit_mode':'Daily limit window',
  'lm.calendar_day':'calendar day','lm.rolling_24h':'rolling 24 h','eng.ok':'Engineering parameters saved',
- 'time.none':'no valid time','conn':'Connection: {e}',
+ 'time.none':'no valid time','conn':'Connection: {e}','live.on':'Live','live.off':'Polling',
  'footnote':'Amounts are booked when a run starts; a stopped run credits back what was not pumped. Priming is not counted against the container or the daily limit.',
  'err.pump_busy':'Pump is busy','err.pump_disabled':'Pump is disabled','err.pump_manual_only':'Pump is set to manual only',
  'err.locked':'Pumps are locked (update in progress)','err.daily_limit':'Daily limit would be exceeded',
@@ -146,7 +147,7 @@ de:{
  'eng.tier1':'Langsam U/min','eng.tier2':'Normal U/min','eng.tier3':'Schnell U/min','eng.prime_max':'Entlüften max. s',
  'eng.prime_hb':'Entlüften Heartbeat ms','eng.tube':'Schlauch-Lebensdauer h','eng.limit_mode':'Fenster Tageslimit',
  'lm.calendar_day':'Kalendertag','lm.rolling_24h':'rollierend 24 h','eng.ok':'Engineering-Parameter gespeichert',
- 'time.none':'keine gültige Zeit','conn':'Verbindung: {e}',
+ 'time.none':'keine gültige Zeit','conn':'Verbindung: {e}','live.on':'Live','live.off':'Abfrage',
  'footnote':'Mengen werden beim Start verbucht; ein gestoppter Lauf schreibt die nicht geförderte Menge gut. Entlüften zählt weder für den Behälter noch für das Tageslimit.',
  'err.pump_busy':'Pumpe ist beschäftigt','err.pump_disabled':'Pumpe ist deaktiviert','err.pump_manual_only':'Pumpe steht auf „nur manuell“',
  'err.locked':'Pumpen gesperrt (Update läuft)','err.daily_limit':'Tageslimit würde überschritten',
@@ -211,12 +212,15 @@ function buildPump(p){
   const done=(t)=>()=>msg('m'+n,t,true),err=e=>msg('m'+n,e.message);
   $('ds'+n).onclick=()=>{const ml=$('ml'+n).value;api('POST','/api/v1/pumps/dose?'+q({pump:n,ml,tier:$('tr'+n).value})).then(()=>msg('m'+n,t('dose.ok',{ml}),true)).catch(err)};
   $('sp'+n).onclick=()=>api('POST','/api/v1/pumps/stop?pump='+n).then(done(t('stopping'))).catch(err);
-  // Priming: dead-man switch – start on press, heartbeat every 150 ms, stop on release
-  let hb=null;const pr=$('pr'+n);
-  const stopPrime=()=>{if(!hb)return;clearInterval(hb);hb=null;api('POST','/api/v1/pumps/prime?'+q({pump:n,action:'stop'})).catch(()=>{})};
-  pr.onpointerdown=e=>{e.preventDefault();pr.setPointerCapture(e.pointerId);if(hb)return;
-    api('POST','/api/v1/pumps/prime?'+q({pump:n,action:'start',tier:$('tr'+n).value})).then(()=>{
-      if(hb)return;hb=setInterval(()=>api('POST','/api/v1/pumps/prime?'+q({pump:n,action:'beat'})).catch(e=>{clearInterval(hb);hb=null;err(e)}),150)}).catch(err)};
+  // Priming: dead-man switch – start on press, heartbeat every 150 ms, stop on release.
+  // Over the WebSocket if open (a lost connection stops the pump at once), else REST.
+  let hb=null,held=false;const pr=$('pr'+n);
+  const prime=action=>wsOpen()?wsCall({type:'prime',pump:n,action,tier:action==='start'?+$('tr'+n).value:undefined})
+    :api('POST','/api/v1/pumps/prime?'+q({pump:n,action,tier:action==='start'?$('tr'+n).value:undefined}));
+  const stopPrime=()=>{held=false;if(!hb)return;clearInterval(hb);hb=null;prime('stop').catch(()=>{})};
+  pr.onpointerdown=e=>{e.preventDefault();pr.setPointerCapture(e.pointerId);if(held)return;held=true;
+    prime('start').then(()=>{if(!held){prime('stop').catch(()=>{});return}
+      if(hb)return;hb=setInterval(()=>prime('beat').catch(e=>{clearInterval(hb);hb=null;err(e)}),150)}).catch(e=>{held=false;err(e)})};
   pr.onpointerup=pr.onpointercancel=pr.onlostpointercapture=stopPrime;
   $('cs'+n).onclick=()=>api('POST','/api/v1/pumps/calibrate?'+q({pump:n,action:'start',ml:$('ct'+n).value||undefined,tier:$('tr'+n).value})).then(done(t('cal.started'))).catch(err);
   $('ca'+n).onclick=()=>api('POST','/api/v1/pumps/calibrate?'+q({pump:n,action:'apply',measured_ml:$('cm'+n).value})).then(()=>{$('cm'+n).value='';msg('m'+n,t('cal.ok'),true)}).catch(err);
@@ -280,14 +284,41 @@ function render(){
   const d=S.pumps[0].daily;$('clock').textContent=d.time_valid?new Date().toLocaleString(i18n.lang):t('time.none');$('clock').className='chip '+(d.time_valid?'':'err');
 }
 async function poll(){try{S=await api('GET','/api/v1/pumps');render()}catch(e){$('clock').textContent=t('conn',{e:e.message});$('clock').className='chip err'}}
+// WebSocket /api/v1/ws: live values pushed on every change; full status by REST
+// every 10 s (every 1 s while the WebSocket is down) and after a run ends.
+let ws=null,wsId=0,lastPoll=0;const wsWait={};
+const wsOpen=()=>ws&&ws.readyState===1;
+function wsCall(m){return new Promise((ok,fail)=>{m.id=++wsId;wsWait[m.id]={ok,fail};ws.send(JSON.stringify(m));
+  setTimeout(()=>{if(wsWait[m.id]){delete wsWait[m.id];fail(new Error(t('conn',{e:'timeout'})))}},3000)})}
+function liveChip(){$('live').textContent=t(wsOpen()?'live.on':'live.off');$('live').className='chip '+(wsOpen()?'ok':'warn')}
+function onLive(m){
+  if(!S)return;let ended=false;
+  m.pumps.forEach(l=>{const p=S.pumps[l.pump-1];if(!p)return;
+    if(p.activity!=='idle'&&l.activity==='idle')ended=true;
+    Object.assign(p,{activity:l.activity,phase:l.phase,trigger:l.trigger,target_ml:l.target_ml,done_ml:l.done_ml,rpm:l.rpm,prime_s:l.prime_s});
+    p.container.remaining_ml=l.remaining_ml;if(l.percent!==undefined)p.container.percent=l.percent;
+    p.daily.used_ml=l.used_today_ml;if(l.last)Object.assign(p.last,l.last)});
+  S.pumps[0].daily.time_valid=m.time_valid;
+  render();if(ended)poll();
+}
+function connect(){
+  ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/v1/ws');
+  ws.onopen=liveChip;
+  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return}
+    if(m.type==='status')return onLive(m);
+    const w=wsWait[m.id];if(!w)return;delete wsWait[m.id];
+    m.ok?w.ok(m):w.fail(new Error(i18n.error({error:{code:m.error}},409)))};
+  ws.onclose=()=>{ws=null;liveChip();Object.keys(wsWait).forEach(k=>{wsWait[k].fail(new Error(t('conn',{e:'closed'})));delete wsWait[k]});setTimeout(connect,2000)};
+}
 async function loadEng(){try{E=await api('GET','/api/v1/engineering/dosing');renderEng();if(S)S.pumps.forEach(fillForms)}catch(e){msg('emsg',e.message)}}
 $('stopall').onclick=()=>api('POST','/api/v1/pumps/stop?pump=0');
 $('e_save').onclick=()=>api('POST','/api/v1/engineering/dosing?'+q({retract_rev:$('e_retract').value,calib_ml:$('e_calib').value,min_dose_ml:$('e_min').value,
   tier1_rpm:$('e_t0').value,tier2_rpm:$('e_t1').value,tier3_rpm:$('e_t2').value,prime_max_s:$('e_pmax').value,prime_heartbeat_ms:$('e_phb').value,
   tube_life_h:$('e_tube').value,limit_mode:$('e_lm').value})).then(j=>{E=j;renderEng();msg('emsg',t('eng.ok'),true)}).catch(e=>msg('emsg',e.message));
-i18n.onChange(render);
+i18n.onChange(()=>{render();liveChip()});
 i18n.init('lang');
-loadEng();poll();setInterval(poll,1000);
+liveChip();loadEng();poll();connect();
+setInterval(()=>{const now=Date.now();if(now-lastPoll>=(wsOpen()?10000:1000)){lastPoll=now;poll()}},500);
 </script>
 </body>
 </html>

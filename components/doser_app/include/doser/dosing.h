@@ -65,6 +65,8 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier = -1, int64_t*
 // Priming ("fill tube"): runs as long as beat() arrives in time
 const char* prime_start(int pump, int tier = -1);
 const char* prime_beat(int pump);
+// Ends priming only (other activities keep running); "not_priming" otherwise
+const char* prime_stop(int pump);
 
 // Calibration: pumps the target amount (0 = engineering default) with the
 // current calibration value; then apply or discard the measured amount.

@@ -7,8 +7,10 @@
 #include "doser/dosing.h"
 #include "doser/schedule_json.h"
 #include "doser/scheduler.h"
+#include "esp_log.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
+#include "lgal/ws.h"
 
 extern const char dosing_html_start[] asm("_binary_dosing_html_start");
 extern const char dosing_html_end[] asm("_binary_dosing_html_end");
@@ -17,6 +19,7 @@ namespace doser::dosing_api {
 
 namespace {
 using lgal::Json;
+using lgal::JsonValue;
 namespace http = lgal::http;
 
 struct ErrInfo {
@@ -370,6 +373,83 @@ esp_err_t post_engineering(httpd_req_t* req) {
     if (const char* err = dosing::set_engineering(e)) return fail(req, err);
     return get_engineering(req);
 }
+
+// ---------------------------------------------------------------------------
+// WebSocket (lgal/ws.h)
+
+// Live part of every pump for the status push: only what changes during
+// operation, the full picture comes from GET /api/v1/pumps
+void write_live(Json& j) {
+    j.arr("pumps");
+    for (int i = 0; i < 5; ++i) {
+        const auto s = dosing::status(i);
+        const auto& set = s.settings;
+        j.obj()
+            .kv("pump", i + 1)
+            .kv("activity", dosing::activity_str(s.activity))
+            .kv("phase", dosing::phase_str(s.phase));
+        if (s.activity != dosing::Activity::Idle) {
+            j.kv("trigger", dosing::trigger_str(s.trigger))
+                .kv("target_ml", ml(s.target_ul), 3)
+                .kv("done_ml", ml(s.done_ul), 3)
+                .kv("rpm", static_cast<double>(s.rpm), 1);
+            if (s.activity == dosing::Activity::Priming) j.kv("prime_s", s.prime_ms / 1000.0, 1);
+        }
+        const int32_t rem = s.state.remaining_ul > 0 ? s.state.remaining_ul : 0;
+        j.kv("remaining_ml", ml(rem), 2);
+        if (set.capacity_ul) j.kv("percent", 100.0 * rem / set.capacity_ul, 1);
+        j.kv("used_today_ml", ml(s.used_today_ul), 3);
+        if (s.last_result) {
+            j.obj("last")
+                .kv("result", s.last_result)
+                .kv("activity", dosing::activity_str(s.last_activity))
+                .kv("done_ml", ml(s.last_done_ul), 3)
+                .kv("at", s.last_at)
+                .end();
+        }
+        j.end();
+    }
+    j.end();
+}
+
+// Client that started priming per pump (-1 = none / REST). Only touched in
+// the HTTP server task (messages and close hook), no lock needed.
+int s_prime_owner[5] = {-1, -1, -1, -1, -1};
+
+// {"type":"prime","pump":1..5,"action":"start|beat|stop","tier"?:0..2}
+// Hold-to-run: start once, beat every ~150 ms while the button is held. A
+// missing beat (prime_heartbeat_ms) or a closed connection stops the pump.
+const char* ws_prime(int client, const JsonValue& msg, Json& reply) {
+    int64_t pump = 0, tier = -1;
+    char action[8] = "";
+    if (!msg["pump"].get(&pump) || pump < 1 || pump > 5) return "invalid_param";
+    msg["action"].get(action, sizeof(action));
+    if (msg["tier"].valid() && (!msg["tier"].get(&tier) || tier < 0 || tier >= dose::kTiers)) return "invalid_param";
+    const int p = static_cast<int>(pump - 1);
+    reply.kv("pump", pump).kv("action", action);
+    const char* e = nullptr;
+    if (!std::strcmp(action, "start")) {
+        e = dosing::prime_start(p, static_cast<int>(tier));
+        if (!e) s_prime_owner[p] = client;
+    } else if (!std::strcmp(action, "beat")) {
+        e = dosing::prime_beat(p);
+    } else if (!std::strcmp(action, "stop")) {
+        e = dosing::prime_stop(p);
+        s_prime_owner[p] = -1;
+    } else {
+        return "invalid_param";
+    }
+    lgal::ws::notify();
+    return e;
+}
+
+void ws_closed(int client) {
+    for (int p = 0; p < 5; ++p) {
+        if (s_prime_owner[p] != client) continue;
+        s_prime_owner[p] = -1;
+        if (!dosing::prime_stop(p)) ESP_LOGW("dosing_api", "Pump %d: priming stopped (connection closed)", p + 1);
+    }
+}
 }  // namespace
 
 esp_err_t register_handlers(httpd_handle_t server) {
@@ -385,6 +465,9 @@ esp_err_t register_handlers(httpd_handle_t server) {
     http::route(server, "/api/v1/pumps/tube", HTTP_POST, post_tube);
     http::route(server, "/api/v1/engineering/dosing", HTTP_GET, get_engineering);
     http::route(server, "/api/v1/engineering/dosing", HTTP_POST, post_engineering);
+    lgal::ws::set_status_writer(write_live);
+    lgal::ws::on_message("prime", ws_prime);
+    lgal::ws::on_close(ws_closed);
     return ESP_OK;
 }
 
