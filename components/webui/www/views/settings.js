@@ -1,4 +1,4 @@
-// Settings: appearance, time, status LED, network, login and API keys, rules
+// Settings: appearance, time, status LED, network, MQTT, login and API keys, rules
 // between pumps (pro) and device pages.
 import { html } from '../lib/html.js';
 import { add, languages, setLang, t, useLang } from '../lib/i18n.js';
@@ -6,6 +6,7 @@ import { setMode, setTheme, usePrefs } from '../lib/prefs.js';
 import { AccountCard } from './account.js';
 import { LedCard } from './led.js';
 import { LocksCard } from './locks.js';
+import { MqttCard } from './mqtt.js';
 import { NetworkCard } from './network.js';
 import { TimeCard } from './time.js';
 
@@ -43,6 +44,7 @@ export function SettingsView() {
       <${TimeCard} pro=${pro}/>
       <${LedCard}/>
       <${NetworkCard} pro=${pro}/>
+      <${MqttCard} pro=${pro}/>
       <${AccountCard} pro=${pro}/>
       ${pro && html`<${LocksCard}/>`}
       <section class="card"><h2>${t('set.device')}</h2>
