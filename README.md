@@ -186,7 +186,7 @@ und REST-Entlüften zurück („Abfrage“).
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
 Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 43 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+gzip-komprimiert (≈ 47 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
@@ -196,7 +196,7 @@ nicht, `idf.py build` reicht.
 | Seiten | Übersicht, Pumpe (Detail), Zeitplan, Einstellungen. Adressen als Hash-Routen, z. B. `/#/pump/3`, `/#/schedule/2`. |
 | Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
 | Pumpe | Große Behälter-Grafik mit „Nachgefüllt“ und „Ändern“ (Größe 0 = ohne Erfassung), jetzt dosieren mit Fortschritt und Stopp (Sperrzeit: Meldung mit Ende bzw. „startet danach“), Schlauch füllen per Halten (WebSocket mit Totmann, sonst REST), Kalibrier-Assistent (Start → Messbecher → gemessene Menge übernehmen oder verwerfen), Verbrauch (heute, geplant, nächste Dosis, letzter Lauf, gesamt, Schlauchstunden mit Zurücksetzen) und Einstellungen. Name und Betrieb (automatisch / nur manuell / aus) für alle; Geschwindigkeit beim Dosieren, Zielmenge der Kalibrierung und Feintuning nur in Profi. Einfach zeigt aktive Profi-Werte als Hinweis. |
-| Zeitplan | Oben „Heute“: alle Pumpen auf einer 24-h-Leiste mit ihren Dosen und der aktuellen Uhrzeit. Darunter der Plan der gewählten Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** bis zu 8 Programme – Einzelzeit oder verteilt, täglich / Wochentage / alle N Tage, einzeln abschaltbar – sowie das Verhalten nach Stromausfall. Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Programm bzw. Pumpen und Uhrzeiten gemeldet. |
+| Zeitplan | Oben „Heute“: alle Pumpen auf einer 24-h-Leiste mit ihren Dosen und der aktuellen Uhrzeit. Darunter der Plan der gewählten Pumpe – genau einer pro Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** Planart „Verteilt“ (Tagesmenge in N Dosen) oder „Einzelzeiten“ (bis 24 Uhrzeiten mit eigener Menge), täglich / Wochentage / alle N Tage, pausierbar, sowie das Verhalten nach Stromausfall. Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Uhrzeit bzw. Pumpen und Uhrzeiten gemeldet. |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
@@ -346,7 +346,7 @@ Engineering-Parameter.
 
 | Thema | Umsetzung |
 |---|---|
-| Programme | bis 8 pro Pumpe: Einzelzeitpunkt oder Generator („X ml in N Dosen zwischen A und B“, gleichmäßig auf das Raster gelegt, Rundungsrest auf die ersten Dosen). Höchstens 96 Dosen pro Tag und Pumpe. |
+| Plan | genau einer pro Pumpe: „verteilt“ („X ml in N Dosen zwischen A und B“, gleichmäßig auf das Raster gelegt, Rundungsrest auf die ersten Dosen, höchstens 96 Dosen pro Tag) oder „Einzelzeiten“ (bis 24 Uhrzeiten, jede mit eigener Menge). Tage, Pause und Stromausfall-Verhalten gelten für den ganzen Plan. |
 | Tage | täglich, Wochentage oder „alle N Tage“ (1–30) ab einem Startdatum. |
 | Raster | Zeiten auf dem Zeitplan-Raster (Standard 5 min, Engineering). Ortszeit der Geräte-Zeitzone. |
 | Zeitumstellung | Zeitzone als POSIX-Regel. Fällt eine Zeit in die Lücke im Frühjahr, wird sie nach hinten verschoben; eine doppelte Stunde im Herbst wird einmal (beim ersten Auftreten) dosiert. |
@@ -357,20 +357,19 @@ Engineering-Parameter.
 | Boost | Zusatzmenge über 1–30 Tage, gleichmäßig auf die geplanten Dosen des Tages verteilt; was nicht dosiert werden kann, wandert auf die Folgetage. Endet von selbst. |
 | Reichweite | Behälter-Restmenge geteilt durch den Durchschnitt der nächsten 7 Tage (inkl. Boost). |
 | Ohne gültige Uhrzeit | Es wird nichts geplant; manuelle Dosen bleiben möglich (außer bei Pumpen mit Tageslimit). |
-| Speicher | Programme, Sperrzeiten, Parameter in NVS (`sched`). Fortschritt je Pumpe (zuletzt bearbeitete Dosis, Boost, Zähler) im EEPROM als A/B-Datensätze ab 0x640, Rückfall auf NVS. Geschrieben wird nur, wenn eine Dosis bearbeitet wurde. |
+| Speicher | Pläne, Sperrzeiten, Parameter in NVS (`sched`). Fortschritt je Pumpe (zuletzt bearbeitete Dosis, Boost, Zähler) im EEPROM als A/B-Datensätze ab 0x640, Rückfall auf NVS. Geschrieben wird nur, wenn eine Dosis bearbeitet wurde. |
 
 Zeitplan als JSON (`PUT /api/v1/pumps/schedule?pump=1`; unbekannte Felder werden ignoriert, ein
 GET-Ergebnis kann also bearbeitet zurückgeschickt werden):
 
 ```json
-{"power_loss": "skip_missed", "catch_up_min": 60,
- "programs": [
-  {"kind": "generator", "start": "08:00", "end": "20:00", "count": 12, "ml": 24,
-   "days": {"mode": "daily"}},
-  {"kind": "single", "time": "21:30", "ml": 2.5, "enabled": true,
-   "days": {"mode": "weekdays", "weekdays": ["mon", "fri"]}},
-  {"kind": "single", "time": "09:00", "ml": 5,
-   "days": {"mode": "interval", "every": 2, "anchor": "2026-11-06"}}]}
+{"kind": "spread", "enabled": true, "start": "08:00", "end": "20:00", "count": 12, "ml": 24,
+ "days": {"mode": "daily"}, "power_loss": "skip_missed", "catch_up_min": 60}
+
+{"kind": "times", "times": [{"time": "09:00", "ml": 5}, {"time": "21:30", "ml": 2.5}],
+ "days": {"mode": "interval", "every": 2, "anchor": "2026-11-06"}}
+
+{"kind": "none"}
 ```
 
 Sperrzeiten (`PUT /api/v1/schedule/locks`):
@@ -379,7 +378,9 @@ Sperrzeiten (`PUT /api/v1/schedule/locks`):
 {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]}
 ```
 
-Fehler nennen die Stelle (`"program": 2, "field": "time"`) bzw. bei 409 `conflict` die
+`"end"` braucht es nur bei mehr als einer Dosis; Einzelzeiten werden beim Speichern sortiert,
+`"enabled": false` pausiert den Plan. Fehler nennen die Stelle (`"entry": 2, "field": "ml"` für
+die zweite Uhrzeit in sortierter Reihenfolge) bzw. bei 409 `conflict` die
 kollidierenden Dosen (`"conflicts": [{"code": "collision_lock", "first": {…}, "second": {…}, "gap_min": 5}]`).
 Zeitpunkte kommen als UTC-Sekunden plus Ortszeit des Geräts (`"at"` + `"local"`), weil der
 Browser in einer anderen Zeitzone sein kann.

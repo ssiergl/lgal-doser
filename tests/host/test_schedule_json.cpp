@@ -41,11 +41,28 @@ static Parsed parse_sched(const std::string& text, int32_t today = kToday) {
     return p;
 }
 
-static bool same(const sched::Program& a, const sched::Program& b) {
-    return a.enabled == b.enabled && a.kind == b.kind && a.count == b.count && a.start_min == b.start_min &&
-           a.end_min == b.end_min && a.amount_ul == b.amount_ul && a.days.mode == b.days.mode &&
-           a.days.weekdays == b.days.weekdays && a.days.interval == b.days.interval &&
-           (a.days.mode == sched::DayMode::Weekdays || a.days.anchor_day == b.days.anchor_day);
+static bool same(const sched::PumpSchedule& a, const sched::PumpSchedule& b) {
+    bool eq = a.kind == b.kind && a.enabled == b.enabled && a.power_loss == b.power_loss &&
+              a.catch_up_min == b.catch_up_min && a.days.mode == b.days.mode && a.days.weekdays == b.days.weekdays &&
+              a.days.interval == b.days.interval &&
+              (a.days.mode == sched::DayMode::Weekdays || a.days.anchor_day == b.days.anchor_day);
+    if (a.kind == sched::Kind::Spread)
+        eq = eq && a.count == b.count && a.start_min == b.start_min && a.end_min == b.end_min &&
+             a.amount_ul == b.amount_ul;
+    if (a.kind == sched::Kind::Times) {
+        eq = eq && a.time_count == b.time_count;
+        for (int i = 0; eq && i < a.time_count; ++i)
+            eq = a.times[i].minute == b.times[i].minute && a.times[i].ul == b.times[i].ul;
+    }
+    return eq;
+}
+
+static std::string written(const sched::PumpSchedule& s) {
+    Json j;
+    j.obj();
+    write_schedule(j, s);
+    j.end();
+    return j.str();
 }
 
 static void test_time_and_date() {
@@ -85,138 +102,164 @@ static void test_time_and_date() {
 }
 
 static void test_schedule_round_trip() {
+    // spread on three weekdays, paused
     sched::PumpSchedule s;
+    s.kind = sched::Kind::Spread;
+    s.enabled = 0;
     s.power_loss = sched::PowerLoss::CatchUpWindow;
     s.catch_up_min = 45;
-    s.count = 3;
-    s.programs[0] = sched::Program{1, sched::Kind::Single, 1, 8 * 60, 8 * 60, 2500, {}};
-    s.programs[1] = sched::Program{0, sched::Kind::Generator, 12, 8 * 60, 19 * 60 + 5, 24125, {}};
-    s.programs[1].days.weekdays = 0x15;  // mon, wed, fri
-    s.programs[2] = sched::Program{1, sched::Kind::Single, 1, 21 * 60 + 30, 21 * 60 + 30, 20, {}};
-    s.programs[2].days = sched::DayRule{sched::DayMode::Interval, 0x7F, 3, 0, kToday - 1};
-
-    Json j;
-    j.obj();
-    write_schedule(j, s);
-    j.end();
-    const std::string text = j.str();
+    s.count = 12;
+    s.start_min = 8 * 60;
+    s.end_min = 19 * 60 + 5;
+    s.amount_ul = 24125;
+    s.days.weekdays = 0x15;  // mon, wed, fri
+    std::string text = written(s);
+    CHECK(text.find("\"kind\":\"spread\",\"enabled\":false") != std::string::npos);
     CHECK(text.find("\"weekdays\":[\"mon\",\"wed\",\"fri\"]") != std::string::npos);
-    CHECK(text.find("\"anchor\":\"2026-11-05\"") != std::string::npos);
-    CHECK(text.find("\"mode\":\"daily\"") != std::string::npos);
     CHECK(text.find("\"end\":\"19:05\"") != std::string::npos);
     CHECK(text.find("\"ml\":24.125") != std::string::npos);
+    CHECK(text.find("\"times\"") == std::string::npos);
+    Parsed p = parse_sched(text);
+    CHECK(p.ok && same(p.s, s));
 
-    const Parsed p = parse_sched(text);
-    CHECK(p.ok);
-    CHECK(p.s.count == 3 && p.s.power_loss == s.power_loss && p.s.catch_up_min == 45);
-    for (int i = 0; i < 3; ++i) CHECK(same(p.s.programs[i], s.programs[i]));
+    // single times with their own amounts, every 3rd day
+    sched::PumpSchedule t;
+    t.kind = sched::Kind::Times;
+    t.time_count = 3;
+    t.times[0] = sched::TimeDose{8 * 60, 0, 2500};
+    t.times[1] = sched::TimeDose{12 * 60 + 15, 0, 20};
+    t.times[2] = sched::TimeDose{21 * 60 + 30, 0, 1000000};
+    t.days = sched::DayRule{sched::DayMode::Interval, 0x7F, 3, 0, kToday - 1};
+    text = written(t);
+    CHECK(text.find("\"times\":[{\"time\":\"08:00\",\"ml\":2.500},{\"time\":\"12:15\",\"ml\":0.020},"
+                    "{\"time\":\"21:30\",\"ml\":1000.000}]") != std::string::npos);
+    CHECK(text.find("\"anchor\":\"2026-11-05\"") != std::string::npos);
+    CHECK(text.find("\"start\"") == std::string::npos && text.find("\"count\"") == std::string::npos);
+    p = parse_sched(text);
+    CHECK(p.ok && same(p.s, t));
 
-    // an empty schedule
-    Json e;
-    e.obj();
-    write_schedule(e, sched::PumpSchedule{});
-    e.end();
-    const Parsed pe = parse_sched(e.str());
-    CHECK(pe.ok && pe.s.count == 0 && pe.s.power_loss == sched::PowerLoss::SkipMissed);
+    // no schedule
+    text = written(sched::PumpSchedule{});
+    CHECK(text.find("\"kind\":\"none\"") != std::string::npos && text.find("\"mode\":\"daily\"") != std::string::npos);
+    p = parse_sched(text);
+    CHECK(p.ok && p.s.kind == sched::Kind::None && p.s.power_loss == sched::PowerLoss::SkipMissed);
 }
 
 static void test_schedule_defaults() {
-    const Parsed p = parse_sched(
-        "{\"programs\":[{\"kind\":\"single\",\"time\":\"07:15\",\"ml\":1},"
-        "{\"kind\":\"single\",\"time\":\"09:00\",\"ml\":0.5,\"days\":{\"mode\":\"interval\",\"every\":2}},"
-        "{\"kind\":\"generator\",\"start\":\"10:00\",\"end\":\"12:00\",\"count\":3,\"ml\":3,\"days\":null}],"
-        "\"pump\":1,\"today\":[]}");  // unknown members (from a GET) are ignored
-    CHECK(p.ok && p.s.count == 3);
-    const sched::Program& a = p.s.programs[0];
-    CHECK(a.enabled == 1 && a.kind == sched::Kind::Single && a.start_min == 435 && a.amount_ul == 1000);
-    CHECK(a.days.mode == sched::DayMode::Weekdays && a.days.weekdays == 0x7F);
-    CHECK(p.s.programs[1].days.mode == sched::DayMode::Interval && p.s.programs[1].days.anchor_day == kToday);
-    CHECK(p.s.programs[2].days.weekdays == 0x7F && p.s.programs[2].count == 3);
+    // empty object: no schedule
+    Parsed p = parse_sched("{}");
+    CHECK(p.ok && p.s.kind == sched::Kind::None && p.s.enabled == 1);
+
+    // single dose: "end" is not needed and follows the start
+    p = parse_sched("{\"kind\":\"spread\",\"start\":\"07:15\",\"count\":1,\"ml\":1}");
+    CHECK(p.ok && p.s.start_min == 435 && p.s.end_min == 435 && p.s.amount_ul == 1000);
+    CHECK(p.s.days.mode == sched::DayMode::Weekdays && p.s.days.weekdays == 0x7F);
     CHECK(p.s.power_loss == sched::PowerLoss::SkipMissed && p.s.catch_up_min == 60);
+
+    // times are sorted; unknown members (from a GET) are ignored; anchor defaults to today
+    p = parse_sched(
+        "{\"kind\":\"times\",\"times\":[{\"time\":\"20:00\",\"ml\":3},{\"time\":\"07:15\",\"ml\":1},"
+        "{\"time\":\"12:00\",\"ml\":0.5}],\"days\":{\"mode\":\"interval\",\"every\":2},"
+        "\"start\":\"01:00\",\"pump\":1,\"grid_min\":5,\"today\":[]}");
+    CHECK(p.ok && p.s.kind == sched::Kind::Times && p.s.time_count == 3);
+    CHECK(p.s.times[0].minute == 435 && p.s.times[0].ul == 1000 && p.s.times[1].minute == 720 &&
+          p.s.times[1].ul == 500 && p.s.times[2].minute == 1200 && p.s.times[2].ul == 3000);
+    CHECK(p.s.days.mode == sched::DayMode::Interval && p.s.days.anchor_day == kToday && p.s.start_min == 0);
 
     // the result passes the real validation and expands as expected
     sched::PumpSchedule all[sched::kPumps];
     all[0] = p.s;
+    all[1] = parse_sched("{\"kind\":\"spread\",\"start\":\"10:00\",\"end\":\"12:00\",\"count\":3,\"ml\":3}").s;
     sched::Context ctx;
     ctx.today = kToday;
     sched::Conflict c[4]{};
     const sched::Validation v = sched::validate(all, sched::Locks{}, ctx, c, 4);
     CHECK(v.error == nullptr);
     sched::Slot slots[16];
-    CHECK(sched::day_slots(p.s, kToday, 5, slots, 16) == 5);  // 07:15, 09:00, 10:00, 11:00, 12:00
-    CHECK(sched::day_slots(p.s, kToday + 1, 5, slots, 16) == 4);
+    CHECK(sched::day_slots(all[0], kToday, 5, slots, 16) == 3);
+    CHECK(sched::day_slots(all[0], kToday + 1, 5, slots, 16) == 0);
+    CHECK(sched::day_slots(all[1], kToday + 1, 5, slots, 16) == 3 && slots[1].minute == 660);
+
+    // equal times parse and are rejected by the validation (entry after sorting)
+    p = parse_sched("{\"kind\":\"times\",\"times\":[{\"time\":\"08:00\",\"ml\":1},{\"time\":\"08:00\",\"ml\":2}]}");
+    CHECK(p.ok);
+    all[0] = p.s;
+    const sched::Validation d = sched::validate(all, sched::Locks{}, ctx, c, 4);
+    CHECK(d.error && !std::strcmp(d.error, "duplicate_time") && d.pump == 0 && d.entry == 1);
 }
 
 static void test_schedule_errors() {
     struct Case {
         const char* text;
         const char* code;
-        int program;
+        int entry;
         const char* field;
         int32_t today;
     };
     const Case cases[] = {
         {"[]", "invalid_param", -1, "body", kToday},
+        {"{\"kind\":\"single\"}", "invalid_param", -1, "kind", kToday},
+        {"{\"kind\":1}", "invalid_param", -1, "kind", kToday},
+        {"{\"enabled\":1}", "invalid_param", -1, "enabled", kToday},
         {"{\"power_loss\":\"later\"}", "invalid_param", -1, "power_loss", kToday},
         {"{\"catch_up_min\":-1}", "invalid_param", -1, "catch_up_min", kToday},
         {"{\"catch_up_min\":\"60\"}", "invalid_param", -1, "catch_up_min", kToday},
-        {"{\"programs\":{}}", "invalid_param", -1, "programs", kToday},
-        {"{\"programs\":[1]}", "invalid_param", 0, "programs", kToday},
-        {"{\"programs\":[{\"time\":\"08:00\",\"ml\":1}]}", "invalid_param", 0, "kind", kToday},
-        {"{\"programs\":[{\"kind\":\"once\",\"time\":\"08:00\",\"ml\":1}]}", "invalid_param", 0, "kind", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"8:00\",\"ml\":1}]}", "invalid_param", 0, "time", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":480,\"ml\":1}]}", "invalid_param", 0, "time", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\"}]}", "invalid_param", 0, "ml", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":0}]}", "invalid_param", 0, "ml", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":-1}]}", "invalid_param", 0, "ml", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":\"1\"}]}", "invalid_param", 0, "ml", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,\"enabled\":1}]}", "invalid_param", 0,
-         "enabled", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1},"
-         "{\"kind\":\"generator\",\"start\":\"08:00\",\"end\":\"09:00\",\"ml\":1}]}",
-         "invalid_param", 1, "count", kToday},
-        {"{\"programs\":[{\"kind\":\"generator\",\"start\":\"08:00\",\"count\":2,\"ml\":1}]}", "invalid_param", 0, "end",
+        // spread
+        {"{\"kind\":\"spread\",\"count\":1,\"ml\":1}", "invalid_param", -1, "start", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"8:00\",\"count\":1,\"ml\":1}", "invalid_param", -1, "start", kToday},
+        {"{\"kind\":\"spread\",\"start\":480,\"count\":1,\"ml\":1}", "invalid_param", -1, "start", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"ml\":1}", "invalid_param", -1, "count", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"count\":0,\"ml\":1}", "invalid_param", -1, "count", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"count\":97,\"end\":\"20:00\",\"ml\":1}", "invalid_param", -1,
+         "count", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"count\":2,\"ml\":1}", "invalid_param", -1, "end", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"count\":1}", "invalid_param", -1, "ml", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"count\":1,\"ml\":0}", "invalid_param", -1, "ml", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"count\":1,\"ml\":-1}", "invalid_param", -1, "ml", kToday},
+        {"{\"kind\":\"spread\",\"start\":\"08:00\",\"count\":1,\"ml\":\"1\"}", "invalid_param", -1, "ml", kToday},
+        // times
+        {"{\"kind\":\"times\"}", "invalid_param", -1, "times", kToday},
+        {"{\"kind\":\"times\",\"times\":{}}", "invalid_param", -1, "times", kToday},
+        {"{\"kind\":\"times\",\"times\":[]}", "invalid_param", -1, "times", kToday},
+        {"{\"kind\":\"times\",\"times\":[1]}", "invalid_param", 0, "time", kToday},
+        {"{\"kind\":\"times\",\"times\":[{\"time\":\"08:00\",\"ml\":1},{\"ml\":1}]}", "invalid_param", 1, "time",
          kToday},
-        {"{\"programs\":[{\"kind\":\"generator\",\"start\":\"08:00\",\"end\":\"09:00\",\"count\":0,\"ml\":1}]}",
-         "invalid_param", 0, "count", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,\"days\":\"daily\"}]}", "invalid_param", 0,
-         "days", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,\"days\":{\"mode\":\"monthly\"}}]}",
-         "invalid_param", 0, "mode", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,"
-         "\"days\":{\"mode\":\"weekdays\",\"weekdays\":[\"mon\",\"Mon\"]}}]}",
-         "invalid_param", 0, "weekdays", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,\"days\":{\"mode\":\"weekdays\"}}]}",
-         "invalid_param", 0, "weekdays", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,\"days\":{\"mode\":\"interval\"}}]}",
-         "invalid_param", 0, "every", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,"
-         "\"days\":{\"mode\":\"interval\",\"every\":2,\"anchor\":\"06.11.2026\"}}]}",
-         "invalid_param", 0, "anchor", kToday},
-        {"{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,"
-         "\"days\":{\"mode\":\"interval\",\"every\":2}}]}",
-         "time_invalid", 0, "anchor", -1},
-        {"{\"programs\":[{},{},{},{},{},{},{},{},{}]}", "invalid_param", -1, "programs", kToday},
+        {"{\"kind\":\"times\",\"times\":[{\"time\":\"08:00\",\"ml\":1},{\"time\":\"24:00\",\"ml\":1}]}",
+         "invalid_param", 1, "time", kToday},
+        {"{\"kind\":\"times\",\"times\":[{\"time\":\"08:00\"}]}", "invalid_param", 0, "ml", kToday},
+        {"{\"kind\":\"times\",\"times\":[{\"time\":\"08:00\",\"ml\":1},{\"time\":\"09:00\",\"ml\":0}]}",
+         "invalid_param", 1, "ml", kToday},
+        {"{\"kind\":\"times\",\"times\":[{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}]}",
+         "invalid_param", -1, "times", kToday},
+        // days
+        {"{\"days\":\"daily\"}", "invalid_param", -1, "days", kToday},
+        {"{\"days\":{\"mode\":\"monthly\"}}", "invalid_param", -1, "mode", kToday},
+        {"{\"days\":{\"mode\":\"weekdays\",\"weekdays\":[\"mon\",\"Mon\"]}}", "invalid_param", -1, "weekdays", kToday},
+        {"{\"days\":{\"mode\":\"weekdays\"}}", "invalid_param", -1, "weekdays", kToday},
+        {"{\"days\":{\"mode\":\"interval\"}}", "invalid_param", -1, "every", kToday},
+        {"{\"days\":{\"mode\":\"interval\",\"every\":2,\"anchor\":\"06.11.2026\"}}", "invalid_param", -1, "anchor",
+         kToday},
+        {"{\"days\":{\"mode\":\"interval\",\"every\":2}}", "time_invalid", -1, "anchor", -1},
     };
     for (const auto& c : cases) {
         const Parsed p = parse_sched(c.text, c.today);
-        const bool ok = !p.ok && p.err.code && !std::strcmp(p.err.code, c.code) && p.err.program == c.program &&
+        const bool ok = !p.ok && p.err.code && !std::strcmp(p.err.code, c.code) && p.err.entry == c.entry &&
                         p.err.field && !std::strcmp(p.err.field, c.field);
         if (!ok)
             std::printf("  %s -> %s %s %d %s\n", c.text, p.ok ? "accepted" : "rejected", p.err.code ? p.err.code : "-",
-                        p.err.program, p.err.field ? p.err.field : "-");
+                        p.err.entry, p.err.field ? p.err.field : "-");
         CHECK(ok);
     }
     // an empty weekday list is accepted here and rejected by the validation
     const Parsed e = parse_sched(
-        "{\"programs\":[{\"kind\":\"single\",\"time\":\"08:00\",\"ml\":1,"
-        "\"days\":{\"mode\":\"weekdays\",\"weekdays\":[]}}]}");
-    CHECK(e.ok && e.s.programs[0].days.weekdays == 0);
+        "{\"kind\":\"times\",\"times\":[{\"time\":\"08:00\",\"ml\":1}],"
+        "\"days\":{\"mode\":\"weekdays\",\"weekdays\":[]}}");
+    CHECK(e.ok && e.s.days.weekdays == 0);
     sched::PumpSchedule all[sched::kPumps];
     all[0] = e.s;
     sched::Conflict c[2]{};
     const sched::Validation v = sched::validate(all, sched::Locks{}, sched::Context{}, c, 2);
-    CHECK(v.error && !std::strcmp(v.error, "invalid_days") && v.pump == 0 && v.program == 0);
+    CHECK(v.error && !std::strcmp(v.error, "invalid_days") && v.pump == 0 && v.entry == -1);
 }
 
 static void test_locks() {
@@ -278,8 +321,8 @@ static void test_conflict() {
     Json j;
     write_conflict(j, c);
     CHECK(j.str() ==
-          "{\"code\":\"collision_lock\",\"first\":{\"pump\":1,\"program\":2,\"time\":\"08:00\"},"
-          "\"second\":{\"pump\":2,\"program\":1,\"time\":\"08:02\"},\"next_day\":false,\"gap_min\":5}");
+          "{\"code\":\"collision_lock\",\"first\":{\"pump\":1,\"time\":\"08:00\"},"
+          "\"second\":{\"pump\":2,\"time\":\"08:02\"},\"next_day\":false,\"gap_min\":5}");
     sched::Conflict o{"overlap", {2, 0, 23 * 60 + 55}, {2, 1, 0}, 1, 0};
     Json k;
     write_conflict(k, o);

@@ -24,7 +24,7 @@ namespace http = lgal::http;
 namespace sj = sched_json;
 
 constexpr size_t kMaxBody = 8192;
-constexpr int kMaxTokens = 512;  // 8 programs with all members need ~300
+constexpr int kMaxTokens = 256;  // a plan with 24 times needs ~110
 
 struct ErrInfo {
     const char* code;
@@ -39,6 +39,8 @@ constexpr ErrInfo kErrors[] = {
     {"invalid_range", "400 Bad Request", "End time before start time"},
     {"invalid_count", "400 Bad Request", "Invalid number of doses"},
     {"slots_too_dense", "400 Bad Request", "Doses closer together than the grid"},
+    {"duplicate_time", "400 Bad Request", "The same time appears twice"},
+    {"invalid_kind", "400 Bad Request", "Invalid plan kind"},
     {"dose_too_small", "400 Bad Request", "Single dose below the minimum"},
     {"dose_too_large", "400 Bad Request", "Single dose too large"},
     {"invalid_days", "400 Bad Request", "Invalid day selection"},
@@ -64,12 +66,12 @@ esp_err_t fail(httpd_req_t* req, const char* code, const char* detail = nullptr)
     return http::send_error(req, e.status, code, detail ? detail : e.message);
 }
 
-// Input error with position: {"error":{"code","message","program","rule","field"}}
+// Input error with position: {"error":{"code","message","entry","rule","field"}}
 esp_err_t fail_input(httpd_req_t* req, const sj::Error& err) {
     const ErrInfo& e = info(err.code ? err.code : "invalid_param");
     Json j;
     j.obj().obj("error").kv("code", err.code ? err.code : "invalid_param").kv("message", e.message);
-    if (err.program >= 0) j.kv("program", err.program + 1);
+    if (err.entry >= 0) j.kv("entry", err.entry + 1);
     if (err.rule >= 0) j.kv("rule", err.rule + 1);
     if (err.field) j.kv("field", err.field);
     j.end().end();
@@ -84,7 +86,8 @@ esp_err_t fail_validation(httpd_req_t* req, const char* code, const scheduler::S
     const sched::Validation& v = r.validation;
     if (v.error && std::strcmp(code, "conflict") != 0) {
         if (v.pump >= 0) j.kv("pump", v.pump + 1);
-        if (v.program >= 0) j.kv("program", v.program + 1);
+        if (v.entry >= 0) j.kv("entry", v.entry + 1);
+        if (v.rule >= 0) j.kv("rule", v.rule + 1);
     }
     if (v.conflicts > 0) {
         j.arr("conflicts");
@@ -152,7 +155,7 @@ esp_err_t send_schedule(httpd_req_t* req, int p) {
         j.obj("today").kv("date", d).kv("ml", ml(sched::day_total(s, day)), 3).arr("slots");
         for (int i = 0; i < n; ++i) {
             sj::fmt_hhmm(slots[i].minute, t);
-            j.obj().kv("time", t).kv("ml", ml(slots[i].ul), 3).kv("program", slots[i].program + 1).end();
+            j.obj().kv("time", t).kv("ml", ml(slots[i].ul), 3).end();
         }
         j.end().end();
     } else {
@@ -238,7 +241,7 @@ void write_status(Json& j, int p) {
     if (s.has_next) {
         j.obj("next");
         write_instant(j, "at", "local", s.next_utc);
-        j.kv("ml", ml(s.next_ul), 3).kv("program", s.next_program + 1).end();
+        j.kv("ml", ml(s.next_ul), 3).end();
     } else {
         j.null("next");
     }

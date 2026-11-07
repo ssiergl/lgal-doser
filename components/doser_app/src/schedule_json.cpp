@@ -11,11 +11,11 @@ using lgal::JsonValue;
 
 constexpr const char* kWeekdays[7] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
 
-bool fail(Error* e, const char* field, int program = -1, const char* code = "invalid_param") {
+bool fail(Error* e, const char* field, int entry = -1, const char* code = "invalid_param") {
     if (e) {
         e->code = code;
         e->field = field;
-        e->program = program;
+        e->entry = entry;
     }
     return false;
 }
@@ -47,20 +47,20 @@ bool get_u16(const JsonValue& v, int64_t lo, int64_t hi, uint16_t* out) {
     return true;
 }
 
-bool parse_days(const JsonValue& v, int32_t today, sched::DayRule* d, int prog, Error* err) {
+bool parse_days(const JsonValue& v, int32_t today, sched::DayRule* d, Error* err) {
     *d = sched::DayRule{};
     if (!v.valid() || v.is_null()) return true;  // daily
-    if (v.type() != JsonType::Object) return fail(err, "days", prog);
+    if (v.type() != JsonType::Object) return fail(err, "days");
     const JsonValue mode = v["mode"];
     if (!mode.valid() || mode.equals("daily")) return true;
     if (mode.equals("weekdays")) {
         const JsonValue list = v["weekdays"];
-        if (list.type() != JsonType::Array) return fail(err, "weekdays", prog);
+        if (list.type() != JsonType::Array) return fail(err, "weekdays");
         d->weekdays = 0;
         for (int i = 0; i < list.size(); ++i) {
             int k = 0;
             while (k < 7 && !list[i].equals(kWeekdays[k])) ++k;
-            if (k == 7) return fail(err, "weekdays", prog);
+            if (k == 7) return fail(err, "weekdays");
             d->weekdays |= static_cast<uint8_t>(1u << k);
         }
         return true;  // empty list -> invalid_days from validate
@@ -68,105 +68,104 @@ bool parse_days(const JsonValue& v, int32_t today, sched::DayRule* d, int prog, 
     if (mode.equals("interval")) {
         d->mode = sched::DayMode::Interval;
         int64_t every = 0;
-        if (!v["every"].get(&every) || every < 1 || every > 255) return fail(err, "every", prog);
+        if (!v["every"].get(&every) || every < 1 || every > 255) return fail(err, "every");
         d->interval = static_cast<uint8_t>(every);
         const JsonValue anchor = v["anchor"];
         if (anchor.valid() && !anchor.is_null()) {
             char buf[12];
-            if (!anchor.get(buf, sizeof(buf)) || !parse_date(buf, &d->anchor_day)) return fail(err, "anchor", prog);
+            if (!anchor.get(buf, sizeof(buf)) || !parse_date(buf, &d->anchor_day)) return fail(err, "anchor");
         } else if (today >= 0) {
             d->anchor_day = today;
         } else {
-            return fail(err, "anchor", prog, "time_invalid");
+            return fail(err, "anchor", -1, "time_invalid");
         }
         return true;
     }
-    return fail(err, "mode", prog);
+    return fail(err, "mode");
 }
 
-bool parse_program(const JsonValue& v, int32_t today, sched::Program* p, int i, Error* err) {
-    *p = sched::Program{};
-    if (v.type() != JsonType::Object) return fail(err, "programs", i);
-    const JsonValue en = v["enabled"];
-    if (en.valid()) {
-        bool b = true;
-        if (!en.get(&b)) return fail(err, "enabled", i);
-        p->enabled = b ? 1 : 0;
-    }
-    const JsonValue kind = v["kind"];
-    if (kind.equals("single")) {
-        p->kind = sched::Kind::Single;
-        if (!get_time(v["time"], &p->start_min)) return fail(err, "time", i);
-        p->end_min = p->start_min;
-        p->count = 1;
-    } else if (kind.equals("generator")) {
-        p->kind = sched::Kind::Generator;
-        if (!get_time(v["start"], &p->start_min)) return fail(err, "start", i);
-        if (!get_time(v["end"], &p->end_min)) return fail(err, "end", i);
-        if (!get_u16(v["count"], 1, sched::kMaxSlotsPerDay, &p->count)) return fail(err, "count", i);
-    } else {
-        return fail(err, "kind", i);
-    }
-    if (!get_ul(v["ml"], &p->amount_ul)) return fail(err, "ml", i);
-    return parse_days(v["days"], today, &p->days, i, err);
-}
 }  // namespace
 
 // ---------------------------------------------------------------------------
 bool parse_schedule(const JsonValue& v, int32_t today, sched::PumpSchedule* out, Error* err) {
     sched::PumpSchedule s;
     if (v.type() != JsonType::Object) return fail(err, "body");
-    const JsonValue pl = v["power_loss"];
-    if (pl.valid()) {
-        char buf[20];
-        if (!pl.get(buf, sizeof(buf)) || !sched::parse_power_loss(buf, &s.power_loss)) return fail(err, "power_loss");
+    char buf[20];
+    const JsonValue kind = v["kind"];
+    if (kind.valid() && (!kind.get(buf, sizeof(buf)) || !sched::parse_kind(buf, &s.kind))) return fail(err, "kind");
+    const JsonValue en = v["enabled"];
+    if (en.valid()) {
+        bool b = true;
+        if (!en.get(&b)) return fail(err, "enabled");
+        s.enabled = b ? 1 : 0;
     }
+    const JsonValue pl = v["power_loss"];
+    if (pl.valid() && (!pl.get(buf, sizeof(buf)) || !sched::parse_power_loss(buf, &s.power_loss)))
+        return fail(err, "power_loss");
     const JsonValue cu = v["catch_up_min"];
     if (cu.valid() && !get_u16(cu, 0, UINT16_MAX, &s.catch_up_min)) return fail(err, "catch_up_min");
-    const JsonValue progs = v["programs"];
-    if (progs.valid()) {
-        if (progs.type() != JsonType::Array || progs.size() > sched::kMaxPrograms) return fail(err, "programs");
-        for (int i = 0; i < progs.size(); ++i) {
-            if (!parse_program(progs[i], today, &s.programs[i], i, err)) return false;
+
+    if (s.kind == sched::Kind::Spread) {
+        if (!get_time(v["start"], &s.start_min)) return fail(err, "start");
+        if (!get_u16(v["count"], 1, sched::kMaxSlotsPerDay, &s.count)) return fail(err, "count");
+        if (s.count > 1 && !get_time(v["end"], &s.end_min)) return fail(err, "end");
+        if (s.count == 1) s.end_min = s.start_min;
+        if (!get_ul(v["ml"], &s.amount_ul)) return fail(err, "ml");
+    } else if (s.kind == sched::Kind::Times) {
+        const JsonValue list = v["times"];
+        if (list.type() != JsonType::Array || list.size() < 1 || list.size() > sched::kMaxTimes) return fail(err, "times");
+        for (int i = 0; i < list.size(); ++i) {
+            const JsonValue e = list[i];
+            sched::TimeDose t;
+            if (e.type() != JsonType::Object || !get_time(e["time"], &t.minute)) return fail(err, "time", i);
+            if (!get_ul(e["ml"], &t.ul)) return fail(err, "ml", i);
+            s.times[i] = t;
         }
-        s.count = static_cast<uint8_t>(progs.size());
+        s.time_count = static_cast<uint8_t>(list.size());
+        // ascending by time (insertion sort); equal times stay and fail validation
+        for (int i = 1; i < s.time_count; ++i)
+            for (int k = i; k > 0 && s.times[k].minute < s.times[k - 1].minute; --k) {
+                const sched::TimeDose t = s.times[k];
+                s.times[k] = s.times[k - 1];
+                s.times[k - 1] = t;
+            }
     }
+    if (!parse_days(v["days"], today, &s.days, err)) return false;
     *out = s;
     return true;
 }
 
 void write_schedule(Json& j, const sched::PumpSchedule& s) {
     char t[6];
-    j.kv("power_loss", sched::power_loss_str(s.power_loss)).kv("catch_up_min", s.catch_up_min).arr("programs");
-    for (int i = 0; i < s.count && i < sched::kMaxPrograms; ++i) {
-        const sched::Program& p = s.programs[i];
-        j.obj().kv("enabled", p.enabled != 0);
-        if (p.kind == sched::Kind::Generator) {
-            j.kv("kind", "generator");
-            fmt_hhmm(p.start_min, t);
-            j.kv("start", t);
-            fmt_hhmm(p.end_min, t);
-            j.kv("end", t).kv("count", p.count);
-        } else {
-            fmt_hhmm(p.start_min, t);
-            j.kv("kind", "single").kv("time", t);
+    j.kv("kind", sched::kind_str(s.kind)).kv("enabled", s.enabled != 0);
+    if (s.kind == sched::Kind::Spread) {
+        fmt_hhmm(s.start_min, t);
+        j.kv("start", t);
+        fmt_hhmm(s.end_min, t);
+        j.kv("end", t).kv("count", s.count).kv("ml", ml(s.amount_ul), 3);
+    } else if (s.kind == sched::Kind::Times) {
+        j.arr("times");
+        for (int i = 0; i < s.time_count && i < sched::kMaxTimes; ++i) {
+            fmt_hhmm(s.times[i].minute, t);
+            j.obj().kv("time", t).kv("ml", ml(s.times[i].ul), 3).end();
         }
-        j.kv("ml", ml(p.amount_ul), 3).obj("days");
-        if (p.days.mode == sched::DayMode::Interval) {
-            char d[11];
-            fmt_date(p.days.anchor_day, d);
-            j.kv("mode", "interval").kv("every", p.days.interval).kv("anchor", d);
-        } else if ((p.days.weekdays & 0x7F) == 0x7F) {
-            j.kv("mode", "daily");
-        } else {
-            j.kv("mode", "weekdays").arr("weekdays");
-            for (int k = 0; k < 7; ++k)
-                if (p.days.weekdays & (1u << k)) j.v(kWeekdays[k]);
-            j.end();
-        }
-        j.end().end();
+        j.end();
+    }
+    j.obj("days");
+    if (s.days.mode == sched::DayMode::Interval) {
+        char d[11];
+        fmt_date(s.days.anchor_day, d);
+        j.kv("mode", "interval").kv("every", s.days.interval).kv("anchor", d);
+    } else if ((s.days.weekdays & 0x7F) == 0x7F) {
+        j.kv("mode", "daily");
+    } else {
+        j.kv("mode", "weekdays").arr("weekdays");
+        for (int k = 0; k < 7; ++k)
+            if (s.days.weekdays & (1u << k)) j.v(kWeekdays[k]);
+        j.end();
     }
     j.end();
+    j.kv("power_loss", sched::power_loss_str(s.power_loss)).kv("catch_up_min", s.catch_up_min);
 }
 
 // ---------------------------------------------------------------------------
@@ -218,7 +217,7 @@ void write_conflict(Json& j, const sched::Conflict& c) {
     char t[6];
     auto slot = [&](const char* key, const sched::SlotRef& s) {
         fmt_hhmm(s.minute, t);
-        j.obj(key).kv("pump", s.pump + 1).kv("program", s.program + 1).kv("time", t).end();
+        j.obj(key).kv("pump", s.pump + 1).kv("time", t).end();
     };
     j.obj().kv("code", c.code ? c.code : "conflict");
     slot("first", c.first);

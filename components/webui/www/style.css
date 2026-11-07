@@ -319,15 +319,11 @@ label.check input { margin-top: 3px; }
 .times { display: flex; flex-wrap: wrap; gap: 4px; }
 .times .chip { font-variant-numeric: tabular-nums; }
 .plist { margin: 8px 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
-.progs { display: grid; gap: 12px; margin-bottom: 12px; }
-.prog { border: 1px solid var(--line); border-left: 3px solid var(--pc); border-radius: 12px; padding: 12px; display: grid; gap: 10px; background: color-mix(in srgb, var(--card-2) 40%, transparent); }
-.prog.off { opacity: .6; }
-.prog .form-row { margin-bottom: 0; }
-.prog .field { margin-top: 0; }
-.prog .seg { justify-self: start; }
-.prog-head { display: flex; align-items: center; gap: 12px; }
-.prog-head .spacer { flex: 1; }
-.prog-head label.check { margin: 0; font-size: 13px; }
+.plan-body { display: grid; gap: 4px; }
+.plan-body.off { opacity: .6; }
+.plan label.check { margin: 10px 0 6px; }
+.tlist { display: grid; gap: 6px; margin: 8px 0 4px; }
+.trow { display: grid; grid-template-columns: 120px minmax(0, 160px) auto; justify-content: start; gap: 8px; align-items: center; }
 .wd { display: flex; flex-wrap: wrap; gap: 4px; }
 .wd button { min-width: 42px; padding: 6px 8px; font-size: 13px; background: var(--card-2); color: var(--mut); border-color: var(--line); }
 .wd button.on { background: color-mix(in srgb, var(--pc) 25%, var(--card)); color: var(--text); border-color: var(--pc); }

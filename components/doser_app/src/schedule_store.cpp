@@ -13,6 +13,7 @@ namespace {
 constexpr const char* TAG = "sched_store";
 constexpr const char* kNs = "sched";
 constexpr uint16_t kVersion = 1;
+constexpr uint16_t kScheduleVersion = 2;  // 2: one plan per pump (version 1 had programs)
 constexpr uint16_t kEepromBase = 0x640;  // behind the dosing records (0x000..0x63F)
 constexpr uint16_t kSlotSize = 96;       // 3 EEPROM pages per record
 static_assert(sizeof(sched::RunRecord) <= kSlotSize);
@@ -47,13 +48,14 @@ void load_schedule(int pump, sched::PumpSchedule* s) {
     char k[4];
     key(k, sizeof(k), 'p', pump);
     sched::PumpSchedule v;
-    if (nvs_blob::load(kNs, k, kVersion, &v) && v.count <= sched::kMaxPrograms) *s = v;
+    if (nvs_blob::load(kNs, k, kScheduleVersion, &v) && v.kind <= sched::Kind::Times && v.time_count <= sched::kMaxTimes)
+        *s = v;
 }
 
 esp_err_t save_schedule(int pump, const sched::PumpSchedule& s) {
     char k[4];
     key(k, sizeof(k), 'p', pump);
-    return nvs_blob::save(kNs, k, kVersion, s);
+    return nvs_blob::save(kNs, k, kScheduleVersion, s);
 }
 
 bool load_run(int pump, sched::RunState* s) {
