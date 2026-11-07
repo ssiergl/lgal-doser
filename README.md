@@ -206,7 +206,7 @@ nicht, `idf.py build` reicht.
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
-| Service | 7× schnell auf die Firmware-Version im Fuß klicken → Engineering-Anmeldung. |
+| Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel; freigeschaltet zeigt er Restzeit, die Serviceseiten (Dosier-, Zeitplan-, Hardwaretest) und „Jetzt sperren“. |
 | Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Testseiten). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
 

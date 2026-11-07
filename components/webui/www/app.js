@@ -7,6 +7,7 @@ import { add, initLang, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
 import { start, useStore } from './lib/store.js';
 import { Dashboard } from './views/dashboard.js';
+import { EngDialog } from './views/engineering.js';
 import { MaintenanceView } from './views/maintenance.js';
 import { PumpView } from './views/pump.js';
 import { SettingsView } from './views/settings.js';
@@ -85,17 +86,19 @@ function Header({ route }) {
 function Footer() {
   const s = useStore();
   const clicks = useRef([]);
+  const [eng, setEng] = useState(false);
   const ver = s.info && s.info.firmware ? s.info.firmware.version : '';
   const tap = () => {
     const now = Date.now();
     clicks.current = clicks.current.filter(c => now - c < 3000).concat(now);
-    if (clicks.current.length >= 7) location.href = '/login?eng=1&next=' + encodeURIComponent('/' + location.hash);
+    if (clicks.current.length >= 7) { clicks.current = []; setEng(true); }
   };
   return html`<footer>
     <span>© LG Aquatic Life</span>
     <button class="ver" onClick=${tap}>Firmware ${ver}</button>
     <a href="#/maintenance">${t('footer.maint')}</a>
-  </footer>`;
+  </footer>
+  ${eng && html`<${EngDialog} onClose=${() => setEng(false)}/>`}`;
 }
 
 function Banners() {
