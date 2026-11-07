@@ -328,5 +328,16 @@ label.check input { margin-top: 3px; }
 input[type=time], input[type=date], .amount { min-height: 38px; }
 .msg { white-space: pre-line; }
 
-/* ---- settings: time ---- */
+/* ---- settings: time, network ---- */
+fieldset.sub { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; margin: 16px 0 0; min-width: 0; }
+fieldset.sub legend { font-size: 13px; font-weight: 650; padding: 0 6px; }
+fieldset.sub > button { margin-top: 14px; }
+.ipgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0 10px; }
+.ipgrid .field input { width: 100%; }
+.row.nowrap { flex-wrap: nowrap; }
+.row.nowrap input { flex: 1; min-width: 0; }
+.nets { display: grid; gap: 2px; margin-top: 6px; max-height: 240px; overflow-y: auto; }
+.nets button { display: flex; justify-content: space-between; gap: 10px; background: var(--card-2); color: var(--text); border-color: var(--line); text-align: left; }
+.stats.net dd { overflow-wrap: anywhere; }
 .settings .card > h2 + .stats { margin-top: 10px; }
+input.bad, select.bad { border-color: var(--err); }
