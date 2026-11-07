@@ -204,7 +204,7 @@ function planLines(s) {
   return [s.times.map(x => `${x.time} · ${num(x.ml, 2)} ml`).join(', '), tail];
 }
 
-function errorText(e, grid, body) {
+export function errorText(e, grid, body) {
   if (!e) return '';
   const info = e.body && e.body.error;
   if (e.code === 'conflict' && info && info.conflicts) {
@@ -227,9 +227,9 @@ const localError = (ex, grid) => {
 // ---------------------------------------------------------------------------
 // Schedules of all pumps (GET /api/v1/pumps/schedule), shared while the page is open
 
-const cache = {};
+export const cache = {};
 
-async function loadAll(setTick) {
+export async function loadAll(setTick) {
   for (let n = 1; n <= 5; ++n) {
     try { cache[n] = await api('GET', '/api/v1/pumps/schedule?pump=' + n); } catch (e) { cache[n] = { error: e }; }
     setTick(x => x + 1);
@@ -239,7 +239,7 @@ async function loadAll(setTick) {
 // ---------------------------------------------------------------------------
 // Day overview: one row per pump, today's doses as dots
 
-function Timeline({ pumps, current, draft, today, grid, nowMin }) {
+export function Timeline({ pumps, current, draft, today, grid, nowMin }) {
   const day = today ? dayNum(today) : null;
   return html`<section class="card timeline">
     <h2>${t('sc.today')}</h2>
@@ -479,7 +479,8 @@ export function ScheduleView({ pump }) {
   const pro = prefs.mode === 'pro';
   const grid = (s && s.grid_min) || 5;
   const onSaved = j => { setDraft(draftOf(j)); setTick(x => x + 1); };
-  return html`<div class="page-head"><h1>${t('sched.title')}</h1></div>
+  return html`<div class="page-head"><h1>${t('sched.title')}</h1>
+      ${pro && html`<span class="spacer"></span><a class="btn sec" href="#/schedule/locks">${t('lk.title')}</a>`}</div>
     <${Timeline} pumps=${st.pumps} current=${cur} draft=${pro ? draft : null} today=${today} grid=${grid} nowMin=${nowMin}/>
     <${PumpTabs} current=${cur} pumps=${st.pumps} base="#/schedule/"/>
     <div class="sc" style=${{ '--pc': pumpColor(cur) }}>

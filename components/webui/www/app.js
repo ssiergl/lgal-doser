@@ -8,6 +8,7 @@ import { setMode, usePrefs } from './lib/prefs.js';
 import { start, useStore } from './lib/store.js';
 import { Dashboard } from './views/dashboard.js';
 import { PumpView } from './views/pump.js';
+import { LocksView } from './views/locks.js';
 import { ScheduleView } from './views/schedule.js';
 import { SettingsView } from './views/settings.js';
 
@@ -33,7 +34,7 @@ add({
 });
 
 // ---------------------------------------------------------------------------
-// Router: #/, #/pump/3, #/schedule[/3], #/settings
+// Router: #/, #/pump/3, #/schedule[/3], #/schedule/locks, #/settings
 
 function parse() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -113,7 +114,7 @@ function App() {
   switch (route.name) {
     case 'home': page = html`<${Dashboard}/>`; break;
     case 'pump': page = html`<${PumpView} pump=${+route.arg}/>`; break;
-    case 'schedule': page = html`<${ScheduleView} pump=${+route.arg || 1}/>`; break;
+    case 'schedule': page = route.arg === 'locks' ? html`<${LocksView}/>` : html`<${ScheduleView} pump=${+route.arg || 1}/>`; break;
     case 'settings': page = html`<${SettingsView}/>`; break;
     default: page = html`<div class="empty">${t('notfound')}</div>`;
   }
