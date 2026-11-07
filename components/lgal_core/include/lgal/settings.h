@@ -2,6 +2,7 @@
 // Persistent core settings (NVS namespace "lgal").
 
 #include "esp_err.h"
+#include "lgal/led_night.h"
 
 namespace lgal::settings {
 
@@ -18,6 +19,10 @@ inline constexpr const char* kLanguages[] = {"en", "de"};
 const char* language();
 bool language_supported(const char* code);
 esp_err_t set_language(const char* code);  // ESP_ERR_INVALID_ARG for an unknown language
+
+// Night mode of the status LED; default off. Kept in RAM after the first read.
+led::NightMode led_night();
+esp_err_t set_led_night(const led::NightMode& n);  // ESP_ERR_INVALID_ARG if !led::valid(n)
 
 // Factory reset: erase NVS completely and the data partition "storage",
 // then reboot. Does not return.

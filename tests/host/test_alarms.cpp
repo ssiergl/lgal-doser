@@ -1,7 +1,8 @@
-// Host tests for the status LED alarms.
+// Host tests for the status LED alarms and the night mode window.
 #include <cstdio>
 
 #include "doser/alarms.h"
+#include "lgal/led_night.h"
 
 using namespace doser;
 
@@ -85,8 +86,47 @@ static void test_alarms() {
     CHECK(o.critical && o.warning);
 }
 
+static void test_night() {
+    std::printf("Night mode\n");
+    using lgal::led::in_window;
+    // same day window
+    CHECK(!in_window(8 * 60, 12 * 60, 8 * 60 - 1));
+    CHECK(in_window(8 * 60, 12 * 60, 8 * 60));
+    CHECK(in_window(8 * 60, 12 * 60, 12 * 60 - 1));
+    CHECK(!in_window(8 * 60, 12 * 60, 12 * 60));
+    // over midnight
+    CHECK(in_window(22 * 60, 7 * 60, 22 * 60));
+    CHECK(in_window(22 * 60, 7 * 60, 23 * 60 + 59));
+    CHECK(in_window(22 * 60, 7 * 60, 0));
+    CHECK(in_window(22 * 60, 7 * 60, 7 * 60 - 1));
+    CHECK(!in_window(22 * 60, 7 * 60, 7 * 60));
+    CHECK(!in_window(22 * 60, 7 * 60, 12 * 60));
+    // empty window, invalid minutes
+    CHECK(!in_window(600, 600, 600));
+    CHECK(!in_window(22 * 60, 7 * 60, -1));
+    CHECK(!in_window(22 * 60, 7 * 60, 1440));
+
+    lgal::led::NightMode n;
+    CHECK(lgal::led::valid(n));
+    CHECK(lgal::led::idle_brightness(n, 23 * 60) == 100);  // off by default
+    n.enabled = true;
+    n.brightness = 15;
+    CHECK(lgal::led::idle_brightness(n, 23 * 60) == 15);
+    CHECK(lgal::led::idle_brightness(n, 12 * 60) == 100);
+    CHECK(lgal::led::idle_brightness(n, -1) == 100);  // no valid time: full
+    n.brightness = 0;
+    CHECK(lgal::led::idle_brightness(n, 3 * 60) == 0);
+
+    n.start_min = 1440;
+    CHECK(!lgal::led::valid(n));
+    n.start_min = 0;
+    n.brightness = 101;
+    CHECK(!lgal::led::valid(n));
+}
+
 int main() {
     test_alarms();
+    test_night();
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

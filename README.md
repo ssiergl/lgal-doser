@@ -186,7 +186,7 @@ und REST-Entlüften zurück („Abfrage“).
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
 Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 68 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+gzip-komprimiert (≈ 72 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
@@ -200,6 +200,7 @@ nicht, `idf.py build` reicht.
 | Boost | Karte im Pumpen-Detail (Einfach und Profi): Zusatzmenge über 1–30 Tage mit Vorschau „≈ X ml zusätzlich pro Tag“, Hinweis bei fehlendem Zeitplan, Betrieb ≠ automatisch oder Überschreiten des Tageslimits. Ein laufender Boost zeigt Rest, Fortschritt und Enddatum und lässt sich beenden; Übersicht und Kopfzeile zeigen ihn ebenfalls. |
 | Sperrzeiten | Nur Profi, in den Einstellungen: Pumpenpaare mit Mindestabstand in Minuten (bis 10 Regeln) und ob eine manuelle Dosis in der Sperrzeit abgelehnt wird oder wartet. Das Gerät prüft beim Speichern alle Zeitpläne gegen die Regeln und meldet Kollisionen. |
 | Uhrzeit | In den Einstellungen: Gerätezeit und Quelle (Zeitserver, Uhrenmodul, von Hand), Warnung bei mehr als 2 min Abweichung zum Browser oder stummem Uhrenmodul, „Uhrzeit von diesem Browser übernehmen“. Zeitzone (Liste wie im Einrichtungsassistenten oder POSIX-Angabe, Vorschlag aus dem Browser) für alle; Zeitserver (NTP) und letzter Abgleich nur in Profi. |
+| Status-LED | In den Einstellungen für alle: was die LED gerade zeigt, die Bedeutung der Farben und der Nachtmodus (Zeitfenster, Bereit-Licht nachts aus / 10 / 25 / 50 %). |
 | Netzwerk | In den Einstellungen: Status (aktive Schnittstelle, LAN- und WLAN-Adresse, Signal, Setup-WLAN, Countdown bis zum WLAN-Ersatz) für alle. Nur Profi: Schnittstelle (automatisch / nur LAN / nur WLAN), DHCP oder feste Adressen je Schnittstelle (vorbelegt mit den aktuellen), WLAN-Suche, Passwort, Verbindungstest und Speichern; ändert sich die feste LAN-Adresse, nennt die Seite die neue. `/network` bleibt als Notfallseite. |
 | Anmeldung | In den Einstellungen: Passwort ändern (bzw. erstmals festlegen) und Abmelden für alle; API-Schlüssel (Liste, erzeugen mit einmaliger Anzeige und Kopieren, löschen) nur in Profi. `/login` bleibt für Anmeldung, Passwort vergessen und Engineering. |
 | Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage. Nur Profi: Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
@@ -264,6 +265,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` freischalten / sperren |
 | GET | `/api/v1/system/info` | Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
+| GET / PUT | `/api/v1/system/led` | angezeigter Zustand (`shown`) und Nachtmodus / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (fehlende Felder bleiben, 400 `invalid_param` mit `field`) |
 | GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` (alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
 | GET | `/setup` | Ersteinrichtung |
 | GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
@@ -419,6 +421,11 @@ LED-Zustände, höchste Priorität zuerst:
 
 Ausgeschaltete Pumpen (Betrieb „aus“) lösen weder Alarm noch Warnung aus. Die Regel steht in
 `doser/alarms.h` (Host-getestet); `main.cpp` wertet sie alle 2 s aus.
+
+**Nachtmodus** (Einstellungen → Status-LED oder `PUT /api/v1/system/led`): dimmt das Bereit-Licht
+(Grün/Türkis) in einem Zeitfenster der Ortszeit, z. B. 22:00–07:00, oder schaltet es aus. Alarme,
+Warnungen und laufende Vorgänge bleiben voll sichtbar; ohne gültige Uhrzeit bleibt das Licht hell.
+Ab Werk aus.
 
 ## Meilensteine
 

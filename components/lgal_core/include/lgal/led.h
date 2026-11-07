@@ -6,6 +6,7 @@
 #include <cstdint>
 #include "esp_err.h"
 #include "driver/gpio.h"
+#include "lgal/led_night.h"
 
 namespace lgal::led {
 
@@ -41,5 +42,10 @@ bool is_set(State s);
 
 // Night mode: brightness of the idle indication (prio 7) in percent, 0 = off.
 void set_idle_brightness(uint8_t percent);
+uint8_t idle_brightness();
+
+// Name of the state shown right now ("critical", "warning", "idle_lan", ...,
+// "off" without any active state) for the API
+const char* shown_state();
 
 }  // namespace lgal::led

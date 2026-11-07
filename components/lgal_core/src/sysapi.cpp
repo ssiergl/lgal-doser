@@ -21,6 +21,7 @@
 #include "esp_timer.h"
 #include "lgal/device.h"
 #include "lgal/http.h"
+#include "lgal/led.h"
 #include "lgal/logbuf.h"
 #include "lgal/net.h"
 #include "lgal/settings.h"
@@ -254,7 +255,7 @@ esp_err_t get_time(httpd_req_t* req) {
     return http::send_json(req, j.c_str());
 }
 
-esp_err_t time_error(httpd_req_t* req, const char* field) {
+esp_err_t param_error(httpd_req_t* req, const char* field) {
     Json j;
     j.obj().obj("error").kv("code", "invalid_param").kv("message", field).kv("field", field).end().end();
     return http::send_json(req, j.c_str(), "400 Bad Request");
@@ -271,16 +272,96 @@ esp_err_t put_time(httpd_req_t* req) {
     char tz[timesync::kMaxTz + 2] = "", ntp[timesync::kMaxNtp + 2] = "";
     int64_t utc = 0;
     const JsonValue vtz = root["timezone"], vntp = root["ntp_server"], vutc = root["utc"];
-    if (vtz.valid() && (!vtz.get(tz, sizeof(tz)) || !timesync::timezone_valid(tz))) return time_error(req, "timezone");
+    if (vtz.valid() && (!vtz.get(tz, sizeof(tz)) || !timesync::timezone_valid(tz))) return param_error(req, "timezone");
     if (vntp.valid() && (!vntp.get(ntp, sizeof(ntp)) || !timesync::ntp_server_valid(ntp)))
-        return time_error(req, "ntp_server");
-    if (vutc.valid() && (!vutc.get(&utc) || utc < 1735689600)) return time_error(req, "utc");
+        return param_error(req, "ntp_server");
+    if (vutc.valid() && (!vutc.get(&utc) || utc < 1735689600)) return param_error(req, "utc");
     esp_err_t err = ESP_OK;
     if (vtz.valid()) err = timesync::set_timezone(tz);
     if (err == ESP_OK && vntp.valid()) err = timesync::set_ntp_server(ntp);
     if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", esp_err_to_name(err));
     if (vutc.valid()) timesync::set_manual(utc);
     return get_time(req);
+}
+
+// Local minute of the day, -1 without valid time
+int local_minute() {
+    const auto ts = timesync::status();
+    if (!ts.valid) return -1;
+    time_t t = static_cast<time_t>(ts.utc);
+    tm lt{};
+    localtime_r(&t, &lt);
+    return lt.tm_hour * 60 + lt.tm_min;
+}
+
+void fmt_hm(uint16_t minute, char (&out)[6]) {
+    const unsigned h = (minute / 60) % 24, m = minute % 60;
+    out[0] = char('0' + h / 10);
+    out[1] = char('0' + h % 10);
+    out[2] = ':';
+    out[3] = char('0' + m / 10);
+    out[4] = char('0' + m % 10);
+    out[5] = 0;
+}
+
+// "HH:MM" -> minute of the day
+bool parse_hm(const char* s, uint16_t* out) {
+    unsigned h = 0, m = 0;
+    char rest = 0;
+    if (std::strlen(s) != 5 || std::sscanf(s, "%2u:%2u%c", &h, &m, &rest) != 2 || h > 23 || m > 59) return false;
+    *out = static_cast<uint16_t>(h * 60 + m);
+    return true;
+}
+
+esp_err_t send_led(httpd_req_t* req) {
+    const led::NightMode n = settings::led_night();
+    char start[6], end[6];
+    fmt_hm(n.start_min, start);
+    fmt_hm(n.end_min, end);
+    Json j;
+    j.obj().kv("shown", led::shown_state()).kv("idle_brightness", static_cast<int64_t>(led::idle_brightness()));
+    j.obj("night")
+        .kv("enabled", n.enabled)
+        .kv("start", start)
+        .kv("end", end)
+        .kv("brightness", static_cast<int64_t>(n.brightness))
+        .kv("active", n.enabled && led::in_window(n.start_min, n.end_min, local_minute()))
+        .end();
+    j.end();
+    return http::send_json(req, j.c_str());
+}
+
+esp_err_t get_led(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    return send_led(req);
+}
+
+// {"night":{"enabled"?,"start"?,"end"?,"brightness"?}}: missing members stay
+esp_err_t put_led(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    std::string body;
+    JsonReader doc;
+    JsonToken tok[16];
+    if (!http::read_json(req, 256, &body, &doc, tok, 16)) return ESP_OK;
+    const JsonValue night = doc.root()["night"];
+    if (!night.valid()) return param_error(req, "night");
+    led::NightMode n = settings::led_night();
+    char buf[8];
+    int64_t v = 0;
+    if (const JsonValue x = night["enabled"]; x.valid() && !x.get(&n.enabled)) return param_error(req, "night.enabled");
+    if (const JsonValue x = night["start"]; x.valid() && (!x.get(buf, sizeof(buf)) || !parse_hm(buf, &n.start_min)))
+        return param_error(req, "night.start");
+    if (const JsonValue x = night["end"]; x.valid() && (!x.get(buf, sizeof(buf)) || !parse_hm(buf, &n.end_min)))
+        return param_error(req, "night.end");
+    if (const JsonValue x = night["brightness"]; x.valid()) {
+        if (!x.get(&v) || v < 0 || v > 100) return param_error(req, "night.brightness");
+        n.brightness = static_cast<uint8_t>(v);
+    }
+    if (n.enabled && n.start_min == n.end_min) return param_error(req, "night.end");
+    if (const esp_err_t err = settings::set_led_night(n); err != ESP_OK)
+        return http::send_error(req, "500 Internal Server Error", "storage_error", esp_err_to_name(err));
+    led::set_idle_brightness(led::idle_brightness(n, local_minute()));
+    return send_led(req);
 }
 
 void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(httpd_req_t*)) {
@@ -310,6 +391,8 @@ esp_err_t register_handlers(httpd_handle_t server) {
     reg(server, "/api/v1/system/language", HTTP_POST, post_language);
     reg(server, "/api/v1/system/time", HTTP_GET, get_time);
     reg(server, "/api/v1/system/time", HTTP_PUT, put_time);
+    reg(server, "/api/v1/system/led", HTTP_GET, get_led);
+    reg(server, "/api/v1/system/led", HTTP_PUT, put_led);
     return ESP_OK;
 }
 

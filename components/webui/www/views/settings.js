@@ -1,9 +1,10 @@
-// Settings: appearance, time, network, login and API keys, rules between
-// pumps (pro) and device pages.
+// Settings: appearance, time, status LED, network, login and API keys, rules
+// between pumps (pro) and device pages.
 import { html } from '../lib/html.js';
 import { add, languages, setLang, t, useLang } from '../lib/i18n.js';
 import { setMode, setTheme, usePrefs } from '../lib/prefs.js';
 import { AccountCard } from './account.js';
+import { LedCard } from './led.js';
 import { LocksCard } from './locks.js';
 import { NetworkCard } from './network.js';
 import { TimeCard } from './time.js';
@@ -40,6 +41,7 @@ export function SettingsView() {
           <p class="mut small">${t('set.mode.hint')}</p></div>
       </section>
       <${TimeCard} pro=${pro}/>
+      <${LedCard}/>
       <${NetworkCard} pro=${pro}/>
       <${AccountCard} pro=${pro}/>
       ${pro && html`<${LocksCard}/>`}

@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 #include "doser/alarms.h"
 #include "doser/dosing.h"
@@ -96,6 +97,16 @@ void update_status_led() {
     lgal::led::set(State::Warning, al.warning || (ns.active == lgal::net::Iface::None && !ns.ap_active));
     lgal::led::set(State::Dosing, doser::motion::any_running());
     lgal::led::set(State::Service, doser::dosing::service());
+
+    // night mode dims only the idle indication
+    int minute = -1;
+    if (ts.valid) {
+        const time_t t = static_cast<time_t>(ts.utc);
+        tm lt{};
+        localtime_r(&t, &lt);
+        minute = lt.tm_hour * 60 + lt.tm_min;
+    }
+    lgal::led::set_idle_brightness(lgal::led::idle_brightness(lgal::settings::led_night(), minute));
 }
 
 void init_hardware() {

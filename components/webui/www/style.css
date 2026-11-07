@@ -357,3 +357,12 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .dialog .spacer { flex: 1; }
 .dialog h3 { margin-top: 14px; }
 .dialog .ok { color: var(--ok); }
+
+/* ---- status LED ---- */
+.led-dot { flex: none; display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); border: 1px solid color-mix(in srgb, var(--c) 60%, var(--line)); }
+.led-dot.off { box-shadow: none; border-color: var(--line); }
+.led-now { display: flex; gap: 10px; align-items: baseline; margin: 10px 0 6px; font-size: 14px; }
+.led-legend summary { cursor: pointer; color: var(--acc); }
+.led-legend ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.led-legend li { display: flex; gap: 10px; align-items: baseline; }
+.led-times .field { margin-top: 14px; }
