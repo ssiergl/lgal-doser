@@ -147,4 +147,16 @@ bool is_set(State s) { return s_flags.load() & (1u << static_cast<uint8_t>(s)); 
 
 void set_idle_brightness(uint8_t percent) { s_idle_brightness = percent > 100 ? 100 : percent; }
 
+uint8_t idle_brightness() { return s_idle_brightness; }
+
+const char* shown_state() {
+    static constexpr const char* kNames[] = {"button_reset", "button_ap", "boot",     "critical", "ota",     "service",
+                                             "dosing",       "setup_ap",  "warning",  "idle_lan", "idle_wlan"};
+    static_assert(sizeof(kNames) / sizeof(kNames[0]) == static_cast<size_t>(State::Count));
+    const uint32_t flags = s_flags.load();
+    for (uint8_t i = 0; i < static_cast<uint8_t>(State::Count); ++i)
+        if (flags & (1u << i)) return kNames[i];
+    return "off";
+}
+
 }  // namespace lgal::led

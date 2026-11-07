@@ -17,7 +17,21 @@ constexpr const char* TAG = "settings";
 constexpr const char* kNs = "lgal";
 constexpr const char* kKeySetupDone = "setup_done";
 constexpr const char* kKeyLanguage = "lang";
+constexpr const char* kKeyLedNight = "led_night";
 char s_lang[4] = "";  // cache, empty = not loaded yet
+
+// LED night mode: read by the main loop, written by the HTTP task
+struct NightBlob {
+    uint8_t version;
+    uint8_t enabled;
+    uint8_t brightness;
+    uint8_t reserved;
+    uint16_t start_min;
+    uint16_t end_min;
+};
+portMUX_TYPE s_night_mux = portMUX_INITIALIZER_UNLOCKED;
+led::NightMode s_night;
+bool s_night_loaded = false;
 }  // namespace
 
 esp_err_t init() {
@@ -83,6 +97,49 @@ esp_err_t set_language(const char* code) {
         ESP_LOGI(TAG, "Language set to %s", code);
     }
     return err;
+}
+
+led::NightMode led_night() {
+    taskENTER_CRITICAL(&s_night_mux);
+    const bool loaded = s_night_loaded;
+    led::NightMode n = s_night;
+    taskEXIT_CRITICAL(&s_night_mux);
+    if (loaded) return n;
+    n = led::NightMode{};
+    nvs_handle_t h;
+    if (nvs_open(kNs, NVS_READONLY, &h) == ESP_OK) {
+        NightBlob b{};
+        size_t len = sizeof(b);
+        if (nvs_get_blob(h, kKeyLedNight, &b, &len) == ESP_OK && len == sizeof(b) && b.version == 1) {
+            const led::NightMode r{b.enabled != 0, b.start_min, b.end_min, b.brightness};
+            if (led::valid(r)) n = r;
+        }
+        nvs_close(h);
+    }
+    taskENTER_CRITICAL(&s_night_mux);
+    s_night = n;
+    s_night_loaded = true;
+    taskEXIT_CRITICAL(&s_night_mux);
+    return n;
+}
+
+esp_err_t set_led_night(const led::NightMode& n) {
+    if (!led::valid(n)) return ESP_ERR_INVALID_ARG;
+    const NightBlob b{1, uint8_t(n.enabled ? 1 : 0), n.brightness, 0, n.start_min, n.end_min};
+    nvs_handle_t h;
+    esp_err_t err = nvs_open(kNs, NVS_READWRITE, &h);
+    if (err != ESP_OK) return err;
+    err = nvs_set_blob(h, kKeyLedNight, &b, sizeof(b));
+    if (err == ESP_OK) err = nvs_commit(h);
+    nvs_close(h);
+    if (err != ESP_OK) return err;
+    taskENTER_CRITICAL(&s_night_mux);
+    s_night = n;
+    s_night_loaded = true;
+    taskEXIT_CRITICAL(&s_night_mux);
+    ESP_LOGI(TAG, "LED night mode %s %02u:%02u-%02u:%02u at %u %%", n.enabled ? "on" : "off", n.start_min / 60,
+             n.start_min % 60, n.end_min / 60, n.end_min % 60, n.brightness);
+    return ESP_OK;
 }
 
 void factory_reset() {
