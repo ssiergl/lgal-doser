@@ -70,6 +70,13 @@ export function whenLocal(local, nowLocal) {
   return `${+day}.${+m}. ${hm}`;
 }
 
+// Pump switcher in the pump colours; base is the link prefix ('#/pump/')
+export function PumpTabs({ current, pumps, base = '#/pump/' }) {
+  return html`<nav class="pump-tabs">${pumps.map(p => html`
+    <a href=${base + p.pump} class=${p.pump === current ? 'on' : ''} style=${{ '--pc': pumpColor(p.pump) }}>
+      <span class="badge">${p.pump}</span><span class="nm">${pumpName(p)}</span></a>`)}</nav>`;
+}
+
 // ---------------------------------------------------------------------------
 // Container graphic: canister with liquid level in the pump colour
 

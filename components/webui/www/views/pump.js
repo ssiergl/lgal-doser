@@ -5,7 +5,7 @@ import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, getLang, num, t } from '../lib/i18n.js';
 import { usePrefs } from '../lib/prefs.js';
-import { Container, alerts, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
+import { Container, PumpTabs, alerts, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
 import { Amount, HoldButton, Seg, parseNum, useMsg } from '../lib/ui.js';
 
@@ -94,12 +94,6 @@ const refresh = () => { reloadPumps(); reloadSched(); };
 const dec = v => String(v).replace(',', '.');
 
 // ---------------------------------------------------------------------------
-
-function PumpTabs({ current, pumps }) {
-  return html`<nav class="pump-tabs">${pumps.map(p => html`
-    <a href=${'#/pump/' + p.pump} class=${p.pump === current ? 'on' : ''} style=${{ '--pc': pumpColor(p.pump) }}>
-      <span class="badge">${p.pump}</span><span class="nm">${pumpName(p)}</span></a>`)}</nav>`;
-}
 
 function ContainerCard({ p, sp }) {
   const c = p.container;

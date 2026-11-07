@@ -33,7 +33,7 @@ add({
 });
 
 // ---------------------------------------------------------------------------
-// Router: #/, #/pump/3, #/schedule, #/settings
+// Router: #/, #/pump/3, #/schedule[/3], #/settings
 
 function parse() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -113,7 +113,7 @@ function App() {
   switch (route.name) {
     case 'home': page = html`<${Dashboard}/>`; break;
     case 'pump': page = html`<${PumpView} pump=${+route.arg}/>`; break;
-    case 'schedule': page = html`<${ScheduleView}/>`; break;
+    case 'schedule': page = html`<${ScheduleView} pump=${+route.arg || 1}/>`; break;
     case 'settings': page = html`<${SettingsView}/>`; break;
     default: page = html`<div class="empty">${t('notfound')}</div>`;
   }
