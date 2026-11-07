@@ -65,6 +65,8 @@ struct Status {
 Status status();
 // Is this client (IPv4, network byte order) connected through the open setup AP?
 bool is_setup_ap_client(uint32_t ip);
+// Address of the device in the setup AP (network byte order)
+uint32_t setup_ap_ip();
 // RSSI of the connected access point (dBm), 0 if not connected
 int wlan_rssi();
 
