@@ -15,6 +15,7 @@ idf_component_register(
         "src/auth_core.cpp"
         "src/auth.cpp"
         "src/net_config.cpp"
+        "src/mqtt_config.cpp"
         "src/netapi.cpp"
         "src/dns_reply.cpp"
         "src/captive.cpp"

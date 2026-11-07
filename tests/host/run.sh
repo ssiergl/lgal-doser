@@ -50,6 +50,17 @@ $CXX \
 echo
 $CXX \
     -I components/lgal_core/include \
+    tests/host/test_mqtt_config.cpp \
+    components/lgal_core/src/mqtt_config.cpp \
+    components/lgal_core/src/net_config.cpp \
+    components/lgal_core/src/json.cpp \
+    components/lgal_core/src/json_reader.cpp \
+    -o "$OUT/mqtt_config"
+"$OUT/mqtt_config"
+
+echo
+$CXX \
+    -I components/lgal_core/include \
     tests/host/test_dns.cpp \
     components/lgal_core/src/dns_reply.cpp \
     -o "$OUT/dns"
@@ -166,6 +177,7 @@ $CXX \
     -I components/lgal_core/include \
     tests/host/test_backup_json.cpp \
     components/doser_app/src/backup_json.cpp \
+    components/lgal_core/src/mqtt_config.cpp \
     components/doser_app/src/schedule_json.cpp \
     components/doser_app/src/schedule_core.cpp \
     components/doser_app/src/dosing_core.cpp \
