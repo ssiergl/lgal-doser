@@ -8,6 +8,7 @@ import { html } from '../lib/html.js';
 import { add, errText, t } from '../lib/i18n.js';
 import { useStore } from '../lib/store.js';
 import { useMsg } from '../lib/ui.js';
+import { BackupSection } from './backup.js';
 
 add({
   en: {
@@ -69,6 +70,7 @@ export function EngDialog({ onClose }) {
     body = html`<p class="small ok">${t('eng.on', { m: Math.max(1, Math.ceil(S.engineering_left_s / 60)) })}</p>
       ${links.length > 0 && html`<h3>${t('eng.pages')}</h3>
         <ul class="links">${links.map(l => html`<li><a href=${l.path}>${name(l)}</a></li>`)}</ul>`}
+      <${BackupSection}/>
       <div class="row savebar"><button type="button" class="sec" onClick=${lock}>${t('eng.lock')}</button></div>`;
   } else {
     body = html`<p class="small mut">${t('eng.hint')}</p>
