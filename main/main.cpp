@@ -36,6 +36,7 @@
 #include "lgal/timesync.h"
 #include "lgal/ws.h"
 #include "sdkconfig.h"
+#include "webui/webui.h"
 
 namespace {
 constexpr const char* TAG = "main";
@@ -145,9 +146,11 @@ extern "C" void app_main(void) {
     lgal::captive::register_handlers(lgal::http::handle());
     lgal::setup::register_handlers(lgal::http::handle());
     lgal::ws::register_handlers(lgal::http::handle());
+    webui::register_handlers(lgal::http::handle());
     doser::hwtest::register_handlers(lgal::http::handle());
     doser::dosing_api::register_handlers(lgal::http::handle());
     doser::schedule_api::register_handlers(lgal::http::handle());
+    lgal::sysapi::add_link("app", "Web interface", "/");
     lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
     lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
     lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
