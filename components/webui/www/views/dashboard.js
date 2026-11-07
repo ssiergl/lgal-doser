@@ -9,13 +9,13 @@ add({
     'dash.title': 'Overview', 'dash.today': 'Today', 'dash.range': 'Lasts', 'dash.next': 'Next',
     'dash.days': '{d} days', 'dash.day1': '< 1 day', 'dash.none': '–', 'dash.left': '{ml} ml left',
     'dash.run': '{done} of {target} ml', 'dash.prime': '{s} s · {ml} ml', 'dash.ok': 'Everything is fine',
-    'dash.alerts': '{n} notes',
+    'dash.alerts': '{n} notes', 'dash.boost': 'Boost: {ml} ml to go',
   },
   de: {
     'dash.title': 'Übersicht', 'dash.today': 'Heute', 'dash.range': 'Reicht', 'dash.next': 'Nächste',
     'dash.days': '{d} Tage', 'dash.day1': '< 1 Tag', 'dash.none': '–', 'dash.left': 'noch {ml} ml',
     'dash.run': '{done} von {target} ml', 'dash.prime': '{s} s · {ml} ml', 'dash.ok': 'Alles in Ordnung',
-    'dash.alerts': '{n} Hinweise',
+    'dash.alerts': '{n} Hinweise', 'dash.boost': 'Boost: noch {ml} ml',
   },
 });
 
@@ -66,6 +66,7 @@ function PumpCard({ p, sp, nowLocal }) {
         <div class="kv"><span class="mut">${t('dash.next')}</span>
           <b class="num">${sp && sp.next ? html`${whenLocal(sp.next.local, nowLocal)} <span class="mut">· ${num(sp.next.ml, 1)} ml</span>` : t('dash.none')}</b></div>
         ${p.container.tracked && html`<div class="mut small num">${t('dash.left', { ml: num(p.container.remaining_ml, 0) })}</div>`}
+        ${sp && sp.boost && html`<div class="small num acc">${t('dash.boost', { ml: num(sp.boost.remaining_ml, 1) })}</div>`}
       </div>
     </div>
     <${Running} p=${p}/>

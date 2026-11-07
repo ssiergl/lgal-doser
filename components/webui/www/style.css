@@ -204,6 +204,8 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .kv b { font-weight: 600; text-align: right; white-space: nowrap; }
 .kv .err, .err { color: var(--err); }
 .kv .warn, .warn { color: var(--warn); }
+.acc { color: var(--acc); }
+.boost .bar { margin: 6px 0 4px; }
 .bar { height: 6px; border-radius: 3px; background: var(--card-2); overflow: hidden; margin-top: 4px; }
 .bar i { display: block; height: 100%; border-radius: 3px; background: var(--acc); transition: width .3s ease; }
 .bar.indet i { width: 40% !important; animation: indet 1.4s ease-in-out infinite; }
