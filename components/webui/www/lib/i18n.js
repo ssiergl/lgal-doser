@@ -72,6 +72,11 @@ add({
     'err.storage_error': 'Could not save',
     'err.unauthorized': 'Please log in again',
     'err.engineering_locked': 'Service area is locked',
+    'err.no_calibration_run': 'No calibration run to apply',
+    'err.measured_out_of_range': 'Measured amount is implausible – please measure again',
+    'err.speed_out_of_range': 'Speed not possible with this calibration',
+    'err.queue_full': 'Too many waiting doses',
+    'err.internal_error': 'Internal error',
   },
   de: {
     'err.network': 'Keine Verbindung zum Gerät',
@@ -90,5 +95,10 @@ add({
     'err.storage_error': 'Speichern fehlgeschlagen',
     'err.unauthorized': 'Bitte erneut anmelden',
     'err.engineering_locked': 'Servicebereich ist gesperrt',
+    'err.no_calibration_run': 'Kein Kalibrierlauf zum Übernehmen',
+    'err.measured_out_of_range': 'Gemessene Menge unplausibel – bitte erneut messen',
+    'err.speed_out_of_range': 'Geschwindigkeit mit dieser Kalibrierung nicht möglich',
+    'err.queue_full': 'Zu viele wartende Dosen',
+    'err.internal_error': 'Interner Fehler',
   },
 });

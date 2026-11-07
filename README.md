@@ -186,7 +186,7 @@ und REST-Entlüften zurück („Abfrage“).
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
 Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 21 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+gzip-komprimiert (≈ 34 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
@@ -195,6 +195,7 @@ nicht, `idf.py build` reicht.
 |---|---|
 | Seiten | Übersicht, Pumpe (Detail), Zeitplan, Einstellungen. Adressen als Hash-Routen, z. B. `/#/pump/3`. |
 | Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
+| Pumpe | Große Behälter-Grafik mit „Nachgefüllt“ und „Ändern“ (Größe 0 = ohne Erfassung), jetzt dosieren mit Fortschritt und Stopp (Sperrzeit: Meldung mit Ende bzw. „startet danach“), Schlauch füllen per Halten (WebSocket mit Totmann, sonst REST), Kalibrier-Assistent (Start → Messbecher → gemessene Menge übernehmen oder verwerfen), Verbrauch (heute, geplant, nächste Dosis, letzter Lauf, gesamt, Schlauchstunden mit Zurücksetzen) und Einstellungen. Name und Betrieb (automatisch / nur manuell / aus) für alle; Geschwindigkeit beim Dosieren, Zielmenge der Kalibrierung und Feintuning nur in Profi. Einfach zeigt aktive Profi-Werte als Hinweis. |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
