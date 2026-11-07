@@ -31,6 +31,9 @@ esp_err_t init(const EthConfig& eth);
 // Start the setup AP. temporary=true: switches off after
 // CONFIG_LGAL_SETUP_AP_TIMEOUT_MIN as soon as no client is connected.
 esp_err_t start_setup_ap(bool temporary);
+// Switch the setup AP off after the given time, even with clients connected
+// (end of the first setup). start_setup_ap cancels it.
+void stop_setup_ap_in(int seconds);
 
 enum class Iface : uint8_t { None, Lan, Wlan };
 enum class WlanState : uint8_t { Off, Connecting, Connected, Disconnected };

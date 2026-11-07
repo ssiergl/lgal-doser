@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LG Aquatic Life – Setup</title>
+<style>
+:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 4px}h2{font-size:17px;margin:0 0 10px}
+.card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:14px}
+button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:600}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button:disabled{opacity:.45;cursor:default}
+input,select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:8px 9px;width:100%}
+input[type=radio],input[type=checkbox]{width:auto;margin:0 8px 0 0}
+label{display:block;font-size:13px;color:var(--mut);margin-top:10px}
+label.opt{display:flex;align-items:center;color:var(--fg);font-size:15px;border:1px solid #2c4757;border-radius:8px;padding:10px;margin-top:8px;cursor:pointer}
+[hidden]{display:none!important}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:10px}.row>*{flex:1 1 150px}.row>button{flex:0 0 auto}
+.nav{display:flex;justify-content:space-between;gap:8px;margin-top:16px}
+.nav #next{margin-left:auto}
+.msg{min-height:1.3em;font-size:13px;margin-top:8px}.err{color:var(--err)}.ok{color:var(--ok)}.mut{color:var(--mut)}.warn{color:var(--warn)}
+.hint{font-size:13px;color:var(--mut);margin:6px 0 0}
+.steps{display:flex;gap:4px;margin:0 0 14px}.steps i{flex:1;height:4px;border-radius:2px;background:#2c4757}.steps i.on{background:var(--acc)}
+.langs button{display:block;width:100%;margin-top:8px;text-align:left}
+.nets{max-height:200px;overflow:auto}.nets button{display:flex;width:100%;justify-content:space-between;background:transparent;color:var(--fg);border:1px solid #2c4757;margin-top:4px;font-weight:400}
+.st{border-left:3px solid #2c4757;padding:4px 10px;margin-top:10px;font-size:14px}.st.good{border-color:var(--ok)}
+.top{display:flex;align-items:center;gap:8px}.top h1{flex:1}.top select{width:auto;padding:5px 7px}
+a{color:var(--acc)}ul{padding-left:20px}
+</style>
+<script src="/i18n.js"></script>
+</head>
+<body>
+<main>
+<div class="top"><h1 data-i18n="title"></h1><select id="lang" data-i18n-title="lang.label"></select></div>
+<p class="mut" id="stepno"></p>
+<div class="steps" id="bar"></div>
+
+<section class="card" data-step="lang">
+<h2 data-i18n="lang.title"></h2>
+<p class="hint" data-i18n="lang.hint"></p>
+<div class="langs" id="langs"></div>
+</section>
+
+<section class="card" data-step="pw">
+<h2 data-i18n="pw.title"></h2>
+<div id="pw_set" hidden><p data-i18n="pw.done"></p></div>
+<form id="f_pw"><p class="hint" data-i18n="pw.hint"></p>
+<label data-i18n="pw.new"></label><input id="pw1" type="password" autocomplete="new-password" minlength="8" maxlength="64">
+<label data-i18n="pw.repeat"></label><input id="pw2" type="password" autocomplete="new-password" maxlength="64">
+<div class="row"><span></span><button data-i18n="pw.save"></button></div></form>
+<div class="msg" id="pw_msg"></div>
+</section>
+
+<section class="card" data-step="net">
+<h2 data-i18n="net.title"></h2>
+<label class="opt"><input type="radio" name="via" value="lan" checked><span data-i18n="net.lan"></span></label>
+<label class="opt"><input type="radio" name="via" value="wlan"><span data-i18n="net.wlan"></span></label>
+<div id="wbox" hidden>
+<div class="row"><div><label data-i18n="net.ssid"></label><input id="ssid" maxlength="32" autocomplete="off"></div><button type="button" class="sec" id="scan" data-i18n="net.scan"></button></div>
+<div class="nets" id="nets"></div><div class="msg" id="scan_msg"></div>
+<label data-i18n="net.password"></label><input id="wpw" type="password" maxlength="63" autocomplete="new-password">
+<div class="row"><span></span><button type="button" id="wtest" data-i18n="net.connect"></button></div>
+</div>
+<div class="st" id="netst"></div>
+<div class="msg" id="net_msg"></div>
+<p class="hint" data-i18n="net.more"></p>
+</section>
+
+<section class="card" data-step="time">
+<h2 data-i18n="time.title"></h2>
+<label data-i18n="time.zone"></label><select id="tz"></select>
+<div id="tzc_box" hidden><label data-i18n="time.posix"></label><input id="tzc" maxlength="63" autocomplete="off" placeholder="CET-1CEST,M3.5.0,M10.5.0/3"></div>
+<label data-i18n="time.ntp"></label><input id="ntp" maxlength="63" autocomplete="off" placeholder="pool.ntp.org">
+<p class="hint" data-i18n="time.ntp.hint"></p>
+<div class="st" id="timest"></div>
+<label class="opt" id="usebr_box" hidden><input type="checkbox" id="usebr"><span data-i18n="time.browser"></span></label>
+<div class="msg" id="time_msg"></div>
+</section>
+
+<section class="card" data-step="done">
+<h2 data-i18n="done.title"></h2>
+<div id="done_todo"><p data-i18n="done.hint"></p><ul id="urls"></ul></div>
+<div id="done_ok" hidden><p class="ok" data-i18n="done.ok"></p><ul id="urls2"></ul><p id="done_ap" data-i18n="done.ap"></p></div>
+<div class="msg" id="done_msg"></div>
+</section>
+
+<div class="nav"><button type="button" class="sec" id="back" data-i18n="back"></button><button type="button" id="next" data-i18n="next"></button></div>
+<p class="mut" style="margin-top:18px"><a href="/recovery" data-i18n="maint"></a></p>
+</main>
+<script>
+i18n.add({
+en:{'title':'LG Aquatic Life · Setup','step':'Step {n} of {m}','back':'Back','next':'Next','maint':'Maintenance page',
+ 'lang.title':'Language','lang.hint':'Language of the web interface. It can be changed on every page.',
+ 'pw.title':'Admin password','pw.hint':'Choose your own password for this device (at least 8 characters). The password from the label then only works for recovery via the setup Wi-Fi.',
+ 'pw.new':'New password','pw.repeat':'Repeat password','pw.save':'Save password','pw.done':'An admin password is set.','pw.ok':'Password saved.','pw.mismatch':'The passwords do not match.',
+ 'net.title':'Network','net.lan':'LAN cable (recommended)','net.wlan':'Wi-Fi','net.ssid':'Network (SSID)','net.scan':'Search','net.scan.run':'Searching …','net.scan.none':'No networks found.',
+ 'net.password':'Wi-Fi password','net.connect':'Connect','net.testing':'Connecting to {s} …','net.saved':'Connected and saved.','net.fail':'Connection failed: {r}',
+ 'net.more':'Static addresses and more options: page "Network" after the setup.',
+ 'net.lan.ok':'LAN connected: {ip}','net.lan.nolink':'No LAN cable detected – please plug it in.','net.lan.noip':'LAN cable detected, waiting for an address …','net.lan.missing':'No LAN module found.',
+ 'net.wlan.ok':'Wi-Fi connected: {s}, {ip}','net.none':'Not connected yet.',
+ 'r.timeout':'no answer','r.no_ap_found':'network not found','r.wrong_password':'wrong password','r.security_mismatch':'security not supported (WPA2 or newer required)','r.connection_failed':'connection failed',
+ 'time.title':'Time','time.zone':'Time zone','time.custom':'Other (POSIX string) …','time.posix':'POSIX time zone','time.ntp':'Time server (NTP)',
+ 'time.ntp.hint':'Empty = no time server; the time then comes from the clock module.','time.now':'Device time: {t}','time.none':'The device has no valid time yet.',
+ 'time.browser':'Take the time from this browser','time.ok':'Saved.',
+ 'done.title':'Finish','done.hint':'The device will be reachable at:','done.btn':'Complete setup','done.ok':'Setup completed.',
+ 'done.ap':'The setup Wi-Fi switches off in {s} s. Connect this phone or computer to your normal network again and open one of the addresses above.',
+ 'done.again':'Setup has already been completed. You can still change everything here.',
+ 'err.password_not_set':'Please set an admin password first (step 2).','err.not_connected':'The device is not connected to LAN or Wi-Fi yet (step 3).',
+ 'err.password_too_short':'At least 8 characters','err.password_too_long':'At most 64 characters'},
+de:{'title':'LG Aquatic Life · Einrichtung','step':'Schritt {n} von {m}','back':'Zurück','next':'Weiter','maint':'Wartungsseite',
+ 'lang.title':'Sprache','lang.hint':'Sprache der Weboberfläche. Sie lässt sich auf jeder Seite ändern.',
+ 'pw.title':'Admin-Passwort','pw.hint':'Wähle ein eigenes Passwort für dieses Gerät (mindestens 8 Zeichen). Das Passwort vom Typenschild gilt danach nur noch zur Wiederherstellung über das Setup-WLAN.',
+ 'pw.new':'Neues Passwort','pw.repeat':'Passwort wiederholen','pw.save':'Passwort speichern','pw.done':'Ein Admin-Passwort ist gesetzt.','pw.ok':'Passwort gespeichert.','pw.mismatch':'Die Passwörter stimmen nicht überein.',
+ 'net.title':'Netzwerk','net.lan':'LAN-Kabel (empfohlen)','net.wlan':'WLAN','net.ssid':'Netzwerk (SSID)','net.scan':'Suchen','net.scan.run':'Suche …','net.scan.none':'Keine Netzwerke gefunden.',
+ 'net.password':'WLAN-Passwort','net.connect':'Verbinden','net.testing':'Verbinde mit {s} …','net.saved':'Verbunden und gespeichert.','net.fail':'Verbindung fehlgeschlagen: {r}',
+ 'net.more':'Feste Adressen und weitere Optionen: Seite „Netzwerk“ nach der Einrichtung.',
+ 'net.lan.ok':'LAN verbunden: {ip}','net.lan.nolink':'Kein LAN-Kabel erkannt – bitte einstecken.','net.lan.noip':'LAN-Kabel erkannt, warte auf Adresse …','net.lan.missing':'Kein LAN-Modul gefunden.',
+ 'net.wlan.ok':'WLAN verbunden: {s}, {ip}','net.none':'Noch nicht verbunden.',
+ 'r.timeout':'keine Antwort','r.no_ap_found':'Netzwerk nicht gefunden','r.wrong_password':'falsches Passwort','r.security_mismatch':'Verschlüsselung nicht unterstützt (WPA2 oder neuer nötig)','r.connection_failed':'Verbindung fehlgeschlagen',
+ 'time.title':'Uhrzeit','time.zone':'Zeitzone','time.custom':'Andere (POSIX-Angabe) …','time.posix':'POSIX-Zeitzone','time.ntp':'Zeitserver (NTP)',
+ 'time.ntp.hint':'Leer = kein Zeitserver; die Zeit kommt dann vom Uhrenmodul.','time.now':'Gerätezeit: {t}','time.none':'Das Gerät hat noch keine gültige Uhrzeit.',
+ 'time.browser':'Uhrzeit von diesem Browser übernehmen','time.ok':'Gespeichert.',
+ 'done.title':'Abschluss','done.hint':'Das Gerät ist danach erreichbar unter:','done.btn':'Einrichtung abschließen','done.ok':'Einrichtung abgeschlossen.',
+ 'done.ap':'Das Setup-WLAN schaltet in {s} s ab. Verbinde dieses Handy oder diesen Computer wieder mit deinem normalen Netzwerk und öffne eine der Adressen oben.',
+ 'done.again':'Die Einrichtung ist bereits abgeschlossen. Du kannst hier trotzdem alles ändern.',
+ 'err.password_not_set':'Bitte zuerst ein Admin-Passwort setzen (Schritt 2).','err.not_connected':'Das Gerät ist noch nicht mit LAN oder WLAN verbunden (Schritt 3).',
+ 'err.password_too_short':'Mindestens 8 Zeichen','err.password_too_long':'Höchstens 64 Zeichen'}
+});
+// Time zones: IANA names (for the browser's zone) -> POSIX rule
+const ZONES=[
+ ['UTC','UTC0',['Etc/UTC','UTC']],
+ ['Europe/London, Dublin','GMT0BST,M3.5.0/1,M10.5.0',['Europe/London','Europe/Dublin','Europe/Guernsey','Europe/Jersey','Europe/Isle_of_Man']],
+ ['Europe/Lisbon','WET0WEST,M3.5.0/1,M10.5.0',['Europe/Lisbon','Atlantic/Canary','Atlantic/Madeira']],
+ ['Europe/Berlin, Vienna, Zurich, Paris, Rome, Madrid …','CET-1CEST,M3.5.0,M10.5.0/3',['Europe/Berlin','Europe/Vienna','Europe/Zurich','Europe/Paris','Europe/Rome','Europe/Madrid','Europe/Amsterdam','Europe/Brussels','Europe/Luxembourg','Europe/Copenhagen','Europe/Oslo','Europe/Stockholm','Europe/Warsaw','Europe/Prague','Europe/Budapest','Europe/Bratislava','Europe/Ljubljana','Europe/Zagreb','Europe/Belgrade','Europe/Vaduz','Europe/Monaco','Europe/Malta','Europe/Andorra','Europe/San_Marino','Europe/Vatican','Europe/Busingen','Europe/Gibraltar','Europe/Sarajevo','Europe/Skopje','Europe/Podgorica','Europe/Tirane','Arctic/Longyearbyen']],
+ ['Europe/Helsinki, Athens, Kyiv, Bucharest …','EET-2EEST,M3.5.0/3,M10.5.0/4',['Europe/Helsinki','Europe/Athens','Europe/Kyiv','Europe/Kiev','Europe/Bucharest','Europe/Sofia','Europe/Riga','Europe/Tallinn','Europe/Vilnius','Europe/Mariehamn','Asia/Nicosia','Europe/Nicosia']],
+ ['Europe/Istanbul','<+03>-3',['Europe/Istanbul','Asia/Istanbul']],
+ ['Europe/Moscow','MSK-3',['Europe/Moscow','Europe/Simferopol']],
+ ['Asia/Dubai','<+04>-4',['Asia/Dubai','Asia/Muscat']],
+ ['Asia/Kolkata','IST-5:30',['Asia/Kolkata','Asia/Calcutta']],
+ ['Asia/Bangkok, Jakarta','<+07>-7',['Asia/Bangkok','Asia/Jakarta','Asia/Ho_Chi_Minh','Asia/Saigon']],
+ ['Asia/Singapore, Kuala Lumpur','<+08>-8',['Asia/Singapore','Asia/Kuala_Lumpur','Asia/Manila']],
+ ['Asia/Shanghai, Hong Kong, Taipei','CST-8',['Asia/Shanghai','Asia/Hong_Kong','Asia/Taipei','Asia/Macau']],
+ ['Asia/Tokyo, Seoul','JST-9',['Asia/Tokyo','Asia/Seoul']],
+ ['Australia/Perth','AWST-8',['Australia/Perth']],
+ ['Australia/Adelaide','ACST-9:30ACDT,M10.1.0,M4.1.0/3',['Australia/Adelaide','Australia/Broken_Hill']],
+ ['Australia/Brisbane','AEST-10',['Australia/Brisbane','Australia/Lindeman']],
+ ['Australia/Sydney, Melbourne','AEST-10AEDT,M10.1.0,M4.1.0/3',['Australia/Sydney','Australia/Melbourne','Australia/Canberra','Australia/Hobart']],
+ ['Pacific/Auckland','NZST-12NZDT,M9.5.0,M4.1.0/3',['Pacific/Auckland']],
+ ['Africa/Johannesburg','SAST-2',['Africa/Johannesburg']],
+ ['America/Sao_Paulo','<-03>3',['America/Sao_Paulo','America/Argentina/Buenos_Aires','America/Buenos_Aires']],
+ ['America/New_York, Toronto','EST5EDT,M3.2.0,M11.1.0',['America/New_York','America/Toronto','America/Detroit','America/Indiana/Indianapolis']],
+ ['America/Chicago','CST6CDT,M3.2.0,M11.1.0',['America/Chicago','America/Winnipeg']],
+ ['America/Denver','MST7MDT,M3.2.0,M11.1.0',['America/Denver','America/Edmonton','America/Boise']],
+ ['America/Phoenix','MST7',['America/Phoenix']],
+ ['America/Los_Angeles, Vancouver','PST8PDT,M3.2.0,M11.1.0',['America/Los_Angeles','America/Vancouver']],
+ ['America/Anchorage','AKST9AKDT,M3.2.0,M11.1.0',['America/Anchorage']],
+ ['Pacific/Honolulu','HST10',['Pacific/Honolulu']],
+];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const STEPS=['lang','pw','net','time','done'];
+let step=0,S=null,NS=null,T=null,timer=null,done=false;
+async function api(method,path,body){
+  const o={method,cache:'no-store'};if(body!==undefined){o.body=JSON.stringify(body);o.headers={'Content-Type':'application/json'}}
+  const r=await fetch(path,o);let j={};try{j=await r.json()}catch(e){}
+  if(r.status===401){location.href='/login?next=/setup';throw new Error('login')}
+  if(!r.ok){const e=new Error(i18n.error(j,r.status));e.body=j;throw e}return j;
+}
+function msg(id,txt,cls){const m=$(id);m.className='msg '+(cls||'err');m.textContent=txt}
+function urls(id,list){$(id).innerHTML=(list||[]).map(u=>`<li><a href="${esc(u)}">${esc(u)}</a></li>`).join('')}
+
+function show(n){
+  step=Math.max(0,Math.min(STEPS.length-1,n));
+  document.querySelectorAll('[data-step]').forEach(s=>s.hidden=s.dataset.step!==STEPS[step]);
+  $('stepno').textContent=t('step',{n:step+1,m:STEPS.length});
+  $('bar').innerHTML=STEPS.map((_,i)=>`<i class="${i<=step?'on':''}"></i>`).join('');
+  $('back').hidden=step===0||done;
+  clearInterval(timer);timer=null;
+  const k=STEPS[step];
+  if(k==='pw')showPw();
+  if(k==='net'){netStatus();timer=setInterval(netStatus,2000)}
+  if(k==='time')loadTime();
+  if(k==='done')loadDone();
+  updNext();
+}
+function updNext(){
+  const k=STEPS[step];
+  $('next').textContent=t(k==='done'?'done.btn':'next');
+  $('next').hidden=done;
+  $('next').disabled=(k==='pw'&&!S.password_set)||(k==='net'&&!(NS&&NS.active!=='none'));
+}
+
+// 1 language
+function buildLangs(){
+  const sel=$('lang');
+  $('langs').innerHTML=[...sel.options].map(o=>`<button type="button" class="${o.value===i18n.lang?'':'sec'}" data-l="${o.value}">${esc(o.textContent)}</button>`).join('');
+  $('langs').querySelectorAll('button').forEach(b=>b.onclick=()=>{i18n.setLang(b.dataset.l,true);show(1)});
+}
+// 2 password
+function showPw(){$('pw_set').hidden=!S.password_set;$('f_pw').hidden=S.password_set;if(!S.password_set)$('pw1').focus()}
+$('f_pw').onsubmit=async e=>{e.preventDefault();
+  if($('pw1').value!==$('pw2').value){msg('pw_msg',t('pw.mismatch'));return}
+  try{await api('POST','/api/v1/auth/password',{new:$('pw1').value});$('pw1').value=$('pw2').value='';
+    S.password_set=true;msg('pw_msg',t('pw.ok'),'ok');showPw();updNext()}catch(err){msg('pw_msg',err.message)}};
+// 3 network
+const via=()=>document.querySelector('[name=via]:checked').value;
+document.querySelectorAll('[name=via]').forEach(r=>r.onchange=()=>{$('wbox').hidden=via()!=='wlan';netStatus()});
+async function netStatus(){
+  try{NS=await api('GET','/api/v1/net/status')}catch(e){return}
+  const L=NS.lan,W=NS.wlan;let txt,good=false;
+  if(W.state==='connected'&&W.ip){txt=t('net.wlan.ok',{s:esc(W.ssid),ip:W.ip});good=true}
+  if(L.ip){txt=t('net.lan.ok',{ip:L.ip})+(txt?'<br>'+txt:'');good=true}
+  if(!txt)txt=via()==='lan'?(!L.present?t('net.lan.missing'):!L.link?t('net.lan.nolink'):t('net.lan.noip')):t('net.none');
+  $('netst').innerHTML=txt;$('netst').className='st'+(good?' good':'');
+  updNext();
+}
+$('scan').onclick=async()=>{
+  $('scan').disabled=true;msg('scan_msg',t('net.scan.run'),'mut');$('nets').innerHTML='';
+  try{await api('POST','/api/v1/net/scan').catch(e=>{if(!(e.body&&e.body.error&&e.body.error.code==='busy'))throw e});
+    let r;for(let i=0;i<40;i++){await sleep(750);r=await api('GET','/api/v1/net/scan');if(r.state!=='running')break}
+    $('scan_msg').textContent=r.networks&&r.networks.length?'':t('net.scan.none');
+    $('nets').innerHTML=(r.networks||[]).map((n,i)=>`<button type="button" data-i="${i}"><span>${n.secure?'🔒 ':''}${esc(n.ssid)}</span><span class="mut">${n.rssi} dBm</span></button>`).join('');
+    $('nets').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('ssid').value=r.networks[b.dataset.i].ssid;$('nets').innerHTML='';$('wpw').focus()});
+  }catch(e){msg('scan_msg',e.message)}finally{$('scan').disabled=false}
+};
+$('wtest').onclick=async()=>{
+  const ssid=$('ssid').value,pw=$('wpw').value;$('wtest').disabled=true;msg('net_msg',t('net.testing',{s:ssid}),'mut');
+  try{await api('POST','/api/v1/net/wlan/test',{ssid,password:pw,dhcp:true});
+    let r;for(let i=0;i<60;i++){await sleep(1000);r=await api('GET','/api/v1/net/wlan/test');if(r.state!=='running')break}
+    if(r.state!=='ok'){msg('net_msg',t('net.fail',{r:t('r.'+(r.reason||'timeout'))}));return}
+    // LAN stays preferred; Wi-Fi takes over without cable
+    await api('PUT','/api/v1/net/settings',{mode:'auto',wlan:{ssid,password:pw,dhcp:true}});
+    msg('net_msg',t('net.saved'),'ok');
+  }catch(e){msg('net_msg',e.message)}finally{$('wtest').disabled=false;netStatus()}
+};
+// 4 time
+function buildZones(){
+  $('tz').innerHTML=ZONES.map((z,i)=>`<option value="${i}">${esc(z[0])}</option>`).join('')+`<option value="c">${t('time.custom')}</option>`;
+}
+$('tz').onchange=()=>{$('tzc_box').hidden=$('tz').value!=='c'};
+async function loadTime(){
+  try{T=await api('GET','/api/v1/system/time')}catch(e){msg('time_msg',e.message);return}
+  let i=ZONES.findIndex(z=>z[1]===T.timezone);
+  if(!S.completed){  // first setup: suggest the browser's zone
+    const b=(Intl.DateTimeFormat().resolvedOptions().timeZone)||'';const k=ZONES.findIndex(z=>z[2].includes(b));if(k>=0)i=k}
+  $('tz').value=i>=0?String(i):'c';$('tzc').value=i>=0?'':T.timezone;$('tzc_box').hidden=i>=0;
+  $('ntp').value=T.ntp_server;
+  $('timest').innerHTML=T.valid?t('time.now',{t:esc(T.local)}):`<span class="warn">${t('time.none')}</span>`;
+  const off=Math.abs(T.utc-Date.now()/1000);
+  $('usebr_box').hidden=T.valid&&off<120;$('usebr').checked=!T.valid||off>=120;
+}
+async function saveTime(){
+  const b={timezone:$('tz').value==='c'?$('tzc').value.trim():ZONES[+$('tz').value][1],ntp_server:$('ntp').value.trim()};
+  if(!$('usebr_box').hidden&&$('usebr').checked)b.utc=Math.floor(Date.now()/1000);
+  await api('PUT','/api/v1/system/time',b);
+}
+// 5 finish
+async function loadDone(){
+  try{const j=await api('GET','/api/v1/setup');S.completed=j.completed;urls('urls',j.urls);
+    if(j.completed&&!done)msg('done_msg',t('done.again'),'mut');}catch(e){msg('done_msg',e.message)}
+}
+async function complete(){
+  try{const j=await api('POST','/api/v1/setup/complete');done=true;S.completed=true;
+    urls('urls2',j.urls);$('done_todo').hidden=true;$('done_ok').hidden=false;
+    $('done_ap').textContent=t('done.ap',{s:j.ap_off_in_s});$('done_msg').textContent='';updNext();$('back').hidden=true;
+  }catch(e){msg('done_msg',e.message)}
+}
+
+$('back').onclick=()=>show(step-1);
+$('next').onclick=async()=>{
+  const k=STEPS[step];
+  if(k==='time'){try{await saveTime()}catch(e){const f=e.body&&e.body.error&&e.body.error.field;msg('time_msg',f?e.message+' – '+t(f==='ntp_server'?'time.ntp':f==='utc'?'time.browser':'time.zone'):e.message);return}}
+  if(k==='done'){complete();return}
+  show(step+1);
+};
+function build(){buildLangs();buildZones();i18n.apply();if(S)show(step)}
+i18n.onChange(build);
+i18n.init('lang').then(async()=>{
+  try{S=await api('GET','/api/v1/setup')}catch(e){return}
+  build();show(0);
+});
+</script>
+</body>
+</html>
