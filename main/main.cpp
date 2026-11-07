@@ -4,7 +4,9 @@
 // switched off, only then does anything else start.
 
 #include <cstdio>
+#include <cstring>
 
+#include "doser/alarms.h"
 #include "doser/dosing.h"
 #include "doser/dosing_api.h"
 #include "doser/hwconfig.h"
@@ -15,6 +17,7 @@
 #include "doser/posix_tz.h"
 #include "doser/safe_init.h"
 #include "doser/schedule_api.h"
+#include "doser/schedule_core.h"
 #include "doser/scheduler.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
@@ -54,14 +57,43 @@ void print_banner() {
     printf("========================================================\n\n");
 }
 
+// Alarm input from the pump, schedule and clock state (doser/alarms.h)
+doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
+    doser::alarms::Input in;
+    in.rtc_ok = ts.rtc_ok;
+    in.clock_valid = ts.valid;
+    const int32_t today = doser::scheduler::today();
+    const uint16_t tube_life_h = doser::dosing::engineering().tube_life_h;
+    for (int i = 0; i < 5; ++i) {
+        const auto d = doser::dosing::status(i);
+        const auto s = doser::scheduler::status(i);
+        auto& a = in.pumps[i];
+        a.active = d.settings.mode != doser::dose::Mode::Disabled;
+        a.fault = d.last_result && std::strcmp(d.last_result, "fault") == 0;
+        a.limit_hit_today = today >= 0 && s.last_skip_reason && std::strcmp(s.last_skip_reason, "daily_limit") == 0 &&
+                            doser::sched::day_of(doser::scheduler::to_local(s.last_skip_at)) == today;
+        a.tracked = d.settings.capacity_ul > 0;
+        if (a.tracked) a.percent = 100.0f * static_cast<float>(d.state.remaining_ul) / static_cast<float>(d.settings.capacity_ul);
+        a.remaining_days = s.remaining_days;
+        if (tube_life_h) a.tube_percent = static_cast<float>(d.state.tube_ms) / 36000.0f / tube_life_h;
+    }
+    return in;
+}
+
 void update_status_led() {
     using lgal::led::State;
     const auto ns = lgal::net::status();
+    const auto ts = lgal::timesync::status();
+    // alarms every 2 s (the schedule status computes the remaining days)
+    static doser::alarms::Output al;
+    static int tick = 0;
+    if (tick++ % 4 == 0) al = doser::alarms::evaluate(alarm_input(ts));
+    lgal::led::set(State::Critical, al.critical);
     lgal::led::set(State::SetupAp, ns.ap_active);
     lgal::led::set(State::IdleLan, ns.active == lgal::net::Iface::Lan);
     lgal::led::set(State::IdleWlan, ns.active == lgal::net::Iface::Wlan);
     // network disconnected: neither LAN/WLAN IP nor setup AP
-    lgal::led::set(State::Warning, ns.active == lgal::net::Iface::None && !ns.ap_active);
+    lgal::led::set(State::Warning, al.warning || (ns.active == lgal::net::Iface::None && !ns.ap_active));
     lgal::led::set(State::Dosing, doser::motion::any_running());
     lgal::led::set(State::Service, doser::dosing::service());
 }

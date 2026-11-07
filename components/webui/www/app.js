@@ -19,6 +19,7 @@ add({
     'live.on': 'Live', 'live.off': 'Connecting …',
     'stop.all': 'Stop all', 'stop.title': 'Stop all pumps now',
     'notime': 'The device has no valid time – schedules and daily limits are paused.',
+    'nortc': 'The clock module does not answer – after a power cut the time is lost until the network is back.',
     'offline': 'No connection to the device ({e}).',
     'footer.maint': 'Maintenance', 'notfound': 'Page not found',
   },
@@ -28,6 +29,7 @@ add({
     'live.on': 'Live', 'live.off': 'Verbinde …',
     'stop.all': 'Alle stoppen', 'stop.title': 'Alle Pumpen sofort stoppen',
     'notime': 'Das Gerät hat keine gültige Uhrzeit – Zeitpläne und Tageslimits ruhen.',
+    'nortc': 'Das Uhrenmodul antwortet nicht – nach einem Stromausfall fehlt die Uhrzeit, bis das Netzwerk wieder da ist.',
     'offline': 'Keine Verbindung zum Gerät ({e}).',
     'footer.maint': 'Wartung', 'notfound': 'Seite nicht gefunden',
   },
@@ -105,7 +107,8 @@ function Banners() {
   const s = useStore();
   return html`
     ${s.error && s.error.code === 'network' && html`<div class="banner err">${t('offline', { e: s.error.message })}</div>`}
-    ${!s.timeValid && html`<div class="banner">${t('notime')}</div>`}`;
+    ${!s.timeValid && html`<div class="banner">${t('notime')}</div>`}
+    ${s.info && s.info.time && s.info.time.rtc_ok === false && html`<div class="banner err">${t('nortc')}</div>`}`;
 }
 
 function App() {

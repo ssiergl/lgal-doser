@@ -9,6 +9,7 @@ add({
     'st.disabled': 'Off', 'st.manual_only': 'Manual only',
     'al.low': 'Container almost empty', 'al.days': 'Lasts {d} more days',
     'al.uncal': 'Not calibrated', 'al.limit': 'Daily limit reached', 'al.tube': 'Replace the tube',
+    'al.fault': 'Last run stopped: driver fault',
     'al.delayed': 'Dose waiting (lock time)', 'al.skipped': '{n} doses skipped today', 'al.calib': 'Enter the measured amount',
     'day.tomorrow': 'tomorrow',
     'ct.untracked': 'not tracked',
@@ -19,6 +20,7 @@ add({
     'st.disabled': 'Aus', 'st.manual_only': 'Nur manuell',
     'al.low': 'Behälter fast leer', 'al.days': 'Reicht noch {d} Tage',
     'al.uncal': 'Nicht kalibriert', 'al.limit': 'Tageslimit erreicht', 'al.tube': 'Schlauch tauschen',
+    'al.fault': 'Letzter Lauf abgebrochen: Treiberfehler',
     'al.delayed': 'Dosis wartet (Sperrzeit)', 'al.skipped': 'Heute {n} Dosen ausgelassen', 'al.calib': 'Gemessene Menge eintragen',
     'day.tomorrow': 'morgen',
     'ct.untracked': 'nicht erfasst',
@@ -44,6 +46,7 @@ export function alerts(p, sp) {
   const out = [];
   const c = p.container;
   const d = daysLeft(sp);
+  if (p.last && p.last.result === 'fault') out.push({ cls: 'err', text: t('al.fault') });
   if (p.calibration.pending) out.push({ cls: 'warn', text: t('al.calib') });
   if (c.tracked && (c.percent <= 10 || (d !== null && d < 3))) out.push({ cls: 'err', text: t('al.low') });
   else if (d !== null && d < 7) out.push({ cls: 'warn', text: t('al.days', { d: num(d, 0) }) });
