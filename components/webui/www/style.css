@@ -327,3 +327,6 @@ label.check input { margin-top: 3px; }
 .savebar { margin-top: 16px; }
 input[type=time], input[type=date], .amount { min-height: 38px; }
 .msg { white-space: pre-line; }
+
+/* ---- settings: time ---- */
+.settings .card > h2 + .stats { margin-top: 10px; }

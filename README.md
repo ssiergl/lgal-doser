@@ -186,7 +186,7 @@ und REST-Entlüften zurück („Abfrage“).
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
 Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 48 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+gzip-komprimiert (≈ 61 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
@@ -199,7 +199,8 @@ nicht, `idf.py build` reicht.
 | Zeitplan | Karte im Pumpen-Detail: die Dosen von heute auf einer 24-h-Leiste mit aktueller Uhrzeit, darunter der Plan – genau einer pro Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** Planart „Verteilt“ (Tagesmenge in N Dosen) oder „Einzelzeiten“ (bis 24 Uhrzeiten mit eigener Menge), täglich / Wochentage / alle N Tage, pausierbar, sowie das Verhalten nach Stromausfall. Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Uhrzeit bzw. Pumpen und Uhrzeiten gemeldet. |
 | Boost | Karte im Pumpen-Detail (Einfach und Profi): Zusatzmenge über 1–30 Tage mit Vorschau „≈ X ml zusätzlich pro Tag“, Hinweis bei fehlendem Zeitplan, Betrieb ≠ automatisch oder Überschreiten des Tageslimits. Ein laufender Boost zeigt Rest, Fortschritt und Enddatum und lässt sich beenden; Übersicht und Kopfzeile zeigen ihn ebenfalls. |
 | Sperrzeiten | Nur Profi, in den Einstellungen: Pumpenpaare mit Mindestabstand in Minuten (bis 10 Regeln) und ob eine manuelle Dosis in der Sperrzeit abgelehnt wird oder wartet. Das Gerät prüft beim Speichern alle Zeitpläne gegen die Regeln und meldet Kollisionen. |
-| Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
+| Uhrzeit | In den Einstellungen: Gerätezeit und Quelle (Zeitserver, Uhrenmodul, von Hand), Warnung bei mehr als 2 min Abweichung zum Browser oder stummem Uhrenmodul, „Uhrzeit von diesem Browser übernehmen“. Zeitzone (Liste wie im Einrichtungsassistenten oder POSIX-Angabe, Vorschlag aus dem Browser) für alle; Zeitserver (NTP) und letzter Abgleich nur in Profi. |
+| Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Engineering-Anmeldung. |
