@@ -119,8 +119,10 @@ void write_pump(Json& j, int i) {
         j.obj().kv("rpm", eng.tier_rpm[t]).kv("ml_min", static_cast<double>(dose::flow_ml_min(eng.tier_rpm[t], upr)), 1).end();
     j.end().end();
 
+    // setting: off (factory default) | global (engineering value) | own
     j.obj("retract")
-        .kv("custom", set.retract_mrev >= 0)
+        .kv("setting", set.retract_mrev < 0 ? "global" : set.retract_mrev == 0 ? "off" : "own")
+        .kv("global_rev", eng.retract_mrev / 1000.0, 3)
         .kv("rev", rmrev / 1000.0, 3)
         .kv("ml", rmrev * upr / 1.0e6, 3)
         .kv("steps", dose::mrev_to_steps(rmrev, s.steps_per_rev))
@@ -272,12 +274,14 @@ esp_err_t post_settings(httpd_req_t* req) {
         s.daily_limit_ul = static_cast<uint32_t>(v);
     }
     if (http::query_str(req, "retract_rev", buf, sizeof(buf))) {
-        if (!std::strcmp(buf, "default")) {
+        if (!std::strcmp(buf, "global")) {
             s.retract_mrev = -1;
+        } else if (!std::strcmp(buf, "off")) {
+            s.retract_mrev = 0;
         } else if (http::query_decimal(req, "retract_rev", 1000, &v) && v >= 0 && v <= 2000) {
             s.retract_mrev = static_cast<int16_t>(v);
         } else {
-            return fail(req, "invalid_param", "retract_rev=0..2|default");
+            return fail(req, "invalid_param", "retract_rev=0..2|off|global");
         }
     }
     if (const char* e = dosing::set_settings(p, s)) return fail(req, e);

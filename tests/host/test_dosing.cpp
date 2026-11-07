@@ -258,6 +258,29 @@ static void test_engineering() {
     CHECK_STR(dosing::set_engineering(e), "invalid_param");
 }
 
+// Retraction switched off (factory default): a pending retraction is
+// compensated once, afterwards no retraction at all
+static void test_retract_off() {
+    sim::reset();
+    CHECK(dose::PumpSettings{}.retract_mrev == 0);
+    auto s = dosing::settings(3);
+    CHECK(s.retract_mrev == -1 && dosing::status(3).state.retracted_mrev == 500);  // from test_engineering
+    s.retract_mrev = 0;
+    CHECK(dosing::set_settings(3, s) == nullptr);
+    auto& m = sim::motor[3];
+    CHECK(dosing::dose(3, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(3));
+    CHECK(m.moves.size() == 2 && m.moves[0] == 1600 && m.moves[1] > 0);  // compensate, main move
+    CHECK(dosing::status(3).state.retracted_mrev == 0);
+    m.moves.clear();
+    CHECK(dosing::dose(3, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(3));
+    CHECK(m.moves.size() == 1 && m.moves[0] > 0);  // main move only
+    CHECK(dosing::status(3).state.retracted_mrev == 0);
+    s.retract_mrev = -1;  // back to global for the following tests
+    CHECK(dosing::set_settings(3, s) == nullptr);
+}
+
 static void test_locks() {
     sim::reset();
     for (int p = 0; p < 3; ++p) {
@@ -332,6 +355,8 @@ int main(int argc, char**) {
     test_fault();
     std::printf("Engineering parameters\n");
     test_engineering();
+    std::printf("Retraction off\n");
+    test_retract_off();
     std::printf("Lock times between pumps\n");
     test_locks();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);

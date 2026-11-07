@@ -298,6 +298,8 @@ static void test_dose_conversion() {
     // Retraction: global or per pump
     PumpSettings p;
     Engineering e;
+    CHECK(retract_mrev(p, e) == 0);  // factory default: off
+    p.retract_mrev = -1;
     CHECK(retract_mrev(p, e) == 250);
     p.retract_mrev = 0;
     CHECK(retract_mrev(p, e) == 0);

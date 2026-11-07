@@ -273,7 +273,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat (besser per WebSocket) |
 | GET | `/api/v1/ws` | WebSocket: Status-Push und Entlüften (siehe [WebSocket](#websocket-m4)) |
 | POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=20]` | Kalibrierlauf; danach `action=apply&measured_ml=…` oder `cancel` |
-| POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (oder `default`) |
+| POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (Umdrehungen, `off` = 0 = aus, `global` = Service-Wert; ab Werk aus) |
 | POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter) |
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
@@ -324,7 +324,7 @@ Oszilloskop/Logikanalysator).
 | Thema | Umsetzung |
 |---|---|
 | Menge → Schritte | Kalibrierung in µl pro Motorumdrehung (unabhängig von den Mikroschritten). Ohne Kalibrierung Nennwert 0,37 ml/U (≈ 111 ml/min bei 300 U/min). |
-| Ablauf | Rückzug ausgleichen → Hauptfahrt → Anti-Tropf-Rückzug. Der ausgeführte Rückzug wird spannungsausfallsicher gespeichert. |
+| Ablauf | Rückzug ausgleichen → Hauptfahrt → Anti-Tropf-Rückzug. Der ausgeführte Rückzug wird spannungsausfallsicher gespeichert. Der Rückzug ist pro Pumpe **ab Werk aus** und lässt sich auf „Standard“ (globaler Wert) oder einen eigenen Wert stellen; beim Ausschalten wird ein offener Rückzug bei der nächsten Dosis noch ausgeglichen. |
 | Verbuchung | Beim Start wird die volle Menge auf Tageslimit, Behälter und Gesamtzähler gebucht und gesichert; ein Abbruch schreibt die nicht geförderte Menge gut. Stromausfall während der Fahrt → Menge bleibt gebucht (sichere Seite). |
 | Tageslimit | hart pro Pumpe; Fenster Kalendertag oder rollierend 24 h (Engineering). Stunden-Töpfe über 26 h, angebrochene Stunden zählen voll. Ohne gültige Uhrzeit werden Pumpen mit Limit gesperrt. |
 | Kalibrierung | Lauf mit Zielmenge (Standard 20 ml), dann gemessene Menge eintragen. Plausibel: 0,25- bis 4-facher Nennwert. Die aufgefangene Menge wird vom Behälter abgezogen. |
@@ -333,7 +333,7 @@ Oszilloskop/Logikanalysator).
 | Speicher | Einstellungen in NVS (`dose`). Laufzustand je Pumpe im EEPROM als A/B-Datensätze (Folgenummer + CRC32, ab 0x000), Rückfall auf NVS ohne EEPROM. |
 
 Engineering-Standardwerte (Super-Admin, global; Rückzug zusätzlich pro Pumpe):
-Rückzug ¼ U (≈ 0,09 ml), Kalibrier-Zielmenge 20 ml, Stufen 100/200/300 U/min
+Rückzug „Standard“ ¼ U (≈ 0,09 ml), Kalibrier-Zielmenge 20 ml, Stufen 100/200/300 U/min
 (≈ 37/74/111 ml/min), Entlüften max. 60 s / Heartbeat 500 ms, kleinste Dosis 0,02 ml,
 Schlauch-Lebensdauer 1000 h, Tageslimit pro Kalendertag. Änderungen brauchen die
 Engineering-Freischaltung (siehe [Zugang](#zugang)).

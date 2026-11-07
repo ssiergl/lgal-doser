@@ -26,7 +26,7 @@ bool parse_limit_mode(const char* s, LimitMode* out);
 // ---------------------------------------------------------------------------
 // Global engineering parameters (super admin, functional spec 11.2)
 struct Engineering {
-    uint16_t retract_mrev = 250;            // anti-drip retraction [1/1000 rev], default ¼ rev
+    uint16_t retract_mrev = 250;            // anti-drip retraction [1/1000 rev] for pumps set to "global"
     uint32_t calib_target_ul = 20000;       // calibration target amount (default 20 ml)
     uint16_t tier_rpm[kTiers] = {100, 200, 300};  // slow / normal / fast
     uint16_t prime_max_s = 60;              // priming emergency timeout
@@ -45,7 +45,7 @@ struct PumpSettings {
     Mode mode = Mode::Auto;
     uint8_t speed_tier = 1;        // 0..2
     float ul_per_rev = 0.0f;       // calibration, 0 = nominal value
-    int16_t retract_mrev = -1;     // -1 = global value, 0 = off
+    int16_t retract_mrev = 0;      // 0 = off (factory default), -1 = global value, >0 = own value
     uint32_t daily_limit_ul = 0;   // hard daily limit, 0 = none
     uint32_t capacity_ul = 0;      // container size, 0 = not tracked
     int64_t calibrated_at = 0;     // UTC of the last calibration
