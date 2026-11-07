@@ -231,3 +231,61 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .canister .wave.run { animation-duration: 1.6s; }
 @keyframes wave { from { transform: translateX(0); } to { transform: translateX(30px); } }
 @media (prefers-reduced-motion: reduce) { .canister .wave, .bar.indet i { animation: none; } }
+
+/* ---- pump detail ---- */
+.pump-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 var(--gap); padding-bottom: 2px; scrollbar-width: none; }
+.pump-tabs a {
+  display: flex; align-items: center; gap: 6px; padding: 5px 10px 5px 5px; border-radius: 10px; flex: none;
+  color: var(--mut); text-decoration: none; border: 1px solid var(--line); background: var(--card); font-size: 13px; font-weight: 600;
+}
+.pump-tabs a.on { color: var(--text); border-color: var(--pc); box-shadow: inset 0 -2px 0 var(--pc); }
+.pump-tabs .nm { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-head .big-badge { width: 32px; height: 32px; font-size: 17px; border-radius: 9px; align-self: center; }
+.page-head h1 { min-width: 0; overflow-wrap: anywhere; }
+.page-head .chip { align-self: center; }
+.page-alerts { margin: -4px 0 var(--gap); }
+.detail { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
+.detail .col { display: grid; gap: var(--gap); min-width: 0; }
+@media (max-width: 900px) {
+  .detail { grid-template-columns: minmax(0, 1fr); }
+  .detail .col { display: contents; }
+  .detail .usage { order: 1; }
+}
+.detail h2 { margin-bottom: 10px; }
+.hero { border-top: 3px solid var(--pc); }
+.hero-in { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.hero-text { flex: 1; min-width: 180px; display: grid; gap: 6px; justify-items: start; }
+.hero-text .row { margin-top: 8px; }
+.big { font-size: 30px; font-weight: 700; line-height: 1.1; }
+.sub { border-top: 1px solid var(--line); margin-top: var(--gap); padding-top: 12px; }
+.form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+.form-row > label, label.field { display: grid; gap: 6px; font-size: 13px; color: var(--mut); font-weight: 600; }
+.field .lbl { font-size: 13px; color: var(--mut); font-weight: 600; }
+.amount { display: inline-flex; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; }
+.amount:focus-within { outline: 2px solid var(--acc); outline-offset: 2px; }
+.amount input { border: 0; background: transparent; width: 7ch; text-align: right; outline: none; }
+.amount span { padding: 0 10px 0 2px; color: var(--mut); font-size: 13px; font-weight: 500; }
+label.field input[type=text] { max-width: 320px; }
+.seg { flex-wrap: wrap; max-width: 100%; }
+.msg { margin-top: 10px; font-size: 13px; padding: 7px 10px; border-radius: 8px; }
+.msg.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.msg.err { color: var(--err); background: color-mix(in srgb, var(--err) 10%, transparent); }
+.detail .running { margin-top: 12px; }
+.detail .running .row { justify-content: space-between; gap: 8px; }
+button.hold {
+  width: 100%; padding: 16px; background: color-mix(in srgb, var(--svc) 18%, var(--card)); color: var(--svc);
+  border: 1px solid color-mix(in srgb, var(--svc) 45%, transparent); user-select: none; -webkit-user-select: none; touch-action: none;
+}
+button.hold.held { background: var(--svc); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--svc) 30%, transparent); }
+.steps { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 4px; }
+.stats { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0 0 14px; font-size: 14px; }
+.stats dt { color: var(--mut); }
+.stats dd { margin: 0; text-align: right; }
+.stats dd .bar { margin-left: auto; max-width: 160px; }
+fieldset.pro { border: 1px dashed color-mix(in srgb, var(--acc) 45%, var(--line)); border-radius: 12px; padding: 4px 14px 14px; margin: 16px 0 14px; }
+fieldset.pro legend { color: var(--acc); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 0 6px; }
+label.check { display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; font-size: 14px; }
+label.check input { margin-top: 3px; }
+.prohint { color: var(--mut); border-left: 3px solid var(--acc); padding-left: 10px; margin: 12px 0 0; }
+.detail form > .row, .detail .card > .row { margin-top: 14px; }
+.field > .seg, .field > .amount { justify-self: start; }
