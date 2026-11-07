@@ -305,6 +305,35 @@ static void test_queue_and_clock_jump() {
     sim::utc_offset += 3600;
 }
 
+static void test_set_all() {
+    sched::PumpSchedule before[5], all[5];
+    for (int q = 0; q < 5; ++q) before[q] = all[q] = scheduler::schedule(q);
+    const sched::Locks old_locks = scheduler::locks();
+    // pump 5 at 08:00 and a lock pump 4 <-> pump 5 that pump 4 at 08:05 violates
+    all[3] = plan({single(485, 1000)});
+    all[4] = plan({single(480, 1000)});
+    sched::Locks l;
+    l.count = 1;
+    l.rules[0] = sched::LockRule{3, 4, 10};
+    scheduler::SaveResult r;
+    CHECK_STR(scheduler::set_all(all, l, &r), "conflict");
+    CHECK(r.validation.conflicts >= 1);
+    for (int q = 0; q < 5; ++q) CHECK(std::memcmp(&store::sch[q], &before[q], sizeof(before[q])) == 0);
+    CHECK(scheduler::schedule(4).kind == before[4].kind);
+    CHECK(scheduler::locks().count == old_locks.count);  // nothing changed
+    // valid set: replaced together
+    all[3] = plan({single(500, 1000)});
+    CHECK(scheduler::set_all(all, l) == nullptr);
+    CHECK(scheduler::schedule(4).kind == sched::Kind::Times && scheduler::schedule(4).times[0].minute == 480);
+    CHECK(scheduler::schedule(3).times[0].minute == 500);
+    CHECK(scheduler::locks().count == 1 && store::locks.rules[0].gap_min == 10);
+    CHECK(store::sch[4].kind == sched::Kind::Times);
+    CHECK(scheduler::status(4).has_next);
+    // back to the previous state
+    CHECK(scheduler::set_all(before, old_locks) == nullptr);
+    CHECK(scheduler::schedule(4).kind == before[4].kind);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -331,6 +360,8 @@ int main(int argc, char**) {
     test_boost_and_forecast();
     std::printf("Scheduler: queue and clock jump\n");
     test_queue_and_clock_jump();
+    std::printf("Scheduler: replace all\n");
+    test_set_all();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

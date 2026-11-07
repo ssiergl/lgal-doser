@@ -388,6 +388,67 @@ esp_err_t init() {
     return ESP_OK;
 }
 
+namespace {
+void to_hex(const void* data, size_t n, std::string* out) {
+    static const char kHex[] = "0123456789abcdef";
+    const auto* p = static_cast<const uint8_t*>(data);
+    out->clear();
+    out->reserve(n * 2);
+    for (size_t i = 0; i < n; ++i) {
+        out->push_back(kHex[p[i] >> 4]);
+        out->push_back(kHex[p[i] & 15]);
+    }
+}
+
+bool from_hex(const JsonValue& v, void* data, size_t n) {
+    char buf[2 * sizeof(KeyStore) + 1];
+    if (2 * n >= sizeof(buf) || !v.get(buf, sizeof(buf)) || std::strlen(buf) != 2 * n) return false;
+    auto* p = static_cast<uint8_t*>(data);
+    for (size_t i = 0; i < n; ++i) {
+        int b = 0;
+        for (int k = 0; k < 2; ++k) {
+            const char c = buf[2 * i + k];
+            const int d = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1;
+            if (d < 0) return false;
+            b = b * 16 + d;
+        }
+        p[i] = static_cast<uint8_t>(b);
+    }
+    return true;
+}
+}  // namespace
+
+void write_secrets(Json& j) {
+    if (!s_mx) return;
+    std::string hex;
+    Guard g;
+    if (is_set(s_pw)) to_hex(&s_pw, sizeof(s_pw), &hex);
+    else hex.clear();
+    j.kv("password", hex);
+    to_hex(&s_keys, sizeof(s_keys), &hex);
+    j.kv("keys", hex);
+}
+
+const char* restore_secrets(const JsonValue& v) {
+    if (!s_mx) return "storage_error";
+    PasswordRecord pw{};
+    char empty[2];
+    const bool no_pw = v["password"].get(empty, sizeof(empty)) && !empty[0];
+    if (!no_pw && (!from_hex(v["password"], &pw, sizeof(pw)) || !is_set(pw) || pw.iterations < 1000 ||
+                   pw.iterations > 1000000))
+        return "invalid_param";
+    KeyStore keys;
+    if (!from_hex(v["keys"], &keys, sizeof(keys)) || keys.version != 1) return "invalid_param";
+    for (auto& k : keys.keys) k.name[sizeof(k.name) - 1] = 0;
+    Guard g;
+    if (save("pw", no_pw ? PasswordRecord{} : pw) != ESP_OK || save("keys", keys) != ESP_OK) return "storage_error";
+    s_pw = no_pw ? PasswordRecord{} : pw;
+    s_keys = keys;
+    s_sessions.clear();
+    ESP_LOGW(TAG, "Password and %d API keys restored from a backup, all sessions signed out", key_count(s_keys));
+    return nullptr;
+}
+
 bool principal(httpd_req_t* req, Principal* out) {
     if (!s_mx || !out) return false;
     *out = Principal{};

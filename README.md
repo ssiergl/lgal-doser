@@ -14,7 +14,7 @@ components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Sc
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py
-tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie)
+tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
@@ -290,6 +290,8 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/history.csv?…` | dieselben Filter als CSV-Download, ohne Limit |
 | GET | `/api/v1/history/daily?days=14` | dosierte Menge, Anzahl Dosen und ausgelassene Dosen je Ortstag und Pumpe (1–60 Tage, älteste zuerst; ohne gültige Uhrzeit leer) |
 | DELETE | `/api/v1/history` | Historie löschen (Engineering) |
+| GET | `/api/v1/backup?secrets=0\|1` | Datensicherung der ganzen Konfiguration (Engineering) |
+| POST | `/api/v1/backup?parts=system,network,pumps,engineering,auth` | Sicherung einspielen (Engineering); erst alles prüfen, dann die gewählten Teile übernehmen; 409 `pump_busy` solange eine Pumpe läuft |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
 | GET | `/schedule` | Zeitplantest-Seite |
 | GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |

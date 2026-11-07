@@ -246,6 +246,21 @@ const char* check_all(const sched::Locks& locks, const sched::Config& cfg, const
     return res.validation.error;
 }
 
+// Takes over a saved schedule (with s_mx): pending slot dropped, cursor from now
+void adopt(int pump, const sched::PumpSchedule& s, const lgal::timesync::Status& ts) {
+    PumpRt& rt = s_rt[pump];
+    rt.sch = s;
+    if (rt.pending) {
+        sched::boost_refund(rt.run.boost, rt.due.day, rt.share);
+        rt.pending = false;
+    }
+    if (ts.valid) {
+        start_from_now(rt, ts.utc);
+        save(pump);
+    }
+    ESP_LOGI(TAG, "Pump %d: schedule saved (%s%s)", pump + 1, sched::kind_str(s.kind), s.enabled ? "" : ", paused");
+}
+
 // Context from the dosing engine (call without s_mx: takes the dosing mutex)
 sched::Context make_context() {
     sched::Context ctx;
@@ -288,17 +303,7 @@ const char* set_schedule(int pump, const sched::PumpSchedule& s, SaveResult* r) 
     s_all[pump] = s;
     if (const char* e = check_all(s_locks, s_cfg, ctx, r)) return e;
     if (schedule_store::save_schedule(pump, s) != ESP_OK) return "storage_error";
-    PumpRt& rt = s_rt[pump];
-    rt.sch = s;
-    if (rt.pending) {
-        sched::boost_refund(rt.run.boost, rt.due.day, rt.share);
-        rt.pending = false;
-    }
-    if (ts.valid) {
-        start_from_now(rt, ts.utc);
-        save(pump);
-    }
-    ESP_LOGI(TAG, "Pump %d: schedule saved (%s%s)", pump + 1, sched::kind_str(s.kind), s.enabled ? "" : ", paused");
+    adopt(pump, s, ts);
     return nullptr;
 }
 
@@ -329,6 +334,25 @@ sched::Locks locks() {
     if (!s_mx) return {};
     Guard g;
     return s_locks;
+}
+
+const char* set_all(const sched::PumpSchedule (&all)[kN], const sched::Locks& l, SaveResult* r) {
+    if (!s_mx) return "invalid_param";
+    if (l.manual > sched::ManualDuringLock::Queue) return "invalid_param";
+    sched::Context ctx = make_context();
+    const auto ts = lgal::timesync::status();
+    Guard g;
+    ctx.today = ts.valid ? local_day(ts.utc) : 0;
+    for (int q = 0; q < kN; ++q) s_all[q] = all[q];
+    if (const char* e = check_all(l, s_cfg, ctx, r)) return e;
+    for (int q = 0; q < kN; ++q)
+        if (schedule_store::save_schedule(q, all[q]) != ESP_OK) return "storage_error";
+    if (schedule_store::save_locks(l) != ESP_OK) return "storage_error";
+    for (int q = 0; q < kN; ++q) adopt(q, all[q], ts);
+    s_locks = l;
+    dosing::set_locks(l);
+    ESP_LOGI(TAG, "All schedules and %u lock rules replaced", l.count);
+    return nullptr;
 }
 
 const char* set_config(const sched::Config& c) {

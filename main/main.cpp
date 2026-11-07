@@ -8,10 +8,11 @@
 #include <ctime>
 
 #include "doser/alarms.h"
-#include "doser/history.h"
-#include "doser/history_api.h"
+#include "doser/backup_api.h"
 #include "doser/dosing.h"
 #include "doser/dosing_api.h"
+#include "doser/history.h"
+#include "doser/history_api.h"
 #include "doser/hwconfig.h"
 #include "doser/hwtest_api.h"
 #include "doser/i2c_devices.h"
@@ -231,6 +232,7 @@ extern "C" void app_main(void) {
     doser::dosing_api::register_handlers(lgal::http::handle());
     doser::schedule_api::register_handlers(lgal::http::handle());
     doser::history_api::register_handlers(lgal::http::handle());
+    doser::backup_api::register_handlers(lgal::http::handle());
     lgal::sysapi::add_link("app", "Web interface", "/");
     lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
     lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
