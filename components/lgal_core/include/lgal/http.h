@@ -39,6 +39,10 @@ bool query_int(httpd_req_t* req, const char* key, int64_t* out);
 // Decimal number ("1.25") times scale, rounded – e.g. ml -> µl with scale 1000
 bool query_decimal(httpd_req_t* req, const char* key, int64_t scale, int64_t* out);
 
+// Raw request body of at most max_len bytes. On failure an error is sent
+// (400 body_missing, 413 body_too_large, 408 timeout) and false is returned.
+bool read_body(httpd_req_t* req, size_t max_len, std::string* body);
+
 // Request body as JSON (Content-Type is not checked). On failure an error is
 // sent (400 body_missing / invalid_json, 413 body_too_large, 408 timeout) and
 // false is returned; the handler must then return ESP_OK immediately.

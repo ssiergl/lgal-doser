@@ -34,6 +34,7 @@
 #include "lgal/http.h"
 #include "lgal/led.h"
 #include "lgal/logbuf.h"
+#include "lgal/mqtt.h"
 #include "lgal/net.h"
 #include "lgal/netapi.h"
 #include "lgal/ota.h"
@@ -212,6 +213,7 @@ extern "C" void app_main(void) {
     init_time();
     // Schedules: needs the dosing engine and the time zone
     if (doser::scheduler::init() != ESP_OK) ESP_LOGE(TAG, "Scheduler not ready");
+    if (lgal::mqtt::init() != ESP_OK) ESP_LOGE(TAG, "MQTT not available");
 
     if (!lgal::settings::setup_completed()) {
         // Factory state: setup AP permanently open until the setup
@@ -224,6 +226,7 @@ extern "C" void app_main(void) {
     lgal::auth::register_handlers(lgal::http::handle());
     lgal::sysapi::register_handlers(lgal::http::handle());
     lgal::netapi::register_handlers(lgal::http::handle());
+    lgal::mqtt::register_handlers(lgal::http::handle());
     lgal::captive::register_handlers(lgal::http::handle());
     lgal::setup::register_handlers(lgal::http::handle());
     lgal::ws::register_handlers(lgal::http::handle());

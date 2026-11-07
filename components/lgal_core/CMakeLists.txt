@@ -16,6 +16,7 @@ idf_component_register(
         "src/auth.cpp"
         "src/net_config.cpp"
         "src/mqtt_config.cpp"
+        "src/mqtt.cpp"
         "src/netapi.cpp"
         "src/dns_reply.cpp"
         "src/captive.cpp"
@@ -40,6 +41,8 @@ idf_component_register(
         espcoredump
         nvs_flash
         mbedtls
+        esp-tls
+        mqtt
         esp_timer
         spi_flash
         log
