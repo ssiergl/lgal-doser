@@ -1,5 +1,5 @@
-// Detail view of one pump: container, schedule, manual dose, priming,
-// calibration, consumption and settings (fine-tuning only in the pro view).
+// Detail view of one pump: container, schedule, boost, manual dose,
+// priming, calibration, consumption and settings (fine-tuning only in the pro view).
 import { useEffect, useState } from 'preact/hooks';
 import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
@@ -49,6 +49,17 @@ add({
     'pset.save': 'Save', 'pset.ok': 'Settings saved',
     'pset.prohint': 'Pro settings active: {list}', 
     'ph.retract': 'anti-drip', 'ph.unretract': 'preparing', 'ph.main': 'delivering', 'ph.none': '',
+    'bo.title': 'Boost', 'bo.hint': 'An extra amount, e.g. to raise a value. It is spread evenly over the scheduled doses of the next days and ends by itself.',
+    'bo.ml': 'Extra amount', 'bo.days': 'Spread over', 'bo.dunit': 'days', 'bo.start': 'Start boost',
+    'bo.per': '≈ {ml} ml extra per day · until {end}', 'bo.started': 'Boost started',
+    'bo.active': '{rest} of {total} ml still to dose', 'bo.until': '{days} days from {start} · until {end}',
+    'bo.wait': 'Starts with the next scheduled dose.', 'bo.stop': 'End boost',
+    'bo.stop.ask': 'End the boost of pump {n}? The remaining {ml} ml are dropped.', 'bo.stopped': 'Boost ended',
+    'bo.noplan': 'A boost needs a schedule – it is added to its doses.',
+    'bo.mode': 'The pump is not on “Automatic” – the boost is only dosed while the schedule runs.',
+    'bo.limit': 'With the boost about {p} ml per day – more than the daily limit of {l} ml. Doses above the limit are skipped.',
+    'err.no_slots': 'No scheduled doses in this period',
+    'chip.boost': 'Boost',
   },
   de: {
     'pump.none': 'Pumpe {n} gibt es nicht.',
@@ -88,6 +99,17 @@ add({
     'pset.save': 'Speichern', 'pset.ok': 'Einstellungen gespeichert',
     'pset.prohint': 'Profi-Einstellungen aktiv: {list}', 
     'ph.retract': 'Anti-Tropf', 'ph.unretract': 'Vorbereitung', 'ph.main': 'fördert', 'ph.none': '',
+    'bo.title': 'Boost', 'bo.hint': 'Eine Zusatzmenge, z. B. um einen Wert anzuheben. Sie wird gleichmäßig auf die geplanten Dosen der nächsten Tage verteilt und endet von selbst.',
+    'bo.ml': 'Zusatzmenge', 'bo.days': 'Verteilen auf', 'bo.dunit': 'Tage', 'bo.start': 'Boost starten',
+    'bo.per': '≈ {ml} ml zusätzlich pro Tag · bis {end}', 'bo.started': 'Boost gestartet',
+    'bo.active': 'Noch {rest} von {total} ml offen', 'bo.until': '{days} Tage ab {start} · bis {end}',
+    'bo.wait': 'Beginnt mit der nächsten geplanten Dosis.', 'bo.stop': 'Boost beenden',
+    'bo.stop.ask': 'Boost von Pumpe {n} beenden? Die restlichen {ml} ml entfallen.', 'bo.stopped': 'Boost beendet',
+    'bo.noplan': 'Ein Boost braucht einen Zeitplan – er wird auf dessen Dosen aufgeschlagen.',
+    'bo.mode': 'Die Pumpe steht nicht auf „Automatisch“ – der Boost wird nur dosiert, wenn der Zeitplan läuft.',
+    'bo.limit': 'Mit Boost etwa {p} ml pro Tag – mehr als das Tageslimit von {l} ml. Dosen über dem Limit werden ausgelassen.',
+    'err.no_slots': 'In diesem Zeitraum sind keine Dosen geplant',
+    'chip.boost': 'Boost',
   },
 });
 
@@ -290,6 +312,64 @@ function UsageCard({ p, sp, nowLocal }) {
   </section>`;
 }
 
+// "YYYY-MM-DD" plus n days -> "12.11."
+function dayText(date, plus = 0) {
+  const d = new Date(date + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + plus);
+  return `${d.getUTCDate()}.${d.getUTCMonth() + 1}.`;
+}
+
+function BoostCard({ p, sp, nowLocal }) {
+  const [ml, setMl] = useState('');
+  const [days, setDays] = useState('3');
+  const [busy, setBusy] = useState(false);
+  const msg = useMsg();
+  const b = sp && sp.boost;
+  const today = nowLocal ? nowLocal.slice(0, 10) : null;
+  const run = (q, ok) => {
+    setBusy(true);
+    return api('POST', '/api/v1/pumps/boost?' + qs({ pump: p.pump, ...q }))
+      .then(() => { msg.ok(ok); refresh(); }).catch(msg.err).finally(() => setBusy(false));
+  };
+  let body;
+  if (b) {
+    const done = Math.max(0, b.total_ml - b.remaining_ml);
+    const stop = () => { if (confirm(t('bo.stop.ask', { n: p.pump, ml: num(b.remaining_ml, 1) }))) run({ action: 'stop' }, t('bo.stopped')); };
+    body = html`<p><b class="num">${t('bo.active', { rest: num(b.remaining_ml, 1), total: num(b.total_ml, 1) })}</b></p>
+      <div class="bar"><i style=${{ width: Math.min(100, (done / (b.total_ml || 1)) * 100) + '%' }}></i></div>
+      <p class="small mut">${t('bo.until', { days: b.days, start: dayText(b.start), end: dayText(b.start, b.days - 1) })}</p>
+      ${!b.active && html`<p class="small mut">${t('bo.wait')}</p>`}
+      <div class="row"><button type="button" class="sec" onClick=${stop} disabled=${busy}>${t('bo.stop')}</button></div>`;
+  } else {
+    const v = parseNum(ml), n = parseInt(days, 10);
+    const ok = v > 0 && n >= 1 && n <= 30;
+    const planned = sp ? sp.planned_today_ml : 0;
+    const noPlan = sp && !planned && !sp.next;
+    const lim = p.daily.limit_ml;
+    const submit = e => {
+      e.preventDefault();
+      if (!ok) { msg.err({ code: 'invalid_param' }); return; }
+      run({ ml: dec(v), days: n }, t('bo.started')).then(() => setMl(''));
+    };
+    body = html`<p class="small mut">${t('bo.hint')}</p>
+      <form novalidate onSubmit=${submit}>
+        <div class="form-row">
+          <label>${t('bo.ml')}<${Amount} value=${ml} onInput=${setMl}/></label>
+          <label>${t('bo.days')}<${Amount} value=${days} onInput=${setDays} unit=${t('bo.dunit')}/></label>
+        </div>
+        ${ok && today && html`<p class="small">${t('bo.per', { ml: num(v / n, 2), end: dayText(today, n - 1) })}</p>`}
+        ${ok && lim > 0 && planned + v / n > lim && html`<p class="small warn">${t('bo.limit', { p: num(planned + v / n, 1), l: num(lim, 1) })}</p>`}
+        ${noPlan && html`<p class="small warn">${t('bo.noplan')}</p>`}
+        <div class="row"><button type="submit" disabled=${busy || !ok}>${t('bo.start')}</button></div>
+      </form>`;
+  }
+  return html`<section class="card boost"><h2>${t('bo.title')}</h2>
+    ${p.mode !== 'auto' && html`<p class="small warn">${t('bo.mode')}</p>`}
+    ${body}
+    ${msg.node}
+  </section>`;
+}
+
 // Pro values that differ from the defaults (shown as a hint in the simple view)
 function proActive(p) {
   const out = [];
@@ -365,12 +445,14 @@ export function PumpView({ pump }) {
     <div class="page-head" style=${{ '--pc': pumpColor(p.pump) }}>
       <span class="badge big-badge">${p.pump}</span><h1>${pumpName(p)}</h1>
       <span class=${'chip ' + st.cls}>${t(st.key)}</span>
+      ${sp && sp.boost && html`<span class="chip acc">${t('chip.boost')} +${num(sp.boost.remaining_ml, 1)} ml</span>`}
     </div>
     ${al.length > 0 && html`<ul class="alerts page-alerts">${al.map(a => html`<li class=${a.cls}>${a.text}</li>`)}</ul>`}
     <div class="detail" key=${pump} style=${{ '--pc': pumpColor(p.pump) }}>
       <div class="col">
         <${ContainerCard} p=${p} sp=${sp}/>
         <${ScheduleCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
+        <${BoostCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
         <${UsageCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
       </div>
       <div class="col">
