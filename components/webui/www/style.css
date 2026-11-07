@@ -287,7 +287,7 @@ button.hold.held { background: var(--svc); color: #fff; box-shadow: 0 0 0 4px co
 fieldset.pro { border: 1px dashed color-mix(in srgb, var(--acc) 45%, var(--line)); border-radius: 12px; padding: 4px 14px 14px; margin: 16px 0 14px; }
 fieldset.pro legend { color: var(--acc); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 0 6px; }
 label.check { display: flex; gap: 8px; align-items: flex-start; margin-top: 14px; font-size: 14px; }
-label.check input { margin-top: 3px; }
+label.check input { margin-top: 3px; flex: none; }
 .prohint { color: var(--mut); border-left: 3px solid var(--acc); padding-left: 10px; margin: 12px 0 0; }
 .detail form > .row, .detail .card > .row { margin-top: 14px; }
 .field > .seg, .field > .amount { justify-self: start; }
@@ -415,3 +415,12 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .bk-restore p { margin: 0 0 6px; }
 .bk-restore .warn { margin: -2px 0 6px 26px; }
 .bk-restore label.check { margin-top: 6px; }
+/* MQTT */
+.card .ok { color: var(--ok); }
+.mq-topics { margin-top: 14px; }
+.mq-topics summary { cursor: pointer; font-size: 13px; }
+.mq-topics ul { margin: 6px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mq-hp, .mq-up { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 0 10px; }
+.mq-up { grid-template-columns: 1fr 1fr; }
+.mq-hp .field input, .mq-up .field input { width: 100%; }

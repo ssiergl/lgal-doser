@@ -13,12 +13,13 @@ function toLogin() {
   location.href = '/login?next=' + encodeURIComponent('/' + location.hash);
 }
 
-// method, path, optional JSON body -> parsed JSON; throws ApiError
-export async function api(method, path, body) {
+// method, path, optional JSON body -> parsed JSON; throws ApiError.
+// With a content type the body is sent as it is (text, file).
+export async function api(method, path, body, type) {
   const opt = { method, cache: 'no-store', headers: {} };
   if (body !== undefined) {
-    opt.headers['Content-Type'] = 'application/json';
-    opt.body = JSON.stringify(body);
+    opt.headers['Content-Type'] = type || 'application/json';
+    opt.body = type ? body : JSON.stringify(body);
   }
   let r;
   try {
