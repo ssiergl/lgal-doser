@@ -43,6 +43,8 @@ struct Link {
 };
 std::vector<Link> s_links;
 
+}  // namespace
+
 const char* reset_reason_str(esp_reset_reason_t r) {
     switch (r) {
         case ESP_RST_POWERON: return "POWERON";
@@ -58,6 +60,8 @@ const char* reset_reason_str(esp_reset_reason_t r) {
         default: return "UNKNOWN";
     }
 }
+
+namespace {
 
 const char* ota_state_str(esp_ota_img_states_t s) {
     switch (s) {

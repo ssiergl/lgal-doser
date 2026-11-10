@@ -17,10 +17,14 @@
 
 #include "esp_err.h"
 #include "esp_http_server.h"
+#include "esp_system.h"
 
 namespace lgal::sysapi {
 
 esp_err_t register_handlers(httpd_handle_t server);
+
+// "POWERON", "SW", "PANIC", ... (as in /api/v1/system/info)
+const char* reset_reason_str(esp_reset_reason_t r);
 
 // Link to a device-specific page, shown on the maintenance page.
 // id: fixed key the page uses to translate the name; name: English.
