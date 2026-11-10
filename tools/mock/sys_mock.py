@@ -132,6 +132,11 @@ def route(h, method, path, q, body):
             h.send(200, b"\x7fELF-test-dump", "application/octet-stream"); return True
         if method == "DELETE": SYS["coredump"] = False; h.send(200, {"status": "deleted"}); return True
     if path == "/api/v1/system/reboot" and method == "POST": h.send(200, {"status": "rebooting"}); restart(); return True
+    if path == "/api/v1/setup" and method == "GET":
+        h.send(200, {"completed": True, "password_set": AUTH["password_set"], "connected": True, "hostname": "lgal-doser-e4f5",
+                     "urls": ["http://lgal-doser-e4f5.local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
+    if path == "/api/v1/setup/complete" and method == "POST":
+        h.send(200, {"status": "ok", "ap_off_in_s": 20, "urls": ["http://lgal-doser-e4f5.local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
     if path == "/api/v1/system/factory_reset" and method == "POST":
         if body.get("password") != AUTH["password"]: err(h, 403, "wrong_password", "Wrong password"); return True
         h.send(200, {"status": "rebooting"}); restart(); return True  # the mock keeps its state

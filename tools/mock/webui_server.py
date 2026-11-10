@@ -332,7 +332,7 @@ class H(BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         if p == "/api/v1/ws": return self.ws()
         if sysr(self, "GET"): return
-        if p == "/login": return self.send(200, open(ROOT + "/components/lgal_core/www/login.html", "rb").read(), "text/html; charset=utf-8")
+        if p in ("/login", "/setup", "/recovery"): return self.send(200, open(ROOT + "/components/lgal_core/www" + p + ".html", "rb").read(), "text/html; charset=utf-8")
         if p == "/": return self.send(200, open(ROOT + "/components/webui/www/index.html", "rb").read(), "text/html; charset=utf-8")
         if p.startswith("/ui/"):
             ext = p.rsplit(".", 1)[-1]
