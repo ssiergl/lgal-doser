@@ -46,8 +46,8 @@ add({
     'pset.pro': 'Fine-tuning', 'pset.tier': 'Speed', 'pset.retract': 'Anti-drip retraction', 'pset.retract.def': 'Standard ({r} rev.)', 'pset.retract.off': 'Off',
     'pset.retract.hint': 'Pulls the liquid back a little after each dose so the tube end does not drip.',
     'pset.retract.own': 'Own value', 'pset.rev': 'revolutions', 'pset.limit': 'Daily limit', 'pset.limit.hint': '0 = no limit',
-    'pset.save': 'Save', 'pset.ok': 'Settings saved',
-    'pset.prohint': 'Pro settings active: {list}', 
+    'pset.dir': 'Direction of rotation', 'pset.dir.cw': 'Clockwise (CW)', 'pset.dir.ccw': 'Counter-clockwise (CCW)', 'pset.dir.hint': 'Changes only while the pump stands still. Check the flow direction afterwards by priming briefly.', 'pset.save': 'Save', 'pset.ok': 'Settings saved',
+    'pset.prohint': 'Pro settings active: {list}',
     'ph.retract': 'anti-drip', 'ph.unretract': 'preparing', 'ph.main': 'delivering', 'ph.none': '',
     'bo.title': 'Boost', 'bo.hint': 'An extra amount, e.g. to raise a value. It is spread evenly over the scheduled doses of the next days and ends by itself.',
     'bo.ml': 'Extra amount', 'bo.days': 'Spread over', 'bo.dunit': 'days', 'bo.start': 'Start boost',
@@ -96,8 +96,8 @@ add({
     'pset.pro': 'Feintuning', 'pset.tier': 'Geschwindigkeit', 'pset.retract': 'Anti-Tropf-Rückzug', 'pset.retract.def': 'Standard ({r} U)', 'pset.retract.off': 'Aus',
     'pset.retract.hint': 'Zieht die Flüssigkeit nach jeder Dosis etwas zurück, damit das Schlauchende nicht tropft.',
     'pset.retract.own': 'Eigener Wert', 'pset.rev': 'Umdrehungen', 'pset.limit': 'Tageslimit', 'pset.limit.hint': '0 = kein Limit',
-    'pset.save': 'Speichern', 'pset.ok': 'Einstellungen gespeichert',
-    'pset.prohint': 'Profi-Einstellungen aktiv: {list}', 
+    'pset.dir': 'Drehrichtung', 'pset.dir.cw': 'Rechts (CW)', 'pset.dir.ccw': 'Links (CCW)', 'pset.dir.hint': 'Nur im Stillstand änderbar. Danach die Förderrichtung prüfen (kurz entlüften).', 'pset.save': 'Speichern', 'pset.ok': 'Einstellungen gespeichert',
+    'pset.prohint': 'Profi-Einstellungen aktiv: {list}',
     'ph.retract': 'Anti-Tropf', 'ph.unretract': 'Vorbereitung', 'ph.main': 'fördert', 'ph.none': '',
     'bo.title': 'Boost', 'bo.hint': 'Eine Zusatzmenge, z. B. um einen Wert anzuheben. Sie wird gleichmäßig auf die geplanten Dosen der nächsten Tage verteilt und endet von selbst.',
     'bo.ml': 'Zusatzmenge', 'bo.days': 'Verteilen auf', 'bo.dunit': 'Tage', 'bo.start': 'Boost starten',
@@ -377,6 +377,7 @@ function proActive(p) {
   if (p.speed.tier !== 1) out.push(t('pset.tier') + ': ' + t('tier.' + p.speed.tier));
   if (p.retract.setting !== 'off') out.push(t('pset.retract') + ': ' + num(p.retract.rev, 2) + ' ' + t('pset.rev'));
   if (p.daily.limit_ml) out.push(t('pset.limit') + ': ' + num(p.daily.limit_ml, 1) + ' ml');
+  if (p.direction === 'ccw') out.push(t('pset.dir') + ': ' + t('pset.dir.ccw'));
   return out;
 }
 
@@ -388,6 +389,7 @@ function SettingsCard({ p, pro }) {
     setF({
       name: p.name, mode: p.mode, tier: p.speed.tier, retract: p.retract.setting,
       retractRev: String(p.retract.setting === 'own' ? p.retract.rev : p.retract.global_rev), limit: p.daily.limit_ml ? String(p.daily.limit_ml) : '0',
+      dir: p.direction,
     });
     msg.clear();
   }, [p.pump]);
@@ -400,7 +402,7 @@ function SettingsCard({ p, pro }) {
       const lim = f.limit.trim() === '' ? 0 : parseNum(f.limit);
       const rr = f.retract === 'own' ? parseNum(f.retractRev) : 0;
       if (Number.isNaN(lim) || Number.isNaN(rr) || rr > 2 || (f.retract === 'own' && !(rr > 0))) { msg.err({ code: 'invalid_param' }); return; }
-      Object.assign(q, { tier: f.tier, daily_limit_ml: dec(lim), retract_rev: f.retract === 'own' ? dec(rr) : f.retract });
+      Object.assign(q, { tier: f.tier, daily_limit_ml: dec(lim), retract_rev: f.retract === 'own' ? dec(rr) : f.retract, direction: f.dir });
     }
     api('POST', '/api/v1/pumps/settings?' + qs(q)).then(() => { msg.ok(t('pset.ok')); refresh(); }).catch(msg.err);
   };
@@ -423,6 +425,9 @@ function SettingsCard({ p, pro }) {
           <span class="mut small">${t('pset.retract.hint')}</span></div>
         <label class="field">${t('pset.limit')}<${Amount} value=${f.limit} onInput=${v => set({ limit: v })}/>
           <span class="mut small">${t('pset.limit.hint')}</span></label>
+        <div class="field"><span class="lbl">${t('pset.dir')}</span>
+          <${Seg} value=${f.dir} onChange=${v => set({ dir: v })} options=${[['cw', t('pset.dir.cw')], ['ccw', t('pset.dir.ccw')]]}/>
+          <span class="mut small">${t('pset.dir.hint')}</span></div>
       </fieldset>`}
       <div class="row"><button type="submit">${t('pset.save')}</button></div>
     </form>
