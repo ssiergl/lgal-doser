@@ -22,7 +22,6 @@ idf_component_register(
         "src/schedule_json.cpp"
         "src/schedule_api.cpp"
     INCLUDE_DIRS "include"
-    EMBED_TXTFILES "www/hwtest.html" "www/dosing.html" "www/schedule.html"
     REQUIRES doser_hal lgal_core esp_http_server nvs_flash esp_timer esp_app_format
     PRIV_REQUIRES littlefs esp_driver_tsens
 )

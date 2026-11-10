@@ -1,6 +1,6 @@
 #pragma once
-// Persistent hardware parameters (NVS namespace "hw"). In M6 these values
-// are maintained via the engineering mode; until then via /hwtest.
+// Persistent hardware parameters (NVS namespace "hw"), maintained in the
+// engineering menu of the web UI (hwtest_api.h endpoints).
 
 #include "doser/motion.h"
 #include "esp_err.h"

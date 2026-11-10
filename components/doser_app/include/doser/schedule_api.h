@@ -5,7 +5,6 @@
 // "since_local"), because the browser may be in another time zone.
 // All require login.
 //
-//   GET  /schedule                              scheduler test page
 //   GET  /api/v1/pumps/schedule ?pump=1..5      schedule, grid_min, today's slots
 //   PUT  /api/v1/pumps/schedule ?pump=1..5      JSON body, see below
 //   POST /api/v1/pumps/boost    ?pump=&ml=30&days=3

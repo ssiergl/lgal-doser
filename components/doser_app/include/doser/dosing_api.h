@@ -1,7 +1,6 @@
 #pragma once
 // REST API of the dosing engine (M2). Amounts in ml (decimal), all require login.
 //
-//   GET  /dosing                              dosing test page
 //   GET  /api/v1/pumps                        status + settings of all pumps
 //   POST /api/v1/pumps/dose       ?pump=1..5&ml=1.5[&tier=0..2]
 //                                 409 collision_lock with "retry_at" (UTC) and

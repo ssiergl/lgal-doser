@@ -12,8 +12,6 @@
 #include "lgal/json.h"
 #include "lgal/timesync.h"
 
-extern const char hwtest_html_start[] asm("_binary_hwtest_html_start");
-extern const char hwtest_html_end[] asm("_binary_hwtest_html_end");
 
 namespace doser::hwtest {
 
@@ -30,13 +28,6 @@ int pump_arg(httpd_req_t* req, const char* key = "pump") {
     int64_t p = 0;
     if (!http::query_int(req, key, &p) || p < 1 || p > 5) return -1;
     return static_cast<int>(p - 1);
-}
-
-esp_err_t get_page(httpd_req_t* req) {
-    if (!http::authorize_engineering(req)) return ESP_OK;
-    httpd_resp_set_type(req, "text/html; charset=utf-8");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, hwtest_html_start, hwtest_html_end - hwtest_html_start - 1);  // without the trailing 0
 }
 
 void write_pump(Json& j, int i) {
@@ -259,7 +250,6 @@ esp_err_t post_eeprom_test(httpd_req_t* req) {
 
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;
-    http::route(server, "/hwtest", HTTP_GET, get_page);
     http::route(server, "/api/v1/hw/status", HTTP_GET, get_status);
     http::route(server, "/api/v1/hw/pump/run", HTTP_POST, post_run);
     http::route(server, "/api/v1/hw/pump/stop", HTTP_POST, post_stop);

@@ -243,9 +243,6 @@ extern "C" void app_main(void) {
     doser::backup_api::register_handlers(lgal::http::handle());
     doser::engineering::register_handlers(lgal::http::handle());
     lgal::sysapi::add_link("app", "Web interface", "/");
-    lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
-    lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
-    lgal::sysapi::add_link("hwtest", "Hardware test", "/hwtest");
     lgal::sysapi::add_link("network", "Network", "/network");
     lgal::sysapi::add_link("setup", "Setup wizard", "/setup");
     lgal::sysapi::add_link("account", "Account", "/login");

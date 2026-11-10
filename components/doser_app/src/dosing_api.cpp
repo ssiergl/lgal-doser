@@ -12,9 +12,6 @@
 #include "lgal/json.h"
 #include "lgal/ws.h"
 
-extern const char dosing_html_start[] asm("_binary_dosing_html_start");
-extern const char dosing_html_end[] asm("_binary_dosing_html_end");
-
 namespace doser::dosing_api {
 
 namespace {
@@ -150,13 +147,6 @@ void write_pump(Json& j, int i) {
 
     j.kv("total_ml", ml(static_cast<int64_t>(st.total_ul)), 3);
     j.end();
-}
-
-esp_err_t get_page(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
-    httpd_resp_set_type(req, "text/html; charset=utf-8");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, dosing_html_start, dosing_html_end - dosing_html_start - 1);
 }
 
 esp_err_t get_pumps(httpd_req_t* req) {
@@ -458,7 +448,6 @@ void ws_closed(int client) {
 
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;
-    http::route(server, "/dosing", HTTP_GET, get_page);
     http::route(server, "/api/v1/pumps", HTTP_GET, get_pumps);
     http::route(server, "/api/v1/pumps/dose", HTTP_POST, post_dose);
     http::route(server, "/api/v1/pumps/stop", HTTP_POST, post_stop);

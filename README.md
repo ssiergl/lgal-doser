@@ -10,7 +10,7 @@ Framework: **ESP-IDF v6.0.3**, C++ (gnu++2b), FreeRTOS.
 ```
 components/lgal_core/   LG Aquatic Life Core: Netz, HTTP, OTA, LED, Taster, Einstellungen, Log
 components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte, Pumpen, RTC/EEPROM
-components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Scheduler) und ihre REST-APIs
+components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitplan (Scheduler), Engineering und ihre REST-APIs
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py, mock/ (Geräte-Mock für die Weboberfläche)
@@ -181,8 +181,8 @@ gespeicherte. Fehler: 400 `invalid_param` mit `field` (z. B. `lan.gateway`), 400
 | Entlüften | `{"type":"prime","pump":1,"action":"start\|beat\|stop","tier"?:0..2}`. Beim Halten alle 150 ms `beat`. Bricht die Verbindung ab, stoppt die Pumpe sofort (zusätzlich nach `prime_heartbeat_ms` ohne Heartbeat). |
 | Sicherheit | Browser nur von den eigenen Seiten (Origin = Host, sonst 403 `forbidden_origin`). Max. 4 Verbindungen (503 `too_many_clients`). Abmelden, Passwortwechsel oder gelöschter API-Key beenden die Verbindung (Prüfung alle 5 s und bei jeder Nachricht). |
 
-Die Dosiertest-Seite nutzt den WebSocket (Chip „Live“) und fällt ohne ihn auf Abfragen
-und REST-Entlüften zurück („Abfrage“).
+Die Weboberfläche nutzt den WebSocket für Live-Werte und das Entlüften und fällt ohne ihn auf
+Abfragen und REST-Entlüften zurück.
 
 ## Weboberfläche (M5)
 
@@ -212,7 +212,7 @@ nicht, `idf.py build` reicht.
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel, danach direkt das [Engineering-Menü](#engineering-menü-m6) (ist der Bereich schon freigeschaltet, sofort). Dort liegen auch die [Datensicherung](#datensicherung-m6) und „Jetzt sperren“. |
-| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Testseiten). |
+| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Links auf Netzwerk und Einrichtung). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
 
 ### Mock-Server (ohne Gerät)
@@ -295,7 +295,6 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/system/reboot` | Neustart |
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
-| GET | `/dosing` | Dosiertest-Seite |
 | GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
 | POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle); verwirft eine vorgemerkte Dosis |
@@ -314,7 +313,6 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / PUT | `/api/v1/mqtt` | MQTT-Einstellungen (ohne Passwort, `password_set`), Basis-Topic und Port in Gebrauch, Verbindungsstatus `disabled\|connecting\|connected` mit letztem Fehler, CA-Info; PUT teilweise, Passwort weglassen = behalten, `""` = löschen |
 | PUT / DELETE | `/api/v1/mqtt/ca` | CA-Zertifikat(e) als PEM-Text im Body (max. 8 KB, wird geprüft) bzw. entfernen (409 `ca_in_use`, solange TLS „eigenes CA-Zertifikat“ aktiv ist) |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
-| GET | `/schedule` | Zeitplantest-Seite |
 | GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |
 | POST | `/api/v1/pumps/boost?pump=1&ml=30&days=3` | Boost starten; `action=stop` beendet ihn |
 | GET | `/api/v1/schedule/status` | nächste Dosis, Verzögerung, Warteschlange, Übersprungene, Boost, Reichweite aller Pumpen |
@@ -322,7 +320,6 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
 | POST | `/api/v1/engineering/reset?what=network\|factory` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s) bzw. Werksreset mit Neustart |
-| GET | `/hwtest` | Hardwaretest-Seite |
 | GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |
@@ -349,13 +346,13 @@ idf.py coredump-info -c coredump.elf
 | Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`) und NTP-Server (Standard `pool.ntp.org`, leer = aus) über `/api/v1/system/time` einstellbar, gespeichert in NVS. |
 | EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). |
 
-Standardwerte pro Pumpe (über `/hwtest` änderbar, in NVS gespeichert): 600 mA Laufstrom,
+Standardwerte pro Pumpe (im Engineering-Menü änderbar, in NVS gespeichert): 600 mA Laufstrom,
 0 mA Haltestrom, 16 Mikroschritte, 200 Vollschritte/U (bitte am Motor prüfen),
 Rampe 600 U/min pro s, Start 20 U/min, max. 600 U/min.
 
-Die Testseite **`/hwtest`** (Link auf der Wartungsseite) zeigt Treiber, StallGuard,
-RTC und EEPROM und fährt einzelne Pumpen um X Umdrehungen bzw. Schritte.
-„Ohne Treiber takten“ erzeugt STEP-Pulse auch ohne antwortenden TMC2209 (Test mit
+Bereich D des [Engineering-Menüs](#engineering-menü-m6) zeigt Treiberstatus, Rohregister,
+StallGuard und EEPROM-Selbsttest und fährt einzelne Pumpen um X Schritte. „Auch ohne
+Treiberantwort takten“ erzeugt STEP-Pulse auch ohne antwortenden TMC2209 (Test mit
 Oszilloskop/Logikanalysator).
 
 ## Dosierung (M2)
@@ -377,8 +374,8 @@ Rückzug „Standard“ ¼ U (≈ 0,09 ml), Kalibrier-Zielmenge 20 ml, Stufen 10
 Schlauch-Lebensdauer 1000 h, Tageslimit pro Kalendertag. Änderungen brauchen die
 Engineering-Freischaltung (siehe [Zugang](#zugang)).
 
-Die Testseite **`/dosing`** bedient alles davon pro Pumpe; unten liegen die
-Engineering-Parameter.
+Die Weboberfläche bedient das pro Pumpe; die Engineering-Parameter liegen im
+[Engineering-Menü](#engineering-menü-m6).
 
 ## Zeitplan (M3)
 
@@ -423,8 +420,8 @@ kollidierenden Dosen (`"conflicts": [{"code": "collision_lock", "first": {…}, 
 Zeitpunkte kommen als UTC-Sekunden plus Ortszeit des Geräts (`"at"` + `"local"`), weil der
 Browser in einer anderen Zeitzone sein kann.
 
-Die Testseite **`/schedule`** zeigt den Status aller Pumpen (inkl. Boost und manueller Dosis)
-und bearbeitet Zeitpläne, Sperrzeiten und die Scheduler-Parameter.
+Zeitpläne, Sperrzeiten und Boost bearbeitet die Weboberfläche (Pumpen-Detail, Einstellungen),
+die Scheduler-Parameter das [Engineering-Menü](#engineering-menü-m6).
 
 ## Historie (M6)
 
