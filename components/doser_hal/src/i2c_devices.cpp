@@ -205,6 +205,13 @@ esp_err_t write(uint16_t addr, const void* data, size_t len) {
     return ESP_OK;
 }
 
+esp_err_t erase() {
+    uint8_t ff[kPage];
+    std::memset(ff, 0xFF, sizeof(ff));
+    for (size_t a = 0; a < kSize; a += kPage) ESP_RETURN_ON_ERROR(write(static_cast<uint16_t>(a), ff, kPage), TAG, "erase");
+    return ESP_OK;
+}
+
 esp_err_t self_test() {
     constexpr uint16_t kTestAddr = kSize - kPage;
     uint8_t saved[kPage], pattern[kPage], check[kPage];

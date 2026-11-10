@@ -11,6 +11,7 @@
 #include "doser/backup_api.h"
 #include "doser/dosing.h"
 #include "doser/dosing_api.h"
+#include "doser/engineering_api.h"
 #include "doser/history.h"
 #include "doser/history_api.h"
 #include "doser/hwconfig.h"
@@ -240,6 +241,7 @@ extern "C" void app_main(void) {
     doser::schedule_api::register_handlers(lgal::http::handle());
     doser::history_api::register_handlers(lgal::http::handle());
     doser::backup_api::register_handlers(lgal::http::handle());
+    doser::engineering::register_handlers(lgal::http::handle());
     lgal::sysapi::add_link("app", "Web interface", "/");
     lgal::sysapi::add_link("dosing", "Dosing test", "/dosing");
     lgal::sysapi::add_link("schedule", "Schedule test", "/schedule");
@@ -270,7 +272,7 @@ extern "C" void app_main(void) {
     lgal::button::Config btn{};
     btn.gpio = doser::pins::kButton;
     btn.on_setup_ap = [] { lgal::net::start_setup_ap(true); };
-    btn.on_factory_reset = [] { lgal::settings::factory_reset(); };
+    btn.on_factory_reset = [] { doser::engineering::factory_reset(); };
     lgal::button::init(btn);
 
     vTaskDelay(pdMS_TO_TICKS(1500));  // let the boot fade-in finish

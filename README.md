@@ -139,7 +139,7 @@ zur [Ersteinrichtung](#ersteinrichtung-m4).
 |---|---|
 | Captive Portal | DNS-Server auf dem Setup-WLAN beantwortet jeden Namen (A) mit `192.168.4.1`, andere Typen leer. Unbekannte Seiten leiten Setup-WLAN-Clients auf `http://192.168.4.1/` um. LAN/WLAN-Clients bekommen ein normales 404. |
 | Wiederholen | `/setup` bleibt nach dem Abschluss erreichbar (Link auf der Wartungsseite), schaltet das Setup-WLAN dann aber nicht erneut ein. |
-| Werkseinstellungen | Taster 10 s setzt `setup_completed` zurück → Ersteinrichtung beginnt von vorn. |
+| Werkseinstellungen | Taster 10 s oder `/api/v1/engineering/reset?what=factory` löscht alles (siehe [Taster und LED](#taster-und-led)) → Ersteinrichtung beginnt von vorn. |
 
 ## Netzwerk (M4)
 
@@ -302,6 +302,8 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/schedule/status` | nächste Dosis, Verzögerung, Warteschlange, Übersprungene, Boost, Reichweite aller Pumpen |
 | GET / PUT | `/api/v1/schedule/locks` | Sperrzeiten zwischen Pumpen + Regel für manuelle Dosen (JSON) |
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
+| GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
+| POST | `/api/v1/engineering/reset?what=network\|factory` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s) bzw. Werksreset mit Neustart |
 | GET | `/hwtest` | Hardwaretest-Seite |
 | GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
@@ -490,7 +492,7 @@ der Antwort. Der Engineering-Schlüssel (Hersteller) ist nie Teil der Sicherung.
 | Taster (GPIO0) | Aktion beim Loslassen | LED während des Haltens |
 |---|---|---|
 | ≥ 3 s | Setup-WLAN für 30 min (auch zum Zurücksetzen des Admin-Passworts) | Orange |
-| ≥ 10 s | Werkseinstellungen (NVS + Datenpartition löschen) | Rot |
+| ≥ 10 s | Werkseinstellungen (Pumpen stoppen, EEPROM, NVS und Datenpartition löschen) | Rot |
 
 Beim Einschalten gedrückt = ESP-Download-Modus (Hardware). Ein dauerhaft gedrückter
 Taster löst nichts aus, solange er nicht einmal losgelassen wurde.

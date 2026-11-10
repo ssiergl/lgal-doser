@@ -39,4 +39,6 @@ esp_err_t read(uint16_t addr, void* data, size_t len);
 esp_err_t write(uint16_t addr, const void* data, size_t len);
 // Write/read test on the last page, content is restored
 esp_err_t self_test();
+// Whole EEPROM to 0xFF (factory reset)
+esp_err_t erase();
 }  // namespace doser::eeprom
