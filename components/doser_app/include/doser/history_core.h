@@ -11,6 +11,12 @@
 
 namespace doser::history {
 
+// Retention in days (spec 9: configurable, default 60). The daily view and
+// the queries cover at most kKeepDaysMax days.
+constexpr uint16_t kKeepDaysMin = 1;
+constexpr uint16_t kKeepDaysMax = 60;
+constexpr uint16_t kKeepDaysDefault = 60;
+
 enum class Kind : uint8_t {
     Dose = 1,     // dosing run finished (target, done, result)
     Prime,        // filling the tube finished (done, result)

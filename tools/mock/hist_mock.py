@@ -1,7 +1,8 @@
 # Mock of the history endpoints: 60 days of generated events (test data only)
 import random, time
 
-KEEP = 60
+KEEP = 60  # maximum retention
+SET = {"keep": KEEP}
 EV = []  # newest last
 
 def _add(utc, kind, pump, source, code, target=0.0, done=0.0, **extra):
@@ -89,7 +90,8 @@ def _backup(secrets):
            "engineering": {"dosing": {"retract_mrev": 250, "calib_ml": 20.0, "tier_rpm": [100, 200, 300], "prime_max_s": 60,
                                       "prime_heartbeat_ms": 500, "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day"},
                            "scheduler": {"grid_min": 5, "max_delay_min": 30},
-                           "hardware": {"pumps": [{"run_ma": 600, "hold_ma": 0, "microsteps": 16, "invert": False, "full_steps": 200, "accel": 0, "v_start": 0}] * 5}}}
+                           "hardware": {"pumps": [{"run_ma": 600, "hold_ma": 0, "microsteps": 16, "invert": False, "full_steps": 200, "accel": 0, "v_start": 0}] * 5},
+                           "history": {"keep_days": SET["keep"]}}}
     import mqtt_mock
     m = {k: v for k, v in mqtt_mock.CFG.items() if k != "password"}
     m["password_set"] = bool(mqtt_mock.CFG["password"]); m["ca_pem"] = mqtt_mock.CA["pem"]
@@ -112,6 +114,16 @@ def route(h, method, path, q, eng_ok):
             todo = [p for p in present if p in parts]
             if not todo: _err(h, "nothing_to_restore"); return True
             h.send(200, {"status": "ok", "applied": todo, "network_changed": "network" in todo, "signed_out": "auth" in todo}); return True
+    if path == "/api/v1/history/settings":
+        if method == "POST":
+            if not eng_ok(): _err(h, "engineering_locked", status=403); return True
+            try: v = int(q.get("keep_days", ""))
+            except ValueError: v = 0
+            if not 1 <= v <= KEEP: _err(h, "invalid_param", "keep_days=1..60"); return True
+            SET["keep"] = v
+            cut = time.time() - (v + 1) * 86400
+            EV[:] = [e for e in EV if e["utc"] >= cut]
+        h.send(200, {"keep_days": SET["keep"], "min_days": 1, "max_days": KEEP}); return True
     if path == "/api/v1/history" and method == "DELETE":
         if not eng_ok(): _err(h, "engineering_locked", status=403); return True
         EV.clear(); h.send(200, {"status": "ok"}); return True
@@ -150,5 +162,5 @@ def route(h, method, path, q, eng_ok):
                 if e["kind"] == "dose": ml[i] += e["done_ml"]; doses[i] += 1
                 if e["kind"] == "skip": sk[i] += e.get("count", 1)
             out.append({"date": date, "ml": [round(x, 3) for x in ml], "doses": doses, "skipped": sk})
-        h.send(200, {"keep_days": KEEP, "today": today, "days": out}); return True
+        h.send(200, {"keep_days": SET["keep"], "today": today, "days": out}); return True
     return False

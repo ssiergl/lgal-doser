@@ -307,6 +307,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/history?…` | Ereignisse, neueste zuerst: `pump=1..5`, `kind=dose,skip,…`, `days=1..60` (oder `from`/`to` in UTC-Sekunden), `limit=1..500` (100), `offset` → `{"events":[…],"more"}` (siehe [Historie](#historie-m6)) |
 | GET | `/api/v1/history.csv?…` | dieselben Filter als CSV-Download, ohne Limit |
 | GET | `/api/v1/history/daily?days=14` | dosierte Menge, Anzahl Dosen und ausgelassene Dosen je Ortstag und Pumpe (1–60 Tage, älteste zuerst; ohne gültige Uhrzeit leer) |
+| GET / POST | `/api/v1/history/settings?keep_days=30` | Aufbewahrungszeit `keep_days` (1–60, ab Werk 60); ändern nur mit Engineering-Freischaltung |
 | DELETE | `/api/v1/history` | Historie löschen (Engineering) |
 | GET | `/api/v1/backup?secrets=0\|1` | Datensicherung der ganzen Konfiguration (Engineering, siehe [Datensicherung](#datensicherung-m6)) |
 | POST | `/api/v1/backup?parts=system,network,pumps,engineering,mqtt,auth` | Sicherung einspielen (Engineering); erst alles prüfen, dann die gewählten Teile übernehmen; 409 `pump_busy` solange eine Pumpe läuft |
@@ -426,8 +427,9 @@ die Scheduler-Parameter das [Engineering-Menü](#engineering-menü-m6).
 ## Historie (M6)
 
 Das Gerät zeichnet Ereignisse als 24-Byte-Einträge auf der LittleFS-Partition `storage` auf
-(eine Datei pro UTC-Tag unter `/storage/hist`, Prüfsumme je Eintrag). Tage älter als 60 Tage
-löscht es stündlich. Geschrieben wird über eine Warteschlange in einem eigenen Task – Dosierung
+(eine Datei pro UTC-Tag unter `/storage/hist`, Prüfsumme je Eintrag). Tage älter als die
+Aufbewahrungszeit (Engineering-Menü, 1–60 Tage, ab Werk 60, Teil der Datensicherung) löscht es
+stündlich, nach dem Verkürzen innerhalb einer Minute. Geschrieben wird über eine Warteschlange in einem eigenen Task – Dosierung
 und Zeitplan warten nie auf den Flash. Ohne gültige Uhrzeit wird nichts aufgezeichnet.
 Bei rund 240 Dosen am Tag sind das etwa 6 KB pro Tag, 60 Tage ≈ 350 KB von 5,9 MB.
 Werkseinstellungen löschen die Historie mit; einzeln löscht sie das Engineering-Menü.
@@ -487,7 +489,7 @@ auf eine andere Pumpe (`{"format":"lgal-doser-schedule","version":1,…,"schedul
 
 **Ganzes Gerät** (nur Engineering, Bereich E des Engineering-Menüs): eine Datei mit Sprache, Zeitzone,
 Zeitserver, LED-Nachtmodus, Netzwerk, allen Pumpen-Einstellungen inkl. Kalibrierung, Zeitplänen,
-Sperrzeiten, Servicewerten, Hardware-Parametern (Ströme, Mikroschritte) und
+Sperrzeiten, Servicewerten, Hardware-Parametern (Ströme, Mikroschritte), der Aufbewahrungszeit des Verlaufs und
 den MQTT-Einstellungen samt CA-Zertifikat.
 Behälterinhalt, Zähler und Verlauf gehören nicht dazu. Beim Export wählbar:
 
@@ -514,7 +516,7 @@ Eingabe.
 |---|---|
 | A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle 5 Pumpen. |
 | B · Grenzen | Entlüften max. Dauer und Totmann-Timeout, kleinste Einzeldosis, Fenster des Tageslimits, Zeitplan-Raster, max. Verzögerung einer geplanten Dosis. |
-| C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur und Aging-Offset. |
+| C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur und Aging-Offset. Aufbewahrungszeit des Verlaufs (1–60 Tage). |
 | D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen, Werksreset (Eingabe „RESET“). |
 | E · Datensicherung | Ganzes Gerät sichern und wiederherstellen (siehe [Datensicherung](#datensicherung-m6)). |
 

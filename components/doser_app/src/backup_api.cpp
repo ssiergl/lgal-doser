@@ -7,6 +7,7 @@
 
 #include "doser/backup_json.h"
 #include "doser/dosing.h"
+#include "doser/history.h"
 #include "doser/hwconfig.h"
 #include "doser/motion.h"
 #include "doser/schedule_json.h"
@@ -47,6 +48,7 @@ void collect(bk::Data* d) {
     d->locks = scheduler::locks();
     d->dosing = dosing::engineering();
     d->scheduler = scheduler::config();
+    d->history_keep_days = history::keep_days();
     d->mqtt = lgal::mqtt::config();
     d->mqtt_ca = lgal::mqtt::ca_pem();
 }
@@ -140,6 +142,8 @@ esp_err_t post_backup(httpd_req_t* req) {
                 return apply_failed(req, bk::kEngineering, e == ESP_ERR_INVALID_STATE ? "pump_busy" : "invalid_param", applied);
             hwconfig::save_pump(i, d->hw[i]);  // also when the driver did not answer
         }
+        if (d->history_keep_days && history::set_keep_days(d->history_keep_days) != ESP_OK)
+            return apply_failed(req, bk::kEngineering, "storage_error", applied);
         applied |= bk::kEngineering;
     }
     if (todo & bk::kSystem) {
