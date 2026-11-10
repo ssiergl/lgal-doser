@@ -170,7 +170,11 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .field { display: grid; gap: 6px; margin-top: 14px; }
 .field > label { font-size: 13px; color: var(--mut); font-weight: 600; }
 .field p { margin: 0; }
-.settings { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
+/* Card pages: columns that each card simply continues (no row gaps under a
+   short card next to a tall one); a lone card takes the full width */
+.grid.settings { display: block; columns: 320px; column-gap: var(--gap); }
+.grid.settings > * { break-inside: avoid; margin: 0 0 var(--gap); }
+.grid.settings:has(> :only-child) { columns: auto; }
 .links { list-style: none; padding: 0; margin: 8px 0 0; }
 .links li { border-top: 1px solid var(--line); }
 .links li:first-child { border-top: 0; }
