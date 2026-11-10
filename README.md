@@ -227,7 +227,8 @@ python3 tools/mock/webui_server.py
 Danach `http://localhost:8767/` öffnen (optional: Projektordner und Port als Argumente). Die
 Seiten kommen direkt aus `components/webui/www/`; nach einer Änderung reicht Neuladen. REST-API
 und WebSocket laufen mit Zustand im Speicher: Pumpen mit Dosieren, Entlüften (Totmann) und
-Kalibrieren, Zeitpläne, Verlauf, Netzwerk, Anmeldung, MQTT, Datensicherung und Engineering-Menü.
+Kalibrieren, Zeitpläne, Verlauf, Netzwerk, Anmeldung, MQTT, Datensicherung und Engineering-Menü,
+dazu Einrichtungsassistent (`/setup`), Anmeldeseite und Notfallseite (`/recovery`).
 Testwerte: Admin-Passwort `test-admin-pw`, Engineering-Schlüssel `test-eng-key`. Der Zustand
 geht beim Beenden verloren.
 
