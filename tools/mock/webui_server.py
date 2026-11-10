@@ -194,7 +194,7 @@ def live():
 
 def full(i):
     p = P[i]; n = i + 1
-    d = {"pump": n, "name": NAMES[i], "mode": p["mode"], "activity": p["activity"],
+    d = {"pump": n, "name": NAMES[i], "mode": p["mode"], "direction": "ccw" if eng_mock.CFG[i]["invert"] else "cw", "activity": p["activity"],
          "phase": "main" if p["activity"] != "idle" else "none", "last": dict(p["last"]),
          "calibration": {"calibrated": p["mlrev"] > 0, "ml_per_rev": p["mlrev"] or 0.37, "steps_per_ml": 3200 / (p["mlrev"] or 0.37),
                          "calibrated_at": p["calat"], "pending": p["pending"],
@@ -272,6 +272,9 @@ def pumps_post(h, path, q):
                 if v in ("global", "off"): p["rset"] = v
                 elif float(v) == 0: p["rset"] = "off"
                 else: p.update(rset="own", rrev=num("retract_rev"))
+            if "direction" in q:
+                if q["direction"] not in ("cw", "ccw"): return err(h, "invalid_param", "direction=cw|ccw")
+                eng_mock.CFG[i]["invert"] = q["direction"] == "ccw"
             return h.send(200, {"status": "ok"})
         if path == "/api/v1/pumps/container":
             if "capacity_ml" in q:
@@ -311,7 +314,7 @@ def prime(cid, m):
             end(i, "success"); return None
     return "invalid_param"
 
-import sys_mock
+import eng_mock, sys_mock
 from urllib.parse import urlsplit as _us, parse_qsl as _pq
 
 def sysr(h, method, body=None):

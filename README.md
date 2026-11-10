@@ -301,7 +301,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat (besser per WebSocket) |
 | GET | `/api/v1/ws` | WebSocket: Status-Push und Entlüften (siehe [WebSocket](#websocket-m4)) |
 | POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=20]` | Kalibrierlauf; danach `action=apply&measured_ml=…` oder `cancel` |
-| POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (Umdrehungen, `off` = 0 = aus, `global` = Service-Wert; ab Werk aus) |
+| POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (Umdrehungen, `off` = 0 = aus, `global` = Service-Wert; ab Werk aus), `direction=cw\|ccw` (Drehrichtung über `GCONF.shaft`, ab Werk `cw`; nur im Stillstand, sonst 409 `pump_busy`) |
 | POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter) |
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen |
 | GET | `/api/v1/history?…` | Ereignisse, neueste zuerst: `pump=1..5`, `kind=dose,skip,…`, `days=1..60` (oder `from`/`to` in UTC-Sekunden), `limit=1..500` (100), `offset` → `{"events":[…],"more"}` (siehe [Historie](#historie-m6)) |

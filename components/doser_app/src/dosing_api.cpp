@@ -5,6 +5,8 @@
 #include <cstring>
 
 #include "doser/dosing.h"
+#include "doser/hwconfig.h"
+#include "doser/motion.h"
 #include "doser/schedule_json.h"
 #include "doser/scheduler.h"
 #include "esp_log.h"
@@ -83,6 +85,7 @@ void write_pump(Json& j, int i) {
         .kv("pump", i + 1)
         .kv("name", set.name)
         .kv("mode", dose::mode_str(set.mode))
+        .kv("direction", motion::config(i).driver.invert ? "ccw" : "cw")
         .kv("activity", dosing::activity_str(s.activity))
         .kv("phase", dosing::phase_str(s.phase));
     if (s.activity != dosing::Activity::Idle) {
@@ -274,7 +277,25 @@ esp_err_t post_settings(httpd_req_t* req) {
             return fail(req, "invalid_param", "retract_rev=0..2|off|global");
         }
     }
+    // Direction is the driver's GCONF.shaft (DIR is wired to GND); it can
+    // only change while the pump stands still.
+    auto mc = motion::config(p);
+    bool turn = false;
+    if (http::query_str(req, "direction", buf, sizeof(buf))) {
+        const bool ccw = std::strcmp(buf, "ccw") == 0;
+        if (!ccw && std::strcmp(buf, "cw") != 0) return fail(req, "invalid_param", "direction=cw|ccw");
+        turn = ccw != mc.driver.invert;
+        mc.driver.invert = ccw;
+        if (turn && motion::status(p).running) return fail(req, "pump_busy");
+    }
     if (const char* e = dosing::set_settings(p, s)) return fail(req, e);
+    if (turn) {
+        const esp_err_t err = motion::set_config(p, mc);
+        if (err == ESP_ERR_INVALID_STATE) return fail(req, "pump_busy");
+        // Saved even if the driver does not answer: it gets the setting
+        // when it is configured again.
+        if (err != ESP_ERR_INVALID_ARG) hwconfig::save_pump(p, mc);
+    }
     return ok(req);
 }
 

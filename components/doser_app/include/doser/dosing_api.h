@@ -14,7 +14,10 @@
 //                                 ?pump=&action=cancel
 //   POST /api/v1/pumps/settings   ?pump=&name=&mode=auto|manual_only|disabled&tier=
 //                                 &daily_limit_ml=&retract_rev=0.25|off|global
-//                                 (retraction: off from the factory, 0 = off, global = engineering value)
+//                                 &direction=cw|ccw
+//                                 (retraction: off from the factory, 0 = off, global = engineering value;
+//                                 direction = driver GCONF.shaft, cw = factory setting, 409 pump_busy
+//                                 while the pump runs)
 //   POST /api/v1/pumps/container  ?pump=&remaining_ml=&capacity_ml=
 //   POST /api/v1/pumps/tube       ?pump=&hours=0
 //   GET  /api/v1/engineering/dosing           super-admin parameters
