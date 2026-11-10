@@ -1,5 +1,6 @@
 // Maintenance (#/maintenance): firmware and device info, firmware update by
-// file upload, restart; log and coredump in the pro view. /recovery stays
+// file upload, restart; update from a URL (with its settings), log and
+// coredump in the pro view. /recovery stays
 // as the emergency page without the web UI.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, ApiError } from '../lib/api.js';
@@ -32,6 +33,22 @@ add({
     'err.no_app_desc': 'Firmware file is incomplete', 'err.wrong_project': 'Firmware is for a different device',
     'err.flash_error': 'Flash write error', 'err.file_too_short': 'File too short', 'err.image_invalid': 'Firmware verification failed',
     'err.upload_failed': 'Update failed', 'err.no_memory': 'Device is out of memory', 'err.no_coredump': 'No crash report stored',
+    'mt.url': 'Update from a URL', 'mt.url.hint': 'The device downloads the firmware file (.bin) itself, e.g. from a release page. HTTPS with a checked server certificate.',
+    'mt.url.field': 'Address of the firmware file', 'mt.url.start': 'Download and install',
+    'mt.url.run': 'Downloading … {r}', 'mt.url.run.pct': 'Downloading … {p} % ({r})',
+    'mt.url.http': 'Unencrypted (http): the file can be altered on the way and nobody would notice. Only use it in your own network.',
+    'mt.url.http.ask': 'Download the firmware over unencrypted http? It can be altered on the way.',
+    'mt.url.http.off': 'http:// addresses are blocked – only https. You can allow http below (not recommended).',
+    'mt.url.failed': 'Update failed: {e}',
+    'mt.opt': 'Update options', 'mt.opt.http': 'Allow unencrypted http',
+    'mt.opt.http.h': 'Off: only https with a checked certificate (recommended).',
+    'mt.opt.http.on': 'http is allowed: firmware downloads over http are not protected against tampering. Switch it off again when you do not need it.',
+    'mt.opt.http.ask': 'Allow firmware downloads over unencrypted http? Anyone in the network path could swap the firmware. Only do this if you know why.',
+    'mt.opt.mqtt': 'Allow firmware updates over MQTT', 'mt.opt.mqtt.h': 'Anyone who may publish to {t} on the broker can then start an update with a URL.',
+    'mt.opt.saved': 'Saved.',
+    'err.invalid_url': 'Invalid address (http:// or https://)', 'err.http_not_allowed': 'Unencrypted http is not allowed',
+    'err.download_failed': 'Download failed', 'err.http_status': 'The server refused the download',
+    'err.too_many_redirects': 'Too many redirects', 'err.mqtt_update_disabled': 'Updates over MQTT are switched off',
   },
   de: {
     'mt.title': 'Wartung', 'mt.device': 'Gerät', 'mt.fw': 'Firmware', 'mt.slot': 'Speicherplatz', 'mt.built': 'Erstellt',
@@ -55,6 +72,22 @@ add({
     'err.no_app_desc': 'Firmware-Datei ist unvollständig', 'err.wrong_project': 'Firmware ist für ein anderes Gerät',
     'err.flash_error': 'Fehler beim Schreiben in den Flash', 'err.file_too_short': 'Datei zu kurz', 'err.image_invalid': 'Prüfung der Firmware fehlgeschlagen',
     'err.upload_failed': 'Update fehlgeschlagen', 'err.no_memory': 'Kein freier Speicher im Gerät', 'err.no_coredump': 'Kein Absturzbericht gespeichert',
+    'mt.url': 'Update von einer Adresse', 'mt.url.hint': 'Das Gerät lädt die Firmware-Datei (.bin) selbst herunter, z. B. von einer Release-Seite. HTTPS mit geprüftem Server-Zertifikat.',
+    'mt.url.field': 'Adresse der Firmware-Datei', 'mt.url.start': 'Herunterladen und installieren',
+    'mt.url.run': 'Lade herunter … {r}', 'mt.url.run.pct': 'Lade herunter … {p} % ({r})',
+    'mt.url.http': 'Unverschlüsselt (http): Die Datei kann unterwegs verändert werden, ohne dass es jemand merkt. Nur im eigenen Netz verwenden.',
+    'mt.url.http.ask': 'Firmware über unverschlüsseltes http laden? Sie kann unterwegs verändert werden.',
+    'mt.url.http.off': 'http://-Adressen sind gesperrt – nur https. Unten lässt sich http erlauben (nicht empfohlen).',
+    'mt.url.failed': 'Update fehlgeschlagen: {e}',
+    'mt.opt': 'Update-Optionen', 'mt.opt.http': 'Unverschlüsseltes http erlauben',
+    'mt.opt.http.h': 'Aus: nur https mit geprüftem Zertifikat (empfohlen).',
+    'mt.opt.http.on': 'http ist erlaubt: Firmware-Downloads über http sind nicht gegen Manipulation geschützt. Wieder ausschalten, wenn es nicht mehr gebraucht wird.',
+    'mt.opt.http.ask': 'Firmware-Downloads über unverschlüsseltes http erlauben? Jeder auf dem Weg durchs Netz könnte die Firmware austauschen. Nur einschalten, wenn klar ist, warum.',
+    'mt.opt.mqtt': 'Firmware-Update über MQTT erlauben', 'mt.opt.mqtt.h': 'Wer auf dem Broker nach {t} schreiben darf, kann dann ein Update mit einer Adresse starten.',
+    'mt.opt.saved': 'Gespeichert.',
+    'err.invalid_url': 'Ungültige Adresse (http:// oder https://)', 'err.http_not_allowed': 'Unverschlüsseltes http ist nicht erlaubt',
+    'err.download_failed': 'Download fehlgeschlagen', 'err.http_status': 'Der Server hat den Download abgelehnt',
+    'err.too_many_redirects': 'Zu viele Weiterleitungen', 'err.mqtt_update_disabled': 'Updates über MQTT sind ausgeschaltet',
   },
 });
 
@@ -155,6 +188,67 @@ function UpdateCard({ busyPumps }) {
   </section>`;
 }
 
+const isHttp = u => /^http:\/\//i.test(u.trim());
+const fmtSize = b => (b >= 1048576 ? num(b / 1048576, 1) + ' MB' : num(b / 1024, 0) + ' kB');
+
+// Pro view: the device downloads the image (POST /api/v1/ota/url) and
+// reports on GET /api/v1/ota/status until it restarts.
+function UrlUpdateCard({ busyPumps, opts }) {
+  const [url, setUrl] = useState('');
+  const [st, setSt] = useState(null);  // GET /api/v1/ota/status while running
+  const [busy, setBusy] = useState(false);
+  const msg = useMsg();
+  const poll = () => api('GET', '/api/v1/ota/status').then(j => {
+    setSt(j);
+    if (j.state === 'running') { setTimeout(poll, 1000); return; }
+    if (j.state === 'rebooting') { msg.ok(t('mt.done')); waitForDevice(msg); return; }
+    setBusy(false);
+    if (j.state === 'failed') msg.err(t('mt.url.failed', { e: errText({ code: j.error }) }) + (j.detail ? ' (' + j.detail + ')' : ''));
+  }).catch(() => setTimeout(poll, 2000));  // the device may be restarting
+  const http = isHttp(url);
+  const blocked = http && !opts.allow_http;
+  const start = e => {
+    e.preventDefault();
+    msg.clear();
+    if (blocked) { msg.err(t('mt.url.http.off')); return; }
+    if (http && !confirm(t('mt.url.http.ask'))) return;
+    setBusy(true);
+    api('POST', '/api/v1/ota/url', { url: url.trim() })
+      .then(() => { setSt({ state: 'running', received: 0, total: null }); setTimeout(poll, 500); })
+      .catch(e => { setBusy(false); msg.err(e); });
+  };
+  const running = st && st.state === 'running';
+  const pct = running && st.total ? Math.min(100, Math.floor(st.received / st.total * 100)) : null;
+  return html`<form class="card" novalidate onSubmit=${start}><h2>${t('mt.url')}</h2>
+    <p class="small mut">${t('mt.url.hint')}</p>
+    <label class="field">${t('mt.url.field')}
+      <input type="url" maxlength="512" autocomplete="off" spellcheck="false" placeholder="https://…/firmware.bin"
+        disabled=${busy} value=${url} onInput=${e => setUrl(e.target.value)}/></label>
+    ${http && html`<p class=${'small ' + (blocked ? 'err' : 'warn')}>${t(blocked ? 'mt.url.http.off' : 'mt.url.http')}</p>`}
+    ${busyPumps && !busy && html`<p class="small warn">${t('mt.busy')}</p>`}
+    ${running && html`<div class=${'bar' + (pct === null ? ' indet' : '')}><i style=${{ width: (pct ?? 100) + '%' }}></i></div>
+      <p class="small">${pct === null ? t('mt.url.run', { r: fmtSize(st.received) }) : t('mt.url.run.pct', { p: pct, r: fmtSize(st.received) })}</p>`}
+    <div class="row savebar"><button type="submit" disabled=${busy || !url.trim() || busyPumps || blocked}>${t('mt.url.start')}</button></div>
+    ${msg.node}
+  </form>`;
+}
+
+// Pro view: http for URL updates (warned) and updates over MQTT, both off from the factory
+function UpdateOptsCard({ opts, setOpts, base }) {
+  const msg = useMsg();
+  const save = patch => {
+    if (patch.allow_http && !confirm(t('mt.opt.http.ask'))) return;
+    api('PUT', '/api/v1/ota/settings', patch).then(j => { setOpts(j); msg.ok(t('mt.opt.saved')); }).catch(e => msg.err(e));
+  };
+  return html`<section class="card"><h2>${t('mt.opt')}</h2>
+    <label class="check"><input type="checkbox" checked=${opts.allow_http} onChange=${e => save({ allow_http: e.target.checked })}/>
+      <span>${t('mt.opt.http')}<br/><span class=${'small ' + (opts.allow_http ? 'warn' : 'mut')}>${t(opts.allow_http ? 'mt.opt.http.on' : 'mt.opt.http.h')}</span></span></label>
+    <label class="check"><input type="checkbox" checked=${opts.mqtt_update} onChange=${e => save({ mqtt_update: e.target.checked })}/>
+      <span>${t('mt.opt.mqtt')}<br/><span class=${'small ' + (opts.mqtt_update ? 'warn' : 'mut')}>${t('mt.opt.mqtt.h', { t: base + '/ota/set' })}</span></span></label>
+    ${msg.node}
+  </section>`;
+}
+
 function RestartCard() {
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
@@ -208,11 +302,21 @@ export function MaintenanceView() {
   }, []);
   const info = st.info;
   const busyPumps = !!(st.pumps && st.pumps.some(p => p.activity !== 'idle'));
+  const [opts, setOpts] = useState(null);  // GET /api/v1/ota/settings
+  const [base, setBase] = useState('<base>');
+  useEffect(() => {
+    if (!pro) return;
+    api('GET', '/api/v1/ota/settings').then(setOpts).catch(() => {});
+    api('GET', '/api/v1/mqtt').then(m => { if (m.base_topic) setBase(m.base_topic); }).catch(() => {});
+  }, [pro]);
   return html`<div class="page-head"><h1>${t('mt.title')}</h1></div>
+    ${pro && opts && opts.allow_http && html`<p class="banner warn">${t('mt.opt.http.on')}</p>`}
     ${!info ? html`<p class="mut">…</p>` : html`<div class="grid settings">
       <${InfoCard} info=${info} pro=${pro}/>
       <${UpdateCard} busyPumps=${busyPumps}/>
+      ${pro && opts && html`<${UrlUpdateCard} busyPumps=${busyPumps} opts=${opts}/>`}
       <${RestartCard}/>
+      ${pro && opts && html`<${UpdateOptsCard} opts=${opts} setOpts=${setOpts} base=${base}/>`}
       ${pro && html`<${DiagCard} info=${info}/>`}
     </div>`}
     <p class="small mut emergency">${t('mt.emergency', { u: '' })}<a href="/recovery">/recovery</a></p>`;

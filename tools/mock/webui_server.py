@@ -381,7 +381,7 @@ class H(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0) or 0)
         if not p.startswith("/api/v1/pumps/"):
             raw = self.rfile.read(n) if n else b""
-            if p.startswith("/api/v1/ota/"): pb = raw
+            if p.startswith("/api/v1/ota/firmware"): pb = raw
             else:
                 try: pb = json.loads(raw or b"{}")
                 except ValueError: pb = {}

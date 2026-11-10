@@ -1,5 +1,5 @@
 # Mock of the time, network and auth endpoints (test values only)
-import re, secrets, time
+import re, secrets, threading, time
 
 OFFSET = 600  # device clock runs 10 min ahead of the host -> "differs" warning
 TIME = {"timezone": "CET-1CEST,M3.5.0,M10.5.0/3", "ntp_server": "pool.ntp.org", "source": "rtc", "valid": True,
@@ -42,6 +42,25 @@ def info_json():
             "network": {"active": "lan", "eth_present": True, "eth_link": True, "eth_ip": "192.168.1.50", "wlan": "off", "wlan_ip": None, "ap_active": False, "ap_clients": 0},
             "time": time_json(), "language": "de", "languages": ["en", "de"], "links": LINKS}
 IPRE = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
+
+# URL update: a ".bin" address downloads 1.6 MB in 6 s and restarts, anything else gets HTTP 404 after 2 s
+OTA = {"allow_http": False, "mqtt_update": False, "t0": 0, "url": "", "http": False, "rebooted": False}
+
+def ota_status():
+    if not OTA["t0"]: return {"state": "idle"}
+    dt, total = time.time() - OTA["t0"], 1658880
+    s = {"source": "api", "http": OTA["http"], "received": 0, "total": total}
+    if not OTA["url"].lower().endswith(".bin"):
+        if dt < 2: return {"state": "running", **s, "received": int(dt * 30000), "total": None}
+        return {"state": "failed", **s, "error": "http_status", "detail": "HTTP 404"}
+    if dt < 6: return {"state": "running", **s, "received": int(total * dt / 6)}
+    if OTA["rebooted"] and time.time() > OTA["rebooted"]:  # the new firmware is up
+        OTA["t0"] = 0; return {"state": "idle"}
+    if not OTA["rebooted"]:
+        OTA["rebooted"] = time.time() + 7
+        SYS["version"] = "0.5.1-dev"; SYS["partition"] = "ota_1" if SYS["partition"] == "ota_0" else "ota_0"
+        threading.Timer(1.0, restart).start()
+    return {"state": "rebooting", **s, "received": total}
 
 def time_json():
     now = time.time() + OFFSET
@@ -113,6 +132,21 @@ def route(h, method, path, q, body):
             h.send(200, b"\x7fELF-test-dump", "application/octet-stream"); return True
         if method == "DELETE": SYS["coredump"] = False; h.send(200, {"status": "deleted"}); return True
     if path == "/api/v1/system/reboot" and method == "POST": h.send(200, {"status": "rebooting"}); restart(); return True
+    if path == "/api/v1/ota/settings":
+        if method == "PUT":
+            for k in ("allow_http", "mqtt_update"):
+                if k in body:
+                    if not isinstance(body[k], bool): err(h, 400, "invalid_param", k); return True
+                    OTA[k] = body[k]
+        h.send(200, {k: OTA[k] for k in ("allow_http", "mqtt_update")}); return True
+    if path == "/api/v1/ota/status" and method == "GET": h.send(200, ota_status()); return True
+    if path == "/api/v1/ota/url" and method == "POST":
+        u = str(body.get("url", "")).strip()
+        if not re.match(r"^https?://[^/\s:?#][^\s]*$", u, re.I) or len(u) > 512: err(h, 400, "invalid_url", "Invalid URL"); return True
+        if u.lower().startswith("http://") and not OTA["allow_http"]: err(h, 400, "http_not_allowed", "Plain http is not allowed"); return True
+        if ota_status()["state"] == "running": err(h, 409, "ota_in_progress", "An update is already in progress"); return True
+        OTA.update(t0=time.time(), url=u, http=u.lower().startswith("http://"), rebooted=False)
+        h.send(202, {"status": "started"}); return True
     if path == "/api/v1/ota/firmware" and method == "POST":
         data = body if isinstance(body, bytes) else b""
         if len(data) < 32: err(h, 400, "file_too_short", "File too short"); return True

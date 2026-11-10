@@ -70,7 +70,7 @@ void on_close(httpd_handle_t, int fd) {
 esp_err_t start() {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.server_port = 80;
-    cfg.max_uri_handlers = 96;
+    cfg.max_uri_handlers = 112;
     cfg.stack_size = 8192;
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
