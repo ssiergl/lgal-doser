@@ -13,7 +13,7 @@ components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte
 components/doser_app/   Geräte-Logik: Hardwaretest, Dosier-Engine, Zeitplan (Scheduler) und ihre REST-APIs
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  ap_password.py, ota_upload.py
+tools/                  ap_password.py, ota_upload.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
@@ -214,6 +214,22 @@ nicht, `idf.py build` reicht.
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel, danach direkt das [Engineering-Menü](#engineering-menü-m6) (ist der Bereich schon freigeschaltet, sofort). Dort liegen auch die [Datensicherung](#datensicherung-m6) und „Jetzt sperren“. |
 | Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Testseiten). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
+
+### Mock-Server (ohne Gerät)
+
+`tools/mock/` simuliert das Gerät für die Weboberfläche – nur Python-Standardbibliothek, nur
+`localhost`:
+
+```bash
+python3 tools/mock/webui_server.py
+```
+
+Danach `http://localhost:8767/` öffnen (optional: Projektordner und Port als Argumente). Die
+Seiten kommen direkt aus `components/webui/www/`; nach einer Änderung reicht Neuladen. REST-API
+und WebSocket laufen mit Zustand im Speicher: Pumpen mit Dosieren, Entlüften (Totmann) und
+Kalibrieren, Zeitpläne, Verlauf, Netzwerk, Anmeldung, MQTT, Datensicherung und Engineering-Menü.
+Testwerte: Admin-Passwort `test-admin-pw`, Engineering-Schlüssel `test-eng-key`. Der Zustand
+geht beim Beenden verloren.
 
 ## OTA-Update
 
