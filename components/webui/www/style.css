@@ -358,7 +358,6 @@ input.bad, select.bad { border-color: var(--err); }
 /* ---- maintenance, engineering dialog ---- */
 .btn.small { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
 pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; border-radius: 10px; background: var(--card-2); font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
-.emergency { margin-top: var(--gap); }
 .overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #000 55%, transparent); }
 .dialog { width: min(440px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; }
 .dialog .spacer { flex: 1; }

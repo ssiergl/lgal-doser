@@ -212,7 +212,7 @@ nicht, `idf.py build` reicht.
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel, danach direkt das [Engineering-Menü](#engineering-menü-m6) (ist der Bereich schon freigeschaltet, sofort). Dort liegen auch die [Datensicherung](#datensicherung-m6) und „Jetzt sperren“. |
-| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Links auf Netzwerk und Einrichtung). |
+| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Links auf Netzwerk und Einrichtung) für den Fall, dass die Oberfläche nicht lädt. Sie ist bewusst nirgends verlinkt: Adresse von Hand eingeben, z. B. `http://lgal-doser-xxxx.local/recovery` (Hinweis gehört in die Bedienungsanleitung). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
 
 ### Mock-Server (ohne Gerät)
