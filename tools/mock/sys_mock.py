@@ -132,6 +132,9 @@ def route(h, method, path, q, body):
             h.send(200, b"\x7fELF-test-dump", "application/octet-stream"); return True
         if method == "DELETE": SYS["coredump"] = False; h.send(200, {"status": "deleted"}); return True
     if path == "/api/v1/system/reboot" and method == "POST": h.send(200, {"status": "rebooting"}); restart(); return True
+    if path == "/api/v1/system/factory_reset" and method == "POST":
+        if body.get("password") != AUTH["password"]: err(h, 403, "wrong_password", "Wrong password"); return True
+        h.send(200, {"status": "rebooting"}); restart(); return True  # the mock keeps its state
     if path == "/api/v1/ota/settings":
         if method == "PUT":
             for k in ("allow_http", "mqtt_update"):

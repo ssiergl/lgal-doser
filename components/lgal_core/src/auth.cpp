@@ -482,6 +482,32 @@ bool password_set() {
     return is_set(s_pw);
 }
 
+bool confirm_password(httpd_req_t* req, const char* password) {
+    if (!s_mx) {
+        http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+        return false;
+    }
+    const int64_t now = now_s();
+    const uint32_t ip = http::client_ipv4(req);
+    Guard g;
+    if (session_of(req, now) < 0) {
+        http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+        return false;
+    }
+    if (const int64_t w = s_throttle.wait(ip, now)) {
+        throttled(req, w);
+        return false;
+    }
+    const bool good = is_set(s_pw) ? verify(s_pw, password) : equal_str_ct(password, device::setup_password());
+    if (!good) {
+        s_throttle.failed(ip, now);
+        http::send_error(req, "403 Forbidden", "wrong_password", "Wrong password");
+        return false;
+    }
+    s_throttle.succeeded(ip);
+    return true;
+}
+
 Result check(httpd_req_t* req, bool engineering) {
     if (!s_mx) return Result::Unauthorized;
     const int64_t now = now_s();

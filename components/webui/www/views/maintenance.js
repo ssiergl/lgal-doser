@@ -1,5 +1,5 @@
 // Maintenance (#/maintenance): firmware and device info, firmware update by
-// file upload, restart; update from a URL (with its settings), log and
+// file upload, restart, factory reset; update from a URL (with its settings), log and
 // coredump in the pro view. /recovery stays
 // as the emergency page without the web UI.
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -24,6 +24,9 @@ add({
     'mt.back': 'The device is back – the page reloads. Please sign in again.', 'mt.gone': 'The device does not answer. Check the LED and reload the page in a moment.',
     'mt.restart': 'Restart', 'mt.restart.hint': 'Schedules, calibration and settings are kept. Running doses are stopped.',
     'mt.restart.confirm': 'Restart the device now?', 'mt.restarting': 'The device restarts …',
+    'mt.fac': 'Factory reset', 'mt.fac.h': 'Deletes everything: settings, schedules, calibration, counters, history, passwords and API keys. Afterwards the device starts the first-time setup again (setup Wi-Fi and the password on the label). Tip: export the schedules on the pump pages first.',
+    'mt.fac.go': 'Reset to factory settings', 'mt.fac.no': 'Cancel', 'mt.fac.pw': 'Admin password to confirm', 'mt.fac.yes': 'Delete everything now',
+    'mt.fac.ask': 'Really delete everything? This cannot be undone.', 'mt.fac.done': 'The device deletes everything and restarts in setup mode. This page will no longer work – continue with the setup Wi-Fi "LG-Aquatic-Life-Setup-…" or, with the LAN cable plugged in, at the device address with the password on the label.',
     'mt.diag': 'Diagnostics', 'mt.log': 'Show log', 'mt.log.hide': 'Hide log', 'mt.log.reload': 'Reload',
     'mt.core': 'A crash report (coredump) is stored.', 'mt.core.dl': 'Download', 'mt.core.del': 'Delete', 'mt.core.deleted': 'Crash report deleted.',
     'mt.core.none': 'No crash report stored.', 'mt.emergency': 'Emergency page without the web interface: {u}',
@@ -63,6 +66,9 @@ add({
     'mt.back': 'Das Gerät ist wieder da – die Seite lädt neu. Bitte erneut anmelden.', 'mt.gone': 'Das Gerät antwortet nicht. LED prüfen und die Seite gleich neu laden.',
     'mt.restart': 'Neu starten', 'mt.restart.hint': 'Zeitpläne, Kalibrierung und Einstellungen bleiben erhalten. Laufende Dosierungen werden beendet.',
     'mt.restart.confirm': 'Gerät jetzt neu starten?', 'mt.restarting': 'Das Gerät startet neu …',
+    'mt.fac': 'Werkseinstellungen', 'mt.fac.h': 'Löscht alles: Einstellungen, Zeitpläne, Kalibrierung, Zähler, Verlauf, Passwörter und API-Schlüssel. Danach beginnt die Ersteinrichtung von vorn (Setup-WLAN und Passwort vom Etikett). Tipp: vorher die Zeitpläne auf den Pumpenseiten exportieren.',
+    'mt.fac.go': 'Auf Werkseinstellungen zurücksetzen', 'mt.fac.no': 'Abbrechen', 'mt.fac.pw': 'Admin-Passwort zur Bestätigung', 'mt.fac.yes': 'Jetzt alles löschen',
+    'mt.fac.ask': 'Wirklich alles löschen? Das lässt sich nicht rückgängig machen.', 'mt.fac.done': 'Das Gerät löscht alles und startet im Einrichtungsmodus. Diese Seite funktioniert danach nicht mehr – weiter über das Setup-WLAN „LG-Aquatic-Life-Setup-…“ oder, mit LAN-Kabel, unter der Geräteadresse mit dem Passwort vom Etikett.',
     'mt.diag': 'Diagnose', 'mt.log': 'Log anzeigen', 'mt.log.hide': 'Log ausblenden', 'mt.log.reload': 'Neu laden',
     'mt.core': 'Ein Absturzbericht (Coredump) ist gespeichert.', 'mt.core.dl': 'Herunterladen', 'mt.core.del': 'Löschen', 'mt.core.deleted': 'Absturzbericht gelöscht.',
     'mt.core.none': 'Kein Absturzbericht gespeichert.', 'mt.emergency': 'Notfallseite ohne Weboberfläche: {u}',
@@ -266,6 +272,37 @@ function RestartCard() {
   </section>`;
 }
 
+// Factory reset for the admin: password again, then everything is erased
+function FactoryCard() {
+  const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const msg = useMsg();
+  const close = () => { setOpen(false); setPw(''); msg.clear(); };
+  const go = e => {
+    e.preventDefault();
+    if (!pw || !confirm(t('mt.fac.ask'))) return;
+    setBusy(true);
+    api('POST', '/api/v1/system/factory_reset', { password: pw })
+      .then(() => { setPw(''); setDone(true); msg.ok(t('mt.fac.done')); })
+      .catch(err => { setBusy(false); msg.err(err); });
+  };
+  return html`<section class="card danger-zone"><h2>${t('mt.fac')}</h2>
+    <p class="small mut">${t('mt.fac.h')}</p>
+    ${!open ? html`<div class="row savebar"><button type="button" class="sec" onClick=${() => setOpen(true)}>${t('mt.fac.go')}</button></div>`
+      : !done && html`<form onSubmit=${go}>
+        <label class="field">${t('mt.fac.pw')}
+          <input type="password" autocomplete="current-password" maxlength="64" value=${pw} onInput=${e => setPw(e.target.value)}/></label>
+        <div class="row savebar">
+          <button type="submit" class="danger" disabled=${busy || !pw}>${t('mt.fac.yes')}</button>
+          <button type="button" class="sec" disabled=${busy} onClick=${close}>${t('mt.fac.no')}</button>
+        </div>
+      </form>`}
+    ${msg.node}
+  </section>`;
+}
+
 function DiagCard({ info }) {
   const [log, setLog] = useState(null);
   const msg = useMsg();
@@ -316,6 +353,7 @@ export function MaintenanceView() {
       <${UpdateCard} busyPumps=${busyPumps}/>
       ${pro && opts && html`<${UrlUpdateCard} busyPumps=${busyPumps} opts=${opts}/>`}
       <${RestartCard}/>
+      <${FactoryCard}/>
       ${pro && opts && html`<${UpdateOptsCard} opts=${opts} setOpts=${setOpts} base=${base}/>`}
       ${pro && html`<${DiagCard} info=${info}/>`}
     </div>`}

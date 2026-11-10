@@ -141,7 +141,7 @@ zur [Ersteinrichtung](#ersteinrichtung-m4).
 |---|---|
 | Captive Portal | DNS-Server auf dem Setup-WLAN beantwortet jeden Namen (A) mit `192.168.4.1`, andere Typen leer. Unbekannte Seiten leiten Setup-WLAN-Clients auf `http://192.168.4.1/` um. LAN/WLAN-Clients bekommen ein normales 404. |
 | Wiederholen | `/setup` bleibt nach dem Abschluss erreichbar (Link auf der Wartungsseite), schaltet das Setup-WLAN dann aber nicht erneut ein. |
-| Werkseinstellungen | Taster 10 s oder Engineering-Menü löscht alles (siehe [Taster und LED](#taster-und-led)) → Ersteinrichtung beginnt von vorn. |
+| Werkseinstellungen | Taster 10 s, Wartungsseite (Admin-Passwort erneut eingeben) oder Engineering-Menü löscht alles (siehe [Taster und LED](#taster-und-led)) → Ersteinrichtung beginnt von vorn. |
 
 ## Netzwerk (M4)
 
@@ -207,7 +207,7 @@ nicht, `idf.py build` reicht.
 | Netzwerk | In den Einstellungen: Status (aktive Schnittstelle, LAN- und WLAN-Adresse, Signal, Setup-WLAN, Countdown bis zum WLAN-Ersatz) für alle. Nur Profi: Schnittstelle (automatisch / nur LAN / nur WLAN), DHCP oder feste Adressen je Schnittstelle (vorbelegt mit den aktuellen), WLAN-Suche, Passwort, Verbindungstest und Speichern; ändert sich die feste LAN-Adresse, nennt die Seite die neue. `/network` bleibt als Notfallseite. |
 | MQTT | In den Einstellungen: Verbindungsstatus mit letztem Fehler (Hostname, nicht erreichbar, TLS, Anmeldung) für alle. Nur Profi: Broker und Port, Verschlüsselung (keine / TLS mit öffentlichem Zertifikat / TLS mit eigenem CA-Zertifikat inkl. Hochladen, Ersetzen, Entfernen), Benutzer und Passwort, Basis-Topic, Home-Assistant-Erkennung mit Präfix, „Steuerung über MQTT erlauben“ mit Warnhinweis und die Liste der Topics. Siehe [MQTT / Home Assistant](#mqtt--home-assistant-m6). |
 | Anmeldung | In den Einstellungen: Passwort ändern (bzw. erstmals festlegen) und Abmelden für alle; API-Schlüssel (Liste, erzeugen mit einmaliger Anzeige und Kopieren, löschen) nur in Profi. `/login` bleibt für Anmeldung, Passwort vergessen und Engineering. |
-| Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage. Nur Profi: Update von einer Adresse mit Fortschritt, Update-Optionen (http erlauben mit Warnung, Update über MQTT), Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
+| Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage; Werkseinstellungen mit erneuter Eingabe des Admin-Passworts. Nur Profi: Update von einer Adresse mit Fortschritt, Update-Optionen (http erlauben mit Warnung, Update über MQTT), Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk- und MQTT-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
@@ -314,6 +314,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/system/log` | RAM-Log der letzten ~32 KB |
 | POST | `/api/v1/system/reboot` | Neustart |
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
+| POST | `/api/v1/system/factory_reset` | `{"password":"…"}` – Werksreset mit Neustart; nur mit Browser-Sitzung (kein API-Key) und Admin-Passwort, Fehlversuche zählen wie beim Login (403 `wrong_password`, 429 `too_many_attempts`) |
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
 | POST | `/api/v1/ota/url` | `{"url":"https://…"}` → 202 `started`, das Gerät lädt selbst; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |
 | GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api\|mqtt","http","received","total","error"?,"detail"?}` |
@@ -556,7 +557,7 @@ Eingabe.
 | D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen, Werksreset (Eingabe „RESET“). |
 | E · Datensicherung | Ganzes Gerät sichern und wiederherstellen (siehe [Datensicherung](#datensicherung-m6)). |
 
-Der Werksreset (Menü oder Taster 10 s) stoppt alle Pumpen, löscht das EEPROM (Laufzustand von
+Der Werksreset (Menü, Wartungsseite oder Taster 10 s) stoppt alle Pumpen, löscht das EEPROM (Laufzustand von
 Dosierung und Zeitplan: Zähler, Behälter, Schlauchstunden), NVS und die Datenpartition und
 startet neu im Einrichtungsmodus.
 
