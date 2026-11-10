@@ -7,10 +7,11 @@ import { add, initLang, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
 import { start, useStore } from './lib/store.js';
 import { Dashboard } from './views/dashboard.js';
-import { EngDialog } from './views/engineering.js';
+import { EngDialog, lockForeignUnlock } from './views/engineering.js';
 import { HistoryView } from './views/history.js';
 import { MaintenanceView } from './views/maintenance.js';
 import { PumpView } from './views/pump.js';
+import { ServiceView } from './views/service.js';
 import { SettingsView } from './views/settings.js';
 
 add({
@@ -37,7 +38,8 @@ add({
 });
 
 // ---------------------------------------------------------------------------
-// Router: #/, #/pump/3, #/history[/3], #/settings, #/maintenance (#/schedule/3 opens the pump)
+// Router: #/, #/pump/3, #/history[/3], #/settings, #/maintenance, #/engineering
+// (#/schedule/3 opens the pump)
 
 function parse() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -62,7 +64,7 @@ const icons = {
 const navItems = [['home', '#/'], ['history', '#/history'], ['settings', '#/settings']];
 
 function Nav({ route, cls }) {
-  const active = route.name === 'pump' || route.name === 'schedule' ? 'home' : route.name === 'maintenance' ? 'settings' : route.name;
+  const active = route.name === 'pump' || route.name === 'schedule' ? 'home' : route.name === 'maintenance' || route.name === 'engineering' ? 'settings' : route.name;
   return html`<nav class=${cls}>${navItems.map(([n, href]) => html`
     <a href=${href} class=${active === n ? 'on' : ''}>
       ${cls === 'bottom' && html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d=${icons[n]}/></svg>`}
@@ -124,6 +126,7 @@ function App() {
     case 'history': page = html`<${HistoryView} pump=${+route.arg || 0}/>`; break;
     case 'settings': page = html`<${SettingsView}/>`; break;
     case 'maintenance': page = html`<${MaintenanceView}/>`; break;
+    case 'engineering': page = html`<${ServiceView}/>`; break;
     default: page = html`<div class="empty">${t('notfound')}</div>`;
   }
   return html`
@@ -134,6 +137,7 @@ function App() {
 }
 
 initLang();
+lockForeignUnlock();
 start();
 const root = document.getElementById('app');
 root.textContent = '';  // boot placeholder
