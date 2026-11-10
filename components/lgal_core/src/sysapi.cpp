@@ -265,7 +265,38 @@ esp_err_t param_error(httpd_req_t* req, const char* field) {
     return http::send_json(req, j.c_str(), "400 Bad Request");
 }
 
-// {"timezone"?, "ntp_server"?, "utc"?}: all members are checked before any is applied
+// "YYYY-MM-DDTHH:MM[:SS]" (also with a space instead of T) -> broken-down
+// time with checked ranges; tm_isdst = -1 lets mktime pick DST.
+bool parse_local(const char* s, tm* out) {
+    int y, mo, d, h, mi, sec = 0, n = 0;
+    char sep;
+    if (std::sscanf(s, "%4d-%2d-%2d%c%2d:%2d%n", &y, &mo, &d, &sep, &h, &mi, &n) != 6 || (sep != 'T' && sep != ' '))
+        return false;
+    if (s[n] == ':') {
+        int m = 0;
+        if (std::sscanf(s + n, ":%2d%n", &sec, &m) != 1) return false;
+        n += m;
+    }
+    if (s[n] != '\0') return false;
+    static constexpr int kDays[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    const bool leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+    if (y < 2025 || y > 2099 || mo < 1 || mo > 12 || d < 1 || d > kDays[mo - 1] || (mo == 2 && !leap && d > 28) ||
+        h < 0 || h > 23 || mi < 0 || mi > 59 || sec < 0 || sec > 59)
+        return false;
+    *out = tm{};
+    out->tm_year = y - 1900;
+    out->tm_mon = mo - 1;
+    out->tm_mday = d;
+    out->tm_hour = h;
+    out->tm_min = mi;
+    out->tm_sec = sec;
+    out->tm_isdst = -1;
+    return true;
+}
+
+// {"timezone"?, "ntp_server"?, "utc"? | "local"?}: all members are checked
+// before any is applied. "local" is wall time in the device's time zone (the
+// new one if the request also sets it).
 esp_err_t put_time(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     std::string body;
@@ -275,16 +306,26 @@ esp_err_t put_time(httpd_req_t* req) {
     const JsonValue root = doc.root();
     char tz[timesync::kMaxTz + 2] = "", ntp[timesync::kMaxNtp + 2] = "";
     int64_t utc = 0;
-    const JsonValue vtz = root["timezone"], vntp = root["ntp_server"], vutc = root["utc"];
+    char local_s[24] = "";
+    tm local{};
+    const JsonValue vtz = root["timezone"], vntp = root["ntp_server"], vutc = root["utc"], vlocal = root["local"];
     if (vtz.valid() && (!vtz.get(tz, sizeof(tz)) || !timesync::timezone_valid(tz))) return param_error(req, "timezone");
     if (vntp.valid() && (!vntp.get(ntp, sizeof(ntp)) || !timesync::ntp_server_valid(ntp)))
         return param_error(req, "ntp_server");
     if (vutc.valid() && (!vutc.get(&utc) || utc < 1735689600)) return param_error(req, "utc");
+    if (vlocal.valid() && (vutc.valid() || !vlocal.get(local_s, sizeof(local_s)) || !parse_local(local_s, &local)))
+        return param_error(req, "local");
     esp_err_t err = ESP_OK;
     if (vtz.valid()) err = timesync::set_timezone(tz);
     if (err == ESP_OK && vntp.valid()) err = timesync::set_ntp_server(ntp);
     if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", esp_err_to_name(err));
-    if (vutc.valid()) timesync::set_manual(utc);
+    if (vlocal.valid()) {
+        const time_t t = mktime(&local);  // after set_timezone: uses the zone just saved
+        if (t == static_cast<time_t>(-1) || !timesync::set_manual(static_cast<int64_t>(t)))
+            return param_error(req, "local");
+    } else if (vutc.valid()) {
+        timesync::set_manual(utc);
+    }
     return get_time(req);
 }
 

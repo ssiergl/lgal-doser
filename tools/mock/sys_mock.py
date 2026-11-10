@@ -134,6 +134,15 @@ def route(h, method, path, q, body):
                 err(h, 400, "invalid_param", "ntp_server", field="ntp_server"); return True
             if "utc" in body and body["utc"] < 1735689600:
                 err(h, 400, "invalid_param", "utc", field="utc"); return True
+            if "local" in body:
+                m = re.match(r"^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(:\d{2})?$", str(body["local"]))
+                try:
+                    if "utc" in body or not m: raise ValueError
+                    lt = time.strptime(m.group(1) + " " + m.group(2) + (m.group(3) or ":00"), "%Y-%m-%d %H:%M:%S")
+                    if not 2025 <= lt.tm_year <= 2099: raise ValueError
+                    body["utc"] = int(time.mktime(lt))  # mock: host time zone stands in for the device's
+                except ValueError:
+                    err(h, 400, "invalid_param", "local", field="local"); return True
             for k in ("timezone", "ntp_server"):
                 if k in body: TIME[k] = body[k]
             if "utc" in body:
