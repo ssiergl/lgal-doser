@@ -1,7 +1,7 @@
 // Maintenance (#/maintenance): firmware and device info, firmware update by
 // file upload, restart, factory reset; update from a URL (with its settings), log and
-// coredump in the pro view. /recovery stays
-// as the emergency page without the web UI.
+// coredump in the pro view. The emergency page /recovery is deliberately not
+// linked (operating manual only).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, ApiError } from '../lib/api.js';
 import { html } from '../lib/html.js';
@@ -29,7 +29,7 @@ add({
     'mt.fac.ask': 'Really delete everything? This cannot be undone.', 'mt.fac.done': 'The device deletes everything and restarts in setup mode. This page will no longer work – continue with the setup Wi-Fi "LG-Aquatic-Life-Setup-…" or, with the LAN cable plugged in, at the device address with the password on the label.',
     'mt.diag': 'Diagnostics', 'mt.log': 'Show log', 'mt.log.hide': 'Hide log', 'mt.log.reload': 'Reload',
     'mt.core': 'A crash report (coredump) is stored.', 'mt.core.dl': 'Download', 'mt.core.del': 'Delete', 'mt.core.deleted': 'Crash report deleted.',
-    'mt.core.none': 'No crash report stored.', 'mt.emergency': 'Emergency page without the web interface: {u}',
+    'mt.core.none': 'No crash report stored.',
     'err.ota_in_progress': 'An update is already in progress', 'err.pump_running': 'A pump is running – try again when it has finished',
     'err.no_ota_partition': 'No update partition available', 'err.invalid_size': 'Invalid file size', 'err.transfer_aborted': 'Transfer aborted',
     'err.not_esp_image': 'This is not a firmware file', 'err.wrong_chip': 'Firmware is for a different chip',
@@ -71,7 +71,7 @@ add({
     'mt.fac.ask': 'Wirklich alles löschen? Das lässt sich nicht rückgängig machen.', 'mt.fac.done': 'Das Gerät löscht alles und startet im Einrichtungsmodus. Diese Seite funktioniert danach nicht mehr – weiter über das Setup-WLAN „LG-Aquatic-Life-Setup-…“ oder, mit LAN-Kabel, unter der Geräteadresse mit dem Passwort vom Etikett.',
     'mt.diag': 'Diagnose', 'mt.log': 'Log anzeigen', 'mt.log.hide': 'Log ausblenden', 'mt.log.reload': 'Neu laden',
     'mt.core': 'Ein Absturzbericht (Coredump) ist gespeichert.', 'mt.core.dl': 'Herunterladen', 'mt.core.del': 'Löschen', 'mt.core.deleted': 'Absturzbericht gelöscht.',
-    'mt.core.none': 'Kein Absturzbericht gespeichert.', 'mt.emergency': 'Notfallseite ohne Weboberfläche: {u}',
+    'mt.core.none': 'Kein Absturzbericht gespeichert.',
     'err.ota_in_progress': 'Es läuft bereits ein Update', 'err.pump_running': 'Eine Pumpe läuft – nach dem Ende erneut versuchen',
     'err.no_ota_partition': 'Keine Update-Partition verfügbar', 'err.invalid_size': 'Ungültige Dateigröße', 'err.transfer_aborted': 'Übertragung abgebrochen',
     'err.not_esp_image': 'Das ist keine Firmware-Datei', 'err.wrong_chip': 'Firmware ist für einen anderen Chip',
@@ -356,6 +356,5 @@ export function MaintenanceView() {
       <${FactoryCard}/>
       ${pro && opts && html`<${UpdateOptsCard} opts=${opts} setOpts=${setOpts} base=${base}/>`}
       ${pro && html`<${DiagCard} info=${info}/>`}
-    </div>`}
-    <p class="small mut emergency">${t('mt.emergency', { u: '' })}<a href="/recovery">/recovery</a></p>`;
+    </div>`}`;
 }
