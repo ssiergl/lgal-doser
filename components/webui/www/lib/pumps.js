@@ -85,6 +85,10 @@ export function PumpTabs({ current, pumps, base = '#/pump/' }) {
 
 let clipSeq = 0;
 
+// Liquid surface: a wave with a period of 60 units, long enough to slide one
+// full period (CSS .wave) without a gap at either side of the canister
+const wavePath = (y, bottom) => `M-70 ${y} q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V${bottom} H-70 Z`;
+
 export function Container({ p, size = 'm' }) {
   const c = p.container;
   const id = 'ct' + (++clipSeq);
@@ -101,8 +105,8 @@ export function Container({ p, size = 'm' }) {
     <rect x="14" y="24" width="92" height="130" rx="16" class="body"/>
     ${c.tracked && html`<g clip-path=${`url(#${id})`}>
       <rect x="0" y=${y} width="120" height=${bottom - y + 2} fill=${color} opacity=".38"/>
-      ${pct > 0 && pct < 100 && html`<path class=${p.activity !== 'idle' ? 'wave run' : 'wave'}
-        d=${`M-40 ${y} q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V${bottom} H-40 Z`} fill=${color} opacity=".55"/>`}
+      ${pct > 0 && pct < 100 && ['wave back', 'wave'].map(cls => html`<path class=${cls + (p.activity !== 'idle' ? ' run' : '')}
+        d=${wavePath(y, bottom)} fill=${color} opacity=${cls === 'wave' ? '.55' : '.3'}/>`)}
     </g>`}
     ${[0.25, 0.5, 0.75].map(f => html`<line x1="94" x2="104" y1=${bottom - h * f} y2=${bottom - h * f} class="tick"/>`)}
     <rect x="14" y="24" width="92" height="130" rx="16" class=${'outline ' + level}/>

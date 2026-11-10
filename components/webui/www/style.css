@@ -229,9 +229,12 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .canister .outline.none { stroke-dasharray: 6 5; }
 .canister .tick { stroke: var(--mut); stroke-width: 1.5; opacity: .5; }
 .canister .pct { fill: var(--text); font-size: 22px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
-.canister .wave { animation: wave 6s linear infinite; }
-.canister .wave.run { animation-duration: 1.6s; }
-@keyframes wave { from { transform: translateX(0); } to { transform: translateX(30px); } }
+.canister .wave { animation: wave 2.8s linear infinite; }
+.canister .wave.back { animation: wave-back 4.2s linear infinite; }
+.canister .wave.run { animation-duration: 1.1s; }
+.canister .wave.back.run { animation-duration: 1.6s; }
+@keyframes wave { from { transform: translateX(0); } to { transform: translateX(60px); } }
+@keyframes wave-back { from { transform: translateX(60px) translateY(-2px); } to { transform: translateX(0) translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) { .canister .wave, .bar.indet i { animation: none; } }
 
 /* ---- pump detail ---- */
