@@ -1,8 +1,9 @@
 // History page: daily amounts as one small bar chart per pump (everyone),
 // pro view additionally the event list with filter and CSV export.
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
+import { load, save } from '../lib/hub.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { usePrefs } from '../lib/prefs.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
@@ -12,11 +13,12 @@ import { Seg } from '../lib/ui.js';
 add({
   en: {
     'hi.title': 'History', 'hi.daily': 'Dosed per day', 'hi.days': '{n} days',
-    'hi.sum': '{s} ml in total · ⌀ {a} ml/day', 'hi.hover': 'Point at a bar for the values of the day.',
+    'hi.sum': '{s} ml in total · ⌀ {a} ml/day', 'hi.hover': 'Point at or tap the chart for the values of a day.',
+    'hi.bar': 'Bars', 'hi.line': 'Line',
     'hi.day': '{d}: {ml} ml · {n} doses', 'hi.day.skip': '{n} skipped', 'hi.today': 'today',
-    'hi.skipnote': 'Dot under a bar: doses were skipped that day.', 'hi.table': 'Show as table', 'hi.date': 'Day',
+    'hi.skipnote': 'Dot under the axis: doses were skipped that day.', 'hi.table': 'Show as table', 'hi.date': 'Day',
     'hi.notime': 'The device has no valid time – daily values follow once the time is set.',
-    'hi.keep': 'Kept for {n} days.', 
+    'hi.keep': 'Kept for {n} days.',
     'hi.events': 'Events', 'hi.all': 'All', 'hi.allpumps': 'All pumps', 'hi.more': 'Load more', 'hi.csv': 'CSV export',
     'hi.none': 'No events in this period.', 'hi.device': 'Device',
     'hk.dose': 'Dose', 'hk.prime': 'Filling', 'hk.calib_run': 'Calibration run', 'hk.skip': 'Skipped',
@@ -35,11 +37,12 @@ add({
   },
   de: {
     'hi.title': 'Verlauf', 'hi.daily': 'Dosiert pro Tag', 'hi.days': '{n} Tage',
-    'hi.sum': 'Gesamt {s} ml · ⌀ {a} ml/Tag', 'hi.hover': 'Auf einen Balken zeigen für die Werte des Tages.',
+    'hi.sum': 'Gesamt {s} ml · ⌀ {a} ml/Tag', 'hi.hover': 'Auf das Diagramm zeigen oder tippen für die Werte eines Tages.',
+    'hi.bar': 'Balken', 'hi.line': 'Linie',
     'hi.day': '{d}: {ml} ml · {n} Dosen', 'hi.day.skip': '{n} ausgelassen', 'hi.today': 'heute',
-    'hi.skipnote': 'Punkt unter einem Balken: An diesem Tag wurden Dosen ausgelassen.', 'hi.table': 'Als Tabelle zeigen', 'hi.date': 'Tag',
+    'hi.skipnote': 'Punkt unter der Achse: An diesem Tag wurden Dosen ausgelassen.', 'hi.table': 'Als Tabelle zeigen', 'hi.date': 'Tag',
     'hi.notime': 'Das Gerät hat keine gültige Uhrzeit – Tageswerte folgen, sobald die Uhrzeit stimmt.',
-    'hi.keep': 'Wird {n} Tage aufbewahrt.', 
+    'hi.keep': 'Wird {n} Tage aufbewahrt.',
     'hi.events': 'Ereignisse', 'hi.all': 'Alle', 'hi.allpumps': 'Alle Pumpen', 'hi.more': 'Mehr laden', 'hi.csv': 'CSV-Export',
     'hi.none': 'Keine Ereignisse in diesem Zeitraum.', 'hi.device': 'Gerät',
     'hk.dose': 'Dosis', 'hk.prime': 'Schlauch füllen', 'hk.calib_run': 'Kalibrierlauf', 'hk.skip': 'Ausgelassen',
@@ -76,8 +79,38 @@ function niceMax(v) {
   return [1, 2, 5, 10].map(f => f * p).find(x => x >= v - 1e-9);
 }
 
-function DayChart({ n, name, days, today }) {
+// Width of an element in CSS pixels, updated on resize
+function useWidth() {
+  const ref = useRef(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => setW(Math.floor(e.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w];
+}
+
+// Plot frame: left room for the ml labels, bottom room for the dates
+const kM = { l: 34, r: 8, t: 26, b: 30 };
+const kPlotH = 112;
+
+// x labels: every day for a week, otherwise at least ~56 px apart (whole
+// weeks from 30 days on), counted back from today so that today always
+// carries a label
+function xTicks(n, slot) {
+  let step = n <= 7 ? 1 : Math.max(1, Math.ceil(56 / slot));
+  if (n >= 30) step = Math.ceil(step / 7) * 7;
+  const out = [];
+  for (let k = n - 1; k >= 0; k -= step) out.push(k);
+  return out;
+}
+
+function DayChart({ n, name, days, today, kind }) {
   const [hover, setHover] = useState(-1);
+  const [ref, width] = useWidth();
   const i = n - 1;
   const vals = days.map(d => d.ml[i]);
   const max = niceMax(Math.max(...vals));
@@ -86,25 +119,63 @@ function DayChart({ n, name, days, today }) {
     + (d.skipped[i] ? ' · ' + t('hi.day.skip', { n: d.skipped[i] }) : '');
   const sel = hover >= 0 ? days[hover] : null;
   const readout = sel ? dayText(sel) : t('hi.sum', { s: num(total, 1), a: num(total / days.length, 2) });
+
+  const W = Math.max(width, 160), pw = W - kM.l - kM.r, base = kM.t + kPlotH;
+  const slot = pw / days.length;
+  const xc = k => kM.l + slot * (k + 0.5);
+  const yv = v => base - (kPlotH * v) / max;
+  const dec = max < 1 ? 2 : max < 10 ? 1 : 0;  // halves of 1/2/5 × 10^k stay exact
+  const pick = e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const k = Math.floor((e.clientX - r.left - kM.l) / slot);
+    setHover(k >= 0 && k < days.length ? k : -1);
+  };
+  const xLabel = k => days[k].date === today ? t('hi.today')
+    : days.length <= 7 ? dayLabel(days[k].date, { weekday: 'short' }) : dayLabel(days[k].date, { day: '2-digit', month: '2-digit' });
+
+  let marks;
+  if (kind === 'bar') {
+    const gap = slot >= 8 ? 2 : 1, bw = Math.max(1, slot - gap);
+    marks = days.map((d, k) => {
+      const v = d.ml[i];
+      if (!(v > 0)) return null;
+      const x = kM.l + slot * k + gap / 2, y = yv(v), h = base - y, r = Math.min(4, bw / 2, h);
+      return html`<path class="hc-bar" d=${`M${x} ${base}V${y + r}q0 ${-r} ${r} ${-r}h${bw - 2 * r}q${r} 0 ${r} ${r}V${base}Z`}/>`;
+    });
+  } else {
+    const pts = days.map((d, k) => `${xc(k).toFixed(1)},${yv(d.ml[i]).toFixed(1)}`);
+    marks = html`<path class="hc-area" d=${`M${xc(0)},${base}L${pts.join('L')}L${xc(days.length - 1)},${base}Z`}/>
+      <polyline class="hc-line" points=${pts.join(' ')}/>
+      ${days.length <= 14 && days.map((d, k) => html`<circle class="hc-pt" cx=${xc(k)} cy=${yv(d.ml[i])} r="3"/>`)}`;
+  }
+
   return html`<div class="hc" style=${{ '--pc': pumpColor(n) }}>
     <div class="hc-head"><i class="sw"></i><b>${name}</b></div>
     <p class=${'hc-read small' + (sel ? '' : ' mut')}>${readout}</p>
-    <div class="hc-plot" onMouseLeave=${() => setHover(-1)}>
-      <span class="hc-max small mut num">${num(max, max < 10 ? 1 : 0)} ml</span>
-      <div class="hc-bars">${days.map((d, k) => html`
-        <button type="button" class=${'hc-col' + (k === hover ? ' on' : '')} aria-label=${dayText(d)}
-          onMouseEnter=${() => setHover(k)} onFocus=${() => setHover(k)} onClick=${() => setHover(k)}>
-          <i style=${{ height: (100 * d.ml[i] / max) + '%' }}></i>
-          ${d.skipped[i] > 0 && html`<em></em>`}
-        </button>`)}</div>
+    <div class="hc-plot" ref=${ref}>
+      ${width > 0 && html`<svg width=${W} height=${base + kM.b} role="img" aria-label=${name + ': ' + readout}
+          onPointerMove=${pick} onPointerDown=${pick} onPointerLeave=${() => setHover(-1)}>
+        ${hover >= 0 && html`<rect class="hc-hl" x=${kM.l + slot * hover} y=${kM.t} width=${slot} height=${kPlotH}/>`}
+        ${[0, 0.5, 1].map(f => html`<line class=${f ? 'hc-grid-l' : 'hc-base'} x1=${kM.l} x2=${W - kM.r} y1=${yv(max * f)} y2=${yv(max * f)}/>
+          <text class="hc-y" x=${kM.l - 6} y=${yv(max * f)}>${num(max * f, dec)}</text>`)}
+        <text class="hc-unit" x=${kM.l - 6} y="7">ml</text>
+        ${marks}
+        ${hover >= 0 && kind !== 'bar' && html`<line class="hc-cross" x1=${xc(hover)} x2=${xc(hover)} y1=${kM.t} y2=${base}/>
+          <circle class="hc-dot" cx=${xc(hover)} cy=${yv(days[hover].ml[i])} r="4.5"/>`}
+        ${days.map((d, k) => d.skipped[i] > 0 && html`<circle class="hc-skip" cx=${xc(k)} cy=${base + 6} r="3"/>`)}
+        ${xTicks(days.length, slot).map(k => html`<line class="hc-tick" x1=${xc(k)} x2=${xc(k)} y1=${base} y2=${base + 3}/>
+          <text class="hc-x" x=${xc(k)} y=${base + 20}
+            text-anchor=${xc(k) + 24 > W ? 'end' : xc(k) - 24 < 0 ? 'start' : 'middle'}>${xLabel(k)}</text>`)}
+      </svg>`}
     </div>
-    <div class="hc-x small mut"><span>${dayLabel(days[0].date, { day: '2-digit', month: '2-digit' })}</span><span>${t('hi.today')}</span></div>
   </div>`;
 }
 
 function DailyCard() {
   const s = useStore();
   const [range, setRange] = useState(14);
+  const [kind, setKind] = useState(load('lgal.hichart', 'line') === 'bar' ? 'bar' : 'line');
+  const pickKind = k => { setKind(k); save('lgal.hichart', k); };
   const [D, setD] = useState(null);
   useEffect(() => {
     let live = true;
@@ -114,8 +185,11 @@ function DailyCard() {
     return () => { live = false; clearInterval(id); };
   }, [range]);
 
-  const head = html`<div class="row between"><h2>${t('hi.daily')}</h2>
-    <${Seg} value=${range} onChange=${setRange} options=${kRanges.map(n => [n, t('hi.days', { n })])}/></div>`;
+  const head = html`<div class="row between hc-top"><h2>${t('hi.daily')}</h2>
+    <div class="row hc-ctl">
+      <${Seg} value=${kind} onChange=${pickKind} options=${[['line', t('hi.line')], ['bar', t('hi.bar')]]}/>
+      <${Seg} value=${range} onChange=${setRange} options=${kRanges.map(n => [n, t('hi.days', { n })])}/>
+    </div></div>`;
   if (!D) return html`<section class="card">${head}<p class="mut">…</p></section>`;
   if (D.error) return html`<section class="card">${head}<p class="msg err">${errText(D.error)}</p></section>`;
   if (!D.today || !D.days.length) return html`<section class="card">${head}<p class="mut">${t('hi.notime')}</p></section>`;
@@ -123,7 +197,7 @@ function DailyCard() {
   const pumps = (s.pumps || []).filter(p => p.mode !== 'disabled' || D.days.some(d => d.ml[p.pump - 1] > 0));
   const anySkip = D.days.some(d => d.skipped.some(x => x > 0));
   return html`<section class="card">${head}
-    <div class="hc-grid">${pumps.map(p => html`<${DayChart} key=${p.pump} n=${p.pump} name=${pumpName(p)} days=${D.days} today=${D.today}/>`)}</div>
+    <div class="hc-grid">${pumps.map(p => html`<${DayChart} key=${p.pump} n=${p.pump} name=${pumpName(p)} days=${D.days} today=${D.today} kind=${kind}/>`)}</div>
     <p class="small mut">${t('hi.hover')} ${anySkip ? t('hi.skipnote') + ' ' : ''}${t('hi.keep', { n: D.keep_days })}</p>
     <details class="hc-table"><summary class="small">${t('hi.table')}</summary>
       <div class="scroll"><table class="num small">
