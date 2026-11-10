@@ -12,8 +12,10 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "lgal/auth.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
+#include "lgal/json_reader.h"
 #include "lgal/net.h"
 #include "lgal/net_config.h"
 #include "lgal/settings.h"
@@ -115,6 +117,25 @@ esp_err_t post_reset(httpd_req_t* req) {
     }
     return http::send_error(req, "400 Bad Request", "invalid_param", "what=network|factory");
 }
+
+// Factory reset for the admin (maintenance page): session + password again
+esp_err_t post_factory_reset(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    std::string text;
+    lgal::JsonReader doc;
+    lgal::JsonToken tokens[8];
+    if (!http::read_json(req, 256, &text, &doc, tokens, 8)) return ESP_OK;
+    char pw[72] = "";
+    if (!doc.root()["password"].get(pw, sizeof(pw)))
+        return http::send_error(req, "400 Bad Request", "invalid_param", "password");
+    const bool ok = lgal::auth::confirm_password(req, pw);
+    std::memset(pw, 0, sizeof(pw));
+    if (!ok) return ESP_OK;
+    ESP_LOGW(TAG, "factory reset by the admin");
+    if (xTaskCreate(factory_task, "factory", 4096, nullptr, 5, nullptr) != pdPASS)
+        return http::send_error(req, "500 Internal Server Error", "internal_error", "no task");
+    return http::send_json(req, "{\"status\":\"rebooting\"}");
+}
 }  // namespace
 
 void factory_reset() {
@@ -132,6 +153,7 @@ esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;
     http::route(server, "/api/v1/engineering/telemetry", HTTP_GET, get_telemetry);
     http::route(server, "/api/v1/engineering/reset", HTTP_POST, post_reset);
+    http::route(server, "/api/v1/system/factory_reset", HTTP_POST, post_factory_reset);
     return ESP_OK;
 }
 

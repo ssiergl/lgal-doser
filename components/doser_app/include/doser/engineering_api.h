@@ -1,6 +1,7 @@
 #pragma once
 // Engineering area: system telemetry and resets (M6, functional spec 11.2 D).
-// All endpoints need the engineering unlock (lgal::http::authorize_engineering).
+// The engineering endpoints need the engineering unlock
+// (lgal::http::authorize_engineering).
 //
 //   GET  /api/v1/engineering/telemetry
 //        {"uptime_s","reset_reason","tasks","chip_temp_c" (null if unavailable),
@@ -14,6 +15,11 @@
 //        factory: everything (NVS, history, EEPROM run state), then reboot
 //                 -> {"status":"rebooting"}
 //   The history alone is cleared with DELETE /api/v1/history.
+//
+// For the admin, without the engineering unlock (maintenance page):
+//   POST /api/v1/system/factory_reset  {"password":"…"}
+//        browser session and admin password (lgal::auth::confirm_password),
+//        then as factory above -> {"status":"rebooting"}
 
 #include "esp_err.h"
 #include "esp_http_server.h"

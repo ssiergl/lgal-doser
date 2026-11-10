@@ -42,6 +42,13 @@ Result check(httpd_req_t* req, bool engineering);
 
 bool password_set();
 
+// Dangerous actions (factory reset): the request must come from a browser
+// session, not an API key, and carry the admin password again (before the
+// setup: the device password from the label). Failures count like failed
+// logins. false = an error was sent (401 unauthorized, 403 wrong_password,
+// 429 too_many_attempts); the handler must then return ESP_OK.
+bool confirm_password(httpd_req_t* req, const char* password);
+
 // Engineering backup (spec 11.1): the stored password record and API key
 // hashes as hex members "password" ("" = not set) and "keys" into the open
 // JSON object. No plain passwords or keys exist on the device.
