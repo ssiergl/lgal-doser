@@ -377,18 +377,23 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .hc-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .hc-head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hc-read { margin: 2px 0 6px; min-height: 1.45em; }
-.hc-plot { border-bottom: 1px solid var(--line); }
-.hc-max { display: block; line-height: 1; margin-bottom: 3px; }
-.hc-bars { display: flex; align-items: stretch; justify-content: space-between; gap: 2px; height: 96px; border-top: 1px solid var(--line); }
-.hc-col {
-  flex: 1 1 0; min-width: 0; max-width: 24px; height: 100%; padding: 0; margin: 0; border: 0; border-radius: 0;
-  background: transparent; position: relative; display: flex; align-items: flex-end; justify-content: center; cursor: default;
-}
-.hc-col i { display: block; width: 100%; background: var(--pc); border-radius: 4px 4px 0 0; min-height: 0; }
-.hc-col.on i, .hc-col:hover i { filter: brightness(1.15); }
-.hc-col.on { background: color-mix(in srgb, var(--text) 6%, transparent); }
-.hc-col em { position: absolute; bottom: -9px; left: 50%; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--warn); }
-.hc-x { display: flex; justify-content: space-between; margin-top: 10px; }
+.hc-plot { min-height: 168px; touch-action: pan-y; }
+.hc-plot svg { display: block; overflow: visible; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.hc-plot text { font-size: 11px; fill: var(--mut); font-variant-numeric: tabular-nums; }
+.hc-y, .hc-unit { text-anchor: end; dominant-baseline: middle; }
+.hc-unit { font-weight: 600; }
+.hc-base { stroke: var(--mut); stroke-opacity: .55; }
+.hc-grid-l { stroke: var(--line); stroke-dasharray: 3 3; }
+.hc-tick { stroke: var(--mut); stroke-opacity: .55; }
+.hc-bar { fill: var(--pc); }
+.hc-area { fill: var(--pc); fill-opacity: .14; }
+.hc-line { fill: none; stroke: var(--pc); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.hc-pt { fill: var(--pc); stroke: var(--card); stroke-width: 2; }
+.hc-dot { fill: var(--pc); stroke: var(--card); stroke-width: 2; }
+.hc-cross { stroke: var(--mut); stroke-dasharray: 2 3; }
+.hc-hl { fill: var(--text); fill-opacity: .06; }
+.hc-skip { fill: var(--warn); }
+.hc-ctl { gap: 8px; flex-wrap: wrap; }
 .hc-table summary { cursor: pointer; color: var(--mut); }
 .scroll { overflow-x: auto; }
 .hc-table table { border-collapse: collapse; margin-top: 8px; }
