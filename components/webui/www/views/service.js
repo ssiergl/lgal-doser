@@ -19,7 +19,7 @@ import { EngUnlock, lockEngineering } from './engineering.js';
 
 add({
   en: {
-    'u.rev': 'rev', 'u.rpm': 'rpm', 'u.sps': 'steps/s', 'u.sps2': 'steps/s²',
+    'u.days': 'days', 'u.rev': 'rev', 'u.rpm': 'rpm', 'u.sps': 'steps/s', 'u.sps2': 'steps/s²',
     'sv.title': 'Engineering', 'sv.left': 'unlocked · {m} min left', 'sv.lock': 'Lock now', 'sv.locked': 'The engineering area is locked.',
     'sv.save': 'Save', 'sv.saved': 'Saved.', 'sv.check': 'Please check: {f} ({min} … {max})', 'sv.loading': '…',
     'sv.a': 'A · Mechanics', 'sv.b': 'B · Limits and timeouts', 'sv.c': 'C · Maintenance', 'sv.d': 'D · Diagnostics',
@@ -37,6 +37,7 @@ add({
     'sv.grid': 'Schedule grid', 'sv.delay': 'Max. delay of a scheduled dose',
     'sv.tube': 'Tubes', 'sv.tube_life': 'Tube lifetime (maintenance warning)', 'sv.tube.set': 'Set', 'sv.tube.reset': 'Reset',
     'sv.tube.done': 'Pump {n}: counter set to {h} h.',
+    'sv.hist': 'History', 'sv.hist.keep': 'Keep events for', 'sv.hist.h': 'A shorter time deletes older days within a minute.',
     'sv.rtc': 'Clock module (DS3231)', 'sv.rtc.none': 'Clock module not found.', 'sv.rtc.temp': 'Temperature', 'sv.rtc.aging': 'Aging offset',
     'sv.rtc.h': 'About 0.1 ppm per step; positive values slow the clock down, negative speed it up. Range −128 … 127.',
     'sv.raw': 'Raw stepper test', 'sv.raw.h': 'Moves a pump head by exact steps – bypasses container tracking, schedule and history. For hardware checks only.',
@@ -59,7 +60,7 @@ add({
     'sv.tasks': 'Tasks', 'sv.uart': 'UART bus {b}', 'sv.uart.v': '{n} transfers · {e} errors',
     'sv.paused': 'Live values paused – move the mouse or press a key.',
     'sv.danger': 'Danger zone',
-    'sv.dz.hist': 'Delete history', 'sv.dz.hist.h': 'Deletes all events of the last 60 days.',
+    'sv.dz.hist': 'Delete history', 'sv.dz.hist.h': 'Deletes all recorded events.',
     'sv.dz.net': 'Reset network settings', 'sv.dz.net.h': 'LAN back to DHCP, WLAN removed. The device may get a new address.',
     'sv.dz.fac': 'Factory reset', 'sv.dz.fac.h': 'Deletes everything: settings, schedules, calibration, counters, history, passwords and keys. The device restarts in setup mode.',
     'sv.dz.sure': 'Really?', 'sv.dz.yes': 'Yes, do it', 'sv.dz.no': 'Cancel', 'sv.dz.type': 'Type RESET to confirm',
@@ -71,7 +72,7 @@ add({
     'sv.sps.range': 'Frequency out of range', 'err.rtc_unavailable': 'Clock module not reachable',
   },
   de: {
-    'u.rev': 'U', 'u.rpm': 'U/min', 'u.sps': 'Schritte/s', 'u.sps2': 'Schritte/s²',
+    'u.days': 'Tage', 'u.rev': 'U', 'u.rpm': 'U/min', 'u.sps': 'Schritte/s', 'u.sps2': 'Schritte/s²',
     'sv.title': 'Engineering', 'sv.left': 'freigeschaltet · noch {m} min', 'sv.lock': 'Jetzt sperren', 'sv.locked': 'Der Engineering-Bereich ist gesperrt.',
     'sv.save': 'Speichern', 'sv.saved': 'Gespeichert.', 'sv.check': 'Bitte prüfen: {f} ({min} … {max})', 'sv.loading': '…',
     'sv.a': 'A · Mechanik', 'sv.b': 'B · Grenzen und Timeouts', 'sv.c': 'C · Wartung', 'sv.d': 'D · Diagnose',
@@ -89,6 +90,7 @@ add({
     'sv.grid': 'Zeitplan-Raster', 'sv.delay': 'Max. Verzögerung einer geplanten Dosis',
     'sv.tube': 'Schläuche', 'sv.tube_life': 'Schlauch-Lebensdauer (Wartungswarnung)', 'sv.tube.set': 'Setzen', 'sv.tube.reset': 'Zurücksetzen',
     'sv.tube.done': 'Pumpe {n}: Zähler auf {h} h gesetzt.',
+    'sv.hist': 'Verlauf', 'sv.hist.keep': 'Ereignisse aufbewahren für', 'sv.hist.h': 'Eine kürzere Zeit löscht ältere Tage innerhalb einer Minute.',
     'sv.rtc': 'Uhrenmodul (DS3231)', 'sv.rtc.none': 'Uhrenmodul nicht gefunden.', 'sv.rtc.temp': 'Temperatur', 'sv.rtc.aging': 'Aging-Offset',
     'sv.rtc.h': 'Etwa 0,1 ppm pro Schritt; positive Werte bremsen die Uhr, negative beschleunigen sie. Bereich −128 … 127.',
     'sv.raw': 'Raw-Stepper-Test', 'sv.raw.h': 'Fährt einen Pumpenkopf um exakt X Schritte – am Behälter-Tracking, Zeitplan und Verlauf vorbei. Nur zur Hardwareprüfung.',
@@ -111,7 +113,7 @@ add({
     'sv.tasks': 'Tasks', 'sv.uart': 'UART-Bus {b}', 'sv.uart.v': '{n} Transfers · {e} Fehler',
     'sv.paused': 'Live-Werte pausiert – Maus bewegen oder Taste drücken.',
     'sv.danger': 'Gefahrenzone',
-    'sv.dz.hist': 'Verlauf löschen', 'sv.dz.hist.h': 'Löscht alle Ereignisse der letzten 60 Tage.',
+    'sv.dz.hist': 'Verlauf löschen', 'sv.dz.hist.h': 'Löscht alle aufgezeichneten Ereignisse.',
     'sv.dz.net': 'Netzwerkeinstellungen zurücksetzen', 'sv.dz.net.h': 'LAN wieder per DHCP, WLAN entfernt. Das Gerät bekommt eventuell eine neue Adresse.',
     'sv.dz.fac': 'Werksreset', 'sv.dz.fac.h': 'Löscht alles: Einstellungen, Zeitpläne, Kalibrierung, Zähler, Verlauf, Passwörter und Schlüssel. Das Gerät startet im Einrichtungsmodus neu.',
     'sv.dz.sure': 'Wirklich?', 'sv.dz.yes': 'Ja, ausführen', 'sv.dz.no': 'Abbrechen', 'sv.dz.type': 'Zum Bestätigen RESET eingeben',
@@ -416,6 +418,32 @@ function RtcCard({ hw, reload }) {
   </form>`;
 }
 
+function HistCard() {
+  const [cur, setCur] = useState(null);  // GET /api/v1/history/settings
+  const [d, setD] = useState({ keep_days: '' });
+  const [busy, setBusy] = useState(false);
+  const msg = useMsg();
+  const take = j => { setCur(j); setD({ keep_days: str(j.keep_days) }); };
+  useEffect(() => { api('GET', '/api/v1/history/settings').then(take).catch(e => msg.err(e)); }, []);
+  if (!cur) return html`<section class="card"><h2>${t('sv.hist')}</h2>${msg.node}</section>`;
+  const f = { k: 'keep_days', l: 'sv.hist.keep', min: cur.min_days, max: cur.max_days, u: 'u.days' };
+  const bad = invalid([f], d);
+  const submit = e => {
+    e.preventDefault();
+    if (bad) return msg.err(checkText(f));
+    setBusy(true);
+    eapi('POST', '/api/v1/history/settings?' + qs({ keep_days: parse(d.keep_days) }))
+      .then(j => { take(j); msg.ok(t('sv.saved')); })
+      .catch(e => msg.err(e)).finally(() => setBusy(false));
+  };
+  return html`<form class="card" novalidate onSubmit=${submit}>
+    <h2>${t('sv.hist')}</h2>
+    <${Num} f=${f} d=${d} set=${x => setD(x)} bad=${!!bad} hint=${t('sv.hist.h')}/>
+    <${Save} busy=${busy} dirty=${parse(d.keep_days) !== cur.keep_days}/>
+    ${msg.node}
+  </form>`;
+}
+
 // ---------------------------------------------------------------------------
 // D: raw stepper test
 
@@ -652,6 +680,7 @@ export function ServiceView() {
     <div class="grid settings">
       <${TubeCard} eng=${eng} pumps=${pumps} reload=${reloadEng}/>
       <${RtcCard} hw=${hw} reload=${reloadHw}/>
+      <${HistCard}/>
     </div>
     <h2 class="eng-sec">${t('sv.d')}</h2>
     <div class="grid settings">

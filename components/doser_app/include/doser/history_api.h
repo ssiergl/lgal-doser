@@ -12,6 +12,9 @@
 //                                 "doses":[5],"skipped":[5]}]} oldest first;
 //                                 "days" empty without a valid clock
 //   DELETE /api/v1/history        delete everything (engineering area)
+//   GET    /api/v1/history/settings  {"keep_days","min_days","max_days"}
+//   POST   /api/v1/history/settings  ?keep_days=1..60 retention (engineering area;
+//                                 a shorter value deletes older days within a minute)
 //
 // kinds: dose, prime, calib_run, skip, container, calibration, tube, alarm
 // codes: results (success, aborted, fault, locked, heartbeat_lost, ...), skip

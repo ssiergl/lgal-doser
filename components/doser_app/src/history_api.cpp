@@ -131,7 +131,7 @@ esp_err_t get_daily(httpd_req_t* req) {
         return http::send_error(req, "400 Bad Request", "invalid_param", "days=1..60");
     const int32_t today = scheduler::today();
     Json j;
-    j.obj().kv("keep_days", static_cast<int>(history::kKeepDays));
+    j.obj().kv("keep_days", static_cast<int>(history::keep_days()));
     if (today < 0) {
         j.null("today").arr("days").end().end();
         return http::send_json(req, j.c_str());
@@ -163,6 +163,32 @@ esp_err_t delete_history(httpd_req_t* req) {
         return http::send_error(req, "500 Internal Server Error", "storage_error", "History not available");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
+void write_settings(Json& j) {
+    j.obj()
+        .kv("keep_days", static_cast<int>(history::keep_days()))
+        .kv("min_days", static_cast<int>(history::kKeepDaysMin))
+        .kv("max_days", static_cast<int>(history::kKeepDaysMax))
+        .end();
+}
+
+esp_err_t get_settings(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    Json j;
+    write_settings(j);
+    return http::send_json(req, j.c_str());
+}
+
+esp_err_t post_settings(httpd_req_t* req) {
+    if (!http::authorize_engineering(req)) return ESP_OK;
+    int64_t v = 0;
+    if (!http::query_int(req, "keep_days", &v) || v < history::kKeepDaysMin || v > history::kKeepDaysMax)
+        return http::send_error(req, "400 Bad Request", "invalid_param", "keep_days=1..60");
+    if (history::set_keep_days(static_cast<uint16_t>(v)) != ESP_OK)
+        return http::send_error(req, "500 Internal Server Error", "storage_error", "Could not save");
+    Json j;
+    write_settings(j);
+    return http::send_json(req, j.c_str());
+}
 }  // namespace
 
 esp_err_t register_handlers(httpd_handle_t server) {
@@ -171,6 +197,8 @@ esp_err_t register_handlers(httpd_handle_t server) {
     http::route(server, "/api/v1/history.csv", HTTP_GET, get_csv);
     http::route(server, "/api/v1/history/daily", HTTP_GET, get_daily);
     http::route(server, "/api/v1/history", HTTP_DELETE, delete_history);
+    http::route(server, "/api/v1/history/settings", HTTP_GET, get_settings);
+    http::route(server, "/api/v1/history/settings", HTTP_POST, post_settings);
     return ESP_OK;
 }
 

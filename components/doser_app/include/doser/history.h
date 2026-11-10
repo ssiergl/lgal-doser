@@ -11,8 +11,6 @@
 
 namespace doser::history {
 
-constexpr uint16_t kKeepDays = 60;
-
 // Mount the partition (formats it if it cannot be mounted) and start the writer
 esp_err_t init();
 bool ready();
@@ -31,5 +29,10 @@ struct Usage {
 };
 Usage usage();
 esp_err_t clear();
+
+// Retention (NVS "history"/"keep", default kKeepDaysDefault). A shorter
+// value deletes the older days within a minute.
+uint16_t keep_days();
+esp_err_t set_keep_days(uint16_t days);  // ESP_ERR_INVALID_ARG outside kKeepDaysMin..Max
 
 }  // namespace doser::history

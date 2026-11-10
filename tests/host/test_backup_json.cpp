@@ -78,6 +78,7 @@ static void sample(bk::Data* d) {
     d->hw[1].driver.hold_ma = 100;
     d->hw[1].driver.invert = true;
     d->hw[1].driver.microsteps = 32;
+    d->history_keep_days = 30;
 }
 
 static void fake_auth(lgal::Json& j) { j.kv("password", "00").kv("keys", "11"); }
@@ -139,9 +140,16 @@ static void test_round_trip() {
     CHECK(out.dosing.tier_rpm[2] == 450 && out.dosing.limit_mode == dose::LimitMode::Rolling24h && out.scheduler.grid_min == 10);
     CHECK(out.hw[1].driver.run_ma == 700 && out.hw[1].driver.hold_ma == 100 && out.hw[1].driver.invert &&
           out.hw[1].driver.microsteps == 32 && out.hw[0].driver.run_ma == 600);
+    CHECK(out.history_keep_days == 30);
     // a second write gives the same document
     out.parts = bk::kAllParts;
     CHECK(doc_of(out) == doc);
+    // files from before the retention setting: history missing = unchanged
+    std::string old = doc;
+    replace(&old, ",\"history\":{\"keep_days\":30}", "");
+    CHECK(old.find("keep_days") == std::string::npos);
+    static bk::Data out2;
+    CHECK(parse_str(old, base, &out2, &err, &r) && out2.history_keep_days == 0);
 }
 
 static void test_parts_and_secrets() {
@@ -231,6 +239,8 @@ static void test_errors() {
     expect_error("\"run_ma\":700", "\"run_ma\":1600", "invalid_param", "engineering.hardware.pumps[1].run_ma");
     expect_error("\"hold_ma\":100", "\"hold_ma\":800", "invalid_param", "engineering.hardware.pumps[1].hold_ma");
     expect_error("\"microsteps\":32", "\"microsteps\":12", "invalid_param", "engineering.hardware.pumps[1].microsteps");
+    expect_error("\"keep_days\":30", "\"keep_days\":61", "invalid_param", "engineering.history.keep_days");
+    expect_error("\"keep_days\":30", "\"keep_days\":0", "invalid_param", "engineering.history.keep_days");
     expect_error("\"host\":\"broker.local\"", "\"host\":\"bro ker\"", "invalid_param", "mqtt.host");
     expect_error("\"base_topic\":\"aq/doser\"", "\"base_topic\":\"aq/#\"", "invalid_param", "mqtt.base_topic");
     expect_error("MIIBtest\\n-----END CERTIFICATE-----", "MIIBtest", "invalid_certificate", "mqtt.ca_pem");

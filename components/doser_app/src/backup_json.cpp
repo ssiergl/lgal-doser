@@ -110,7 +110,9 @@ void write_engineering(Json& j, const Data& d) {
         j.kv("full_steps", static_cast<int>(c.full_steps)).kv("accel", static_cast<int64_t>(c.accel));
         j.kv("v_start", static_cast<int64_t>(c.v_start)).end();
     }
-    j.end().end().end();
+    j.end().end();
+    if (d.history_keep_days) j.obj("history").kv("keep_days", static_cast<int>(d.history_keep_days)).end();
+    j.end();
 }
 
 // --- parse -----------------------------------------------------------------
@@ -296,6 +298,12 @@ bool parse_engineering(const JsonValue& v, Data* d, Error* err) {
         c.v_start = static_cast<uint32_t>(x);
     }
     if (hp[5].valid()) return fail(err, "invalid_param", "engineering.hardware.pumps");
+    d->history_keep_days = 0;
+    if (v["history"].valid()) {
+        if (!get_int(v["history"]["keep_days"], history::kKeepDaysMin, history::kKeepDaysMax, &x))
+            return fail(err, "invalid_param", "engineering.history.keep_days");
+        d->history_keep_days = static_cast<uint16_t>(x);
+    }
     return true;
 }
 }  // namespace

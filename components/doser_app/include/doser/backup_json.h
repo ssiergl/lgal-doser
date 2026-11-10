@@ -12,7 +12,8 @@
 //    "locks":{...},
 //    "engineering":{"dosing":{...},"scheduler":{"grid_min","max_delay_min"},
 //                   "hardware":{"pumps":[{"run_ma","hold_ma","microsteps",
-//                   "invert","full_steps","accel","v_start"}]}},
+//                   "invert","full_steps","accel","v_start"}]},
+//                   "history":{"keep_days"}},   (history optional: older files lack it)
 //    "mqtt":{"enabled","host",...(see mqtt_config.h),"password"?,"ca_pem"},
 //    "auth":{"password","keys"}?}
 // Secrets (Wi-Fi and MQTT password, admin password record, API key hashes)
@@ -23,6 +24,7 @@
 #include <string>
 
 #include "doser/dosing_core.h"
+#include "doser/history_core.h"
 #include "doser/motion.h"
 #include "doser/schedule_core.h"
 #include "lgal/json.h"
@@ -67,6 +69,7 @@ struct Data {
     dose::Engineering dosing;
     sched::Config scheduler;
     motion::PumpConfig hw[5];
+    uint16_t history_keep_days = 0;  // 0 = not in the document (older backups): unchanged
     // mqtt
     lgal::mqttcfg::Config mqtt;
     bool mqtt_password = false;  // mqtt.password is part of the document

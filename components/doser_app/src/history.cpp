@@ -11,6 +11,7 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "lgal/timesync.h"
+#include "nvs.h"
 
 namespace doser::history {
 
@@ -21,11 +22,15 @@ constexpr const char* kBase = "/storage";
 constexpr const char* kDir = "/storage/hist";
 constexpr int kQueueLen = 32;
 constexpr int64_t kPruneEveryS = 3600;
+constexpr const char* kNs = "history";
+constexpr const char* kKeepKey = "keep";
 
 QueueHandle_t s_q = nullptr;
 SemaphoreHandle_t s_mx = nullptr;
 Store* s_store = nullptr;
 std::atomic<uint32_t> s_dropped{0};
+std::atomic<uint16_t> s_keep{kKeepDaysDefault};
+std::atomic<bool> s_prune_now{false};
 
 struct Guard {
     Guard() { xSemaphoreTake(s_mx, portMAX_DELAY); }
@@ -36,7 +41,7 @@ void task(void*) {
     int64_t last_prune = 0;
     for (;;) {
         Event e;
-        if (xQueueReceive(s_q, &e, pdMS_TO_TICKS(60000)) == pdTRUE) {
+        if (xQueueReceive(s_q, &e, pdMS_TO_TICKS(s_prune_now.load() ? 1000 : 60000)) == pdTRUE) {
             Guard g;
             if (!s_store->append(e)) {
                 s_dropped.fetch_add(1);
@@ -44,10 +49,10 @@ void task(void*) {
             }
         }
         const auto ts = lgal::timesync::status();
-        if (ts.valid && ts.utc - last_prune >= kPruneEveryS) {
+        if (ts.valid && (ts.utc - last_prune >= kPruneEveryS || s_prune_now.exchange(false))) {
             last_prune = ts.utc;
             Guard g;
-            const int n = s_store->prune(static_cast<uint32_t>(ts.utc), kKeepDays);
+            const int n = s_store->prune(static_cast<uint32_t>(ts.utc), s_keep.load());
             if (n) ESP_LOGI(TAG, "pruned %d day files", n);
         }
     }
@@ -68,6 +73,12 @@ esp_err_t init() {
     if (stat(kDir, &st) != 0 && mkdir(kDir, 0755) != 0) {
         ESP_LOGE(TAG, "cannot create %s", kDir);
         return ESP_FAIL;
+    }
+    nvs_handle_t h;
+    if (nvs_open(kNs, NVS_READONLY, &h) == ESP_OK) {
+        uint16_t v = 0;
+        if (nvs_get_u16(h, kKeepKey, &v) == ESP_OK && v >= kKeepDaysMin && v <= kKeepDaysMax) s_keep = v;
+        nvs_close(h);
     }
     s_mx = xSemaphoreCreateMutex();
     s_q = xQueueCreate(kQueueLen, sizeof(Event));
@@ -112,6 +123,22 @@ Usage usage() {
     }
     esp_littlefs_info(kLabel, &u.fs_total, &u.fs_used);
     return u;
+}
+
+uint16_t keep_days() { return s_keep.load(); }
+
+esp_err_t set_keep_days(uint16_t days) {
+    if (days < kKeepDaysMin || days > kKeepDaysMax) return ESP_ERR_INVALID_ARG;
+    nvs_handle_t h;
+    esp_err_t err = nvs_open(kNs, NVS_READWRITE, &h);
+    if (err != ESP_OK) return err;
+    err = nvs_set_u16(h, kKeepKey, days);
+    if (err == ESP_OK) err = nvs_commit(h);
+    nvs_close(h);
+    if (err != ESP_OK) return err;
+    if (days < s_keep.exchange(days)) s_prune_now = true;
+    ESP_LOGI(TAG, "keeping %u days", unsigned(days));
+    return ESP_OK;
 }
 
 esp_err_t clear() {
