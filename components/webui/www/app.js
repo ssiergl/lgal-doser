@@ -1,7 +1,6 @@
 // LG Aquatic Life web UI: layout, hash router, start-up.
 import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { api } from './lib/api.js';
 import { html } from './lib/html.js';
 import { add, initLang, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
@@ -19,7 +18,6 @@ add({
     'nav.home': 'Overview', 'nav.history': 'History', 'nav.settings': 'Settings',
     'mode.beginner': 'Simple', 'mode.pro': 'Pro', 'mode.title': 'View',
     'live.on': 'Live', 'live.off': 'Connecting …',
-    'stop.all': 'Stop all', 'stop.title': 'Stop all pumps now',
     'notime': 'The device has no valid time – schedules and daily limits are paused.',
     'nortc': 'The clock module does not answer – after a power cut the time is lost until the network is back.',
     'offline': 'No connection to the device ({e}).',
@@ -29,7 +27,6 @@ add({
     'nav.home': 'Übersicht', 'nav.history': 'Verlauf', 'nav.settings': 'Einstellungen',
     'mode.beginner': 'Einfach', 'mode.pro': 'Profi', 'mode.title': 'Ansicht',
     'live.on': 'Live', 'live.off': 'Verbinde …',
-    'stop.all': 'Alle stoppen', 'stop.title': 'Alle Pumpen sofort stoppen',
     'notime': 'Das Gerät hat keine gültige Uhrzeit – Zeitpläne und Tageslimits ruhen.',
     'nortc': 'Das Uhrenmodul antwortet nicht – nach einem Stromausfall fehlt die Uhrzeit, bis das Netzwerk wieder da ist.',
     'offline': 'Keine Verbindung zum Gerät ({e}).',
@@ -74,7 +71,6 @@ function Nav({ route, cls }) {
 function Header({ route }) {
   const s = useStore();
   const prefs = usePrefs();
-  const busy = s.pumps && s.pumps.some(p => p.activity !== 'idle');
   const host = s.info && s.info.device ? s.info.device.hostname : '';
   return html`<header class="top"><div class="top-in">
     <a class="brand" href="#/"><img src="/ui/icon.svg" alt=""/><div><b>LG Aquatic Life</b><span>Doser${host ? ' · ' + host : ''}</span></div></a>
@@ -83,8 +79,6 @@ function Header({ route }) {
     <div class="seg" title=${t('mode.title')}>
       ${['beginner', 'pro'].map(m => html`<button class=${prefs.mode === m ? 'on' : ''} onClick=${() => setMode(m)}>${t('mode.' + m)}</button>`)}
     </div>
-    <button class=${busy ? 'danger small' : 'sec small'} title=${t('stop.title')}
-      onClick=${() => api('POST', '/api/v1/pumps/stop?pump=0').catch(() => {})}>■<span class="hide-s">${t('stop.all')}</span></button>
   </div><${Nav} route=${route} cls="tabs"/></header>`;
 }
 
