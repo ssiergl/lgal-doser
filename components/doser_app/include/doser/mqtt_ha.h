@@ -1,6 +1,8 @@
 #pragma once
 // MQTT publishing of the pump states, Home Assistant discovery and commands
 // (M6). Topics and payloads: doser/ha_core.h; connection: lgal/mqtt.h.
+// "<base>/event": every history event once, oldest first, with "replay"
+// for events buffered before the current connection (doser/event_cursor.h).
 
 #include <cstdint>
 

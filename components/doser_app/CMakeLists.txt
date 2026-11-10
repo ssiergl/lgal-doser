@@ -8,6 +8,7 @@ idf_component_register(
         "src/backup_json.cpp"
         "src/backup_api.cpp"
         "src/ha_core.cpp"
+        "src/event_cursor.cpp"
         "src/mqtt_ha.cpp"
         "src/hwconfig.cpp"
         "src/hwtest_api.cpp"
