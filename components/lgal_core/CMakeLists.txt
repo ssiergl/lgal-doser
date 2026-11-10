@@ -35,6 +35,7 @@ idf_component_register(
         esp_event
         esp_wifi
         esp_http_server
+        esp_http_client
         esp_app_format
         app_update
         esp_partition
