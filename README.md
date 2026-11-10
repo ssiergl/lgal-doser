@@ -116,6 +116,8 @@ Anmeldung auf `/login` (Seite „Account“):
 - **Engineering** (Super-Admin, nur Hersteller): `/login?eng=1`, Schlüssel pro Gerät aus
   dem Geheimnis abgeleitet. Gilt für die angemeldete Sitzung und sperrt 15 min nach der
   letzten Engineering-Anfrage. Mit API-Key zusätzlich Header `X-Engineering-Key`.
+  Die Weboberfläche sperrt beim Start eine Freischaltung, die nicht aus demselben
+  Browser-Tab stammt – ein geschlossener Tab bleibt damit gesperrt.
 
 Browser-Seiten ohne Anmeldung leiten auf `/login?next=…` um, API-Aufrufe antworten
 mit 401 `unauthorized` bzw. 403 `engineering_locked`.
@@ -139,7 +141,7 @@ zur [Ersteinrichtung](#ersteinrichtung-m4).
 |---|---|
 | Captive Portal | DNS-Server auf dem Setup-WLAN beantwortet jeden Namen (A) mit `192.168.4.1`, andere Typen leer. Unbekannte Seiten leiten Setup-WLAN-Clients auf `http://192.168.4.1/` um. LAN/WLAN-Clients bekommen ein normales 404. |
 | Wiederholen | `/setup` bleibt nach dem Abschluss erreichbar (Link auf der Wartungsseite), schaltet das Setup-WLAN dann aber nicht erneut ein. |
-| Werkseinstellungen | Taster 10 s oder `/api/v1/engineering/reset?what=factory` löscht alles (siehe [Taster und LED](#taster-und-led)) → Ersteinrichtung beginnt von vorn. |
+| Werkseinstellungen | Taster 10 s oder Engineering-Menü löscht alles (siehe [Taster und LED](#taster-und-led)) → Ersteinrichtung beginnt von vorn. |
 
 ## Netzwerk (M4)
 
@@ -186,7 +188,7 @@ und REST-Entlüften zurück („Abfrage“).
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
 Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 87 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+gzip-komprimiert (≈ 97 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
@@ -209,7 +211,7 @@ nicht, `idf.py build` reicht.
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk- und MQTT-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
-| Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel; freigeschaltet zeigt er Restzeit, die Serviceseiten (Dosier-, Zeitplan-, Hardwaretest), die [Datensicherung](#datensicherung-m6) (herunterladen mit oder ohne Passwörter, aus Datei wiederherstellen) und „Jetzt sperren“. |
+| Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel, danach direkt das [Engineering-Menü](#engineering-menü-m6) (ist der Bereich schon freigeschaltet, sofort). Dort liegen auch die [Datensicherung](#datensicherung-m6) und „Jetzt sperren“. |
 | Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Testseiten). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
 
@@ -415,7 +417,7 @@ Das Gerät zeichnet Ereignisse als 24-Byte-Einträge auf der LittleFS-Partition 
 löscht es stündlich. Geschrieben wird über eine Warteschlange in einem eigenen Task – Dosierung
 und Zeitplan warten nie auf den Flash. Ohne gültige Uhrzeit wird nichts aufgezeichnet.
 Bei rund 240 Dosen am Tag sind das etwa 6 KB pro Tag, 60 Tage ≈ 350 KB von 5,9 MB.
-Werkseinstellungen (Taster 10 s) löschen die Historie mit.
+Werkseinstellungen löschen die Historie mit; einzeln löscht sie das Engineering-Menü.
 
 | `kind` | Inhalt |
 |---|---|
@@ -470,7 +472,7 @@ mit Quelle `mqtt` im Verlauf.
 **Zeitplan pro Pumpe** (alle): im Pumpen-Detail als JSON-Datei exportieren und importieren, auch
 auf eine andere Pumpe (`{"format":"lgal-doser-schedule","version":1,…,"schedule":{…}}`).
 
-**Ganzes Gerät** (nur Engineering, Service-Dialog): eine Datei mit Sprache, Zeitzone,
+**Ganzes Gerät** (nur Engineering, Bereich E des Engineering-Menüs): eine Datei mit Sprache, Zeitzone,
 Zeitserver, LED-Nachtmodus, Netzwerk, allen Pumpen-Einstellungen inkl. Kalibrierung, Zeitplänen,
 Sperrzeiten, Servicewerten, Hardware-Parametern (Ströme, Mikroschritte) und
 den MQTT-Einstellungen samt CA-Zertifikat.
@@ -481,11 +483,31 @@ Behälterinhalt, Zähler und Verlauf gehören nicht dazu. Beim Export wählbar:
 | ohne Passwörter | kein WLAN- und MQTT-Passwort, keine Zugangsdaten; beim Einspielen bleibt das gespeicherte WLAN-Passwort, wenn das Netz (SSID) gleich ist, und das MQTT-Passwort bei gleichem Broker und Benutzer |
 | mit Passwörtern | zusätzlich WLAN- und MQTT-Passwort (Klartext) sowie Admin-Passwort und API-Keys (nur als PBKDF2- bzw. SHA-256-Hash, wie im Gerät gespeichert) |
 
-Beim Einspielen zeigt der Dialog Gerät, Firmware und Datum der Sicherung und lässt die Teile
+Beim Einspielen zeigt die Seite Gerät, Firmware und Datum der Sicherung und lässt die Teile
 wählen; Netzwerk und Zugangsdaten sind vorab abgewählt. Die Firmware prüft das ganze Dokument
 (Format, Version, jeden Wert wie die einzelnen Endpunkte) bevor sie etwas übernimmt, und lehnt
 es ab, solange eine Pumpe läuft. Zugangsdaten melden alle ab; ein neues Netzwerk gilt 2 s nach
 der Antwort. Der Engineering-Schlüssel (Hersteller) ist nie Teil der Sicherung.
+
+## Engineering-Menü (M6)
+
+Verstecktes Experten-Menü für den Hersteller (`#/engineering`, Funktionsbeschreibung 11):
+erreichbar über den Engineering-Dialog (7× auf die Firmware-Version im Fuß klicken), jede
+Anfrage braucht die Engineering-Freischaltung. Live-Werte fragt die Seite nur ab, solange
+jemand Maus oder Tastatur benutzt – so sperrt das Gerät 15 min nach der letzten echten
+Eingabe.
+
+| Bereich | Inhalt |
+|---|---|
+| A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle 5 Pumpen. |
+| B · Grenzen | Entlüften max. Dauer und Totmann-Timeout, kleinste Einzeldosis, Fenster des Tageslimits, Zeitplan-Raster, max. Verzögerung einer geplanten Dosis. |
+| C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur und Aging-Offset. |
+| D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen, Werksreset (Eingabe „RESET“). |
+| E · Datensicherung | Ganzes Gerät sichern und wiederherstellen (siehe [Datensicherung](#datensicherung-m6)). |
+
+Der Werksreset (Menü oder Taster 10 s) stoppt alle Pumpen, löscht das EEPROM (Laufzustand von
+Dosierung und Zeitplan: Zähler, Behälter, Schlauchstunden), NVS und die Datenpartition und
+startet neu im Einrichtungsmodus.
 
 ## Taster und LED
 

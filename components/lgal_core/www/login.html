@@ -168,9 +168,11 @@ $('f_rec').onsubmit=e=>{e.preventDefault();if(!same('r_pw','r_pw2','r_msg'))retu
 $('f_pw').onsubmit=e=>{e.preventDefault();if(!same('p_pw','p_pw2','p_msg'))return;
   api('POST','/api/v1/auth/password',{current:$('p_cur').value,new:$('p_pw').value}).then(()=>{['p_cur','p_pw','p_pw2'].forEach(i=>$(i).value='');msg('p_msg',t('pw.ok'),true);load()}).catch(e=>errMsg('p_msg',e))};
 $('f_key').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/keys',{name:$('k_name').value.trim()}).then(j=>{$('k_name').value='';$('k_val').textContent=j.key;$('k_new').hidden=false;$('k_msg').textContent='';loadKeys()}).catch(e=>msg('k_msg',e.message))};
-$('f_eng').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/engineering',{key:$('e_key').value.trim()}).then(()=>{$('e_key').value='';msg('e_msg',t('eng.ok'),true);
+// The web UI locks an unlock its browser tab did not make (sessionStorage = per tab)
+function tabEng(on){try{on?sessionStorage.setItem('lgal.eng','1'):sessionStorage.removeItem('lgal.eng')}catch(e){}}
+$('f_eng').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/engineering',{key:$('e_key').value.trim()}).then(()=>{$('e_key').value='';tabEng(1);msg('e_msg',t('eng.ok'),true);
   if(P.get('next'))location.href=next;else load()}).catch(e=>errMsg('e_msg',e))};
-$('e_lock').onclick=()=>api('DELETE','/api/v1/auth/engineering').then(load);
+$('e_lock').onclick=()=>{tabEng(0);api('DELETE','/api/v1/auth/engineering').then(load)};
 $('s_logout').onclick=()=>api('POST','/api/v1/auth/logout').then(()=>{load();msg('l_msg',t('s.out'),true)});
 i18n.onChange(()=>{if(S)load()});
 i18n.init('lang').then(load);

@@ -1,4 +1,4 @@
-// Full backup in the engineering dialog (M6): export of the whole
+// Full backup card of the engineering menu (M6): export of the whole
 // configuration with or without secrets, restore of chosen parts.
 import { useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
@@ -119,8 +119,8 @@ export function BackupSection() {
   const present = doc ? kParts.filter(p => (p === 'pumps' ? doc.pumps || doc.locks : doc[p])) : [];
   const when = doc && doc.exported_utc ? new Date(doc.exported_utc * 1000).toLocaleString(getLang()) : '–';
 
-  return html`<div class="backup">
-    <h3>${t('bk.title')}</h3>
+  return html`<section class="card backup">
+    <h2>${t('bk.title')}</h2>
     <p class="small mut">${t('bk.hint')}</p>
     <label class="check"><input type="checkbox" checked=${secrets} onChange=${e => setSecrets(e.target.checked)}/>
       <span>${t('bk.secrets')}</span></label>
@@ -142,5 +142,5 @@ export function BackupSection() {
       </div>
     </div>`}
     ${msg.node}
-  </div>`;
+  </section>`;
 }
