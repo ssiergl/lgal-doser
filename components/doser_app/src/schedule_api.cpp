@@ -13,8 +13,6 @@
 #include "lgal/json_reader.h"
 #include "lgal/timesync.h"
 
-extern const char schedule_html_start[] asm("_binary_schedule_html_start");
-extern const char schedule_html_end[] asm("_binary_schedule_html_end");
 
 namespace doser::schedule_api {
 
@@ -134,13 +132,6 @@ bool read_body(httpd_req_t* req, Body* b) {
 }
 
 // ---------------------------------------------------------------------------
-esp_err_t get_page(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
-    httpd_resp_set_type(req, "text/html; charset=utf-8");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, schedule_html_start, schedule_html_end - schedule_html_start - 1);
-}
-
 esp_err_t send_schedule(httpd_req_t* req, int p) {
     const sched::PumpSchedule s = scheduler::schedule(p);
     const int32_t day = scheduler::today();
@@ -343,7 +334,6 @@ esp_err_t post_engineering(httpd_req_t* req) {
 
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;
-    http::route(server, "/schedule", HTTP_GET, get_page);
     http::route(server, "/api/v1/pumps/schedule", HTTP_GET, get_schedule);
     http::route(server, "/api/v1/pumps/schedule", HTTP_PUT, put_schedule);
     http::route(server, "/api/v1/pumps/boost", HTTP_POST, post_boost);

@@ -15,8 +15,7 @@ MAX_KEYS = 4
 ENGKEY = "test-eng-key"
 ENG = {"until": 0}
 SYS = {"coredump": True, "boot": time.time(), "down_until": 0, "version": "0.5.0-dev", "partition": "ota_0", "invalid": None}
-LINKS = [{"id": "app", "name": "Web interface", "path": "/"}, {"id": "dosing", "name": "Dosing test", "path": "/dosing"},
-         {"id": "schedule", "name": "Schedule test", "path": "/schedule"}, {"id": "hwtest", "name": "Hardware test", "path": "/hwtest"},
+LINKS = [{"id": "app", "name": "Web interface", "path": "/"},
          {"id": "network", "name": "Network", "path": "/network"}, {"id": "setup", "name": "Setup wizard", "path": "/setup"},
          {"id": "account", "name": "Account", "path": "/login"}]
 

@@ -1,8 +1,7 @@
 #pragma once
-// Hardware diagnostics (engineering mode "danger zone", spec 11.2 D). All
-// endpoints and the page need the unlocked engineering area (auth.h).
+// Hardware diagnostics (engineering menu, spec 11.2 C/D). All endpoints
+// need the unlocked engineering area (auth.h).
 //
-//   GET  /hwtest                       test page (in the firmware image)
 //   GET  /api/v1/hw/status             drivers, pumps, RTC, EEPROM, UART
 //   POST /api/v1/hw/pump/run           ?pump=1..5&steps=±N&sps=N[&accel=&vstart=&force=1]
 //   POST /api/v1/hw/pump/stop          ?pump=1..5|0 (all)[&mode=soft|hard]

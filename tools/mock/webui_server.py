@@ -353,7 +353,6 @@ class H(BaseHTTPRequestHandler):
         if p == "/api/v1/system/info":
             return self.send(200, {"device": {"hostname": "lgal-doser-e4f5", "setup_completed": True},
                                    "firmware": {"version": "0.5.0-dev", "partition": "ota_0"}, "time": {"valid": True}})
-        if p == "/dosing": return self.send(200, open(ROOT + "/components/doser_app/www/dosing.html", "rb").read(), "text/html; charset=utf-8")
         if p == "/i18n.js": return self.send(200, open(ROOT + "/components/lgal_core/www/i18n.js", "rb").read(), "text/javascript")
         if p == "/api/v1/system/language": return self.send(200, {"language": LANG["v"], "languages": ["en", "de"]})
         if p == "/api/v1/engineering/dosing": return self.send(200, ENG)
