@@ -1,6 +1,7 @@
 // Time settings (settings page): device time and where it comes from, time
-// zone for everyone, NTP server in the pro view. A browser can hand over
-// its clock when the device has no valid or a wrong time.
+// zone for everyone, NTP server and setting date and time by hand in the
+// pro view. A browser can hand over its clock when the device has no valid
+// or a wrong time.
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
@@ -20,6 +21,9 @@ add({
     'tm.ntp': 'Time server (NTP)', 'tm.ntp.hint': 'Empty = no time server; the time then comes from the clock module.',
     'tm.browser': 'Take the time from this browser', 'tm.browser.ok': 'Time taken from this browser.',
     'tm.saved': 'Time settings saved.', 'tm.field': 'Please check: {f}',
+    'tm.manual': 'Set by hand', 'tm.date': 'Date', 'tm.time': 'Time', 'tm.set': 'Set time',
+    'tm.manual.hint': 'Date and time in the device\'s time zone. A reachable time server overwrites it at the next sync.',
+    'tm.manual.ok': 'Time set.',
     'err.storage_failed': 'Could not save',
   },
   de: {
@@ -32,6 +36,9 @@ add({
     'tm.ntp': 'Zeitserver (NTP)', 'tm.ntp.hint': 'Leer = kein Zeitserver; die Zeit kommt dann vom Uhrenmodul.',
     'tm.browser': 'Uhrzeit von diesem Browser übernehmen', 'tm.browser.ok': 'Uhrzeit von diesem Browser übernommen.',
     'tm.saved': 'Zeiteinstellungen gespeichert.', 'tm.field': 'Bitte prüfen: {f}',
+    'tm.manual': 'Von Hand stellen', 'tm.date': 'Datum', 'tm.time': 'Uhrzeit', 'tm.set': 'Uhrzeit setzen',
+    'tm.manual.hint': 'Datum und Uhrzeit in der Zeitzone des Geräts. Ein erreichbarer Zeitserver überschreibt sie beim nächsten Abgleich.',
+    'tm.manual.ok': 'Uhrzeit gesetzt.',
     'err.storage_failed': 'Speichern fehlgeschlagen',
   },
 });
@@ -45,11 +52,39 @@ const bodyOf = (d, pro) => {
   if (pro) b.ntp_server = d.ntp.trim();
   return b;
 };
-const fieldName = { timezone: 'tm.zone', ntp_server: 'tm.ntp', utc: 'tm.browser' };
+const fieldName = { timezone: 'tm.zone', ntp_server: 'tm.ntp', utc: 'tm.browser', local: 'tm.manual' };
 const errOf = e => {
   const f = e.code === 'invalid_param' && e.body && e.body.error && e.body.error.field;
   return f && fieldName[f] ? t('tm.field', { f: t(fieldName[f]) }) : errText(e);
 };
+
+// Pro view: date and time by hand, in the device's own time zone (the
+// browser may be elsewhere). Prefilled from the device time when opened.
+function ManualTime({ T, busy, setBusy, done, msg }) {
+  const [v, setV] = useState(() => {
+    const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})/.exec(T.local || '');
+    return m ? { date: m[1], time: m[2] } : { date: '', time: '' };
+  });
+  const ok = /^\d{4}-\d{2}-\d{2}$/.test(v.date) && /^\d{2}:\d{2}$/.test(v.time);
+  const send = () => {
+    setBusy(true);
+    api('PUT', '/api/v1/system/time', { local: v.date + 'T' + v.time })
+      .then(j => { done(j); msg.ok(t('tm.manual.ok')); })
+      .catch(e => msg.err(errOf(e)))
+      .finally(() => setBusy(false));
+  };
+  return html`<div class="sub">
+    <b>${t('tm.manual')}</b>
+    <div class="row">
+      <label class="field"><span>${t('tm.date')}</span>
+        <input type="date" min="2025-01-01" max="2099-12-31" value=${v.date} onInput=${e => setV({ ...v, date: e.target.value })}/></label>
+      <label class="field"><span>${t('tm.time')}</span>
+        <input type="time" value=${v.time} onInput=${e => setV({ ...v, time: e.target.value })}/></label>
+    </div>
+    <p class="small mut">${t('tm.manual.hint')}</p>
+    <button type="button" class="sec" disabled=${busy || !ok} onClick=${send}>${t('tm.set')}</button>
+  </div>`;
+}
 
 // Seconds ago -> "5 minutes ago" in the UI language
 function ago(s) {
@@ -131,6 +166,8 @@ export function TimeCard({ pro }) {
         value=${d.ntp} onInput=${e => set({ ntp: e.target.value })}/>
       <p class="small mut">${t('tm.ntp.hint')}</p></div>`}
     <${SaveBar} busy=${busy} dirty=${dirty} onDiscard=${() => { setDraft(draftOf(T)); msg.clear(); }}/>
+    ${pro && html`<${ManualTime} T=${T} busy=${busy} setBusy=${setBusy} msg=${msg}
+      done=${j => { take(j, false); reloadAll(); }}/>`}
     ${msg.node}
   </form>`;
 }

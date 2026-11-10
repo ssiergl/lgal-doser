@@ -286,7 +286,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/system/info` | Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
 | GET / PUT | `/api/v1/system/led` | angezeigter Zustand (`shown`) und Nachtmodus / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (fehlende Felder bleiben, 400 `invalid_param` mit `field`) |
-| GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` (alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
+| GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` oder statt `utc` `"local":"2026-11-10T18:30"` (Ortszeit des Geräts; alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
 | GET | `/setup` | Ersteinrichtung |
 | GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
 | POST | `/api/v1/setup/complete` | Einrichtung abschließen (409 `password_not_set` / `not_connected`), Setup-WLAN aus nach 20 s |
