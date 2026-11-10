@@ -1,12 +1,16 @@
 #include "doser/mqtt_ha.h"
 
 #include <cctype>
+#include <cinttypes>
 #include <cstdio>
 #include <cstring>
 #include <string>
 
 #include "doser/dosing.h"
+#include "doser/event_cursor.h"
 #include "doser/ha_core.h"
+#include "doser/history.h"
+#include "doser/history_json.h"
 #include "doser/scheduler.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
@@ -16,6 +20,8 @@
 #include "lgal/device.h"
 #include "lgal/mqtt.h"
 #include "lgal/settings.h"
+#include "lgal/timesync.h"
+#include "nvs.h"
 
 namespace doser::mqtt_ha {
 
@@ -24,6 +30,13 @@ constexpr const char* TAG = "mqtt_ha";
 constexpr int kPollMs = 2000;
 constexpr int64_t kRefreshMs = 300000;   // states are re-sent at least every 5 min
 constexpr int64_t kDiscoveryMs = 30000;  // discovery checked for changes
+// Event stream "<base>/event" (event_cursor.h)
+constexpr size_t kEvBatch = 20;          // events per round
+constexpr size_t kEvKeep = 64;           // oldest events of a window held in RAM
+constexpr uint32_t kEvLagS = 2;          // younger events may still sit in the history queue
+constexpr int kEvBacklogMs = 250;        // next round while a backlog is being sent
+constexpr int64_t kEvSaveMs = 60000;     // cursor written to NVS at most once a minute
+constexpr const char* kEvNs = "mqtt_ev";
 
 TaskHandle_t s_task = nullptr;
 portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
@@ -169,12 +182,98 @@ void send(const std::string& topic, const std::string& payload, std::string* las
     if (lgal::mqtt::publish(topic, payload.data(), int(payload.size()), true)) *last = payload;
 }
 
+// --- event stream ------------------------------------------------------------
+
+struct Window {
+    history::Event seen[kEvKeep];  // ring of the last seen = oldest events
+    size_t total = 0;
+    history::Event ordered[kEvKeep];
+};
+
+struct Events {
+    event_cursor::Cursor cur, saved;
+    bool loaded = false;
+    int64_t saved_ms = 0;
+    uint32_t conn_utc = 0;  // events before this connection count as replay
+};
+
+bool keep_oldest(const history::Event& e, void* ctx) {
+    auto* w = static_cast<Window*>(ctx);
+    w->seen[w->total++ % kEvKeep] = e;  // query runs newest first
+    return true;
+}
+
+bool publish_event(const history::Event& e, void* ctx) {
+    const auto* ev = static_cast<const Events*>(ctx);
+    lgal::Json j;
+    history_json::write_event(j, e, scheduler::to_local(e.utc), true);
+    j.kv("replay", e.utc < ev->conn_utc).end();
+    return lgal::mqtt::publish(lgal::mqtt::topic("event"), j.c_str(), int(j.str().size()), false, 1);
+}
+
+void save_cursor(Events* ev, int64_t now_ms) {
+    nvs_handle_t h;
+    if (nvs_open(kEvNs, NVS_READWRITE, &h) != ESP_OK) return;
+    if (nvs_set_blob(h, "cur", &ev->cur, sizeof(ev->cur)) == ESP_OK && nvs_commit(h) == ESP_OK) {
+        ev->saved = ev->cur;
+        ev->saved_ms = now_ms;
+    }
+    nvs_close(h);
+}
+
+// One round: sends up to kEvBatch events after the cursor. true = more to send.
+bool pump_events(Events* ev, int64_t now_ms) {
+    static Window w;  // task only; too large for the stack
+    const auto ts = lgal::timesync::status();
+    if (!history::ready() || !ts.valid) return false;
+    const uint32_t now = static_cast<uint32_t>(ts.utc);
+    if (!ev->loaded) {
+        ev->loaded = true;
+        nvs_handle_t h;
+        size_t len = sizeof(ev->cur);
+        if (nvs_open(kEvNs, NVS_READONLY, &h) == ESP_OK) {
+            if (nvs_get_blob(h, "cur", &ev->cur, &len) != ESP_OK || len != sizeof(ev->cur)) ev->cur = {};
+            nvs_close(h);
+        }
+        if (!ev->cur.utc || ev->cur.utc > now + 60) ev->cur = {now, 0};  // first start or clock moved back
+        ev->saved = ev->cur;
+        ESP_LOGI(TAG, "events from %" PRIu32 " (+%u)", ev->cur.utc, unsigned(ev->cur.n));
+    }
+    if (!ev->conn_utc) ev->conn_utc = now;
+    const uint32_t until = now - kEvLagS;
+    size_t budget = kEvBatch;
+    bool stalled = false;
+    for (int round = 0; round < 8 && budget && !stalled && ev->cur.utc <= until; ++round) {
+        const uint32_t end = event_cursor::window_end(ev->cur, until);
+        history::Filter f;
+        f.from = ev->cur.utc;
+        f.to = end;
+        w.total = 0;
+        history::query(f, keep_oldest, &w);
+        const size_t n = w.total < kEvKeep ? w.total : kEvKeep;
+        for (size_t i = 0; i < n; ++i) w.ordered[i] = w.seen[(w.total - 1 - i) % kEvKeep];
+        size_t sent = 0;
+        const bool done = event_cursor::advance(&ev->cur, end, w.ordered, n, w.total <= kEvKeep, budget,
+                                                publish_event, ev, &sent);
+        budget -= sent;
+        stalled = !done && sent == 0;  // broker gone (or nothing to do in a partial window)
+    }
+    if ((ev->cur.utc != ev->saved.utc || ev->cur.n != ev->saved.n) && now_ms - ev->saved_ms >= kEvSaveMs)
+        save_cursor(ev, now_ms);
+    return !stalled && budget == 0 && ev->cur.utc <= until;
+}
+
 void task(void*) {
     Published pub;
+    Events events;
+    bool backlog = false;
     int64_t discovery_at = -kDiscoveryMs;
     while (true) {
-        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(kPollMs));
-        if (!lgal::mqtt::connected()) continue;
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(backlog ? kEvBacklogMs : kPollMs));
+        if (!lgal::mqtt::connected()) {
+            backlog = false;
+            continue;
+        }
         portENTER_CRITICAL(&s_mux);
         const bool resend = s_resend;
         s_resend = false;
@@ -182,6 +281,8 @@ void task(void*) {
         const ha::DeviceState alarms = s_alarms;
         portEXIT_CRITICAL(&s_mux);
         const int64_t now = esp_timer_get_time() / 1000;
+        if (resend) events.conn_utc = 0;  // new connection: what is buffered now is a replay
+        backlog = pump_events(&events, now);
         const bool refresh = resend || now - pub.at_ms >= kRefreshMs;
         if (refresh) pub.at_ms = now;
 

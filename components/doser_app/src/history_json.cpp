@@ -27,7 +27,7 @@ void fmt_local_s(int64_t local, char (&out)[20]) {
     out[19] = '\0';
 }
 
-void write_event(lgal::Json& j, const Event& e, int64_t local) {
+void write_event(lgal::Json& j, const Event& e, int64_t local, bool leave_open) {
     char loc[20];
     fmt_local_s(local, loc);
     j.obj().kv("utc", static_cast<int64_t>(e.utc)).kv("local", loc).kv("kind", history::kind_str(e.kind));
@@ -56,7 +56,7 @@ void write_event(lgal::Json& j, const Event& e, int64_t local) {
         case Kind::Alarm:
             break;
     }
-    j.end();
+    if (!leave_open) j.end();
 }
 
 bool parse_kinds(const char* s, uint16_t* out) {

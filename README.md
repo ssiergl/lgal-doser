@@ -459,13 +459,14 @@ mit Last Will ab und baut die Verbindung nach Fehlern alle 10 s neu auf. Verschl
 | TLS, eigenes CA-Zertifikat | Port 8883, gegen ein hochgeladenes CA-Zertifikat (PEM, z. B. vom eigenen Mosquitto mit selbst signiertem Zertifikat) |
 
 Topics unter dem Basis-Topic (Standard: `lg-aquatic-life/<gerätetyp>/<hostname>`, z. B.
-`lg-aquatic-life/doser/lgal-doser-e4f5`), Zustände `retained`:
+`lg-aquatic-life/doser/lgal-doser-e4f5`), Zustände `retained`, Ereignisse nicht:
 
 | Topic | Inhalt |
 |---|---|
 | `<basis>/status` | `online` / `offline` (Last Will) |
 | `<basis>/state` | `{"critical","warning","conditions":["pump1_container_low","rtc_fault",…]}` |
 | `<basis>/pump/<n>/state` | `{"activity","total_ml","planned_ml","remaining_ml","days","next","schedule","amount_ml","tube_h","last"}` – bei Änderung, sonst alle 5 min |
+| `<basis>/event` | jedes Verlaufs-Ereignis einzeln (QoS 1), Felder wie `GET /api/v1/history` plus `"replay"`; siehe unten |
 | `<basis>/pump/<n>/dose/set` | `PRESS` = eingestellte Menge, oder Menge in ml (`2.5`) – nur mit Steuerung |
 | `<basis>/pump/<n>/amount/set` | Menge für `PRESS` in ml (im RAM, Start 1 ml) – nur mit Steuerung |
 | `<basis>/pump/<n>/schedule/set` | `ON` / `OFF` – Zeitplan fortsetzen / pausieren – nur mit Steuerung |
@@ -481,6 +482,16 @@ Steuerung entfernt das Gerät diese Entitäten wieder und ignoriert Befehle. Sta
 Assistant neu (`homeassistant/status` = `online`), sendet das Gerät Discovery und Zustände erneut.
 Dosen über MQTT laufen wie manuelle Dosen (Tageslimit, Sperrzeiten, Behälter) und stehen
 mit Quelle `mqtt` im Verlauf.
+
+**Ereignisse** (`<basis>/event`, Funktionsbeschreibung 1 und 9): Dosen, ausgelassene Dosen,
+Entlüften, Kalibrierung, Behälter, Schlauch und Alarme gehen in der Reihenfolge des Verlaufs
+raus, z. B. `{"utc":1794330000,"local":"2026-11-10 18:20:00","kind":"dose","pump":2,"source":"schedule","code":"success","target_ml":1.5,"done_ml":1.5,"replay":false}`.
+Das Gerät merkt sich, bis wohin gesendet ist (NVS, höchstens einmal pro Minute geschrieben).
+Nach einem Ausfall von Netz oder Broker oder einem Neustart folgen die im Verlauf gepufferten
+Ereignisse (bis zur Aufbewahrungszeit) mit `"replay":true`, etwa 80 pro Sekunde; der Zeitplan
+läuft davon unberührt weiter. Zustellung mindestens einmal: nach einem Neustart können die
+Ereignisse der letzten Minute doppelt kommen (`utc`, `pump`, `kind` erkennen sie). Beim ersten
+Start beginnt der Strom mit dem aktuellen Zeitpunkt.
 
 ## Datensicherung (M6)
 

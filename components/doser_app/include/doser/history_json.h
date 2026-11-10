@@ -20,7 +20,8 @@ void fmt_local_s(int64_t local, char (&out)[20]);
 //   calibration           target_ml, measured_ml, ul_per_rev
 //   tube                  hours
 //   alarm                 code only; pump 0 = device
-void write_event(lgal::Json& j, const history::Event& e, int64_t local);
+// leave_open: the caller adds members and closes the object.
+void write_event(lgal::Json& j, const history::Event& e, int64_t local, bool leave_open = false);
 
 // "dose,skip" -> kind bitmask for history::Filter; false on an unknown kind
 bool parse_kinds(const char* s, uint16_t* out);

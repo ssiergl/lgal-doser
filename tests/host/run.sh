@@ -184,6 +184,14 @@ $CXX \
 
 echo
 $CXX \
+    -I components/doser_app/include \
+    tests/host/test_event_cursor.cpp \
+    components/doser_app/src/event_cursor.cpp \
+    -o "$OUT/event_cursor"
+"$OUT/event_cursor"
+
+echo
+$CXX \
     -I tests/host/stubs \
     -I components/doser_app/include \
     -I components/doser_hal/include \

@@ -200,7 +200,7 @@ export function MqttCard({ pro }) {
       <span>${t('mq.control')}<br/><span class=${'small ' + (d.control ? 'warn' : 'mut')}>${t('mq.control.h')}</span></span></label>
     <details class="mq-topics"><summary>${t('mq.topics')}</summary>
       <ul class="small mono">
-        <li>${base}/status</li><li>${base}/state</li><li>${base}/pump/1…5/state</li>
+        <li>${base}/status</li><li>${base}/state</li><li>${base}/pump/1…5/state</li><li>${base}/event</li>
         ${d.control && html`<li>${base}/pump/1…5/dose/set</li><li>${base}/pump/1…5/amount/set</li>
           <li>${base}/pump/1…5/schedule/set</li><li>${base}/stop/set</li>`}
       </ul></details>
