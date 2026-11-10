@@ -21,7 +21,7 @@ add({
     'notime': 'The device has no valid time – schedules and daily limits are paused.',
     'nortc': 'The clock module does not answer – after a power cut the time is lost until the network is back.',
     'offline': 'No connection to the device ({e}).',
-    'footer.maint': 'Maintenance', 'notfound': 'Page not found',
+    'notfound': 'Page not found',
   },
   de: {
     'nav.home': 'Übersicht', 'nav.history': 'Verlauf', 'nav.settings': 'Einstellungen',
@@ -30,7 +30,7 @@ add({
     'notime': 'Das Gerät hat keine gültige Uhrzeit – Zeitpläne und Tageslimits ruhen.',
     'nortc': 'Das Uhrenmodul antwortet nicht – nach einem Stromausfall fehlt die Uhrzeit, bis das Netzwerk wieder da ist.',
     'offline': 'Keine Verbindung zum Gerät ({e}).',
-    'footer.maint': 'Wartung', 'notfound': 'Seite nicht gefunden',
+    'notfound': 'Seite nicht gefunden',
   },
 });
 
@@ -96,7 +96,6 @@ function Footer() {
   return html`<footer>
     <span>© LG Aquatic Life</span>
     <button class="ver" onClick=${tap}>Firmware ${ver}</button>
-    <a href="#/maintenance">${t('footer.maint')}</a>
   </footer>
   ${eng && html`<${EngDialog} onClose=${() => setEng(false)}/>`}`;
 }
