@@ -371,7 +371,7 @@ idf.py coredump-info -c coredump.elf
 | EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). |
 
 Standardwerte pro Pumpe (im Engineering-Menü änderbar, in NVS gespeichert): 600 mA Laufstrom,
-0 mA Haltestrom, 16 Mikroschritte, 200 Vollschritte/U (bitte am Motor prüfen),
+0 mA Haltestrom, 16 Mikroschritte, 200 Vollschritte/U (Schrittwinkel 1,8°),
 Rampe 600 U/min pro s, Start 20 U/min, max. 600 U/min.
 
 Bereich D des [Engineering-Menüs](#engineering-menü-m6) zeigt Treiberstatus, Rohregister,

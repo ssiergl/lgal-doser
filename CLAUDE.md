@@ -90,7 +90,7 @@ Pump numbering = labels on enclosure and board: seen from the front, pump 1 is o
 - Driver VIO = 3.3 V, VM = 24 V.
 
 **Motor (Kamoer KPHM100-ST):** 2-phase, 1.0 A rated current, 2.5 Ω, 2.5 mH, holding torque
-0.18 Nm, probably 200 full steps/rev (please verify). Flow ≥ 80 ml/min at 300 rpm,
+0.18 Nm, step angle 1.8° = 200 full steps/rev (checked 11/2026). Flow ≥ 80 ml/min at 300 rpm,
 0–180 ml/min according to the data sheet, characteristic roughly linear up to 600 rpm.
 → Starting values: run current approx. 0.6–0.7 A RMS, holding current clearly reduced or drivers
 switched off after dosing (EN), 16 microsteps with interpolation, StealthChop.

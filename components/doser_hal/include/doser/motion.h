@@ -18,7 +18,7 @@ namespace doser::motion {
 
 struct PumpConfig {
     tmc::DriverSettings driver;   // run current, hold current, microsteps, direction
-    uint16_t full_steps = 200;    // full steps per revolution (Kamoer: to be verified)
+    uint16_t full_steps = 200;    // full steps per revolution (Kamoer: 1.8° step angle)
     uint32_t accel = 0;           // steps/s², 0 = default (600 rpm per s)
     uint32_t v_start = 0;         // steps/s,  0 = default (20 rpm)
 
