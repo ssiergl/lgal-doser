@@ -87,7 +87,7 @@ def _backup(secrets):
            "network": {"mode": "auto", "lan": {"dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""},
                        "wlan": {"ssid": "HomeNet", "password_set": True, "dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""}},
            "pumps": pumps, "locks": {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]},
-           "engineering": {"dosing": {"retract_mrev": 250, "calib_ml": 20.0, "tier_rpm": [100, 200, 300], "prime_max_s": 60,
+           "engineering": {"dosing": {"retract_mrev": 250, "calib_ml": 10.0, "tier_rpm": [100, 200, 300], "prime_max_s": 60,
                                       "prime_heartbeat_ms": 500, "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day"},
                            "scheduler": {"grid_min": 5, "max_delay_min": 30},
                            "hardware": {"pumps": [{"run_ma": 600, "hold_ma": 0, "microsteps": 16, "invert": False, "full_steps": 200, "accel": 0, "v_start": 0}] * 5},
