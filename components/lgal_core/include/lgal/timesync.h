@@ -20,6 +20,8 @@ struct RtcHooks {
     std::function<bool(int64_t* utc)> read;
     // utc is also the system time now; ntp = fresh NTP time (else set by hand)
     std::function<bool(int64_t utc, bool ntp)> write;
+    // optional: the RTC lost its time while the device was off
+    std::function<bool()> lost;
 };
 
 enum class Source : uint8_t { None, Rtc, Ntp, Manual };
@@ -30,6 +32,7 @@ struct Status {
     int64_t utc;
     int64_t last_ntp_sync;  // 0 = never
     bool rtc_ok;
+    bool rtc_lost;  // RtcHooks::lost
 };
 
 // Time zone and NTP server come from NVS ("lgal": "tz", "ntp"); the given

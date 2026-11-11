@@ -23,6 +23,7 @@ SemaphoreHandle_t s_mx = nullptr;
 State s_state;
 int32_t s_offset = 0;
 int64_t s_measured_at = 0;
+bool s_battery = false;  // fixed at boot
 
 struct Lock {
     Lock() { xSemaphoreTake(s_mx, portMAX_DELAY); }
@@ -106,6 +107,10 @@ void task(void*) {
 void init() {
     s_mx = xSemaphoreCreateMutex();
     nvs_blob::load(kNs, kKey, kVersion, &s_state);
+    // a brand-new module also reports a stopped oscillator: only warn when
+    // the firmware had set the clock before
+    s_battery = rtc::lost_at_boot() && s_state.ever_set;
+    if (s_battery) ESP_LOGW(TAG, "RTC lost its time while off - check the backup battery");
     if (xTaskCreate(task, "rtc_trim", 3072, nullptr, 2, &s_task) != pdPASS) ESP_LOGE(TAG, "task not started");
 }
 
@@ -116,6 +121,8 @@ void on_ntp() {
 void on_manual() {
     if (s_task) xTaskNotify(s_task, kManual, eSetBits);
 }
+
+bool battery_warning() { return s_battery; }
 
 Status status() {
     Status st{};

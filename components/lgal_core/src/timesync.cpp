@@ -176,6 +176,7 @@ Status status() {
     s.source = s.valid ? s_source : Source::None;
     s.last_ntp_sync = s_last_ntp;
     s.rtc_ok = s_rtc_ok;
+    s.rtc_lost = s_rtc.lost && s_rtc.lost();
     return s;
 }
 

@@ -15,6 +15,9 @@ void init();
 void on_ntp();
 // Time set by hand: write the RTC and start over (async)
 void on_manual();
+// The RTC lost its time while the device was off although the firmware had
+// set it before: the backup battery is empty or missing
+bool battery_warning();
 
 struct Status {
     State state;

@@ -180,6 +180,7 @@ void init_time() {
         else doser::rtc_trim::on_manual();
         return true;
     };
+    hooks.lost = [] { return doser::rtc_trim::battery_warning(); };
     doser::rtc_trim::init();
     lgal::timesync::init(hooks, CONFIG_LGAL_TIMEZONE, CONFIG_LGAL_NTP_SERVER, [](const char* tz) {
         doser::tz::Zone z;

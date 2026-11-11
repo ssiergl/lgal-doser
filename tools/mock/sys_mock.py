@@ -67,7 +67,7 @@ def time_json():
     return {"valid": TIME["valid"], "utc": int(now) if TIME["valid"] else 0,
             "local": time.strftime("%Y-%m-%d %H:%M:%S CET", time.localtime(now)) if TIME["valid"] else "",
             "source": TIME["source"] if TIME["valid"] else "none", "last_ntp_sync": int(TIME["last_ntp"]),
-            "rtc_ok": TIME["rtc_ok"], "timezone": TIME["timezone"], "ntp_server": TIME["ntp_server"]}
+            "rtc_ok": TIME["rtc_ok"], "rtc_lost": False, "timezone": TIME["timezone"], "ntp_server": TIME["ntp_server"]}
 
 def err(h, status, code, msg="x", **extra):
     return h.send(status, {"error": dict(code=code, message=msg, **extra)})

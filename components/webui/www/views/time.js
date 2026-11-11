@@ -15,6 +15,7 @@ add({
     'tm.title': 'Time', 'tm.now': 'Device time', 'tm.src': 'Source', 'tm.last': 'Last time server sync',
     'tm.src.ntp': 'Time server (NTP)', 'tm.src.rtc': 'Clock module', 'tm.src.manual': 'Set by hand', 'tm.src.none': '–',
     'tm.invalid': 'no valid time', 'tm.never': 'never', 'tm.rtc_bad': 'The clock module does not answer – after a power cut the time is lost until the network is back.',
+    'tm.rtc_lost': 'The clock module had lost the time while the device was off – check its backup battery (CR2032/LIR2032).',
     'tm.off': 'Differs from this browser by {m} min.',
     'tm.zone': 'Time zone', 'tm.custom': 'Other (POSIX string) …', 'tm.posix': 'POSIX time zone',
     'tm.suggest': 'This browser uses {z}.', 'tm.use': 'Use it',
@@ -30,6 +31,7 @@ add({
     'tm.title': 'Uhrzeit', 'tm.now': 'Gerätezeit', 'tm.src': 'Quelle', 'tm.last': 'Letzter Abgleich mit Zeitserver',
     'tm.src.ntp': 'Zeitserver (NTP)', 'tm.src.rtc': 'Uhrenmodul', 'tm.src.manual': 'Von Hand gesetzt', 'tm.src.none': '–',
     'tm.invalid': 'keine gültige Uhrzeit', 'tm.never': 'noch nie', 'tm.rtc_bad': 'Das Uhrenmodul antwortet nicht – nach einem Stromausfall fehlt die Uhrzeit, bis das Netzwerk wieder da ist.',
+    'tm.rtc_lost': 'Das Uhrenmodul hatte die Uhrzeit verloren, während das Gerät aus war – Pufferbatterie prüfen (CR2032/LIR2032).',
     'tm.off': 'Weicht um {m} min von diesem Browser ab.',
     'tm.zone': 'Zeitzone', 'tm.custom': 'Andere (POSIX-Angabe) …', 'tm.posix': 'POSIX-Zeitzone',
     'tm.suggest': 'Dieser Browser nutzt {z}.', 'tm.use': 'Übernehmen',
@@ -148,6 +150,7 @@ export function TimeCard({ pro }) {
       ${pro && html`<dt>${t('tm.last')}</dt><dd>${T.last_ntp_sync > 0 && T.valid ? ago(Math.max(0, T.utc - T.last_ntp_sync)) : t('tm.never')}</dd>`}
     </dl>
     ${!T.rtc_ok && html`<p class="small warn">${t('tm.rtc_bad')}</p>`}
+    ${T.rtc_ok && T.rtc_lost && html`<p class="small warn">${t('tm.rtc_lost')}</p>`}
     ${wrong && html`<p class="small warn">${t('tm.off', { m: Math.round(Math.abs(off) / 60) })}</p>`}
     ${showBrowser && html`<button type="button" class="sec" disabled=${busy} onClick=${fromBrowser}>${t('tm.browser')}</button>`}
     <div class="field"><label for="tm-zone">${t('tm.zone')}</label>

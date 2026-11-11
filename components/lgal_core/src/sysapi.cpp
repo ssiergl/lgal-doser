@@ -90,6 +90,7 @@ void write_time(Json& j) {
         .kv("source", timesync::source_str(ts.source))
         .kv("last_ntp_sync", ts.last_ntp_sync)
         .kv("rtc_ok", ts.rtc_ok)
+        .kv("rtc_lost", ts.rtc_lost)
         .kv("timezone", timesync::timezone())
         .kv("ntp_server", timesync::ntp_server());
 }
