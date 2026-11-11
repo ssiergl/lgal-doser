@@ -44,12 +44,36 @@ def info_json():
 IPRE = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
 
 # URL update: a ".bin" address downloads 1.6 MB in 6 s and restarts, anything else gets HTTP 404 after 2 s
-OTA = {"allow_http": False, "t0": 0, "url": "", "http": False, "rebooted": False}
+OTA = {"allow_http": False, "auto_check": True, "source": "https://github.com/example/lgal-doser/releases/latest/download/manifest.json",
+       "t0": 0, "url": "", "http": False, "rebooted": False, "new_version": "0.5.1-dev"}
+# Update source: release 0.6.0, last checked 3 h ago; a check takes 2 s, a source not ending in ".json" fails
+REL = {"latest": "0.6.0", "checked_at": time.time() - 3 * 3600, "checking_until": 0, "error": None}
+
+def ver_key(v):
+    m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?", v or "")
+    if not m: return None
+    return (int(m[1]), int(m[2]), int(m[3]), 0 if m[4] else 1, m[4] or "")
+
+def rel_json():
+    now = time.time()
+    checking = now < REL["checking_until"]
+    if REL["checking_until"] and not checking and REL["checked_at"] < REL["checking_until"]:  # check finished
+        REL["checked_at"] = REL["checking_until"]
+        REL["error"] = None if OTA["source"].endswith(".json") else ("http_status", "HTTP 404")
+    cur, latest = ver_key(SYS["version"]), ver_key(REL["latest"])
+    j = {"source": bool(OTA["source"]), "variant": "N16R8", "current": SYS["version"], "auto_check": OTA["auto_check"],
+         "checking": checking, "checked_at": int(REL["checked_at"]) if REL["checked_at"] else None,
+         "latest": REL["latest"] if REL["checked_at"] else None,
+         "available": bool(REL["checked_at"] and cur and latest and latest > cur)}
+    if j["latest"]: j["notes"] = "https://github.com/example/lgal-doser/releases/tag/v" + REL["latest"]
+    if REL["error"] and not checking: j["error"], j["detail"] = REL["error"]
+    return j
 
 def ota_status():
     if not OTA["t0"]: return {"state": "idle"}
     dt, total = time.time() - OTA["t0"], 1658880
     s = {"source": "api", "http": OTA["http"], "received": 0, "total": total}
+    if OTA["url"] == "no_update": return {"state": "failed", **s, "error": "no_update", "detail": ""}
     if not OTA["url"].lower().endswith(".bin"):
         if dt < 2: return {"state": "running", **s, "received": int(dt * 30000), "total": None}
         return {"state": "failed", **s, "error": "http_status", "detail": "HTTP 404"}
@@ -58,7 +82,7 @@ def ota_status():
         OTA["t0"] = 0; return {"state": "idle"}
     if not OTA["rebooted"]:
         OTA["rebooted"] = time.time() + 7
-        SYS["version"] = "0.5.1-dev"; SYS["partition"] = "ota_1" if SYS["partition"] == "ota_0" else "ota_0"
+        SYS["version"] = OTA["new_version"]; SYS["partition"] = "ota_1" if SYS["partition"] == "ota_0" else "ota_0"
         threading.Timer(1.0, restart).start()
     return {"state": "rebooting", **s, "received": total}
 
@@ -142,11 +166,32 @@ def route(h, method, path, q, body):
         h.send(200, {"status": "rebooting"}); restart(); return True  # the mock keeps its state
     if path == "/api/v1/ota/settings":
         if method == "PUT":
-            if ENG["until"] <= time.time(): err(h, 403, "engineering_locked", "Engineering area is locked"); return True
-            if "allow_http" in body:
-                if not isinstance(body["allow_http"], bool): err(h, 400, "invalid_param", "allow_http"); return True
-                OTA["allow_http"] = body["allow_http"]
-        h.send(200, {"allow_http": OTA["allow_http"]}); return True
+            if ("source" in body or "allow_http" in body) and ENG["until"] <= time.time():
+                err(h, 403, "engineering_locked", "Engineering area is locked"); return True
+            for k in ("auto_check", "allow_http"):
+                if k in body and not isinstance(body[k], bool): err(h, 400, "invalid_param", k); return True
+            if "source" in body:
+                src = body["source"]
+                if not isinstance(src, str) or (src and (len(src) > 512 or not re.match(r"^https?://[^/\s:?#][^\s]*$", src, re.I))):
+                    err(h, 400, "invalid_url", "source"); return True
+                if src != OTA["source"]:
+                    REL.update(checked_at=0, error=None, checking_until=time.time() + 2 if src else 0)
+                OTA["source"] = src
+            for k in ("auto_check", "allow_http"):
+                if k in body: OTA[k] = body[k]
+        h.send(200, {k: OTA[k] for k in ("source", "auto_check", "allow_http")}); return True
+    if path == "/api/v1/ota/release" and method == "GET": h.send(200, rel_json()); return True
+    if path == "/api/v1/ota/release/check" and method == "POST":
+        if not OTA["source"]: err(h, 400, "no_source", "No update source set"); return True
+        if time.time() >= REL["checking_until"]: REL["checking_until"] = time.time() + 2
+        h.send(202, {"status": "started"}); return True
+    if path == "/api/v1/ota/release/install" and method == "POST":
+        if not OTA["source"]: err(h, 400, "no_source", "No update source set"); return True
+        if ota_status()["state"] == "running": err(h, 409, "ota_in_progress", "An update is already in progress"); return True
+        if not rel_json()["available"]:
+            OTA.update(t0=time.time() - 3, url="no_update", http=False, rebooted=False); h.send(202, {"status": "started"}); return True
+        OTA.update(t0=time.time(), url="https://example.com/lgal_doser-N16R8.bin", http=False, rebooted=False, new_version=REL["latest"])
+        h.send(202, {"status": "started"}); return True
     if path == "/api/v1/ota/status" and method == "GET": h.send(200, ota_status()); return True
     if path == "/api/v1/ota/url" and method == "POST":
         if ENG["until"] <= time.time(): err(h, 403, "engineering_locked", "Engineering area is locked"); return True
@@ -154,7 +199,7 @@ def route(h, method, path, q, body):
         if not re.match(r"^https?://[^/\s:?#][^\s]*$", u, re.I) or len(u) > 512: err(h, 400, "invalid_url", "Invalid URL"); return True
         if u.lower().startswith("http://") and not OTA["allow_http"]: err(h, 400, "http_not_allowed", "Plain http is not allowed"); return True
         if ota_status()["state"] == "running": err(h, 409, "ota_in_progress", "An update is already in progress"); return True
-        OTA.update(t0=time.time(), url=u, http=u.lower().startswith("http://"), rebooted=False)
+        OTA.update(t0=time.time(), url=u, http=u.lower().startswith("http://"), rebooted=False, new_version="0.5.1-dev")
         h.send(202, {"status": "started"}); return True
     if path == "/api/v1/ota/firmware" and method == "POST":
         data = body if isinstance(body, bytes) else b""

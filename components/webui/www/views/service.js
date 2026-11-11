@@ -16,7 +16,7 @@ import { reloadPumps, useStore } from '../lib/store.js';
 import { Seg, Toggle, useMsg } from '../lib/ui.js';
 import { BackupSection } from './backup.js';
 import { EngUnlock, lockEngineering } from './engineering.js';
-import { UpdateOptsCard, UrlUpdateCard } from './maintenance.js';
+import { UpdateSourceCard, UrlUpdateCard } from './maintenance.js';
 
 add({
   en: {
@@ -758,8 +758,8 @@ export function ServiceView() {
     </div>
     <h2 class="eng-sec">${t('sv.e')}</h2>
     <div class="grid settings">
-      ${ota && html`<${UrlUpdateCard} busyPumps=${pumps.some(p => p.activity !== 'idle')} opts=${ota} call=${eapi}/>
-        <${UpdateOptsCard} opts=${ota} setOpts=${setOta} call=${eapi}/>`}
+      ${ota && html`<${UpdateSourceCard} opts=${ota} setOpts=${setOta} call=${eapi}/>
+        <${UrlUpdateCard} busyPumps=${pumps.some(p => p.activity !== 'idle')} opts=${ota} call=${eapi}/>`}
     </div>
     <h2 class="eng-sec">${t('sv.f')}</h2>
     <div class="grid settings"><${BackupSection}/></div>`;
