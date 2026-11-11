@@ -194,7 +194,7 @@ function DailyCard() {
   if (D.error) return html`<section class="card">${head}<p class="msg err">${errText(D.error)}</p></section>`;
   if (!D.today || !D.days.length) return html`<section class="card">${head}<p class="mut">${t('hi.notime')}</p></section>`;
 
-  const pumps = (s.pumps || []).filter(p => p.mode !== 'disabled' || D.days.some(d => d.ml[p.pump - 1] > 0));
+  const pumps = s.pumps || [];
   const anySkip = D.days.some(d => d.skipped.some(x => x > 0));
   return html`<section class="card">${head}
     <div class="hc-grid">${pumps.map(p => html`<${DayChart} key=${p.pump} n=${p.pump} name=${pumpName(p)} days=${D.days} today=${D.today} kind=${kind}/>`)}</div>
