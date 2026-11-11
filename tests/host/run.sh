@@ -75,6 +75,15 @@ $CXX \
 "$OUT/ws"
 
 echo
+$CXX \
+    -I components/lgal_core/include \
+    tests/host/test_ota_manifest.cpp \
+    components/lgal_core/src/ota_manifest.cpp \
+    components/lgal_core/src/json_reader.cpp \
+    -o "$OUT/ota_manifest"
+"$OUT/ota_manifest"
+
+echo
 # Dosing engine unchanged against simulated motor/storage (stubs first)
 $CXX \
     -I tests/host/stubs \

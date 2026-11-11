@@ -9,6 +9,7 @@ idf_component_register(
         "src/http.cpp"
         "src/sysapi.cpp"
         "src/ota.cpp"
+        "src/ota_manifest.cpp"
         "src/json.cpp"
         "src/json_reader.cpp"
         "src/sha256.cpp"
