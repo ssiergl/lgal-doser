@@ -1,6 +1,6 @@
 // Shared pump helpers: names, colours, state, warnings, the container graphic.
 import { html } from './html.js';
-import { add, num, t } from './i18n.js';
+import { add, getLang, num, t } from './i18n.js';
 
 add({
   en: {
@@ -59,15 +59,17 @@ export function alerts(p, sp) {
 }
 
 // Device-local "YYYY-MM-DD HH:MM" relative to now_local -> "14:30", "tomorrow 08:00", "12.11. 08:00"
+// "2026-11-12 08:00" -> "08:00" today, "tomorrow 08:00", "Wed 08:00" within
+// a week, otherwise "19.11. 08:00" (calendar dates, no time zone shift)
 export function whenLocal(local, nowLocal) {
   if (!local) return '–';
   const [d, hm] = local.split(' ');
   const today = nowLocal ? nowLocal.split(' ')[0] : '';
   if (d === today) return hm;
   if (today) {
-    const tm = new Date(today + 'T12:00:00Z');
-    tm.setUTCDate(tm.getUTCDate() + 1);
-    if (tm.toISOString().slice(0, 10) === d) return t('day.tomorrow') + ' ' + hm;
+    const days = Math.round((Date.parse(d + 'T12:00:00Z') - Date.parse(today + 'T12:00:00Z')) / 86400000);
+    if (days === 1) return t('day.tomorrow') + ' ' + hm;
+    if (days > 1 && days < 7) return new Date(d + 'T12:00:00Z').toLocaleDateString(getLang(), { weekday: 'short', timeZone: 'UTC' }) + ' ' + hm;
   }
   const [, m, day] = d.split('-');
   return `${+day}.${+m}. ${hm}`;
