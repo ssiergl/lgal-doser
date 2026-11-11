@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
+import { hourCycle } from '../lib/prefs.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
 import { reloadPumps, useStore } from '../lib/store.js';
 import { Seg, Toggle, useMsg } from '../lib/ui.js';
@@ -464,7 +465,7 @@ function RtcCard({ hw, reload }) {
       .then(() => { msg.ok(t(on ? 'sv.rtc.on' : 'sv.rtc.offd')); return reload(); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  const day = utc => new Date(utc * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short' });
+  const day = utc => new Date(utc * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short', ...hourCycle() });
   return html`<form class="card" novalidate onSubmit=${submit}>
     <h2>${t('sv.rtc')}</h2>
     ${!rtc.present ? html`<p class="warn">${t('sv.rtc.none')}</p>` : html`

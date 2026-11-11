@@ -4,6 +4,7 @@ import { useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, t } from '../lib/i18n.js';
+import { hourCycle } from '../lib/prefs.js';
 import { reloadAll } from '../lib/store.js';
 import { ask, useMsg } from '../lib/ui.js';
 
@@ -117,7 +118,7 @@ export function BackupSection() {
 
   const toggle = p => setPick(prev => (prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]));
   const present = doc ? kParts.filter(p => (p === 'pumps' ? doc.pumps || doc.locks : doc[p])) : [];
-  const when = doc && doc.exported_utc ? new Date(doc.exported_utc * 1000).toLocaleString(getLang()) : '–';
+  const when = doc && doc.exported_utc ? new Date(doc.exported_utc * 1000).toLocaleString(getLang(), hourCycle()) : '–';
 
   return html`<section class="card backup">
     <h2>${t('bk.title')}</h2>
