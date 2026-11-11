@@ -91,7 +91,7 @@ def _backup(secrets):
            "engineering": {"dosing": {"retract_mrev": 250, "calib_ml": 10.0, "tier_rpm": [100, 200, 300], "prime_max_s": 60,
                                       "prime_heartbeat_ms": 500, "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day",
                                       "warn_days": 7, "low_days": 4},
-                           "scheduler": {"grid_min": 5, "max_delay_min": 30},
+                           "scheduler": {"grid_min": 5, "max_delay_min": 120},
                            "hardware": {"pumps": [{"run_ma": 600, "hold_ma": 0, "microsteps": 16, "invert": False, "full_steps": 200, "accel": 0, "v_start": 0}] * 5},
                            "history": {"keep_days": SET["keep"]}}}
     import mqtt_mock

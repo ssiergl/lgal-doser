@@ -4,7 +4,7 @@ import random, time
 import __main__ as M
 
 START = time.time()
-SCH = {"grid_min": 5, "max_delay_min": 30}
+SCH = {"grid_min": 5, "max_delay_min": 120}
 CFG = [{"run_ma": 650, "hold_ma": 0, "microsteps": 16, "full_steps": 200, "invert": False, "accel": 64000, "v_start": 1066} for _ in range(5)]
 RAW = [{"running": False, "start": 0.0, "steps": 0, "sps": 1, "pos": 0, "sg_min": 0} for _ in range(5)]
 RTC = {"aging": 0}
