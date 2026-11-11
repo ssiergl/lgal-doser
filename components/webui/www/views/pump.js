@@ -5,7 +5,7 @@ import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, getLang, num, t } from '../lib/i18n.js';
 import { usePrefs } from '../lib/prefs.js';
-import { Container, PumpTabs, alerts, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
+import { Container, PumpTabs, alerts, daysCls, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
 import { Amount, HoldButton, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
 import { ScheduleCard } from './schedule.js';
@@ -47,6 +47,8 @@ add({
     'pset.retract.hint': 'Pulls the liquid back a little after each dose so the tube end does not drip.',
     'pset.retract.own': 'Own value', 'pset.rev': 'revolutions', 'pset.limit': 'Daily limit', 'pset.limit.hint': '0 = no limit',
     'pset.dir': 'Direction of rotation', 'pset.dir.cw': 'Clockwise (CW)', 'pset.dir.ccw': 'Counter-clockwise (CCW)', 'pset.dir.hint': 'Changes only while the pump stands still. Check the flow direction afterwards by priming briefly.', 'pset.save': 'Save', 'pset.ok': 'Settings saved',
+    'pset.thr': 'Container lasts fewer than', 'pset.warn': 'Warning', 'pset.low': 'Alarm', 'pset.thr.def': 'standard', 'pset.days': 'days',
+    'pset.thr.hint': 'Days of supply from the schedule. Empty = standard from the service menu. The alarm ("almost empty", yellow LED, MQTT) must not be above the warning.',
     'pset.prohint': 'Pro settings active: {list}',
     'ph.retract': 'anti-drip', 'ph.unretract': 'preparing', 'ph.main': 'delivering', 'ph.none': '',
     'bo.title': 'Boost', 'bo.hint': 'An extra amount, e.g. to raise a value. It is spread evenly over the scheduled doses of the next days and ends by itself.',
@@ -97,6 +99,8 @@ add({
     'pset.retract.hint': 'Zieht die Flüssigkeit nach jeder Dosis etwas zurück, damit das Schlauchende nicht tropft.',
     'pset.retract.own': 'Eigener Wert', 'pset.rev': 'Umdrehungen', 'pset.limit': 'Tageslimit', 'pset.limit.hint': '0 = kein Limit',
     'pset.dir': 'Drehrichtung', 'pset.dir.cw': 'Rechts (CW)', 'pset.dir.ccw': 'Links (CCW)', 'pset.dir.hint': 'Nur im Stillstand änderbar. Danach die Förderrichtung prüfen (kurz entlüften).', 'pset.save': 'Speichern', 'pset.ok': 'Einstellungen gespeichert',
+    'pset.thr': 'Behälter reicht weniger als', 'pset.warn': 'Warnung', 'pset.low': 'Alarm', 'pset.thr.def': 'Standard', 'pset.days': 'Tage',
+    'pset.thr.hint': 'Reichweite laut Zeitplan. Leer = Standard aus dem Service-Menü. Der Alarm („fast leer“, gelbe LED, MQTT) darf nicht über der Warnung liegen.',
     'pset.prohint': 'Profi-Einstellungen aktiv: {list}',
     'ph.retract': 'Anti-Tropf', 'ph.unretract': 'Vorbereitung', 'ph.main': 'fördert', 'ph.none': '',
     'bo.title': 'Boost', 'bo.hint': 'Eine Zusatzmenge, z. B. um einen Wert anzuheben. Sie wird gleichmäßig auf die geplanten Dosen der nächsten Tage verteilt und endet von selbst.',
@@ -145,13 +149,13 @@ function ContainerCard({ p, sp }) {
   };
   return html`<section class="card hero" style=${{ '--pc': pumpColor(p.pump) }}>
     <div class="hero-in">
-      <${Container} p=${p} size="l"/>
+      <${Container} p=${p} sp=${sp} size="l"/>
       <div class="hero-text">
         <h2>${t('ct.title')}</h2>
         ${c.tracked ? html`
           <div class="big num">${num(c.remaining_ml, 0)} ml</div>
           <div class="mut">${t('ct.of', { cap: num(c.capacity_ml, 0) })}</div>
-          ${d !== null && html`<div class=${d < 3 ? 'err' : d < 7 ? 'warn' : ''}>${t('ct.lasts', { d: num(d, 0) })}</div>`}`
+          ${d !== null && html`<div class=${daysCls(d, c)}>${t('ct.lasts', { d: num(d, 0) })}</div>`}`
         : html`<div class="mut">${t('ct.off')}</div><p class="mut small">${t('ct.off.hint')}</p>`}
         <div class="row">
           ${c.tracked && html`<button onClick=${refill}>${t('ct.refill')}</button>`}
@@ -384,6 +388,8 @@ function proActive(p) {
   if (p.speed.tier !== 1) out.push(t('pset.tier') + ': ' + t('tier.' + p.speed.tier));
   if (p.retract.setting !== 'off') out.push(t('pset.retract') + ': ' + num(p.retract.rev, 2) + ' ' + t('pset.rev'));
   if (p.daily.limit_ml) out.push(t('pset.limit') + ': ' + num(p.daily.limit_ml, 1) + ' ml');
+  const c = p.container;
+  if (c.own_warn_days || c.own_low_days) out.push(t('pset.thr') + ': ' + c.warn_days + ' / ' + c.low_days + ' ' + t('pset.days'));
   if (p.direction === 'ccw') out.push(t('pset.dir') + ': ' + t('pset.dir.ccw'));
   return out;
 }
@@ -397,6 +403,8 @@ function SettingsCard({ p, pro }) {
       name: p.name, mode: p.mode, tier: p.speed.tier, retract: p.retract.setting,
       retractRev: String(p.retract.setting === 'own' ? p.retract.rev : p.retract.global_rev), limit: p.daily.limit_ml ? String(p.daily.limit_ml) : '0',
       dir: p.direction,
+      warn: p.container.own_warn_days ? String(p.container.own_warn_days) : '',
+      low: p.container.own_low_days ? String(p.container.own_low_days) : '',
     });
     msg.clear();
   }, [p.pump]);
@@ -408,8 +416,12 @@ function SettingsCard({ p, pro }) {
     if (pro) {
       const lim = f.limit.trim() === '' ? 0 : parseNum(f.limit);
       const rr = f.retract === 'own' ? parseNum(f.retractRev) : 0;
-      if (Number.isNaN(lim) || Number.isNaN(rr) || rr > 2 || (f.retract === 'own' && !(rr > 0))) { msg.err({ code: 'invalid_param' }); return; }
-      Object.assign(q, { tier: f.tier, daily_limit_ml: dec(lim), retract_rev: f.retract === 'own' ? dec(rr) : f.retract, direction: f.dir });
+      const pc = v => (v.trim() === '' ? 0 : parseNum(v));
+      const w = pc(f.warn), l = pc(f.low);
+      const pcBad = v => !(Number.isInteger(v) && v >= 0 && v <= 60);
+      if (Number.isNaN(lim) || Number.isNaN(rr) || rr > 2 || (f.retract === 'own' && !(rr > 0)) || pcBad(w) || pcBad(l)) { msg.err({ code: 'invalid_param' }); return; }
+      Object.assign(q, { tier: f.tier, daily_limit_ml: dec(lim), retract_rev: f.retract === 'own' ? dec(rr) : f.retract, direction: f.dir,
+        warn_days: w, low_days: l });
     }
     api('POST', '/api/v1/pumps/settings?' + qs(q)).then(() => { msg.ok(t('pset.ok')); refresh(); }).catch(msg.err);
   };
@@ -432,6 +444,14 @@ function SettingsCard({ p, pro }) {
           <span class="mut small">${t('pset.retract.hint')}</span></div>
         <label class="field">${t('pset.limit')}<${Amount} value=${f.limit} onInput=${v => set({ limit: v })}/>
           <span class="mut small">${t('pset.limit.hint')}</span></label>
+        <div class="field"><span class="lbl">${t('pset.thr')}</span>
+          <div class="form-row">
+            <label>${t('pset.warn')}<${Amount} value=${f.warn} onInput=${v => set({ warn: v })} unit=${t('pset.days')}
+              placeholder=${p.container.own_warn_days ? t('pset.thr.def') : String(p.container.warn_days)}/></label>
+            <label>${t('pset.low')}<${Amount} value=${f.low} onInput=${v => set({ low: v })} unit=${t('pset.days')}
+              placeholder=${p.container.own_low_days ? t('pset.thr.def') : String(p.container.low_days)}/></label>
+          </div>
+          <span class="mut small">${t('pset.thr.hint')}</span></div>
         <div class="field"><span class="lbl">${t('pset.dir')}</span>
           <${Seg} value=${f.dir} onChange=${v => set({ dir: v })} options=${[['cw', t('pset.dir.cw')], ['ccw', t('pset.dir.ccw')]]}/>
           <span class="mut small">${t('pset.dir.hint')}</span></div>

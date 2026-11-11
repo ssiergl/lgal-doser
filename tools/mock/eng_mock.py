@@ -66,6 +66,12 @@ def route(h, method, path, q, eng_ok):
                     v = _num(q, k)
                     if v is None or not 10 <= v <= 600: _err(h, "invalid_param", "tier rpm=10..600"); return True
                     e["tier_rpm"][t] = int(v)
+            for k in ("warn_days", "low_days"):
+                if k in q:
+                    v = _num(q, k)
+                    if v is None or not 0 <= v <= 60: _err(h, "invalid_param", k); return True
+                    e[k] = int(v)
+            if e["low_days"] > e["warn_days"]: _err(h, "invalid_param", "low_days"); return True
             if "limit_mode" in q:
                 if q["limit_mode"] not in ("calendar_day", "rolling_24h"): _err(h, "invalid_param", "limit_mode"); return True
                 e["limit_mode"] = q["limit_mode"]
