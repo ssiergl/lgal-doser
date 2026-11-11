@@ -26,6 +26,9 @@ esp_err_t write(int64_t utc);  // also clears the "time lost" flag
 esp_err_t temperature(float* celsius);
 esp_err_t aging(int8_t* offset);
 esp_err_t set_aging(int8_t offset);  // drift fine adjustment, ~0.1 ppm/LSB
+// The oscillator had stopped when init() ran (battery empty or missing while
+// the device was off); write() clears the flag in the chip, not this value
+bool lost_at_boot();
 // Waits for the next RTC second (max. 1.5 s) and returns RTC time minus
 // system time at that edge in ms (resolution about 1 ms)
 esp_err_t edge_offset(int32_t* offset_ms);

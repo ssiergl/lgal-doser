@@ -38,7 +38,8 @@ def _pump(i):
 
 def _status():
     return {"drivers_enabled": any(r["running"] for r in RAW), "locked": False, "pumps": [_pump(i) for i in range(5)],
-            "rtc": {"present": True, "utc": int(time.time()), "time_lost": False, "temp_c": 24.75, "aging": RTC["aging"], "trim": {"automatic": RTC["auto"], "measuring": RTC["auto"], **({"since": int(time.time()) - 15 * 3600,
+            "rtc": {"present": True, "utc": int(time.time()), "time_lost": False, "temp_c": 24.75, "aging": RTC["aging"],
+                    "battery_warning": False, "trim": {"automatic": RTC["auto"], "measuring": RTC["auto"], **({"since": int(time.time()) - 15 * 3600,
                     "start_offset_ms": 4, "offset_ms": 9, "measured_at": int(time.time()) - 600} if RTC["auto"] else {}),
                     "last": {"at": int(time.time()) - 39 * 3600, "ppm": 1.84, "from": 0, "to": 18}}},
             "eeprom": {"present": True}, "time": {"valid": True, "utc": int(time.time()), "source": "ntp", "timezone": "CET-1CEST,M3.5.0,M10.5.0/3"},

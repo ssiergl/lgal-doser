@@ -102,6 +102,7 @@ esp_err_t get_status(httpd_req_t* req) {
         if (rtc::read(&utc, &lost) == ESP_OK) j.kv("utc", utc).kv("time_lost", lost);
         if (rtc::temperature(&temp) == ESP_OK) j.kv("temp_c", static_cast<double>(temp), 2);
         if (rtc::aging(&aging) == ESP_OK) j.kv("aging", static_cast<int>(aging));
+        j.kv("battery_warning", rtc_trim::battery_warning());
         const auto t = rtc_trim::status();
         j.obj("trim").kv("automatic", t.state.automatic != 0).kv("measuring", t.state.anchored != 0);
         if (t.state.anchored) j.kv("since", t.state.anchor_utc).kv("start_offset_ms", t.state.anchor_ms);

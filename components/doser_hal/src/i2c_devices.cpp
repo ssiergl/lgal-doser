@@ -25,6 +25,7 @@ constexpr uint32_t kSpeedHz = 100000;  // conservative because of the J16 extens
 i2c_master_bus_handle_t s_bus = nullptr;
 i2c_master_dev_handle_t s_rtc = nullptr;
 i2c_master_dev_handle_t s_eeprom = nullptr;
+bool s_lost_at_boot = false;
 
 esp_err_t add_device(uint8_t addr, i2c_master_dev_handle_t* dev) {
     i2c_device_config_t dc{};
@@ -81,7 +82,9 @@ esp_err_t init() {
     // Control: oscillator on, no square wave, alarms off (INTCN=1)
     const uint8_t ctrl = 0x1C;
     rtc_write_regs(0x0E, &ctrl, 1);
-    ESP_LOGI(TAG, "DS3231 found");
+    uint8_t status = 0;
+    s_lost_at_boot = rtc_read_regs(0x0F, &status, 1) == ESP_OK && (status & 0x80);
+    ESP_LOGI(TAG, "DS3231 found%s", s_lost_at_boot ? ", oscillator had stopped (time lost)" : "");
     return ESP_OK;
 }
 
@@ -137,6 +140,8 @@ esp_err_t temperature(float* celsius) {
     *celsius = static_cast<int8_t>(r[0]) + (r[1] >> 6) * 0.25f;
     return ESP_OK;
 }
+
+bool lost_at_boot() { return s_lost_at_boot; }
 
 esp_err_t edge_offset(int32_t* offset_ms) {
     uint8_t first = 0, sec = 0;
