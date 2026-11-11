@@ -15,7 +15,7 @@ add({
     'day.tomorrow': 'tomorrow',
     'ct.untracked': 'not tracked',
     'ov.today': 'Today', 'ov.range': 'Lasts', 'ov.next': 'Next', 'ov.none': '–',
-    'ov.days': '{d} days', 'ov.day1': '< 1 day', 'ov.next.boost': 'incl. {ml} ml boost',
+    'ov.days': '{d} days', 'ov.day1': '< 1 day', 'ov.next.boost': 'incl. {ml} ml boost', 'ov.boost.note': 'incl. boost (+{ml} ml per dose)',
   },
   de: {
     'pump': 'Pumpe {n}',
@@ -28,7 +28,7 @@ add({
     'day.tomorrow': 'morgen',
     'ct.untracked': 'nicht erfasst',
     'ov.today': 'Heute', 'ov.range': 'Reicht', 'ov.next': 'Nächste', 'ov.none': '–',
-    'ov.days': '{d} Tage', 'ov.day1': '< 1 Tag', 'ov.next.boost': 'inkl. {ml} ml Boost',
+    'ov.days': '{d} Tage', 'ov.day1': '< 1 Tag', 'ov.next.boost': 'inkl. {ml} ml Boost', 'ov.boost.note': 'inkl. Boost (+{ml} ml je Dosis)',
   },
 });
 
@@ -129,16 +129,20 @@ export function Container({ p, sp, size = 'm', style }) {
   </svg>`;
 }
 
-// Today's amount with bar, range and next dose (dashboard card, container card)
-// boostNote: spell out the boost share of the next dose (else only a tooltip)
+// Today's amount with bar, range and next dose (dashboard card, container card).
+// With a boost today's plan and the next dose include it (turquoise);
+// boostNote: say so in a line below (else only a tooltip)
 export function PumpStats({ p, sp, nowLocal, boostNote }) {
-  const used = p.daily.used_ml, plan = sp ? sp.planned_today_ml : 0;
+  const b = sp && sp.boost && sp.boost.active ? sp.boost : null;
+  const bt = b ? b.today_ml : 0;
+  const used = p.daily.used_ml, plan = (sp ? sp.planned_today_ml : 0) + bt;
   const pct = plan > 0 ? Math.min(100, (used / plan) * 100) : used > 0 ? 100 : 0;
   const d = daysLeft(sp), nx = sp && sp.next;
   const none = html`<span class="mut">${t('ov.none')}</span>`;
   return html`<div class="today">
       <div class="kv"><span class="mut">${t('ov.today')}</span>
-        <b class="num">${num(used, 1)}<span class="mut"> / ${num(plan, 1)}</span> ml</b></div>
+        <b class="num">${num(used, 1)}<span class=${bt > 0 ? 'acc' : 'mut'}
+          title=${bt > 0 ? t('ov.next.boost', { ml: num(bt, 1) }) : null}> / ${num(plan, 1)}</span> ml</b></div>
       <div class="bar"><i style=${{ width: pct + '%', background: pumpColor(p.pump) }}></i></div>
     </div>
     <div class="kv"><span class="mut">${t('ov.range')}</span><b class="num">${d === null ? none
@@ -146,5 +150,5 @@ export function PumpStats({ p, sp, nowLocal, boostNote }) {
     <div class="kv"><span class="mut">${t('ov.next')}</span>
       <b class="num">${nx ? html`${whenLocal(nx.local, nowLocal)} <span class=${nx.boost_ml ? 'acc' : 'mut'}
         title=${nx.boost_ml ? t('ov.next.boost', { ml: num(nx.boost_ml, 1) }) : null}>· ${num(nx.ml, 1)} ml</span>` : none}</b></div>
-    ${boostNote && nx && nx.boost_ml > 0 && html`<div class="small acc num nx-boost">${t('ov.next.boost', { ml: num(nx.boost_ml, 1) })}</div>`}`;
+    ${boostNote && b && html`<div class="small acc num nx-boost">${t('ov.boost.note', { ml: num(b.per_dose_ml, 2) })}</div>`}`;
 }

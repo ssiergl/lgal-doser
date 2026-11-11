@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, getLang, num, t } from '../lib/i18n.js';
-import { usePrefs } from '../lib/prefs.js';
+import { hm, usePrefs } from '../lib/prefs.js';
 import { Container, PumpStats, PumpTabs, alerts, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
 import { Amount, HoldButton, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
@@ -56,10 +56,10 @@ add({
     'pset.thr.hint': 'Days of supply from the schedule. Empty = standard from the service menu. The alarm ("almost empty", yellow LED, MQTT) must not be above the warning.',
     'pset.prohint': 'Pro settings active: {list}',
     'ph.retract': 'anti-drip', 'ph.unretract': 'preparing', 'ph.main': 'delivering', 'ph.none': '',
-    'bo.title': 'Boost', 'bo.hint': 'An extra amount, e.g. to raise a value. It is spread evenly over the scheduled doses of the next days and ends by itself.',
+    'bo.title': 'Boost', 'bo.hint': 'An extra amount, e.g. to raise a value. It is spread evenly over all scheduled doses from now for the chosen days (days × 24 h) and ends by itself.',
     'bo.ml': 'Extra amount', 'bo.days': 'Spread over', 'bo.dunit': 'days', 'bo.start': 'Start boost',
     'bo.per': '≈ {ml} ml extra per day · until {end}', 'bo.started': 'Boost started',
-    'bo.active': '{rest} of {total} ml still to dose', 'bo.until': '{days} days from {start} · until {end}',
+    'bo.active': '{rest} of {total} ml still to dose', 'bo.until': 'Until {end} · {n} doses left at {ml} ml',
     'bo.wait': 'Starts with the next scheduled dose.', 'bo.stop': 'End boost',
     'bo.stop.ask': 'End the boost of pump {n}? The remaining {ml} ml are dropped.', 'bo.stopped': 'Boost ended',
     'bo.noplan': 'A boost needs a schedule – it is added to its doses.',
@@ -113,10 +113,10 @@ add({
     'pset.thr.hint': 'Reichweite laut Zeitplan. Leer = Standard aus dem Service-Menü. Der Alarm („fast leer“, gelbe LED, MQTT) darf nicht über der Warnung liegen.',
     'pset.prohint': 'Profi-Einstellungen aktiv: {list}',
     'ph.retract': 'Anti-Tropf', 'ph.unretract': 'Vorbereitung', 'ph.main': 'fördert', 'ph.none': '',
-    'bo.title': 'Boost', 'bo.hint': 'Eine Zusatzmenge, z. B. um einen Wert anzuheben. Sie wird gleichmäßig auf die geplanten Dosen der nächsten Tage verteilt und endet von selbst.',
+    'bo.title': 'Boost', 'bo.hint': 'Eine Zusatzmenge, z. B. um einen Wert anzuheben. Sie wird gleichmäßig auf alle geplanten Dosen ab jetzt für die gewählten Tage (Tage × 24 h) verteilt und endet von selbst.',
     'bo.ml': 'Zusatzmenge', 'bo.days': 'Verteilen auf', 'bo.dunit': 'Tage', 'bo.start': 'Boost starten',
     'bo.per': '≈ {ml} ml zusätzlich pro Tag · bis {end}', 'bo.started': 'Boost gestartet',
-    'bo.active': 'Noch {rest} von {total} ml offen', 'bo.until': '{days} Tage ab {start} · bis {end}',
+    'bo.active': 'Noch {rest} von {total} ml offen', 'bo.until': 'Bis {end} · noch {n} Dosen à {ml} ml',
     'bo.wait': 'Beginnt mit der nächsten geplanten Dosis.', 'bo.stop': 'Boost beenden',
     'bo.stop.ask': 'Boost von Pumpe {n} beenden? Die restlichen {ml} ml entfallen.', 'bo.stopped': 'Boost beendet',
     'bo.noplan': 'Ein Boost braucht einen Zeitplan – er wird auf dessen Dosen aufgeschlagen.',
@@ -416,7 +416,7 @@ function BoostCard({ p, sp, nowLocal }) {
       .then(yes => yes && run({ action: 'stop' }, t('bo.stopped')));
     body = html`<p><b class="num">${t('bo.active', { rest: num(b.remaining_ml, 1), total: num(b.total_ml, 1) })}</b></p>
       <div class="bar"><i style=${{ width: Math.min(100, (done / (b.total_ml || 1)) * 100) + '%' }}></i></div>
-      <p class="small mut">${t('bo.until', { days: b.days, start: dayText(b.start), end: dayText(b.start, b.days - 1) })}</p>
+      <p class="small mut">${t('bo.until', { end: whenLocal(b.end_local, nowLocal), n: b.doses_left, ml: num(b.per_dose_ml, 2) })}</p>
       ${!b.active && html`<p class="small mut">${t('bo.wait')}</p>`}
       <div class="row"><button type="button" class="sec" onClick=${stop} disabled=${busy}>${t('bo.stop')}</button></div>`;
   } else {
@@ -436,7 +436,7 @@ function BoostCard({ p, sp, nowLocal }) {
           <label>${t('bo.ml')}<${Amount} value=${ml} onInput=${setMl}/></label>
           <label>${t('bo.days')}<${Amount} value=${days} onInput=${setDays} unit=${t('bo.dunit')}/></label>
         </div>
-        ${ok && today && html`<p class="small">${t('bo.per', { ml: num(v / n, 2), end: dayText(today, n - 1) })}</p>`}
+        ${ok && today && html`<p class="small">${t('bo.per', { ml: num(v / n, 2), end: dayText(today, n) + ' ' + hm(nowLocal.slice(11, 16)) })}</p>`}
         ${ok && lim > 0 && planned + v / n > lim && html`<p class="small warn">${t('bo.limit', { p: num(planned + v / n, 1), l: num(lim, 1) })}</p>`}
         ${noPlan && html`<p class="small warn">${t('bo.noplan')}</p>`}
         <div class="row"><button type="submit" disabled=${busy || !ok}>${t('bo.start')}</button></div>
