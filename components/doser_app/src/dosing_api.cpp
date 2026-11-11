@@ -140,7 +140,9 @@ void write_pump(Json& j, int i) {
     const int32_t rem = st.remaining_ul > 0 ? st.remaining_ul : 0;
     j.obj("container").kv("tracked", set.capacity_ul > 0).kv("capacity_ml", ml(set.capacity_ul), 1).kv("remaining_ml", ml(rem), 2);
     if (set.capacity_ul) j.kv("percent", 100.0 * rem / set.capacity_ul, 1);
-    j.end();
+    // thresholds in effect; own_* = 0: engineering default
+    j.kv("warn_days", dose::warn_days(set, eng)).kv("low_days", dose::low_days(set, eng));
+    j.kv("own_warn_days", set.warn_days).kv("own_low_days", set.low_days).end();
 
     const double tube_h = st.tube_ms / 3.6e6;
     j.obj("tube")
@@ -278,6 +280,15 @@ esp_err_t post_settings(httpd_req_t* req) {
             return fail(req, "invalid_param", "retract_rev=0..2|off|global");
         }
     }
+    // own container thresholds, 0 = engineering default
+    if (http::query_int(req, "warn_days", &v)) {
+        if (v < 0 || v > 60) return fail(req, "invalid_param", "warn_days=0..60");
+        s.warn_days = static_cast<uint8_t>(v);
+    }
+    if (http::query_int(req, "low_days", &v)) {
+        if (v < 0 || v > 60) return fail(req, "invalid_param", "low_days=0..60");
+        s.low_days = static_cast<uint8_t>(v);
+    }
     // Direction is the driver's GCONF.shaft (DIR is wired to GND); it can
     // only change while the pump stands still.
     auto mc = motion::config(p);
@@ -335,6 +346,8 @@ void write_engineering(Json& j) {
         .kv("min_dose_ml", ml(e.min_dose_ul), 3)
         .kv("tube_life_h", e.tube_life_h)
         .kv("limit_mode", dose::limit_mode_str(e.limit_mode))
+        .kv("warn_days", e.warn_days)
+        .kv("low_days", e.low_days)
         .kv("nominal_ml_per_rev", dose::kNominalUlPerRev / 1000.0, 3)
         .kv("max_rpm", 600)
         .end();
@@ -385,7 +398,14 @@ esp_err_t post_engineering(httpd_req_t* req) {
     }
     if (http::query_str(req, "limit_mode", buf, sizeof(buf)) && !dose::parse_limit_mode(buf, &e.limit_mode))
         return fail(req, "invalid_param", "limit_mode=calendar_day|rolling_24h");
-    if (dose::validate(e, 600)) return fail(req, "invalid_param", "tier rpm must be ascending");
+    const char* thr[] = {"warn_days", "low_days"};
+    uint8_t* dst[] = {&e.warn_days, &e.low_days};
+    for (int k = 0; k < 2; ++k) {
+        if (!http::query_int(req, thr[k], &v)) continue;
+        if (v < 0 || v > 60) return fail(req, "invalid_param", thr[k]);
+        *dst[k] = static_cast<uint8_t>(v);
+    }
+    if (const char* f = dose::validate(e, 600)) return fail(req, "invalid_param", f);
     if (const char* err = dosing::set_engineering(e)) return fail(req, err);
     return get_engineering(req);
 }

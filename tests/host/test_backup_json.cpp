@@ -56,6 +56,8 @@ static void sample(bk::Data* d) {
     d->pumps[0].calibrated_at = 1793000000;
     d->pumps[3].mode = dose::Mode::Disabled;
     d->pumps[4].mode = dose::Mode::ManualOnly;
+    d->pumps[1].warn_days = 14;
+    d->pumps[1].low_days = 5;
     auto& s = d->schedules[0];
     s.kind = sched::Kind::Spread;
     s.count = 12;
@@ -73,6 +75,7 @@ static void sample(bk::Data* d) {
     d->locks.rules[0].gap_min = 5;
     d->dosing.tier_rpm[2] = 450;
     d->dosing.limit_mode = dose::LimitMode::Rolling24h;
+    d->dosing.warn_days = 10;
     d->scheduler.grid_min = 10;
     d->hw[1].driver.run_ma = 700;
     d->hw[1].driver.hold_ma = 100;
@@ -129,6 +132,7 @@ static void test_round_trip() {
         pumps_ok = pumps_ok && !std::strcmp(a.name, b.name) && a.mode == b.mode && a.speed_tier == b.speed_tier &&
                    a.retract_mrev == b.retract_mrev && a.daily_limit_ul == b.daily_limit_ul &&
                    a.capacity_ul == b.capacity_ul &&
+                   a.warn_days == b.warn_days && a.low_days == b.low_days &&
                    a.calibrated_at == b.calibrated_at && a.ul_per_rev == b.ul_per_rev;
     }
     CHECK(pumps_ok);
@@ -138,6 +142,8 @@ static void test_round_trip() {
     CHECK(out.schedules[1].kind == sched::Kind::None);
     CHECK(out.locks.count == 1 && out.locks.rules[0].b == 1 && out.locks.rules[0].gap_min == 5);
     CHECK(out.dosing.tier_rpm[2] == 450 && out.dosing.limit_mode == dose::LimitMode::Rolling24h && out.scheduler.grid_min == 10);
+    CHECK(out.pumps[1].warn_days == 14 && out.pumps[1].low_days == 5 && out.pumps[0].warn_days == 0);
+    CHECK(out.dosing.warn_days == 10 && out.dosing.low_days == 4);
     CHECK(out.hw[1].driver.run_ma == 700 && out.hw[1].driver.hold_ma == 100 && out.hw[1].driver.invert &&
           out.hw[1].driver.microsteps == 32 && out.hw[0].driver.run_ma == 600);
     CHECK(out.history_keep_days == 30);
@@ -150,6 +156,16 @@ static void test_round_trip() {
     CHECK(old.find("keep_days") == std::string::npos);
     static bk::Data out2;
     CHECK(parse_str(old, base, &out2, &err, &r) && out2.history_keep_days == 0);
+    // files from before the container thresholds: defaults stay
+    old = doc;
+    for (const char* t : {",\"warn_days\":10,\"low_days\":4", ",\"warn_days\":14,\"low_days\":5"})
+        replace(&old, t, "");
+    const std::string zero = ",\"warn_days\":0,\"low_days\":0";
+    for (size_t at; (at = old.find(zero)) != std::string::npos;) old.erase(at, zero.size());
+    CHECK(old.find("warn_days") == std::string::npos && old.find("low_days") == std::string::npos);
+    static bk::Data out3;
+    CHECK(parse_str(old, base, &out3, &err, &r) && out3.pumps[1].warn_days == base.pumps[1].warn_days &&
+          out3.dosing.warn_days == base.dosing.warn_days && out3.dosing.low_days == base.dosing.low_days);
 }
 
 static void test_parts_and_secrets() {
@@ -234,6 +250,9 @@ static void test_errors() {
     expect_error("\"retract_mrev\":-1", "\"retract_mrev\":-2", "invalid_param", "pumps[0].retract_mrev");
     expect_error("\"pump\":2", "\"pump\":1", "invalid_param", "pumps[1].pump");
     expect_error("\"count\":12", "\"count\":0", "invalid_param", nullptr);
+    expect_error("\"warn_days\":14", "\"warn_days\":61", "invalid_param", "pumps[1].warn_days");
+    expect_error("\"warn_days\":10", "\"warn_days\":61", "invalid_param", "engineering.dosing.warn_days");
+    expect_error("\"warn_days\":10", "\"warn_days\":3", "invalid_param", "engineering.dosing.low_days");
     expect_error("\"tier_rpm\":[100,200,450]", "\"tier_rpm\":[100,200,601]", "invalid_param", "engineering.dosing.tier_rpm");
     expect_error("\"grid_min\":10", "\"grid_min\":7", "invalid_param", nullptr);
     expect_error("\"run_ma\":700", "\"run_ma\":1600", "invalid_param", "engineering.hardware.pumps[1].run_ma");

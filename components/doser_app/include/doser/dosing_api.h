@@ -14,8 +14,9 @@
 //                                 ?pump=&action=cancel
 //   POST /api/v1/pumps/settings   ?pump=&name=&mode=auto|manual_only|disabled&tier=
 //                                 &daily_limit_ml=&retract_rev=0.25|off|global
-//                                 &direction=cw|ccw
-//                                 (retraction: off from the factory, 0 = off, global = engineering value;
+//                                 &direction=cw|ccw&warn_days=0..60&low_days=0..60
+//                                 (thresholds: 0 = engineering default, alarm <= warning;
+//                                 retraction: off from the factory, 0 = off, global = engineering value;
 //                                 direction = driver GCONF.shaft, cw = factory setting, 409 pump_busy
 //                                 while the pump runs)
 //   POST /api/v1/pumps/container  ?pump=&remaining_ml=&capacity_ml=
@@ -24,6 +25,7 @@
 //   POST /api/v1/engineering/dosing ?retract_rev=&calib_ml=&tier1_rpm=&tier2_rpm=&tier3_rpm=
 //                                 &prime_max_s=&prime_heartbeat_ms=&min_dose_ml=&tube_life_h=
 //                                 &limit_mode=calendar_day|rolling_24h
+//                                 &warn_days=0..60&low_days=0..warn_days (days of supply, 0 = off)
 //
 // The engineering endpoints need the unlocked engineering area (auth.h, spec 11.1).
 //

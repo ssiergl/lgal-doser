@@ -70,7 +70,7 @@ doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
     in.rtc_ok = ts.rtc_ok;
     in.clock_valid = ts.valid;
     const int32_t today = doser::scheduler::today();
-    const uint16_t tube_life_h = doser::dosing::engineering().tube_life_h;
+    const auto eng = doser::dosing::engineering();
     for (int i = 0; i < 5; ++i) {
         const auto d = doser::dosing::status(i);
         const auto s = doser::scheduler::status(i);
@@ -80,9 +80,9 @@ doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
         a.limit_hit_today = today >= 0 && s.last_skip_reason && std::strcmp(s.last_skip_reason, "daily_limit") == 0 &&
                             doser::sched::day_of(doser::scheduler::to_local(s.last_skip_at)) == today;
         a.tracked = d.settings.capacity_ul > 0;
-        if (a.tracked) a.percent = 100.0f * static_cast<float>(d.state.remaining_ul) / static_cast<float>(d.settings.capacity_ul);
+        a.low_days = doser::dose::low_days(d.settings, eng);
         a.remaining_days = s.remaining_days;
-        if (tube_life_h) a.tube_percent = static_cast<float>(d.state.tube_ms) / 36000.0f / tube_life_h;
+        if (eng.tube_life_h) a.tube_percent = static_cast<float>(d.state.tube_ms) / 36000.0f / eng.tube_life_h;
     }
     return in;
 }

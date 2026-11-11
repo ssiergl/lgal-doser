@@ -521,9 +521,11 @@ const char* set_settings(int pump, const dose::PumpSettings& s) {
     if (!valid_pump(pump)) return "invalid_param";
     if (s.speed_tier >= dose::kTiers || s.retract_mrev < -1 || s.retract_mrev > 2000 ||
         s.daily_limit_ul > 10000000 || s.capacity_ul > 100000000 || s.ul_per_rev < 0.0f ||
-        s.mode > dose::Mode::Disabled)
+        s.mode > dose::Mode::Disabled || s.warn_days > 60 || s.low_days > 60)
         return "invalid_param";
     Guard g;
+    // the alarm threshold may not lie above the warning one
+    if (dose::low_days(s, s_eng) > dose::warn_days(s, s_eng)) return "invalid_param";
     Pump& p = s_p[pump];
     p.set = s;
     p.set.name[sizeof(p.set.name) - 1] = 0;
