@@ -1,14 +1,15 @@
 // Maintenance (#/maintenance): firmware and device info, firmware update by
-// file upload, restart, factory reset; log and coredump in the pro view. The
-// update from a URL and its http option are exported for the engineering area.
+// file upload, updates from the update source (only when one is set), restart,
+// factory reset; log and coredump in the pro view. The update source, the
+// update from a URL and the http option are exported for the engineering area.
 // The emergency page /recovery is deliberately not linked (operating manual only).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, ApiError } from '../lib/api.js';
 import { html } from '../lib/html.js';
-import { add, errText, num, t } from '../lib/i18n.js';
+import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { usePrefs } from '../lib/prefs.js';
 import { reloadInfo, useStore } from '../lib/store.js';
-import { ask, useMsg } from '../lib/ui.js';
+import { ask, Toggle, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -43,11 +44,25 @@ add({
     'mt.url.http.ask': 'Download the firmware over unencrypted http? It can be altered on the way.',
     'mt.url.http.off': 'http:// addresses are blocked – only https. You can allow http below (not recommended).',
     'mt.url.failed': 'Update failed: {e}',
-    'mt.opt': 'Update options', 'mt.opt.http': 'Allow unencrypted http',
+    'mt.rel': 'Updates', 'mt.rel.cur': 'Installed', 'mt.rel.new': 'Available', 'mt.rel.at': 'Checked',
+    'mt.rel.none': 'not checked yet', 'mt.rel.ok': 'Up to date', 'mt.rel.avail': 'New: {v}', 'mt.rel.checking': 'Checking …',
+    'mt.rel.check': 'Check for updates', 'mt.rel.install': 'Install {v}', 'mt.rel.notes': 'What is new',
+    'mt.rel.ask': 'Install firmware {v}? Pumps are locked while it is written; the device then restarts.',
+    'mt.rel.failed': 'Check failed: {e}', 'mt.rel.auto': 'Check daily', 'mt.rel.auto.h': 'Only shows a notice – installing always needs you.',
+    'mt.rel.hint': 'Official releases. The device checks the file against the release (SHA-256) before it switches to it.',
+    'mt.src': 'Update source', 'mt.src.field': 'Address of the release list (manifest.json)',
+    'mt.src.h': 'Maintenance offers "Check for updates" while it is set; empty = no update source. Module variant: {v}.',
+    'mt.src.save': 'Save', 'mt.src.saved': 'Saved – checking now.', 'mt.src.cleared': 'Update source removed.',
+    'mt.opt.http': 'Allow unencrypted http',
     'mt.opt.http.h': 'Off: only https with a checked certificate (recommended).',
     'mt.opt.http.on': 'http is allowed: firmware downloads over http are not protected against tampering. Switch it off again when you do not need it.',
     'mt.opt.http.ask': 'Allow firmware downloads over unencrypted http? Anyone in the network path could swap the firmware. Only do this if you know why.',
     'mt.opt.saved': 'Saved.',
+    'err.no_source': 'No update source set', 'err.no_update': 'No newer version available',
+    'err.sha256_mismatch': 'The downloaded file does not match the release (SHA-256) – discarded',
+    'err.manifest_invalid': 'The update source sent an invalid release list', 'err.invalid_version': 'The release list has an invalid version',
+    'err.invalid_sha256': 'The release list has an invalid checksum', 'err.no_build': 'The release has no firmware for this module variant',
+    'err.unknown_variant': 'Unknown module variant (flash size)',
     'err.invalid_url': 'Invalid address (http:// or https://)', 'err.http_not_allowed': 'Unencrypted http is not allowed',
     'err.download_failed': 'Download failed', 'err.http_status': 'The server refused the download',
     'err.too_many_redirects': 'Too many redirects',
@@ -84,11 +99,25 @@ add({
     'mt.url.http.ask': 'Firmware über unverschlüsseltes http laden? Sie kann unterwegs verändert werden.',
     'mt.url.http.off': 'http://-Adressen sind gesperrt – nur https. Unten lässt sich http erlauben (nicht empfohlen).',
     'mt.url.failed': 'Update fehlgeschlagen: {e}',
-    'mt.opt': 'Update-Optionen', 'mt.opt.http': 'Unverschlüsseltes http erlauben',
+    'mt.rel': 'Updates', 'mt.rel.cur': 'Installiert', 'mt.rel.new': 'Verfügbar', 'mt.rel.at': 'Geprüft',
+    'mt.rel.none': 'noch nicht geprüft', 'mt.rel.ok': 'Aktuell', 'mt.rel.avail': 'Neu: {v}', 'mt.rel.checking': 'Prüfe …',
+    'mt.rel.check': 'Nach Updates suchen', 'mt.rel.install': '{v} installieren', 'mt.rel.notes': 'Was ist neu',
+    'mt.rel.ask': 'Firmware {v} installieren? Die Pumpen sind währenddessen gesperrt, danach startet das Gerät neu.',
+    'mt.rel.failed': 'Prüfung fehlgeschlagen: {e}', 'mt.rel.auto': 'Täglich prüfen', 'mt.rel.auto.h': 'Zeigt nur einen Hinweis – installiert wird nie von selbst.',
+    'mt.rel.hint': 'Offizielle Versionen. Das Gerät prüft die Datei gegen das Release (SHA-256), bevor es auf sie umschaltet.',
+    'mt.src': 'Update-Quelle', 'mt.src.field': 'Adresse der Release-Liste (manifest.json)',
+    'mt.src.h': 'Solange sie gesetzt ist, bietet die Wartung „Nach Updates suchen“ an; leer = keine Update-Quelle. Modulvariante: {v}.',
+    'mt.src.save': 'Speichern', 'mt.src.saved': 'Gespeichert – wird jetzt geprüft.', 'mt.src.cleared': 'Update-Quelle entfernt.',
+    'mt.opt.http': 'Unverschlüsseltes http erlauben',
     'mt.opt.http.h': 'Aus: nur https mit geprüftem Zertifikat (empfohlen).',
     'mt.opt.http.on': 'http ist erlaubt: Firmware-Downloads über http sind nicht gegen Manipulation geschützt. Wieder ausschalten, wenn es nicht mehr gebraucht wird.',
     'mt.opt.http.ask': 'Firmware-Downloads über unverschlüsseltes http erlauben? Jeder auf dem Weg durchs Netz könnte die Firmware austauschen. Nur einschalten, wenn klar ist, warum.',
     'mt.opt.saved': 'Gespeichert.',
+    'err.no_source': 'Keine Update-Quelle eingestellt', 'err.no_update': 'Keine neuere Version verfügbar',
+    'err.sha256_mismatch': 'Die geladene Datei passt nicht zum Release (SHA-256) – verworfen',
+    'err.manifest_invalid': 'Die Update-Quelle lieferte eine ungültige Release-Liste', 'err.invalid_version': 'Die Release-Liste hat eine ungültige Version',
+    'err.invalid_sha256': 'Die Release-Liste hat eine ungültige Prüfsumme', 'err.no_build': 'Das Release enthält keine Firmware für diese Modulvariante',
+    'err.unknown_variant': 'Unbekannte Modulvariante (Flash-Größe)',
     'err.invalid_url': 'Ungültige Adresse (http:// oder https://)', 'err.http_not_allowed': 'Unverschlüsseltes http ist nicht erlaubt',
     'err.download_failed': 'Download fehlgeschlagen', 'err.http_status': 'Der Server hat den Download abgelehnt',
     'err.too_many_redirects': 'Zu viele Weiterleitungen',
@@ -195,14 +224,11 @@ function UpdateCard({ busyPumps }) {
 const isHttp = u => /^http:\/\//i.test(u.trim());
 const fmtSize = b => (b >= 1048576 ? num(b / 1048576, 1) + ' MB' : num(b / 1024, 0) + ' kB');
 
-// Engineering: the device downloads the image (POST /api/v1/ota/url) and
-// reports on GET /api/v1/ota/status until it restarts. call = API function
-// of the engineering area.
-export function UrlUpdateCard({ busyPumps, opts, call }) {
-  const [url, setUrl] = useState('');
-  const [st, setSt] = useState(null);  // GET /api/v1/ota/status while running
+// Update the device downloads itself: follows GET /api/v1/ota/status until
+// the restart. run(promise) starts it with the POST that begins the download.
+function useDownload(msg) {
+  const [st, setSt] = useState(null);  // status while running
   const [busy, setBusy] = useState(false);
-  const msg = useMsg();
   const poll = () => api('GET', '/api/v1/ota/status').then(j => {
     setSt(j);
     if (j.state === 'running') { setTimeout(poll, 1000); return; }
@@ -210,6 +236,69 @@ export function UrlUpdateCard({ busyPumps, opts, call }) {
     setBusy(false);
     if (j.state === 'failed') msg.err(t('mt.url.failed', { e: errText({ code: j.error }) }) + (j.detail ? ' (' + j.detail + ')' : ''));
   }).catch(() => setTimeout(poll, 2000));  // the device may be restarting
+  const run = p => {
+    msg.clear();
+    setBusy(true);
+    return p.then(() => { setSt({ state: 'running', received: 0, total: null }); setTimeout(poll, 500); })
+      .catch(e => { setBusy(false); msg.err(e); });
+  };
+  const running = st && st.state === 'running';
+  const pct = running && st.total ? Math.min(100, Math.floor(st.received / st.total * 100)) : null;
+  const node = running && html`<div class=${'bar' + (pct === null ? ' indet' : '')}><i style=${{ width: (pct ?? 100) + '%' }}></i></div>
+    <p class="small">${pct === null ? t('mt.url.run', { r: fmtSize(st.received) }) : t('mt.url.run.pct', { p: pct, r: fmtSize(st.received) })}</p>`;
+  return { busy, run, node };
+}
+
+// Maintenance (all modes, only with an update source): last check, check now,
+// install the newer release, daily check on/off
+function ReleaseCard({ rel, setRel, busyPumps }) {
+  const msg = useMsg();
+  const dl = useDownload(msg);
+  const watch = () => api('GET', '/api/v1/ota/release').then(j => { setRel(j); if (j.checking) setTimeout(watch, 1000); })
+    .catch(() => setTimeout(watch, 2000));
+  useEffect(() => { if (rel.checking) watch(); }, []);
+  const check = () => {
+    msg.clear();
+    api('POST', '/api/v1/ota/release/check').then(() => { setRel({ ...rel, checking: true }); setTimeout(watch, 700); }).catch(e => msg.err(e));
+  };
+  const install = async () => {
+    if (!(await ask(t('mt.rel.ask', { v: rel.latest }), { ok: t('mt.rel.install', { v: rel.latest }) }))) return;
+    dl.run(api('POST', '/api/v1/ota/release/install'));
+  };
+  const auto = on => api('PUT', '/api/v1/ota/settings', { auto_check: on })
+    .then(j => setRel({ ...rel, auto_check: j.auto_check })).catch(e => msg.err(e));
+  const at = rel.checked_at ? new Date(rel.checked_at * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short' }) : null;
+  const busy = dl.busy || rel.checking;
+  return html`<section class="card">
+    <div class="row between"><h2>${t('mt.rel')}</h2>
+      ${rel.latest && html`<span class=${'chip ' + (rel.available ? 'acc' : 'ok')}>${rel.available ? t('mt.rel.avail', { v: rel.latest }) : t('mt.rel.ok')}</span>`}</div>
+    <p class="small mut">${t('mt.rel.hint')}</p>
+    <dl class="stats">
+      <dt>${t('mt.rel.cur')}</dt><dd>${rel.current}</dd>
+      <dt>${t('mt.rel.new')}</dt><dd>${rel.checking ? t('mt.rel.checking') : rel.latest || t('mt.rel.none')}
+        ${rel.notes && !rel.checking && html` · <a href=${rel.notes} target="_blank" rel="noopener noreferrer">${t('mt.rel.notes')}</a>`}</dd>
+      ${at && html`<dt>${t('mt.rel.at')}</dt><dd>${at}</dd>`}
+    </dl>
+    ${rel.error && !rel.checking && html`<p class="small err">${t('mt.rel.failed', { e: errText({ code: rel.error }) })}${rel.detail ? ' (' + rel.detail + ')' : ''}</p>`}
+    <${Toggle} checked=${rel.auto_check} onChange=${auto}>
+      <span>${t('mt.rel.auto')}<br/><span class="small mut">${t('mt.rel.auto.h')}</span></span><//>
+    ${rel.available && busyPumps && !dl.busy && html`<p class="small warn">${t('mt.busy')}</p>`}
+    ${dl.node}
+    <div class="row savebar">
+      ${rel.available && html`<button type="button" disabled=${busy || busyPumps} onClick=${install}>${t('mt.rel.install', { v: rel.latest })}</button>`}
+      <button type="button" class=${rel.available ? 'sec' : ''} disabled=${busy} onClick=${check}>${t('mt.rel.check')}</button>
+    </div>
+    ${msg.node}
+  </section>`;
+}
+
+// Engineering: the device downloads the image (POST /api/v1/ota/url) and
+// reports on GET /api/v1/ota/status until it restarts. call = API function
+// of the engineering area.
+export function UrlUpdateCard({ busyPumps, opts, call }) {
+  const [url, setUrl] = useState('');
+  const msg = useMsg();
+  const dl = useDownload(msg);
   const http = isHttp(url);
   const blocked = http && !opts.allow_http;
   const start = async e => {
@@ -217,13 +306,9 @@ export function UrlUpdateCard({ busyPumps, opts, call }) {
     msg.clear();
     if (blocked) { msg.err(t('mt.url.http.off')); return; }
     if (http && !(await ask(t('mt.url.http.ask'), { ok: t('mt.url.start'), danger: true }))) return;
-    setBusy(true);
-    call('POST', '/api/v1/ota/url', { url: url.trim() })
-      .then(() => { setSt({ state: 'running', received: 0, total: null }); setTimeout(poll, 500); })
-      .catch(e => { setBusy(false); msg.err(e); });
+    dl.run(call('POST', '/api/v1/ota/url', { url: url.trim() }));
   };
-  const running = st && st.state === 'running';
-  const pct = running && st.total ? Math.min(100, Math.floor(st.received / st.total * 100)) : null;
+  const busy = dl.busy;
   return html`<form class="card" novalidate onSubmit=${start}><h2>${t('mt.url')}</h2>
     <p class="small mut">${t('mt.url.hint')}</p>
     <label class="field">${t('mt.url.field')}
@@ -231,25 +316,42 @@ export function UrlUpdateCard({ busyPumps, opts, call }) {
         disabled=${busy} value=${url} onInput=${e => setUrl(e.target.value)}/></label>
     ${http && html`<p class=${'small ' + (blocked ? 'err' : 'warn')}>${t(blocked ? 'mt.url.http.off' : 'mt.url.http')}</p>`}
     ${busyPumps && !busy && html`<p class="small warn">${t('mt.busy')}</p>`}
-    ${running && html`<div class=${'bar' + (pct === null ? ' indet' : '')}><i style=${{ width: (pct ?? 100) + '%' }}></i></div>
-      <p class="small">${pct === null ? t('mt.url.run', { r: fmtSize(st.received) }) : t('mt.url.run.pct', { p: pct, r: fmtSize(st.received) })}</p>`}
+    ${dl.node}
     <div class="row savebar"><button type="submit" disabled=${busy || !url.trim() || busyPumps || blocked}>${t('mt.url.start')}</button></div>
     ${msg.node}
   </form>`;
 }
 
-// Engineering: http for URL updates (warned), off from the factory
-export function UpdateOptsCard({ opts, setOpts, call }) {
+// Engineering: update source (release manifest) and plain http for updates
+// (warned, off from the factory)
+export function UpdateSourceCard({ opts, setOpts, call }) {
+  const [src, setSrc] = useState(opts.source);
+  const [variant, setVariant] = useState(null);
+  useEffect(() => { api('GET', '/api/v1/ota/release').then(j => setVariant(j.variant)).catch(() => {}); }, []);
+  const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  const save = async (patch, box) => {
-    if (patch.allow_http && !(await ask(t('mt.opt.http.ask'), { danger: true }))) { box.checked = false; return; }
-    call('PUT', '/api/v1/ota/settings', patch).then(j => { setOpts(j); msg.ok(t('mt.opt.saved')); }).catch(e => msg.err(e));
+  const put = body => call('PUT', '/api/v1/ota/settings', body).then(j => { setOpts(j); return j; });
+  const save = e => {
+    e.preventDefault();
+    msg.clear();
+    setBusy(true);
+    put({ source: src.trim() }).then(j => { setSrc(j.source); msg.ok(t(j.source ? 'mt.src.saved' : 'mt.src.cleared')); })
+      .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  return html`<section class="card"><h2>${t('mt.opt')}</h2>
-    <label class="check"><input type="checkbox" checked=${opts.allow_http} onChange=${e => save({ allow_http: e.target.checked }, e.target)}/>
-      <span>${t('mt.opt.http')}<br/><span class=${'small ' + (opts.allow_http ? 'warn' : 'mut')}>${t(opts.allow_http ? 'mt.opt.http.on' : 'mt.opt.http.h')}</span></span></label>
+  const http = async on => {
+    if (on && !(await ask(t('mt.opt.http.ask'), { danger: true }))) return;
+    put({ allow_http: on }).then(() => msg.ok(t('mt.opt.saved'))).catch(e => msg.err(e));
+  };
+  return html`<form class="card" novalidate onSubmit=${save}><h2>${t('mt.src')}</h2>
+    <label class="field">${t('mt.src.field')}
+      <input type="url" maxlength="512" autocomplete="off" spellcheck="false" disabled=${busy}
+        placeholder="https://github.com/…/releases/latest/download/manifest.json" value=${src} onInput=${e => setSrc(e.target.value)}/></label>
+    <p class="small mut">${t('mt.src.h', { v: variant || '–' })}</p>
+    <div class="row savebar"><button type="submit" disabled=${busy || src.trim() === opts.source}>${t('mt.src.save')}</button></div>
+    <${Toggle} checked=${opts.allow_http} onChange=${http}>
+      <span>${t('mt.opt.http')}<br/><span class=${'small ' + (opts.allow_http ? 'warn' : 'mut')}>${t(opts.allow_http ? 'mt.opt.http.on' : 'mt.opt.http.h')}</span></span><//>
     ${msg.node}
-  </section>`;
+  </form>`;
 }
 
 function RestartCard() {
@@ -341,15 +443,17 @@ export function MaintenanceView() {
   }, []);
   const info = st.info;
   const busyPumps = !!(st.pumps && st.pumps.some(p => p.activity !== 'idle'));
-  const [opts, setOpts] = useState(null);  // GET /api/v1/ota/settings (http warning)
+  const [rel, setRel] = useState(null);  // GET /api/v1/ota/release (incl. the http warning)
+  const [http, setHttp] = useState(false);
   useEffect(() => {
-    if (!pro) return;
-    api('GET', '/api/v1/ota/settings').then(setOpts).catch(() => {});
-  }, [pro]);
+    api('GET', '/api/v1/ota/release').then(setRel).catch(() => {});
+    api('GET', '/api/v1/ota/settings').then(j => setHttp(j.allow_http)).catch(() => {});
+  }, []);
   return html`<div class="page-head"><h1>${t('mt.title')}</h1></div>
-    ${pro && opts && opts.allow_http && html`<p class="banner warn">${t('mt.opt.http.on')}</p>`}
+    ${pro && http && html`<p class="banner warn">${t('mt.opt.http.on')}</p>`}
     ${!info ? html`<p class="mut">…</p>` : html`<div class="grid settings">
       <${InfoCard} info=${info} pro=${pro}/>
+      ${rel && rel.source && html`<${ReleaseCard} rel=${rel} setRel=${setRel} busyPumps=${busyPumps}/>`}
       <${UpdateCard} busyPumps=${busyPumps}/>
       <${RestartCard}/>
       <${FactoryCard}/>
