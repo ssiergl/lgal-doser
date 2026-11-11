@@ -99,7 +99,7 @@ footer button.ver { all: unset; cursor: default; }
 
 /* ---- mobile ---- */
 .bottom { display: none; }
-@media (max-width: 720px) {
+@media (max-width: 939px) {
   .tabs { display: none; }
   footer { padding-bottom: 96px; }
   .top .hide-s { display: none; }
@@ -207,21 +207,19 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .field .switch, td .switch { margin-top: 0; }
 
 /* ---- dashboard ---- */
-/* Wide screens: three cards in the first row, the rest share the last row
-   in full (5 = 3 + 2, 4 = 2 + 2), so the grid never has a hole. Columns have
-   a fixed minimum, so a long name never widens its card, and subgrid rows
+/* Two views only. Desktop (from 940 px, also tablets in landscape): two
+   columns, the fifth card as wide as the others at the bottom left; a card
+   is then at least 440 px wide, enough for the longest line ("Nächste
+   morgen 12:00 PM · 10,00 ml"). Below: one column (mobile). Subgrid rows
    keep the header, stats and notices of a row on the same lines. */
 .pumps { grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 640px) and (max-width: 899px) {
+@media (min-width: 940px) {
   .pumps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .pumps > :nth-child(odd):last-child { grid-column: 1 / -1; }
 }
-@media (min-width: 900px) {
-  .pumps { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .pumps > * { grid-column: span 2; }
-  .pumps > :nth-child(3n+1):nth-last-child(2), .pumps > :nth-child(3n+1):nth-last-child(2) ~ *,
-  .pumps > :first-child:nth-last-child(4), .pumps > :first-child:nth-last-child(4) ~ * { grid-column: span 3; }
-  .pumps > :nth-child(3n+1):last-child { grid-column: 1 / -1; }
+/* narrower than a card of 440 px (small phones): a long value wraps
+   instead of running over the edge */
+@media (max-width: 471px) {
+  .pump-card .kv b { white-space: normal; }
 }
 @supports (grid-template-rows: subgrid) {
   .pumps > .pump-card { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; }
@@ -298,7 +296,7 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .page-head .chip { align-self: center; }
 .detail { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 .detail .col { display: grid; gap: var(--gap); min-width: 0; }
-@media (max-width: 900px) {
+@media (max-width: 939px) {
   .detail { grid-template-columns: minmax(0, 1fr); }
   .detail .col { display: contents; }
   .detail .usage { order: 1; }
