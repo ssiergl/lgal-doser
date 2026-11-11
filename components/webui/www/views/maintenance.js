@@ -1,7 +1,7 @@
 // Maintenance (#/maintenance): firmware and device info, firmware update by
-// file upload, restart, factory reset; update from a URL (with its settings), log and
-// coredump in the pro view. The emergency page /recovery is deliberately not
-// linked (operating manual only).
+// file upload, restart, factory reset; log and coredump in the pro view. The
+// update from a URL and its http option are exported for the engineering area.
+// The emergency page /recovery is deliberately not linked (operating manual only).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, ApiError } from '../lib/api.js';
 import { html } from '../lib/html.js';
@@ -195,9 +195,10 @@ function UpdateCard({ busyPumps }) {
 const isHttp = u => /^http:\/\//i.test(u.trim());
 const fmtSize = b => (b >= 1048576 ? num(b / 1048576, 1) + ' MB' : num(b / 1024, 0) + ' kB');
 
-// Pro view: the device downloads the image (POST /api/v1/ota/url) and
-// reports on GET /api/v1/ota/status until it restarts.
-function UrlUpdateCard({ busyPumps, opts }) {
+// Engineering: the device downloads the image (POST /api/v1/ota/url) and
+// reports on GET /api/v1/ota/status until it restarts. call = API function
+// of the engineering area.
+export function UrlUpdateCard({ busyPumps, opts, call }) {
   const [url, setUrl] = useState('');
   const [st, setSt] = useState(null);  // GET /api/v1/ota/status while running
   const [busy, setBusy] = useState(false);
@@ -217,7 +218,7 @@ function UrlUpdateCard({ busyPumps, opts }) {
     if (blocked) { msg.err(t('mt.url.http.off')); return; }
     if (http && !(await ask(t('mt.url.http.ask'), { ok: t('mt.url.start'), danger: true }))) return;
     setBusy(true);
-    api('POST', '/api/v1/ota/url', { url: url.trim() })
+    call('POST', '/api/v1/ota/url', { url: url.trim() })
       .then(() => { setSt({ state: 'running', received: 0, total: null }); setTimeout(poll, 500); })
       .catch(e => { setBusy(false); msg.err(e); });
   };
@@ -237,12 +238,12 @@ function UrlUpdateCard({ busyPumps, opts }) {
   </form>`;
 }
 
-// Pro view: http for URL updates (warned), off from the factory
-function UpdateOptsCard({ opts, setOpts }) {
+// Engineering: http for URL updates (warned), off from the factory
+export function UpdateOptsCard({ opts, setOpts, call }) {
   const msg = useMsg();
   const save = async (patch, box) => {
     if (patch.allow_http && !(await ask(t('mt.opt.http.ask'), { danger: true }))) { box.checked = false; return; }
-    api('PUT', '/api/v1/ota/settings', patch).then(j => { setOpts(j); msg.ok(t('mt.opt.saved')); }).catch(e => msg.err(e));
+    call('PUT', '/api/v1/ota/settings', patch).then(j => { setOpts(j); msg.ok(t('mt.opt.saved')); }).catch(e => msg.err(e));
   };
   return html`<section class="card"><h2>${t('mt.opt')}</h2>
     <label class="check"><input type="checkbox" checked=${opts.allow_http} onChange=${e => save({ allow_http: e.target.checked }, e.target)}/>
@@ -340,7 +341,7 @@ export function MaintenanceView() {
   }, []);
   const info = st.info;
   const busyPumps = !!(st.pumps && st.pumps.some(p => p.activity !== 'idle'));
-  const [opts, setOpts] = useState(null);  // GET /api/v1/ota/settings
+  const [opts, setOpts] = useState(null);  // GET /api/v1/ota/settings (http warning)
   useEffect(() => {
     if (!pro) return;
     api('GET', '/api/v1/ota/settings').then(setOpts).catch(() => {});
@@ -350,10 +351,8 @@ export function MaintenanceView() {
     ${!info ? html`<p class="mut">…</p>` : html`<div class="grid settings">
       <${InfoCard} info=${info} pro=${pro}/>
       <${UpdateCard} busyPumps=${busyPumps}/>
-      ${pro && opts && html`<${UrlUpdateCard} busyPumps=${busyPumps} opts=${opts}/>`}
       <${RestartCard}/>
       <${FactoryCard}/>
-      ${pro && opts && html`<${UpdateOptsCard} opts=${opts} setOpts=${setOpts}/>`}
       ${pro && html`<${DiagCard} info=${info}/>`}
     </div>`}`;
 }

@@ -16,6 +16,7 @@ import { reloadPumps, useStore } from '../lib/store.js';
 import { Seg, Toggle, useMsg } from '../lib/ui.js';
 import { BackupSection } from './backup.js';
 import { EngUnlock, lockEngineering } from './engineering.js';
+import { UpdateOptsCard, UrlUpdateCard } from './maintenance.js';
 
 add({
   en: {
@@ -54,7 +55,7 @@ add({
     'sv.force': 'Step even if the driver does not answer', 'sv.start': 'Start', 'sv.stop': 'Stop', 'sv.estop': 'Stop now',
     'sv.raw.calc': '= {rev} rev ≈ {ml} ml (nominal) · {s} s', 'sv.raw.run': 'running · {pos} / {tgt} steps · {rpm} rpm · StallGuard {sg}',
     'sv.raw.idle': 'idle · last move {pos} steps · StallGuard min. {sg}',
-    'sv.e': 'E · Backup',
+    'sv.e': 'E · Firmware update', 'sv.f': 'F · Backup',
     'sv.diag': 'Driver diagnosis', 'sv.diag.h': 'Status of the TMC2209 from the last read (continuously while moving, otherwise once per second).',
     'sv.fl.standstill': 'Standstill', 'sv.fl.stealth': 'StealthChop', 'sv.fl.overtemp_warn': 'Overtemperature warning (120 °C)',
     'sv.fl.overtemp': 'Overtemperature shutdown', 'sv.fl.short': 'Short circuit', 'sv.fl.open_load_a': 'Open load coil A',
@@ -115,7 +116,7 @@ add({
     'sv.force': 'Auch ohne Treiberantwort takten', 'sv.start': 'Start', 'sv.stop': 'Stopp', 'sv.estop': 'Sofort stoppen',
     'sv.raw.calc': '= {rev} U ≈ {ml} ml (Nennwert) · {s} s', 'sv.raw.run': 'läuft · {pos} / {tgt} Schritte · {rpm} U/min · StallGuard {sg}',
     'sv.raw.idle': 'steht · letzte Fahrt {pos} Schritte · StallGuard min. {sg}',
-    'sv.e': 'E · Datensicherung',
+    'sv.e': 'E · Firmware-Update', 'sv.f': 'F · Datensicherung',
     'sv.diag': 'Treiberdiagnose', 'sv.diag.h': 'Zustand des TMC2209 aus der letzten Abfrage (während der Fahrt laufend, sonst jede Sekunde).',
     'sv.fl.standstill': 'Stillstand', 'sv.fl.stealth': 'StealthChop', 'sv.fl.overtemp_warn': 'Übertemperatur-Warnung (120 °C)',
     'sv.fl.overtemp': 'Übertemperatur-Abschaltung', 'sv.fl.short': 'Kurzschluss', 'sv.fl.open_load_a': 'Spule A offen',
@@ -677,6 +678,7 @@ export function ServiceView() {
   const [sch, setSch] = useState(null);
   const [hw, setHw] = useState(null);
   const [tel, setTel] = useState(null);
+  const [ota, setOta] = useState(null);  // GET /api/v1/ota/settings
   const [err, setErr] = useState(null);
   const [paused, setPaused] = useState(false);
   const active = useRef(Date.now());
@@ -689,7 +691,8 @@ export function ServiceView() {
     .then(([e, s]) => { setEng(e); setSch(s); });
   const loadHw = () => eapi('GET', '/api/v1/hw/status').then(setHw);
   const loadTel = () => eapi('GET', '/api/v1/engineering/telemetry').then(setTel);
-  const loadAll = () => Promise.all([loadEng(), loadHw(), loadTel()]).then(() => setErr(null)).catch(e => { if (e.code !== 'engineering_locked') setErr(e); });
+  const loadOta = () => api('GET', '/api/v1/ota/settings').then(setOta);
+  const loadAll = () => Promise.all([loadEng(), loadHw(), loadTel(), loadOta()]).then(() => setErr(null)).catch(e => { if (e.code !== 'engineering_locked') setErr(e); });
 
   onLocked = () => setAuth(a => ({ ...(a || {}), engineering: false }));
   useEffect(() => {
@@ -754,5 +757,10 @@ export function ServiceView() {
       <${DangerCard}/>
     </div>
     <h2 class="eng-sec">${t('sv.e')}</h2>
+    <div class="grid settings">
+      ${ota && html`<${UrlUpdateCard} busyPumps=${pumps.some(p => p.activity !== 'idle')} opts=${ota} call=${eapi}/>
+        <${UpdateOptsCard} opts=${ota} setOpts=${setOta} call=${eapi}/>`}
+    </div>
+    <h2 class="eng-sec">${t('sv.f')}</h2>
     <div class="grid settings"><${BackupSection}/></div>`;
 }

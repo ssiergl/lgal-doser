@@ -142,12 +142,14 @@ def route(h, method, path, q, body):
         h.send(200, {"status": "rebooting"}); restart(); return True  # the mock keeps its state
     if path == "/api/v1/ota/settings":
         if method == "PUT":
+            if ENG["until"] <= time.time(): err(h, 403, "engineering_locked", "Engineering area is locked"); return True
             if "allow_http" in body:
                 if not isinstance(body["allow_http"], bool): err(h, 400, "invalid_param", "allow_http"); return True
                 OTA["allow_http"] = body["allow_http"]
         h.send(200, {"allow_http": OTA["allow_http"]}); return True
     if path == "/api/v1/ota/status" and method == "GET": h.send(200, ota_status()); return True
     if path == "/api/v1/ota/url" and method == "POST":
+        if ENG["until"] <= time.time(): err(h, 403, "engineering_locked", "Engineering area is locked"); return True
         u = str(body.get("url", "")).strip()
         if not re.match(r"^https?://[^/\s:?#][^\s]*$", u, re.I) or len(u) > 512: err(h, 400, "invalid_url", "Invalid URL"); return True
         if u.lower().startswith("http://") and not OTA["allow_http"]: err(h, 400, "http_not_allowed", "Plain http is not allowed"); return True

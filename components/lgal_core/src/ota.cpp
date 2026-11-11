@@ -447,7 +447,7 @@ esp_err_t get_settings(httpd_req_t* req) {
 }
 
 esp_err_t put_settings(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     std::string body;
     JsonReader doc;
     JsonToken tok[8];
@@ -471,7 +471,7 @@ esp_err_t get_status(httpd_req_t* req) {
 }
 
 esp_err_t post_url(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
+    if (!http::authorize_engineering(req)) return ESP_OK;
     std::string body;
     JsonReader doc;
     JsonToken tok[8];
