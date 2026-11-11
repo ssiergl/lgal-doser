@@ -26,14 +26,15 @@ struct Names {
     const char* critical;
     const char* warning;
     const char* stop;
+    const char* firmware;
 };
 constexpr Names kDe = {"Pumpe %d",       "Status",       "Dosiert gesamt", "Geplant heute", "Vorrat",
                        "Reicht noch",    "Nächste Dosierung", "Schlauch-Betriebsstunden",
                        "Zeitplan",       "Dosiermenge",  "Dosieren",       "Alarm",         "Warnung",
-                       "Alle stoppen"};
+                       "Alle stoppen",   "Firmware"};
 constexpr Names kEn = {"Pump %d",   "State",      "Total dosed", "Planned today",   "Container", "Days left",
                        "Next dose", "Tube hours", "Schedule", "Dose amount", "Dose",
-                       "Alarm",     "Warning",    "Stop all"};
+                       "Alarm",     "Warning",    "Stop all", "Firmware"};
 
 double ml(int64_t ul) { return static_cast<double>(ul) / 1000.0; }
 
@@ -178,6 +179,13 @@ void write_discovery(lgal::Json& j, const DeviceInfo& d) {
         w.name("", n.stop);
         j.kv("command_topic", d.base + "/stop/set").kv("payload_press", "PRESS").kv("icon", "mdi:stop-circle").end();
     }
+    if (w.open("firmware", "update", d.update_source)) {
+        w.name("", n.firmware);
+        j.kv("device_class", "firmware").kv("entity_category", "config").kv("state_topic", d.base + "/update");
+        // installing only with control; it always uses the fixed update source
+        if (d.control) j.kv("command_topic", d.base + "/update/set").kv("payload_install", "install");
+        j.end();
+    }
     j.end().end();
 }
 
@@ -206,6 +214,16 @@ void write_pump_state(lgal::Json& j, const PumpState& s) {
     j.kv("amount_ml", ml(s.amount_ul), 3).kv("tube_h", static_cast<double>(s.tube_h), 1);
     if (s.last) j.kv("last", s.last);
     else j.null("last");
+    j.end();
+}
+
+void write_update_state(lgal::Json& j, const UpdateState& s) {
+    j.obj().kv("installed_version", s.installed);
+    j.kv("latest_version", s.available && !s.latest.empty() ? s.latest : s.installed);
+    if (!s.notes.empty()) j.kv("release_url", s.notes);
+    j.kv("in_progress", s.in_progress);
+    if (s.in_progress && s.percent >= 0) j.kv("update_percentage", s.percent);
+    else j.null("update_percentage");
     j.end();
 }
 
@@ -259,6 +277,12 @@ bool parse_command(const std::string& base, const char* topic, int topic_len, co
     Command c;
     if (equals(t, tl, "stop/set")) {
         c.cmd = Cmd::Stop;
+        *out = c;
+        return true;
+    }
+    if (equals(t, tl, "update/set")) {
+        if (!equals(data, data_len, "install")) return false;
+        c.cmd = Cmd::Install;
         *out = c;
         return true;
     }

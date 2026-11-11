@@ -7,11 +7,14 @@
 //   <b>/state                 {"critical","warning","conditions":[...]}
 //   <b>/pump/<n>/state        {"activity","total_ml","planned_ml","remaining_ml",
 //                              "days","next","schedule","amount_ml","tube_h","last"}
+//   <b>/update                {"installed_version","latest_version","release_url"?,
+//                              "in_progress","update_percentage"} (update entity)
 //   commands (only with "control" enabled):
 //   <b>/pump/<n>/dose/set     "PRESS" = stored amount, or an amount in ml ("2.5")
 //   <b>/pump/<n>/amount/set   amount in ml for "PRESS"
 //   <b>/pump/<n>/schedule/set ON | OFF (mode auto / manual only)
 //   <b>/stop/set              any payload: stop all pumps
+//   <b>/update/set            "install": newer release of the update source
 // Discovery: one retained device message <prefix>/device/<id>/config with
 // all entities. Entities that do not apply (control off) are sent with the
 // platform only, which removes them in Home Assistant.
@@ -33,6 +36,7 @@ struct DeviceInfo {
     std::string base;     // base topic
     bool german = false;  // entity names in German
     bool control = false;
+    bool update_source = false;   // firmware update entity (update source set)
     std::string pump_names[kPumps];  // "" = "Pumpe n" / "Pump n"
 };
 
@@ -62,10 +66,22 @@ struct DeviceState {
 };
 void write_device_state(lgal::Json& j, const DeviceState& s);
 
+// Firmware update entity. latest = installed unless a newer release is
+// known, so Home Assistant only offers real updates.
+struct UpdateState {
+    std::string installed;
+    std::string latest;      // "" = none known
+    bool available = false;  // latest is newer
+    std::string notes;       // release page, "" = none
+    bool in_progress = false;
+    int percent = -1;        // -1 = unknown
+};
+void write_update_state(lgal::Json& j, const UpdateState& s);
+
 // "2026-11-07T07:00:00+00:00"
 void fmt_iso_utc(int64_t utc, char (&out)[26]);
 
-enum class Cmd : uint8_t { None, Dose, Amount, Schedule, Stop };
+enum class Cmd : uint8_t { None, Dose, Amount, Schedule, Stop, Install };
 struct Command {
     Cmd cmd = Cmd::None;
     int pump = -1;      // 0..4
