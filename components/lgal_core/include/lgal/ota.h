@@ -5,12 +5,11 @@
 //   POST /api/v1/ota/firmware   body = raw .bin (application/octet-stream)
 //   POST /api/v1/ota/url        {"url":"https://…/firmware.bin"} -> 202 {"status":"started"};
 //                               the device downloads the image itself
-//   GET  /api/v1/ota/status     {"state":"idle|running|failed|rebooting","source":"api|mqtt",
+//   GET  /api/v1/ota/status     {"state":"idle|running|failed|rebooting","source":"api",
 //                               "http","received","total" (null = unknown),"error"?,"detail"?}
-//   GET  /api/v1/ota/settings   {"allow_http","mqtt_update"}
-//   PUT  /api/v1/ota/settings   {"allow_http"?,"mqtt_update"?}
-//   MQTT "<base>/ota/set"       URL as payload (only with mqtt_update); progress
-//                               and result on "<base>/ota/state" (not retained)
+//   GET  /api/v1/ota/settings   {"allow_http"}
+//   PUT  /api/v1/ota/settings   {"allow_http"?}
+//   MQTT "<base>/ota/state"     progress and result (not retained)
 //
 // URLs: https with the server certificate checked against the CA bundle.
 // Plain http only with allow_http (off from the factory, the WebUI warns);
@@ -45,15 +44,14 @@ bool in_progress();
 
 constexpr size_t kMaxUrl = 512;
 struct Settings {
-    bool allow_http = false;   // plain http for URL updates
-    bool mqtt_update = false;  // "<base>/ota/set" accepted
+    bool allow_http = false;  // plain http for URL updates
 };
 Settings settings();
 
 enum class State : uint8_t { Idle, Running, Failed, Rebooting };
 const char* state_name(State s);
 
-// Starts an update from url in the background (source "api" or "mqtt").
+// Starts an update from url in the background (source e.g. "api").
 // nullptr = started; otherwise "invalid_url", "http_not_allowed",
 // "ota_in_progress", "no_ota_partition", "no_memory" or "guard" (then
 // *reason holds the guard's code, e.g. "pump_running").

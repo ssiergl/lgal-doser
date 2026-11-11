@@ -207,7 +207,7 @@ nicht, `idf.py build` reicht.
 | Netzwerk | In den Einstellungen: Status (aktive Schnittstelle, LAN- und WLAN-Adresse, Signal, Setup-WLAN, Countdown bis zum WLAN-Ersatz) für alle. Nur Profi: Schnittstelle (automatisch / nur LAN / nur WLAN), DHCP oder feste Adressen je Schnittstelle (vorbelegt mit den aktuellen), WLAN-Suche, Passwort, Verbindungstest und Speichern; ändert sich die feste LAN-Adresse, nennt die Seite die neue. `/network` bleibt als Notfallseite. |
 | MQTT | In den Einstellungen: Verbindungsstatus mit letztem Fehler (Hostname, nicht erreichbar, TLS, Anmeldung) für alle. Nur Profi: Broker und Port, Verschlüsselung (keine / TLS mit öffentlichem Zertifikat / TLS mit eigenem CA-Zertifikat inkl. Hochladen, Ersetzen, Entfernen), Benutzer und Passwort, Basis-Topic, Home-Assistant-Erkennung mit Präfix, „Steuerung über MQTT erlauben“ mit Warnhinweis und die Liste der Topics. Siehe [MQTT / Home Assistant](#mqtt--home-assistant-m6). |
 | Anmeldung | In den Einstellungen: Passwort ändern (bzw. erstmals festlegen) und Abmelden für alle; API-Schlüssel (Liste, erzeugen mit einmaliger Anzeige und Kopieren, löschen) nur in Profi. `/login` bleibt für Anmeldung, Passwort vergessen und Engineering. |
-| Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage; Werkseinstellungen mit erneuter Eingabe des Admin-Passworts. Nur Profi: Update von einer Adresse mit Fortschritt, Update-Optionen (http erlauben mit Warnung, Update über MQTT), Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
+| Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage; Werkseinstellungen mit erneuter Eingabe des Admin-Passworts. Nur Profi: Update von einer Adresse mit Fortschritt, Update-Option (http erlauben mit Warnung), Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk- und MQTT-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten. |
@@ -267,9 +267,7 @@ curl -H "Authorization: Bearer lgal_..." -d '{"url":"https://example.com/lgal_do
   aktiv ist, zeigt die Wartungsseite eine Warnung, und jede http-Adresse wird vor dem Start noch
   einmal bestätigt: über http kann die Firmware unterwegs unbemerkt ausgetauscht werden. Ohne
   diese Erlaubnis wird auch eine Weiterleitung von https auf http abgelehnt.
-- **MQTT** (`<basis>/ota/set`, Adresse als Nachricht) nur mit der Einstellung „Firmware-Update
-  über MQTT erlauben“, ab Werk aus: wer auf dem Broker schreiben darf, kann dann ein Update
-  starten. Fortschritt und Ergebnis kommen auf `<basis>/ota/state`.
+- Fortschritt und Ergebnis kommen zusätzlich auf `<basis>/ota/state` (MQTT).
 - Abgelehnt, solange eine Pumpe läuft (`pump_running`) oder schon ein Update läuft; der Download
   läuft im Hintergrund, Prüfung, Neustart und Rollback wie beim Upload.
 
@@ -319,7 +317,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
 | POST | `/api/v1/ota/url` | `{"url":"https://…"}` → 202 `started`, das Gerät lädt selbst; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |
 | GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api\|mqtt","http","received","total","error"?,"detail"?}` |
-| GET / PUT | `/api/v1/ota/settings` | `{"allow_http","mqtt_update"}`, beide ab Werk `false` |
+| GET / PUT | `/api/v1/ota/settings` | `{"allow_http"}`, ab Werk `false` |
 | GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
 | POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle); verwirft eine vorgemerkte Dosis |
@@ -496,8 +494,7 @@ Topics unter dem Basis-Topic (Standard: `lg-aquatic-life/<gerätetyp>/<hostname>
 | `<basis>/pump/<n>/amount/set` | Menge für `PRESS` in ml (im RAM, Start 1 ml) – nur mit Steuerung |
 | `<basis>/pump/<n>/schedule/set` | `ON` / `OFF` – Betrieb automatisch / nur manuell (eine ausgeschaltete Pumpe bleibt aus) – nur mit Steuerung |
 | `<basis>/stop/set` | beliebig – alle Pumpen stoppen – nur mit Steuerung |
-| `<basis>/ota/set` | Adresse der Firmware (`https://…/….bin`) – nur mit „Firmware-Update über MQTT erlauben“ |
-| `<basis>/ota/state` | Fortschritt wie `GET /api/v1/ota/status` (beim Start, alle 5 s, am Ende) oder `{"state":"refused","error":…}` |
+| `<basis>/ota/state` | Fortschritt wie `GET /api/v1/ota/status` (beim Start, alle 5 s, am Ende) |
 
 **Home-Assistant-Erkennung** (Standard an): ein Gerät „LGAL Doser XXXX“ per Device-Discovery
 (`homeassistant/device/lgal_doser_xxxx/config`) mit je Pumpe Status, dosiert gesamt

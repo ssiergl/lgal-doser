@@ -39,7 +39,6 @@ LockHook s_lock;
 std::atomic<bool> s_busy{false};
 std::function<bool()> s_health;
 std::atomic<bool> s_allow_http{false};
-std::atomic<bool> s_mqtt_update{false};
 
 // URL update progress (s_mux)
 portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
@@ -422,7 +421,6 @@ void load_settings() {
     if (nvs_open(kNs, NVS_READONLY, &h) != ESP_OK) return;
     uint8_t v = 0;
     if (nvs_get_u8(h, "http", &v) == ESP_OK) s_allow_http = v != 0;
-    if (nvs_get_u8(h, "mqtt", &v) == ESP_OK) s_mqtt_update = v != 0;
     nvs_close(h);
 }
 
@@ -431,18 +429,14 @@ esp_err_t save_settings(const Settings& s) {
     esp_err_t err = nvs_open(kNs, NVS_READWRITE, &h);
     if (err != ESP_OK) return err;
     err = nvs_set_u8(h, "http", s.allow_http);
-    if (err == ESP_OK) err = nvs_set_u8(h, "mqtt", s.mqtt_update);
     if (err == ESP_OK) err = nvs_commit(h);
     nvs_close(h);
-    if (err == ESP_OK) {
-        s_allow_http = s.allow_http;
-        s_mqtt_update = s.mqtt_update;
-    }
+    if (err == ESP_OK) s_allow_http = s.allow_http;
     return err;
 }
 
 void write_settings(Json& j) {
-    j.obj().kv("allow_http", s_allow_http.load()).kv("mqtt_update", s_mqtt_update.load()).end();
+    j.obj().kv("allow_http", s_allow_http.load()).end();
 }
 
 esp_err_t get_settings(httpd_req_t* req) {
@@ -460,9 +454,8 @@ esp_err_t put_settings(httpd_req_t* req) {
     if (!http::read_json(req, 256, &body, &doc, tok, 8)) return ESP_OK;
     const JsonValue root = doc.root();
     Settings s = settings();
-    const JsonValue vh = root["allow_http"], vm = root["mqtt_update"];
+    const JsonValue vh = root["allow_http"];
     if (vh.valid() && !vh.get(&s.allow_http)) return http::send_error(req, "400 Bad Request", "invalid_param", "allow_http");
-    if (vm.valid() && !vm.get(&s.mqtt_update)) return http::send_error(req, "400 Bad Request", "invalid_param", "mqtt_update");
     if (s.allow_http && !s_allow_http) ESP_LOGW(TAG, "plain http allowed for firmware URLs");
     if (save_settings(s) != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", "Could not save");
     Json j;
@@ -527,7 +520,6 @@ bool in_progress() { return s_busy; }
 Settings settings() {
     Settings s;
     s.allow_http = s_allow_http;
-    s.mqtt_update = s_mqtt_update;
     return s;
 }
 
@@ -555,7 +547,7 @@ const char* start_url(const char* url, const char* source, std::string* reason) 
         return "no_memory";
     }
     ESP_LOGW(TAG, "URL update started (%s, %s)", source, scheme_http(url) ? "http" : "https");
-    return nullptr;  // the task reports the state (start_url may run in the MQTT task)
+    return nullptr;  // the task reports the state
 }
 
 esp_err_t register_handlers(httpd_handle_t server) {

@@ -14,7 +14,6 @@
 #include "lgal/http.h"
 #include "lgal/json.h"
 #include "lgal/json_reader.h"
-#include "lgal/ota.h"
 #include "mbedtls/x509_crt.h"
 #include "mqtt_client.h"
 #include "nvs.h"
@@ -98,33 +97,6 @@ const char* error_code(const esp_mqtt_error_codes_t* e) {
     return e->esp_tls_cert_verify_flags ? "tls" : "tcp";
 }
 
-bool is_ota_topic(const char* topic, int len) {
-    static constexpr char kSuffix[] = "/ota/set";
-    const size_t n = s_run_base.size();
-    return size_t(len) == n + sizeof(kSuffix) - 1 && std::memcmp(topic, s_run_base.data(), n) == 0 &&
-           std::memcmp(topic + n, kSuffix, sizeof(kSuffix) - 1) == 0;
-}
-
-// "<base>/ota/set" = firmware URL. MQTT task: start_url only starts the
-// download task, which reports on "<base>/ota/state"; a refusal is answered here.
-void ota_command(esp_mqtt_client_handle_t client, const char* data, int len) {
-    std::string code;
-    if (!ota::settings().mqtt_update) {
-        code = "mqtt_update_disabled";
-    } else if (len <= 0 || size_t(len) > ota::kMaxUrl) {
-        code = "invalid_url";
-    } else {
-        std::string reason;
-        const std::string url(data, size_t(len));
-        if (const char* e = ota::start_url(url.c_str(), "mqtt", &reason)) code = std::strcmp(e, "guard") ? e : reason;
-    }
-    if (code.empty()) return;
-    ESP_LOGW(TAG, "OTA over MQTT refused: %s", code.c_str());
-    char msg[96];
-    const int n = std::snprintf(msg, sizeof(msg), "{\"state\":\"refused\",\"error\":\"%s\"}", code.c_str());
-    esp_mqtt_client_publish(client, (s_run_base + "/ota/state").c_str(), msg, n, 1, 0);
-}
-
 void on_event(void*, esp_event_base_t, int32_t id, void* data) {
     auto* ev = static_cast<esp_mqtt_event_handle_t>(data);
     switch (static_cast<esp_mqtt_event_id_t>(id)) {
@@ -136,7 +108,6 @@ void on_event(void*, esp_event_base_t, int32_t id, void* data) {
             ESP_LOGI(TAG, "Connected");
             esp_mqtt_client_publish(ev->client, s_lwt.c_str(), "online", 6, 1, 1);
             Session s(ev->client);
-            s.subscribe(s_run_base + "/ota/set", 1);  // checked against the setting on arrival
             if (s_on_connect) s_on_connect(s);
             break;
         }
@@ -153,10 +124,6 @@ void on_event(void*, esp_event_base_t, int32_t id, void* data) {
         case MQTT_EVENT_DATA:
             // commands are short: fragmented messages are ignored
             if (!ev->topic || ev->current_data_offset != 0 || ev->data_len != ev->total_data_len) break;
-            if (is_ota_topic(ev->topic, ev->topic_len)) {
-                ota_command(ev->client, ev->data, ev->data_len);
-                break;
-            }
             if (s_on_data) s_on_data(ev->topic, ev->topic_len, ev->data, ev->data_len);
             break;
         default: break;

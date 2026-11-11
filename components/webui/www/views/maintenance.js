@@ -47,11 +47,10 @@ add({
     'mt.opt.http.h': 'Off: only https with a checked certificate (recommended).',
     'mt.opt.http.on': 'http is allowed: firmware downloads over http are not protected against tampering. Switch it off again when you do not need it.',
     'mt.opt.http.ask': 'Allow firmware downloads over unencrypted http? Anyone in the network path could swap the firmware. Only do this if you know why.',
-    'mt.opt.mqtt': 'Allow firmware updates over MQTT', 'mt.opt.mqtt.h': 'Anyone who may publish to {t} on the broker can then start an update with a URL.',
     'mt.opt.saved': 'Saved.',
     'err.invalid_url': 'Invalid address (http:// or https://)', 'err.http_not_allowed': 'Unencrypted http is not allowed',
     'err.download_failed': 'Download failed', 'err.http_status': 'The server refused the download',
-    'err.too_many_redirects': 'Too many redirects', 'err.mqtt_update_disabled': 'Updates over MQTT are switched off',
+    'err.too_many_redirects': 'Too many redirects',
   },
   de: {
     'mt.title': 'Wartung', 'mt.device': 'Gerät', 'mt.fw': 'Firmware', 'mt.slot': 'Speicherplatz', 'mt.built': 'Erstellt',
@@ -89,11 +88,10 @@ add({
     'mt.opt.http.h': 'Aus: nur https mit geprüftem Zertifikat (empfohlen).',
     'mt.opt.http.on': 'http ist erlaubt: Firmware-Downloads über http sind nicht gegen Manipulation geschützt. Wieder ausschalten, wenn es nicht mehr gebraucht wird.',
     'mt.opt.http.ask': 'Firmware-Downloads über unverschlüsseltes http erlauben? Jeder auf dem Weg durchs Netz könnte die Firmware austauschen. Nur einschalten, wenn klar ist, warum.',
-    'mt.opt.mqtt': 'Firmware-Update über MQTT erlauben', 'mt.opt.mqtt.h': 'Wer auf dem Broker nach {t} schreiben darf, kann dann ein Update mit einer Adresse starten.',
     'mt.opt.saved': 'Gespeichert.',
     'err.invalid_url': 'Ungültige Adresse (http:// oder https://)', 'err.http_not_allowed': 'Unverschlüsseltes http ist nicht erlaubt',
     'err.download_failed': 'Download fehlgeschlagen', 'err.http_status': 'Der Server hat den Download abgelehnt',
-    'err.too_many_redirects': 'Zu viele Weiterleitungen', 'err.mqtt_update_disabled': 'Updates über MQTT sind ausgeschaltet',
+    'err.too_many_redirects': 'Zu viele Weiterleitungen',
   },
 });
 
@@ -239,8 +237,8 @@ function UrlUpdateCard({ busyPumps, opts }) {
   </form>`;
 }
 
-// Pro view: http for URL updates (warned) and updates over MQTT, both off from the factory
-function UpdateOptsCard({ opts, setOpts, base }) {
+// Pro view: http for URL updates (warned), off from the factory
+function UpdateOptsCard({ opts, setOpts }) {
   const msg = useMsg();
   const save = async (patch, box) => {
     if (patch.allow_http && !(await ask(t('mt.opt.http.ask'), { danger: true }))) { box.checked = false; return; }
@@ -249,8 +247,6 @@ function UpdateOptsCard({ opts, setOpts, base }) {
   return html`<section class="card"><h2>${t('mt.opt')}</h2>
     <label class="check"><input type="checkbox" checked=${opts.allow_http} onChange=${e => save({ allow_http: e.target.checked }, e.target)}/>
       <span>${t('mt.opt.http')}<br/><span class=${'small ' + (opts.allow_http ? 'warn' : 'mut')}>${t(opts.allow_http ? 'mt.opt.http.on' : 'mt.opt.http.h')}</span></span></label>
-    <label class="check"><input type="checkbox" checked=${opts.mqtt_update} onChange=${e => save({ mqtt_update: e.target.checked })}/>
-      <span>${t('mt.opt.mqtt')}<br/><span class=${'small ' + (opts.mqtt_update ? 'warn' : 'mut')}>${t('mt.opt.mqtt.h', { t: base + '/ota/set' })}</span></span></label>
     ${msg.node}
   </section>`;
 }
@@ -345,11 +341,9 @@ export function MaintenanceView() {
   const info = st.info;
   const busyPumps = !!(st.pumps && st.pumps.some(p => p.activity !== 'idle'));
   const [opts, setOpts] = useState(null);  // GET /api/v1/ota/settings
-  const [base, setBase] = useState('<base>');
   useEffect(() => {
     if (!pro) return;
     api('GET', '/api/v1/ota/settings').then(setOpts).catch(() => {});
-    api('GET', '/api/v1/mqtt').then(m => { if (m.base_topic) setBase(m.base_topic); }).catch(() => {});
   }, [pro]);
   return html`<div class="page-head"><h1>${t('mt.title')}</h1></div>
     ${pro && opts && opts.allow_http && html`<p class="banner warn">${t('mt.opt.http.on')}</p>`}
@@ -359,7 +353,7 @@ export function MaintenanceView() {
       ${pro && opts && html`<${UrlUpdateCard} busyPumps=${busyPumps} opts=${opts}/>`}
       <${RestartCard}/>
       <${FactoryCard}/>
-      ${pro && opts && html`<${UpdateOptsCard} opts=${opts} setOpts=${setOpts} base=${base}/>`}
+      ${pro && opts && html`<${UpdateOptsCard} opts=${opts} setOpts=${setOpts}/>`}
       ${pro && html`<${DiagCard} info=${info}/>`}
     </div>`}`;
 }
