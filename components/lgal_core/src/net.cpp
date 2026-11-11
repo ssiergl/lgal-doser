@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
@@ -655,7 +656,7 @@ esp_err_t init_ethernet(const EthConfig& c) {
 
     esp_netif_config_t ncfg = ESP_NETIF_DEFAULT_ETH();
     s_eth_netif = esp_netif_new(&ncfg);
-    esp_netif_set_hostname(s_eth_netif, device::hostname().c_str());
+    esp_netif_set_hostname(s_eth_netif, device::hostname().c_str());  // copied
     esp_netif_attach(s_eth_netif, esp_eth_new_netif_glue(s_eth));
     apply_ip(s_eth_netif, s_cfg.lan);
 
@@ -681,13 +682,19 @@ esp_err_t init_wifi() {
     return ESP_OK;
 }
 
+// mDNS service name: the name of the device, else the product
+std::string instance_name() {
+    const std::string n = device::name();
+    return n.empty() ? std::string("LG Aquatic Life Doser") : n;
+}
+
 void init_mdns() {
     if (mdns_init() != ESP_OK) {
         ESP_LOGE(TAG, "mDNS start failed");
         return;
     }
     mdns_hostname_set(device::hostname().c_str());
-    mdns_instance_name_set("LG Aquatic Life Doser");
+    mdns_instance_name_set(instance_name().c_str());
     mdns_txt_item_t txt[] = {
         {"vendor", "LG Aquatic Life"},
         {"type", CONFIG_LGAL_DEVICE_TYPE},
@@ -772,6 +779,15 @@ void stop_setup_ap_in(int seconds) {
 netcfg::Config config() {
     Lock l;
     return s_cfg;
+}
+
+void apply_hostname() {
+    const std::string h = device::hostname();
+    for (esp_netif_t* n : {s_eth_netif, s_sta_netif, s_ap_netif})
+        if (n) esp_netif_set_hostname(n, h.c_str());
+    mdns_hostname_set(h.c_str());
+    mdns_instance_name_set(instance_name().c_str());
+    ESP_LOGI(TAG, "Host name: %s.local", h.c_str());
 }
 
 esp_err_t set_config(const netcfg::Config& c, int apply_delay_ms) {

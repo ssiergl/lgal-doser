@@ -3,6 +3,7 @@ idf_component_register(
         "src/led.cpp"
         "src/button.cpp"
         "src/device.cpp"
+        "src/device_name.cpp"
         "src/settings.cpp"
         "src/logbuf.cpp"
         "src/net.cpp"

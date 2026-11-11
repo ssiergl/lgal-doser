@@ -44,6 +44,9 @@ netcfg::Config config();
 // response still reaches the client before addresses change.
 // ESP_ERR_INVALID_ARG if invalid.
 esp_err_t set_config(const netcfg::Config& c, int apply_delay_ms = 0);
+// Hands a changed host name (device::set_names) to mDNS at once and to the
+// interfaces; DHCP servers see it at the next lease renewal or restart.
+void apply_hostname();
 // Addresses currently in use on an interface (host byte order, dhcp = how
 // they were obtained). false if the interface has no IP address.
 bool ip_info(Iface i, netcfg::IpConfig* out);

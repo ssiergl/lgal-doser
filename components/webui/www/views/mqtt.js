@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, t } from '../lib/i18n.js';
-import { SaveBar, Toggle, useMsg } from '../lib/ui.js';
+import { SaveBar, Toggle, ask, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -25,6 +25,9 @@ add({
     'mq.ca.removed': 'Certificate removed.',
     'mq.user': 'User', 'mq.password': 'Password', 'mq.pw.keep': 'unchanged',
     'mq.base': 'Base topic', 'mq.base.h': 'All topics of this device start with it.',
+    'mq.move.h': 'The topics still carry the earlier name of the device. Moving them takes the device name and deletes the old retained messages on the broker; Home Assistant keeps its entities.',
+    'mq.move': 'Move topics to the device name', 'mq.moved': 'Topics moved to {b}.',
+    'mq.move.ask': 'Move all topics to {b}? Automations outside Home Assistant that use the old topics have to be adapted.',
     'mq.discovery': 'Home Assistant discovery', 'mq.discovery.h': 'Creates the device with all pumps in Home Assistant (MQTT integration required).',
     'mq.prefix': 'Discovery prefix',
     'mq.control': 'Allow control via MQTT',
@@ -52,6 +55,9 @@ add({
     'mq.ca.removed': 'Zertifikat entfernt.',
     'mq.user': 'Benutzer', 'mq.password': 'Passwort', 'mq.pw.keep': 'unverändert',
     'mq.base': 'Basis-Topic', 'mq.base.h': 'Alle Topics dieses Geräts beginnen damit.',
+    'mq.move.h': 'Die Topics tragen noch den früheren Namen des Geräts. Umziehen übernimmt den Gerätenamen und löscht die alten gespeicherten Nachrichten beim Broker; Home Assistant behält seine Entitäten.',
+    'mq.move': 'Topics auf den Gerätenamen umziehen', 'mq.moved': 'Topics nach {b} umgezogen.',
+    'mq.move.ask': 'Alle Topics nach {b} umziehen? Automationen außerhalb von Home Assistant, die die alten Topics nutzen, müssen angepasst werden.',
     'mq.discovery': 'Home-Assistant-Erkennung', 'mq.discovery.h': 'Legt das Gerät mit allen Pumpen in Home Assistant an (MQTT-Integration nötig).',
     'mq.prefix': 'Discovery-Präfix',
     'mq.control': 'Steuerung über MQTT erlauben',
@@ -135,7 +141,19 @@ export function MqttCard({ pro }) {
 
   const head = html`<h2>${t('mq.title')}</h2>`;
   if (!doc || !d) return html`<section class="card">${head}${msg.node || html`<p class="mut">…</p>`}</section>`;
-  if (!pro) return html`<section class="card">${head}<${Status} doc=${doc}/><p class="small mut">${t('mq.pro')}</p></section>`;
+  // base topic still in our tree but not on the current device name
+  const tree = doc.name_topic ? doc.name_topic.slice(0, doc.name_topic.lastIndexOf('/') + 1) : '';
+  const move = doc.settings.enabled && tree && doc.base_topic !== doc.name_topic && doc.base_topic.startsWith(tree) && html`
+    <div class="sub"><p class="small mut">${t('mq.move.h')}</p>
+      <p class="small mono">${doc.base_topic} → ${doc.name_topic}</p>
+      <button type="button" class="sec" disabled=${busy} onClick=${async () => {
+        if (!await ask(t('mq.move.ask', { b: doc.name_topic }), { ok: t('mq.move') })) return;
+        setBusy(true);
+        api('PUT', '/api/v1/mqtt', { base_topic: doc.name_topic })
+          .then(j => { setDoc(j); setDraft(draftOf(j.settings)); msg.ok(t('mq.moved', { b: j.base_topic })); })
+          .catch(x => msg.err(x)).finally(() => setBusy(false));
+      }}>${t('mq.move')}</button></div>`;
+  if (!pro) return html`<section class="card">${head}<${Status} doc=${doc}/><p class="small mut">${t('mq.pro')}</p>${move}${msg.node}</section>`;
 
   const set = patch => setDraft(prev => ({ ...prev, ...patch }));
   const dirty = JSON.stringify(bodyOf(d)) !== JSON.stringify(bodyOf(draftOf(doc.settings)));
@@ -191,6 +209,7 @@ export function MqttCard({ pro }) {
       <input id="mq-base_topic" class=${cls('base_topic')} maxlength="64" autocomplete="off" spellcheck="false"
         placeholder=${doc.base_topic} value=${d.base_topic} onInput=${e => set({ base_topic: e.target.value })}/></label>
     <p class="small mut">${t('mq.base.h')}</p>
+    ${move}
     <${Toggle} checked=${d.discovery} onChange=${v => set({ discovery: v })}>
       <span>${t('mq.discovery')}<br/><span class="small mut">${t('mq.discovery.h')}</span></span><//>
     ${d.discovery && html`<label class="field">${t('mq.prefix')}

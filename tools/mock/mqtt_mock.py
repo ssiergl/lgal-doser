@@ -36,7 +36,9 @@ def _doc():
     ca = {"present": bool(CA["pem"])}
     if CA["pem"]:
         ca.update(count=CA["pem"].count("-----BEGIN CERTIFICATE-----"), subject="Test Root CA", valid_to="2036-11-07")
-    return {"settings": s, "base_topic": CFG["base_topic"] or "lg-aquatic-life/doser/lgal-doser-e4f5", "port": port, "status": st, "ca": ca}
+    import sys_mock
+    return {"settings": s, "base_topic": CFG["base_topic"] or "lg-aquatic-life/doser/" + sys_mock.DEFAULT_HOST,
+            "name_topic": "lg-aquatic-life/doser/" + sys_mock.hostname(), "port": port, "status": st, "ca": ca}
 
 def route(h, method, path, q, body):
     if path == "/api/v1/mqtt":

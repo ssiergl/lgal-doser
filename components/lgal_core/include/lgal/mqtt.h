@@ -48,7 +48,9 @@ esp_err_t init();  // after settings::init, device::init and net::init
 mqttcfg::Config config();
 // Saves and restarts the client (validated by the caller: mqttcfg::parse)
 esp_err_t set_config(const mqttcfg::Config& c);
-// Base topic in use ("" in the settings = "lg-aquatic-life/<device type>/<host name>")
+// Base topic in use ("" in the settings = "lg-aquatic-life/<device type>/<factory
+// host name>", so it stays when the device gets a name). After a change of the
+// base topic the client deletes the retained messages below the old one.
 std::string base_topic();
 
 // CA certificate for tls "custom" (PEM, stored in NVS)

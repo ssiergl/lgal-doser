@@ -6,6 +6,7 @@
 
 #include "doser/schedule_json.h"
 #include "doser/tmc2209_proto.h"
+#include "lgal/device_name.h"
 
 namespace doser::backup {
 
@@ -72,6 +73,7 @@ void write_system(Json& j, const Data& d) {
     write_hm(j, "start", d.led.start_min);
     write_hm(j, "end", d.led.end_min);
     j.kv("brightness", static_cast<int>(d.led.brightness)).end();
+    if (d.names) j.kv("name", d.name).kv("own_hostname", d.own_hostname);
     j.end();
 }
 
@@ -146,6 +148,14 @@ bool parse_system(const JsonValue& v, Data* d, Error* err) {
     if (!parse_hm(n["end"], &d->led.end_min)) return fail(err, "invalid_param", "system.led_night.end");
     if (!get_int(n["brightness"], 0, 100, &b)) return fail(err, "invalid_param", "system.led_night.brightness");
     d->led.brightness = static_cast<uint8_t>(b);
+    const JsonValue name = v["name"], host = v["own_hostname"];
+    d->names = name.valid() || host.valid();
+    if (!d->names) return true;
+    if (!name.get(d->name, sizeof(d->name)) || !lgal::devname::valid_name(d->name))
+        return fail(err, "invalid_param", "system.name");
+    if (!host.get(d->own_hostname, sizeof(d->own_hostname)) ||
+        (d->own_hostname[0] && !lgal::devname::valid_host(d->own_hostname)))
+        return fail(err, "invalid_param", "system.own_hostname");
     return true;
 }
 

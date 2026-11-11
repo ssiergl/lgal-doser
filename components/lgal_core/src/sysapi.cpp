@@ -20,6 +20,7 @@
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "lgal/device.h"
+#include "lgal/device_name.h"
 #include "lgal/http.h"
 #include "lgal/led.h"
 #include "lgal/logbuf.h"
@@ -174,6 +175,7 @@ esp_err_t get_info(httpd_req_t* req) {
     write_time(extra);
     extra.end();
     write_language(extra);
+    extra.kv("device_name", device::name());
     extra.arr("links");
     for (const auto& l : s_links) extra.obj().kv("id", l.id).kv("name", l.name).kv("path", l.path).end();
     extra.end();
@@ -410,6 +412,54 @@ esp_err_t put_led(httpd_req_t* req) {
     return send_led(req);
 }
 
+// --- device name -------------------------------------------------------------
+
+esp_err_t send_device(httpd_req_t* req) {
+    Json j;
+    j.obj().kv("name", device::name()).kv("hostname", device::hostname());
+    j.kv("own_hostname", device::own_hostname()).kv("default_hostname", device::default_hostname()).end();
+    return http::send_json(req, j.c_str());
+}
+
+esp_err_t get_device(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    return send_device(req);
+}
+
+std::string trimmed(const char* s) {
+    std::string t(s);
+    const size_t a = t.find_first_not_of(' ');
+    if (a == std::string::npos) return {};
+    return t.substr(a, t.find_last_not_of(' ') - a + 1);
+}
+
+// {"name"?, "own_hostname"?}: "" = no name / host name from the name
+esp_err_t put_device(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    std::string body;
+    JsonReader doc;
+    JsonToken tok[8];
+    if (!http::read_json(req, 256, &body, &doc, tok, 8)) return ESP_OK;
+    std::string name = device::name(), host = device::own_hostname();
+    char buf[devname::kNameMax * 2 + 1];
+    if (const JsonValue x = doc.root()["name"]; x.valid()) {
+        if (!x.get(buf, sizeof(buf))) return param_error(req, "name");
+        name = trimmed(buf);
+        if (!devname::valid_name(name.c_str())) return param_error(req, "name");
+    }
+    if (const JsonValue x = doc.root()["own_hostname"]; x.valid()) {
+        if (!x.get(buf, sizeof(buf))) return param_error(req, "own_hostname");
+        host = trimmed(buf);
+        for (auto& c : host)
+            if (c >= 'A' && c <= 'Z') c = static_cast<char>(c + 32);
+        if (!host.empty() && !devname::valid_host(host.c_str())) return param_error(req, "own_hostname");
+    }
+    if (const esp_err_t err = device::set_names(name, host); err != ESP_OK)
+        return http::send_error(req, "500 Internal Server Error", "storage_error", esp_err_to_name(err));
+    net::apply_hostname();
+    return send_device(req);
+}
+
 void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(httpd_req_t*)) {
     httpd_uri_t u{};
     u.uri = uri;
@@ -439,6 +489,8 @@ esp_err_t register_handlers(httpd_handle_t server) {
     reg(server, "/api/v1/system/time", HTTP_PUT, put_time);
     reg(server, "/api/v1/system/led", HTTP_GET, get_led);
     reg(server, "/api/v1/system/led", HTTP_PUT, put_led);
+    reg(server, "/api/v1/system/device", HTTP_GET, get_device);
+    reg(server, "/api/v1/system/device", HTTP_PUT, put_device);
     return ESP_OK;
 }
 
