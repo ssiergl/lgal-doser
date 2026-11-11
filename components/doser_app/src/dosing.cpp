@@ -270,6 +270,8 @@ void tick_pump(int i) {
                                     : dose::steps_to_ul(moved, dose::ul_per_rev(p.set), j.spr);
             j.done_ul = ul;
             if (j.act == Activity::Dosing) refund(p, j.booked_ul > ul ? j.booked_ul - ul : 0);
+            // filling the tube empties the container as well (not a dose: no daily amount)
+            if (j.act == Activity::Priming && p.set.capacity_ul) p.st.remaining_ul = drained(p.st.remaining_ul, ul);
             if (j.act == Activity::Calibrating) {
                 p.calib_pending = complete && !fault;
                 p.calib_steps = moved;

@@ -414,7 +414,7 @@ Oszilloskop/Logikanalysator).
 | Verbuchung | Beim Start wird die volle Menge auf Tageslimit, Behälter und Gesamtzähler gebucht und gesichert; ein Abbruch schreibt die nicht geförderte Menge gut. Der Behälter zählt nie unter 0 ml (vergessenes Nachfüllen); die Dosis läuft trotzdem. Stromausfall während der Fahrt → Menge bleibt gebucht (sichere Seite). |
 | Tageslimit | hart pro Pumpe; Fenster Kalendertag oder rollierend 24 h (Engineering). Stunden-Töpfe über 26 h, angebrochene Stunden zählen voll. Ohne gültige Uhrzeit werden Pumpen mit Limit gesperrt. |
 | Kalibrierung | Lauf mit Zielmenge (Standard 10 ml), dann gemessene Menge eintragen. Plausibel: 0,25- bis 4-facher Nennwert. Die aufgefangene Menge wird vom Behälter abgezogen. |
-| Entlüften | läuft, solange der Button gehalten wird (Heartbeat alle 150 ms, Stopp nach 500 ms ohne Heartbeat oder sofort bei Abbruch der WebSocket-Verbindung, max. 60 s). Zählt nicht für Behälter/Limit, aber für die Schlauch-Laufzeit. |
+| Entlüften | läuft, solange der Button gehalten wird (Heartbeat alle 150 ms, Stopp nach 500 ms ohne Heartbeat oder sofort bei Abbruch der WebSocket-Verbindung, max. 60 s). Wird mit der Nennförderung (bzw. Kalibrierung) vom Behälter abgezogen, zählt aber nicht als Dosis (Tagesmenge, Limit, Gesamtzähler); zählt für die Schlauch-Laufzeit. |
 | Sperren | Betriebsart `disabled`, OTA-Update, Treiberfehler. |
 | Speicher | Einstellungen in NVS (`dose`). Laufzustand je Pumpe im EEPROM als A/B-Datensätze (Folgenummer + CRC32, ab 0x000), Rückfall auf NVS ohne EEPROM. |
 

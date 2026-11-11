@@ -166,6 +166,7 @@ static void test_limits_and_checks() {
 static void test_priming() {
     sim::reset();
     const int p = 4;
+    CHECK(dosing::set_container(p, -1, 500000) == nullptr);
     const auto before = dosing::status(p).state;
     CHECK(dosing::prime_start(p) == nullptr);
     for (int i = 0; i < 50; ++i) {  // 1 s with heartbeat every 100 ms
@@ -180,6 +181,7 @@ static void test_priming() {
     CHECK(s.state.ledger.sum_from(0) == before.ledger.sum_from(0));  // does not count toward the limit
     CHECK(s.state.total_ul == before.total_ul);
     CHECK(s.state.tube_ms > before.tube_ms + 1000);                  // but toward the tube runtime
+    CHECK(s.last_done_ul > 0 && s.state.remaining_ul == int32_t(500000 - s.last_done_ul));  // and the container
     CHECK(s.state.retracted_mrev == 250);
     CHECK_STR(dosing::prime_beat(p), "not_priming");
     // held permanently -> maximum duration

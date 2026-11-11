@@ -200,7 +200,9 @@ def tick():
             if now - p["beat"] > ENG["prime_heartbeat_ms"] / 1000: end(i, "heartbeat_lost")
 
 def end(i, reason):
-    p = P[i]; p["activity"] = "idle"; p["owner"] = None
+    p = P[i]
+    if p["activity"] == "priming" and CAP[i]: p["remaining"] = max(0.0, p["remaining"] - p["done"])  # like the firmware
+    p["activity"] = "idle"; p["owner"] = None
     p["last"] = {"result": reason, "activity": "priming", "target_ml": 0, "done_ml": round(p["done"], 3), "at": int(time.time())}
     log("pump", i + 1, "priming ended:", reason, "%.2f ml" % p["done"])
 
