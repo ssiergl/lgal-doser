@@ -277,10 +277,10 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .canister .outline.none { stroke-dasharray: 6 5; }
 .canister .tick { stroke: var(--mut); stroke-width: 1.5; opacity: .5; }
 .canister .pct { fill: var(--text); font-size: 22px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
-.canister .wave { animation: wave 5.4s linear infinite; }
-.canister .wave.back { animation: wave-back 8s linear infinite; }
-.canister .wave.run { animation-duration: 2.2s; }
-.canister .wave.back.run { animation-duration: 3.2s; }
+.canister .wave { animation: wave 8s linear infinite; }
+.canister .wave.back { animation: wave-back 12s linear infinite; }
+.canister .wave.run { animation-duration: 3.4s; }
+.canister .wave.back.run { animation-duration: 5s; }
 @keyframes wave { from { transform: translateX(0); } to { transform: translateX(60px); } }
 @keyframes wave-back { from { transform: translateX(60px) translateY(-2px); } to { transform: translateX(0) translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) { .canister .wave, .bar.indet i { animation: none; } }
