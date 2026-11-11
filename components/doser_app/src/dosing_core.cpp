@@ -53,6 +53,11 @@ uint16_t retract_mrev(const PumpSettings& p, const Engineering& e) {
     return p.retract_mrev >= 0 ? static_cast<uint16_t>(p.retract_mrev) : e.retract_mrev;
 }
 
+bool calibration_due(const PumpSettings& p, int64_t now) {
+    if (!p.recal_months || p.ul_per_rev <= 0.0f || p.calibrated_at <= 0 || now < p.calibrated_at) return false;
+    return now - p.calibrated_at >= int64_t(p.recal_months) * 2629746;  // 30.44 days
+}
+
 uint8_t warn_days(const PumpSettings& p, const Engineering& e) { return p.warn_days ? p.warn_days : e.warn_days; }
 uint8_t low_days(const PumpSettings& p, const Engineering& e) { return p.low_days ? p.low_days : e.low_days; }
 

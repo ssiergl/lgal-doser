@@ -47,7 +47,10 @@ esp_err_t save_engineering(const dose::Engineering& e) { return nvs_save("eng", 
 void load_settings(int pump, dose::PumpSettings* p) {
     char k[4];
     key(k, sizeof(k), 'p', pump);
-    if (nvs_load(k, p)) p->name[sizeof(p->name) - 1] = 0;
+    if (!nvs_load(k, p)) return;
+    p->name[sizeof(p->name) - 1] = 0;
+    // stored before the reminder: the byte was padding
+    if (p->recal_months > dose::kMaxRecalMonths) p->recal_months = dose::PumpSettings{}.recal_months;
 }
 
 esp_err_t save_settings(int pump, const dose::PumpSettings& p) {

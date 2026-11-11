@@ -58,6 +58,8 @@ static void sample(bk::Data* d) {
     d->pumps[4].mode = dose::Mode::ManualOnly;
     d->pumps[1].warn_days = 14;
     d->pumps[1].low_days = 5;
+    d->pumps[1].recal_months = 6;
+    d->pumps[2].recal_months = 0;
     auto& s = d->schedules[0];
     s.kind = sched::Kind::Spread;
     s.count = 12;
@@ -131,9 +133,8 @@ static void test_round_trip() {
         const auto &a = d.pumps[i], &b = out.pumps[i];
         pumps_ok = pumps_ok && !std::strcmp(a.name, b.name) && a.mode == b.mode && a.speed_tier == b.speed_tier &&
                    a.retract_mrev == b.retract_mrev && a.daily_limit_ul == b.daily_limit_ul &&
-                   a.capacity_ul == b.capacity_ul &&
-                   a.warn_days == b.warn_days && a.low_days == b.low_days &&
-                   a.calibrated_at == b.calibrated_at && a.ul_per_rev == b.ul_per_rev;
+                   a.capacity_ul == b.capacity_ul && a.warn_days == b.warn_days && a.low_days == b.low_days &&
+                   a.recal_months == b.recal_months && a.calibrated_at == b.calibrated_at && a.ul_per_rev == b.ul_per_rev;
     }
     CHECK(pumps_ok);
     CHECK(out.schedules[0].kind == sched::Kind::Spread && out.schedules[0].count == 12 && out.schedules[0].amount_ul == 60000);
@@ -144,6 +145,7 @@ static void test_round_trip() {
     CHECK(out.dosing.tier_rpm[2] == 450 && out.dosing.limit_mode == dose::LimitMode::Rolling24h && out.scheduler.grid_min == 10);
     CHECK(out.pumps[1].warn_days == 14 && out.pumps[1].low_days == 5 && out.pumps[0].warn_days == 0);
     CHECK(out.dosing.warn_days == 10 && out.dosing.low_days == 4);
+    CHECK(out.pumps[0].recal_months == 3 && out.pumps[1].recal_months == 6 && out.pumps[2].recal_months == 0);
     CHECK(out.hw[1].driver.run_ma == 700 && out.hw[1].driver.hold_ma == 100 && out.hw[1].driver.invert &&
           out.hw[1].driver.microsteps == 32 && out.hw[0].driver.run_ma == 600);
     CHECK(out.history_keep_days == 30);
@@ -166,6 +168,18 @@ static void test_round_trip() {
     static bk::Data out3;
     CHECK(parse_str(old, base, &out3, &err, &r) && out3.pumps[1].warn_days == base.pumps[1].warn_days &&
           out3.dosing.warn_days == base.dosing.warn_days && out3.dosing.low_days == base.dosing.low_days);
+    // files from before the calibration reminder: setting unchanged
+    old = doc;
+    for (const char* t : {",\"recal_months\":3", ",\"recal_months\":6", ",\"recal_months\":0"})
+        for (size_t at; (at = old.find(t)) != std::string::npos;) old.erase(at, std::strlen(t));
+    CHECK(old.find("recal_months") == std::string::npos);
+    static bk::Data out4;
+    CHECK(parse_str(old, base, &out4, &err, &r) && out4.pumps[1].recal_months == base.pumps[1].recal_months &&
+          out4.pumps[2].recal_months == base.pumps[2].recal_months);
+    std::string bad = doc;
+    replace(&bad, "\"recal_months\":6", "\"recal_months\":25");
+    static bk::Data out5;
+    CHECK(!parse_str(bad, base, &out5, &err, &r));
 }
 
 static void test_parts_and_secrets() {

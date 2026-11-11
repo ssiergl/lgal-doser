@@ -12,6 +12,7 @@
 #include "esp_log.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
+#include "lgal/timesync.h"
 #include "lgal/ws.h"
 
 namespace doser::dosing_api {
@@ -73,6 +74,12 @@ int tier_arg(httpd_req_t* req) {
 
 double ml(int64_t ul) { return ul / 1000.0; }
 
+// UTC, 0 without a valid time
+int64_t now_utc() {
+    const auto ts = lgal::timesync::status();
+    return ts.valid ? ts.utc : 0;
+}
+
 void write_pump(Json& j, int i) {
     const auto s = dosing::status(i);
     const auto& set = s.settings;
@@ -110,6 +117,8 @@ void write_pump(Json& j, int i) {
         .kv("ml_per_rev", upr / 1000.0, 4)
         .kv("steps_per_ml", s.steps_per_rev ? s.steps_per_rev * 1000.0 / upr : 0.0, 1)
         .kv("calibrated_at", set.calibrated_at)
+        .kv("remind_months", static_cast<int>(set.recal_months))
+        .kv("due", dose::calibration_due(set, now_utc()))
         .kv("target_ml", ml(eng.calib_target_ul), 1)  // amount of a calibration run without ml=
         .kv("pending", s.calib_pending);
     if (s.calib_pending) j.kv("pending_steps", s.calib_steps).kv("pending_target_ml", ml(s.calib_target_ul), 3);
@@ -284,6 +293,11 @@ esp_err_t post_settings(httpd_req_t* req) {
     if (http::query_int(req, "warn_days", &v)) {
         if (v < 0 || v > 60) return fail(req, "invalid_param", "warn_days=0..60");
         s.warn_days = static_cast<uint8_t>(v);
+    }
+    // reminder to calibrate again, 0 = off
+    if (http::query_int(req, "remind_months", &v)) {
+        if (v < 0 || v > dose::kMaxRecalMonths) return fail(req, "invalid_param", "remind_months=0..24");
+        s.recal_months = static_cast<uint8_t>(v);
     }
     if (http::query_int(req, "low_days", &v)) {
         if (v < 0 || v > 60) return fail(req, "invalid_param", "low_days=0..60");
