@@ -30,7 +30,7 @@ function Today({ p, sp }) {
   const pct = plan > 0 ? Math.min(100, (used / plan) * 100) : used > 0 ? 100 : 0;
   return html`<div class="today">
     <div class="kv"><span class="mut">${t('dash.today')}</span>
-      <b class="num">${num(used, 1)}${plan > 0 ? html`<span class="mut"> / ${num(plan, 1)}</span>` : ''} ml</b></div>
+      <b class="num">${num(used, 1)}<span class="mut"> / ${num(plan, 1)}</span> ml</b></div>
     <div class="bar"><i style=${{ width: pct + '%', background: pumpColor(p.pump) }}></i></div>
   </div>`;
 }
