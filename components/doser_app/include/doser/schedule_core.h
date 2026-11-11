@@ -225,6 +225,8 @@ bool boost_active(const Boost& b, int32_t today);
 // Share for the slot due now; reduces the boost. remaining_slots: slots of
 // today from this one on (Due::remaining_today).
 uint32_t boost_take(Boost& b, int32_t today, int remaining_slots);
+// Share the slot due on `day` would get, without taking it (display)
+inline uint32_t boost_preview(Boost b, int32_t day, int remaining_slots) { return boost_take(b, day, remaining_slots); }
 // Dose failed or was aborted: give the share back
 void boost_refund(Boost& b, int32_t today, uint32_t ul);
 

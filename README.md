@@ -341,7 +341,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h` |
 | GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |
 | POST | `/api/v1/pumps/boost?pump=1&ml=30&days=3` | Boost starten; `action=stop` beendet ihn |
-| GET | `/api/v1/schedule/status` | nächste Dosis, Verzögerung, Warteschlange, Übersprungene, Boost, Reichweite aller Pumpen |
+| GET | `/api/v1/schedule/status` | nächste Dosis (`ml` inkl. erwartetem Boost-Anteil, dieser als `boost_ml`), Verzögerung, Warteschlange, Übersprungene, Boost, Reichweite aller Pumpen |
 | GET / PUT | `/api/v1/schedule/locks` | Sperrzeiten zwischen Pumpen + Regel für manuelle Dosen (JSON) |
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |

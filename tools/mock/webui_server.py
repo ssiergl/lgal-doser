@@ -100,6 +100,15 @@ def next_slot(i, now):
             if midnight + k * 86400 + m * 60 > now: return midnight + k * 86400 + m * 60, u
     return None
 
+def boost_share(i, nx):
+    """Expected boost share (ul) of the next slot: today's budget over the slots left that day (simplified)"""
+    b = BOOST[i]
+    if not b or not b["active"]: return 0
+    day = time.strftime("%Y-%m-%d", time.localtime(nx[0]))
+    left = [m for m, _ in slots_on(i, dnum(day))
+            if time.mktime(time.strptime(day, "%Y-%m-%d")) + m * 60 >= nx[0]]
+    return int(b["remaining_ml"] * 1000 / max(1, b["days"]) / max(1, len(left)))
+
 def remaining_days(i):
     """Like sched::remaining_days: container / average of the next 7 days incl. the boost"""
     day0 = dnum(time.strftime("%Y-%m-%d"))
@@ -369,7 +378,9 @@ class H(BaseHTTPRequestHandler):
                 PLAN[i] = sum(u for _, u in today_slots(i)) / 1000 if auto else 0
                 rd = remaining_days(i) if auto and CAP[i] else None
                 nx = next_slot(i, now) if auto else None
-                pumps.append({"pump": i + 1, "next": {"at": nx[0], "local": time.strftime("%Y-%m-%d %H:%M", time.localtime(nx[0])), "ml": round(nx[1] / 1000, 3)} if nx else None,
+                bx = boost_share(i, nx) if nx else 0
+                pumps.append({"pump": i + 1, "next": {"at": nx[0], "local": time.strftime("%Y-%m-%d %H:%M", time.localtime(nx[0])),
+                                                      "ml": round((nx[1] + bx) / 1000, 3), **({"boost_ml": round(bx / 1000, 3)} if bx else {})} if nx else None,
                               "delayed": None, "queued": None, "skipped": 0, "last_skip": None, "last_run": None,
                               "planned_today_ml": PLAN[i], "remaining_days": rd, "boost": BOOST[i]})
             return self.send(200, {"clock_valid": True, "now": now, "now_local": time.strftime("%Y-%m-%d %H:%M"), "pumps": pumps})

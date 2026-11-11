@@ -55,7 +55,8 @@ struct Status {
     // next slot
     bool has_next;
     int64_t next_utc;
-    uint32_t next_ul;  // incl. no boost share (decided when due)
+    uint32_t next_ul;        // planned amount
+    uint32_t next_boost_ul;  // expected boost share on top (the final share is taken when due)
     // delayed slot
     bool delayed;
     int64_t delayed_since;
