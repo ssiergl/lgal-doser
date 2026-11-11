@@ -50,6 +50,15 @@ export const daysLeft = sp => (sp && sp.remaining_days !== null && sp.remaining_
 // effect (device values, 0 = off; defaults for older firmware)
 export const daysCls = (d, c) => d === null ? '' : d < (c.low_days ?? 4) ? 'err' : d < (c.warn_days ?? 7) ? 'warn' : '';
 
+// Line icons (chips on the dashboard, notice cards)
+const ICON = {
+  err: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7.5v5.5M12 16.5v.01',
+  warn: 'M12 3.5 2.5 20h19L12 3.5zM12 10v4.5M12 17.5v.01',
+  boost: 'M6 12.5l6-6 6 6M6 19l6-6 6 6',  // double chevron: dosing raised
+};
+export const Ic = ({ n }) => html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+  stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d=${ICON[n]}/></svg>`;
+
 // Warnings of a pump, most important first: [{cls: 'err'|'warn', text}]
 export function alerts(p, sp) {
   const out = [];
