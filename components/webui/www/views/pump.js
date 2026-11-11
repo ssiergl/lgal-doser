@@ -308,8 +308,8 @@ function UsageCard({ p, sp, nowLocal }) {
       <dt>${t('use.tube')}</dt><dd class="num">${t('use.tube.v', { h: num(tb.hours, 1), lim: tb.limit_h })}
         <div class="bar"><i style=${{ width: Math.min(100, tb.percent) + '%', background: tb.percent >= 100 ? 'var(--err)' : undefined }}></i></div></dd>
     </dl>
-    <div class="row"><button class="sec small" onClick=${resetTube}>${t('use.tube.reset')}</button>
-      <a class="btn sec small" href=${'#/history/' + p.pump}>${t('use.history')}</a></div>
+    <div class="row"><button class="sec" onClick=${resetTube}>${t('use.tube.reset')}</button>
+      <a class="btn sec" href=${'#/history/' + p.pump}>${t('use.history')}</a></div>
     ${msg.node}
   </section>`;
 }

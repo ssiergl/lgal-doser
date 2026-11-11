@@ -156,7 +156,7 @@ export function TimeCard({ pro }) {
         <option value="c">${t('tm.custom')}</option>
       </select>
       ${bz >= 0 && String(bz) !== d.zone && html`<p class="small mut">${t('tm.suggest', { z: ZONES[bz][0] })}
-        <button type="button" class="ghost small" onClick=${() => set({ zone: String(bz) })}>${t('tm.use')}</button></p>`}
+        <button type="button" class="ghost" onClick=${() => set({ zone: String(bz) })}>${t('tm.use')}</button></p>`}
     </div>
     ${d.zone === 'c' && html`<div class="field"><label for="tm-posix">${t('tm.posix')}</label>
       <input id="tm-posix" maxlength="63" autocomplete="off" spellcheck="false" placeholder="CET-1CEST,M3.5.0,M10.5.0/3"

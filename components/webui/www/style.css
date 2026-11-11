@@ -122,9 +122,10 @@ footer button.ver { all: unset; cursor: default; }
 .grid { display: grid; gap: var(--gap); }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
+/* One size for every button; colour alone tells them apart */
 button, .btn {
-  font: inherit; font-weight: 600; border: 1px solid transparent; border-radius: 10px;
-  padding: 9px 14px; cursor: pointer; background: var(--acc); color: var(--acc-ink);
+  font: inherit; font-size: 13px; font-weight: 600; border: 1px solid transparent; border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; background: var(--acc); color: var(--acc-ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
   touch-action: manipulation;
 }
@@ -132,7 +133,6 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 button.sec, .btn.sec { background: transparent; color: var(--text); border-color: var(--line); }
 button.danger { background: var(--err); color: #fff; }
 button.ghost { background: transparent; color: var(--mut); padding: 6px 8px; }
-button.small { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
 button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
   outline: 2px solid var(--acc); outline-offset: 2px;
 }
@@ -295,7 +295,7 @@ label.field input[type=text] { max-width: 320px; }
 .detail .running { margin-top: 12px; }
 .detail .running .row { justify-content: space-between; gap: 8px; }
 button.hold {
-  width: 100%; padding: 16px; background: color-mix(in srgb, var(--svc) 18%, var(--card)); color: var(--svc);
+  width: 100%; background: color-mix(in srgb, var(--svc) 18%, var(--card)); color: var(--svc);
   border: 1px solid color-mix(in srgb, var(--svc) 45%, transparent); user-select: none; -webkit-user-select: none; touch-action: none;
 }
 button.hold.held { background: var(--svc); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--svc) 30%, transparent); }
@@ -369,7 +369,6 @@ input.bad, select.bad { border-color: var(--err); }
 .newkey code { font-size: 13px; overflow-wrap: anywhere; user-select: all; }
 
 /* ---- maintenance, engineering dialog ---- */
-.btn.small { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
 pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; border-radius: 10px; background: var(--card-2); font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #000 55%, transparent); }
 .dialog { width: min(440px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; }
