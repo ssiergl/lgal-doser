@@ -91,8 +91,9 @@ main { max-width: 1200px; margin: 0 auto; padding: var(--gap); }
 
 footer {
   max-width: 1200px; margin: 0 auto; padding: 8px var(--gap) 24px;
-  display: flex; gap: 12px; flex-wrap: wrap; color: var(--mut); font-size: 12px;
+  display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; color: var(--mut); font-size: 12px;
 }
+footer > span::after { content: "–"; margin-left: 6px; }
 footer button.ver { all: unset; cursor: default; }
 
 /* ---- mobile ---- */
