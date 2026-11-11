@@ -345,7 +345,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / PUT | `/api/v1/schedule/locks` | Sperrzeiten zwischen Pumpen + Regel für manuelle Dosen (JSON) |
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
-| POST | `/api/v1/engineering/reset?what=network\|factory` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s) bzw. Werksreset mit Neustart |
+| POST | `/api/v1/engineering/reset?what=network` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s); den Werksreset gibt es nur in der Wartung mit Admin-Passwort |
 | GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |
@@ -555,10 +555,10 @@ Eingabe.
 | A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle 5 Pumpen. |
 | B · Grenzen | Entlüften max. Dauer und Totmann-Timeout, kleinste Einzeldosis, Fenster des Tageslimits, Zeitplan-Raster, max. Verzögerung einer geplanten Dosis. |
 | C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur und Aging-Offset. Aufbewahrungszeit des Verlaufs (1–60 Tage). |
-| D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen, Werksreset (Eingabe „RESET“). |
+| D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen (den Werksreset gibt es in der Wartung). |
 | E · Datensicherung | Ganzes Gerät sichern und wiederherstellen (siehe [Datensicherung](#datensicherung-m6)). |
 
-Der Werksreset (Menü, Wartungsseite oder Taster 10 s) stoppt alle Pumpen, löscht das EEPROM (Laufzustand von
+Der Werksreset (Wartungsseite oder Taster 10 s) stoppt alle Pumpen, löscht das EEPROM (Laufzustand von
 Dosierung und Zeitplan: Zähler, Behälter, Schlauchstunden), NVS und die Datenpartition und
 startet neu im Einrichtungsmodus.
 

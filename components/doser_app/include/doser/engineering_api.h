@@ -9,11 +9,9 @@
 //         "psram":{"free","total"},
 //         "nvs":{"used_entries","free_entries","total_entries","namespaces"},
 //         "storage":{"total","used","history_days","history_bytes","history_dropped"}}
-//   POST /api/v1/engineering/reset?what=network|factory
-//        network: LAN back to DHCP, WLAN and its password removed (applied
-//                 after 1 s, the device may get a new address) -> {"status":"ok"}
-//        factory: everything (NVS, history, EEPROM run state), then reboot
-//                 -> {"status":"rebooting"}
+//   POST /api/v1/engineering/reset?what=network
+//        LAN back to DHCP, WLAN and its password removed (applied after 1 s,
+//        the device may get a new address) -> {"status":"ok"}
 //   The history alone is cleared with DELETE /api/v1/history.
 //
 // For the admin, without the engineering unlock (maintenance page):

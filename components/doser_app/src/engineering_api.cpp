@@ -109,13 +109,8 @@ esp_err_t post_reset(httpd_req_t* req) {
             return http::send_error(req, "500 Internal Server Error", "internal_error", esp_err_to_name(err));
         return http::send_json(req, "{\"status\":\"ok\"}");
     }
-    if (std::strcmp(what, "factory") == 0) {
-        ESP_LOGW(TAG, "factory reset via API");
-        if (xTaskCreate(factory_task, "factory", 4096, nullptr, 5, nullptr) != pdPASS)
-            return http::send_error(req, "500 Internal Server Error", "internal_error", "no task");
-        return http::send_json(req, "{\"status\":\"rebooting\"}");
-    }
-    return http::send_error(req, "400 Bad Request", "invalid_param", "what=network|factory");
+    // the factory reset is the admin's (maintenance, with password), not here
+    return http::send_error(req, "400 Bad Request", "invalid_param", "what=network");
 }
 
 // Factory reset for the admin (maintenance page): session + password again
