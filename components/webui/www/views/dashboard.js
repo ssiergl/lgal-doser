@@ -1,38 +1,21 @@
 // Overview of all pumps: container, today's amount, range, next dose, warnings.
 import { html } from '../lib/html.js';
 import { add, num, t } from '../lib/i18n.js';
-import { Container, alerts, daysCls, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
+import { Container, PumpStats, alerts, pumpColor, pumpName, status } from '../lib/pumps.js';
 import { useStore } from '../lib/store.js';
 
 add({
   en: {
-    'dash.title': 'Overview', 'dash.today': 'Today', 'dash.range': 'Lasts', 'dash.next': 'Next',
-    'dash.days': '{d} days', 'dash.day1': '< 1 day', 'dash.none': '–', 'dash.left': '{ml} ml left',
+    'dash.title': 'Overview', 'dash.left': '{ml} ml left',
     'dash.run': '{done} of {target} ml', 'dash.prime': '{s} s · {ml} ml', 'dash.ok': 'Everything is fine',
-    'dash.alerts': '{n} notes', 'dash.boost': 'Boost: {ml} ml to go', 'dash.next.boost': 'incl. {ml} ml boost',
+    'dash.alerts': '{n} notes', 'dash.boost': 'Boost: {ml} ml to go',
   },
   de: {
-    'dash.title': 'Übersicht', 'dash.today': 'Heute', 'dash.range': 'Reicht', 'dash.next': 'Nächste',
-    'dash.days': '{d} Tage', 'dash.day1': '< 1 Tag', 'dash.none': '–', 'dash.left': 'noch {ml} ml',
+    'dash.title': 'Übersicht', 'dash.left': 'noch {ml} ml',
     'dash.run': '{done} von {target} ml', 'dash.prime': '{s} s · {ml} ml', 'dash.ok': 'Alles in Ordnung',
-    'dash.alerts': '{n} Hinweise', 'dash.boost': 'Boost: noch {ml} ml', 'dash.next.boost': 'inkl. {ml} ml Boost',
+    'dash.alerts': '{n} Hinweise', 'dash.boost': 'Boost: noch {ml} ml',
   },
 });
-
-function Range({ d, c }) {
-  if (d === null) return html`<span class="mut">${t('dash.none')}</span>`;
-  return html`<span class=${daysCls(d, c)}>${d < 1 ? t('dash.day1') : t('dash.days', { d: num(d, 0) })}</span>`;
-}
-
-function Today({ p, sp }) {
-  const used = p.daily.used_ml, plan = sp ? sp.planned_today_ml : 0;
-  const pct = plan > 0 ? Math.min(100, (used / plan) * 100) : used > 0 ? 100 : 0;
-  return html`<div class="today">
-    <div class="kv"><span class="mut">${t('dash.today')}</span>
-      <b class="num">${num(used, 1)}<span class="mut"> / ${num(plan, 1)}</span> ml</b></div>
-    <div class="bar"><i style=${{ width: pct + '%', background: pumpColor(p.pump) }}></i></div>
-  </div>`;
-}
 
 function Running({ p }) {
   if (p.activity === 'idle') return null;
@@ -60,11 +43,7 @@ function PumpCard({ p, sp, nowLocal }) {
     <div class="pc-body">
       <${Container} p=${p} sp=${sp}/>
       <div class="pc-stats">
-        <${Today} p=${p} sp=${sp}/>
-        <div class="kv"><span class="mut">${t('dash.range')}</span><b class="num"><${Range} d=${daysLeft(sp)} c=${p.container}/></b></div>
-        <div class="kv"><span class="mut">${t('dash.next')}</span>
-          <b class="num">${sp && sp.next ? html`${whenLocal(sp.next.local, nowLocal)} <span class=${sp.next.boost_ml ? 'acc' : 'mut'}
-            title=${sp.next.boost_ml ? t('dash.next.boost', { ml: num(sp.next.boost_ml, 1) }) : null}>· ${num(sp.next.ml, 1)} ml</span>` : html`<span class="mut">${t('dash.none')}</span>`}</b></div>
+        <${PumpStats} p=${p} sp=${sp} nowLocal=${nowLocal}/>
         ${p.container.tracked && html`<div class="mut small num">${t('dash.left', { ml: num(p.container.remaining_ml, 0) })}</div>`}
         ${sp && sp.boost && html`<div class="small num acc">${t('dash.boost', { ml: num(sp.boost.remaining_ml, 1) })}</div>`}
       </div>

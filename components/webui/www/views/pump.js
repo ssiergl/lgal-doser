@@ -5,7 +5,7 @@ import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, getLang, num, t } from '../lib/i18n.js';
 import { usePrefs } from '../lib/prefs.js';
-import { Container, PumpTabs, alerts, daysCls, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
+import { Container, PumpStats, PumpTabs, alerts, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
 import { Amount, HoldButton, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
 import { ScheduleCard } from './schedule.js';
@@ -13,7 +13,7 @@ import { ScheduleCard } from './schedule.js';
 add({
   en: {
     'pump.none': 'There is no pump {n}.',
-    'ct.title': 'Container', 'ct.of': 'of {cap} ml', 'ct.lasts': 'Lasts about {d} days', 'ct.refill': 'Refilled',
+    'ct.title': 'Container', 'ct.of': 'of {cap} ml', 'ct.refill': 'Refilled',
     'ct.edit': 'Change', 'ct.cap': 'Container size', 'ct.rem': 'Content now', 'ct.save': 'Save',
     'ct.off': 'No container tracking', 'ct.off.hint': 'Enter a container size to see the fill level and the range.',
     'ct.ok': 'Container saved', 'ct.refilled': 'Container set to full',
@@ -32,10 +32,10 @@ add({
     'cal.start': 'Start calibration', 'cal.running': 'Calibration running … {done} ml',
     'cal.measured': 'Measured amount', 'cal.ask': 'The pump should have delivered {ml} ml. How much is in the cup?',
     'cal.apply': 'Apply', 'cal.discard': 'Discard', 'cal.done': 'New calibration saved',
-    'use.title': 'Consumption', 'use.today': 'Today', 'use.plan': 'Planned today', 'use.limit': 'Daily limit',
+    'use.title': 'Consumption', 'use.limit': 'Daily limit',
     'use.last': 'Last run', 'use.total': 'Total dosed', 'use.tube': 'Tube', 'use.tube.v': '{h} of {lim} h',
     'use.tube.reset': 'Tube replaced', 'use.tube.ask': 'Reset the tube counter of pump {n}?', 'use.tube.ok': 'Tube counter reset',
-    'use.next': 'Next dose', 'use.next.boost': '(incl. {ml} ml boost)', 'use.none': '–', 'use.off': 'off', 'use.history': 'History',
+    'use.none': '–', 'use.off': 'off', 'use.history': 'History',
     'res.success': 'done', 'res.aborted': 'stopped', 'res.heartbeat_lost': 'stopped (connection)',
     'res.max_duration': 'stopped (max. time)', 'res.fault': 'driver fault', 'res.locked': 'locked (update)',
     'act.dosing': 'Dose', 'act.priming': 'Filling', 'act.calibrating': 'Calibration',
@@ -65,7 +65,7 @@ add({
   },
   de: {
     'pump.none': 'Pumpe {n} gibt es nicht.',
-    'ct.title': 'Behälter', 'ct.of': 'von {cap} ml', 'ct.lasts': 'Reicht etwa {d} Tage', 'ct.refill': 'Nachgefüllt',
+    'ct.title': 'Behälter', 'ct.of': 'von {cap} ml', 'ct.refill': 'Nachgefüllt',
     'ct.edit': 'Ändern', 'ct.cap': 'Behältergröße', 'ct.rem': 'Inhalt jetzt', 'ct.save': 'Speichern',
     'ct.off': 'Keine Behälter-Erfassung', 'ct.off.hint': 'Behältergröße eintragen, um Füllstand und Reichweite zu sehen.',
     'ct.ok': 'Behälter gespeichert', 'ct.refilled': 'Behälter auf voll gesetzt',
@@ -84,10 +84,10 @@ add({
     'cal.start': 'Kalibrierung starten', 'cal.running': 'Kalibrierung läuft … {done} ml',
     'cal.measured': 'Gemessene Menge', 'cal.ask': 'Die Pumpe sollte {ml} ml fördern. Wie viel ist im Becher?',
     'cal.apply': 'Übernehmen', 'cal.discard': 'Verwerfen', 'cal.done': 'Neue Kalibrierung gespeichert',
-    'use.title': 'Verbrauch', 'use.today': 'Heute', 'use.plan': 'Heute geplant', 'use.limit': 'Tageslimit',
+    'use.title': 'Verbrauch', 'use.limit': 'Tageslimit',
     'use.last': 'Letzter Lauf', 'use.total': 'Insgesamt dosiert', 'use.tube': 'Schlauch', 'use.tube.v': '{h} von {lim} h',
     'use.tube.reset': 'Schlauch getauscht', 'use.tube.ask': 'Schlauchzähler von Pumpe {n} zurücksetzen?', 'use.tube.ok': 'Schlauchzähler zurückgesetzt',
-    'use.next': 'Nächste Dosis', 'use.next.boost': '(inkl. {ml} ml Boost)', 'use.none': '–', 'use.off': 'aus', 'use.history': 'Verlauf',
+    'use.none': '–', 'use.off': 'aus', 'use.history': 'Verlauf',
     'res.success': 'fertig', 'res.aborted': 'gestoppt', 'res.heartbeat_lost': 'gestoppt (Verbindung)',
     'res.max_duration': 'gestoppt (max. Dauer)', 'res.fault': 'Treiberfehler', 'res.locked': 'gesperrt (Update)',
     'act.dosing': 'Dosis', 'act.priming': 'Füllen', 'act.calibrating': 'Kalibrierung',
@@ -123,14 +123,13 @@ const dec = v => String(v).replace(',', '.');
 // ---------------------------------------------------------------------------
 
 // Container with the pump's notices below (as on the overview card)
-function ContainerCard({ p, sp }) {
+function ContainerCard({ p, sp, nowLocal }) {
   const c = p.container;
   const al = alerts(p, sp);
   const [edit, setEdit] = useState(false);
   const [cap, setCap] = useState('');
   const [rem, setRem] = useState('');
   const msg = useMsg();
-  const d = daysLeft(sp);
   const open = () => {
     setCap(c.tracked ? String(Math.round(c.capacity_ml * 10) / 10) : '');
     setRem(c.tracked ? String(Math.round(c.remaining_ml * 10) / 10) : '');
@@ -154,9 +153,9 @@ function ContainerCard({ p, sp }) {
         <h2>${t('ct.title')}</h2>
         ${c.tracked ? html`
           <div class="big num">${num(c.remaining_ml, 0)} ml</div>
-          <div class="mut">${t('ct.of', { cap: num(c.capacity_ml, 0) })}</div>
-          ${d !== null && html`<div class=${daysCls(d, c)}>${t('ct.lasts', { d: num(d, 0) })}</div>`}`
+          <div class="mut">${t('ct.of', { cap: num(c.capacity_ml, 0) })}</div>`
         : html`<div class="mut">${t('ct.off')}</div><p class="mut small">${t('ct.off.hint')}</p>`}
+        <div class="pc-stats hero-stats"><${PumpStats} p=${p} sp=${sp} nowLocal=${nowLocal} boostNote/></div>
         <div class="row">
           ${c.tracked && html`<button onClick=${refill}>${t('ct.refill')}</button>`}
           <button class="sec" onClick=${open}>${t('ct.edit')}</button>
@@ -295,7 +294,7 @@ function CalibCard({ p, pro }) {
   </section>`;
 }
 
-function UsageCard({ p, sp, nowLocal }) {
+function UsageCard({ p }) {
   const msg = useMsg();
   const d = p.daily, tb = p.tube, last = p.last || {};
   const resetTube = async () => {
@@ -307,10 +306,6 @@ function UsageCard({ p, sp, nowLocal }) {
     ? `${t('act.' + last.activity)} · ${num(last.done_ml, 2)} ml · ${t('res.' + last.result)}` : none;
   return html`<section class="card usage"><h2>${t('use.title')}</h2>
     <dl class="stats">
-      <dt>${t('use.today')}</dt><dd class="num">${num(d.used_ml, 2)} ml</dd>
-      <dt>${t('use.plan')}</dt><dd class="num">${sp ? num(sp.planned_today_ml, 2) + ' ml' : none}</dd>
-      <dt>${t('use.next')}</dt><dd class="num">${sp && sp.next ? html`${whenLocal(sp.next.local, nowLocal)} · ${num(sp.next.ml, 2)} ml${sp.next.boost_ml
-        ? html` <span class="acc small">${t('use.next.boost', { ml: num(sp.next.boost_ml, 2) })}</span>` : ''}` : none}</dd>
       <dt>${t('use.limit')}</dt><dd class="num">${d.limit_ml ? num(d.limit_ml, 1) + ' ml' : t('use.off')}</dd>
       <dt>${t('use.last')}</dt><dd>${lastText}</dd>
       <dt>${t('use.total')}</dt><dd class="num">${num(p.total_ml, 1)} ml</dd>
@@ -481,10 +476,10 @@ export function PumpView({ pump }) {
     </div>
     <div class="detail" key=${pump} style=${{ '--pc': pumpColor(p.pump) }}>
       <div class="col">
-        <${ContainerCard} p=${p} sp=${sp}/>
+        <${ContainerCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
         <${ScheduleCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
         <${BoostCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
-        <${UsageCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
+        <${UsageCard} p=${p}/>
       </div>
       <div class="col">
         <${DoseCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
