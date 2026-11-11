@@ -31,7 +31,8 @@ add({
     'sv.run_ma': 'Run current', 'sv.hold_ma': 'Hold current', 'sv.hold.h': '0 = motor free at standstill',
     'sv.micro': 'Microsteps', 'sv.full': 'Full steps per revolution', 'sv.accel': 'Acceleration', 'sv.vstart': 'Start speed',
     'sv.invert': 'Reverse direction (GCONF.shaft)', 'sv.all': 'Apply to all 5 pumps',
-    'sv.spr': '{spr} steps/rev · max. {sps} steps/s', 'sv.present': 'driver answers', 'sv.absent': 'driver missing',
+    'sv.spr': '{spr} steps/rev · max. {sps} steps/s', 'sv.present': 'driver OK', 'sv.absent': 'driver not answering',
+    'sv.absent.h': 'No answer on the UART bus: driver module not plugged in, wrong slot or no 24 V supply.',
     'sv.lim': 'Timeouts, minimum dose and grid', 'sv.prime_max': 'Priming: max. duration', 'sv.prime_hb': 'Priming: dead-man timeout',
     'sv.min_dose': 'Smallest single dose', 'sv.limit': 'Daily limit window', 'sv.limit.calendar_day': 'Calendar day', 'sv.limit.rolling_24h': 'Rolling 24 h',
     'sv.grid': 'Schedule grid', 'sv.delay': 'Max. delay of a scheduled dose',
@@ -87,7 +88,8 @@ add({
     'sv.run_ma': 'Laufstrom', 'sv.hold_ma': 'Haltestrom', 'sv.hold.h': '0 = Motor im Stillstand frei',
     'sv.micro': 'Mikroschritte', 'sv.full': 'Vollschritte pro Umdrehung', 'sv.accel': 'Beschleunigung', 'sv.vstart': 'Startgeschwindigkeit',
     'sv.invert': 'Drehrichtung umkehren (GCONF.shaft)', 'sv.all': 'Auf alle 5 Pumpen anwenden',
-    'sv.spr': '{spr} Schritte/U · max. {sps} Schritte/s', 'sv.present': 'Treiber antwortet', 'sv.absent': 'Treiber fehlt',
+    'sv.spr': '{spr} Schritte/U · max. {sps} Schritte/s', 'sv.present': 'Treiber OK', 'sv.absent': 'Treiber antwortet nicht',
+    'sv.absent.h': 'Keine Antwort am UART-Bus: Treibermodul nicht gesteckt, falscher Steckplatz oder keine 24-V-Versorgung.',
     'sv.lim': 'Timeouts, Mindestmenge und Raster', 'sv.prime_max': 'Entlüften: max. Dauer', 'sv.prime_hb': 'Entlüften: Totmann-Timeout',
     'sv.min_dose': 'Kleinste Einzeldosis', 'sv.limit': 'Fenster des Tageslimits', 'sv.limit.calendar_day': 'Kalendertag', 'sv.limit.rolling_24h': 'Rollierend 24 h',
     'sv.grid': 'Zeitplan-Raster', 'sv.delay': 'Max. Verzögerung einer geplanten Dosis',
@@ -282,6 +284,7 @@ function DriverCard({ hw, pumps, reload }) {
       ${p.fault && html`<span class="chip err">${tr('sv.f.' + p.fault, p.fault)}</span>`}
       <span class="small mut">${p.stepgen} · ${t('sv.run_ma')} ${p.run_ma} mA · ${t('sv.hold_ma')} ${p.hold_ma} mA</span>
     </div>
+    ${!p.present && html`<p class="small mut">${t('sv.absent.h')}</p>`}
     <div class="ipgrid">
       ${kDrv.map(f => html`<${Num} f=${f} d=${d} set=${set} bad=${bad === f} hint=${f.k === 'hold_ma' ? t('sv.hold.h') : null}/>`)}
       <label class="field">${t('sv.micro')}
