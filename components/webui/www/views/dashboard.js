@@ -3,7 +3,7 @@
 // (the texts are on the pump page, one tap away).
 import { html } from '../lib/html.js';
 import { add, num, t } from '../lib/i18n.js';
-import { Container, PumpStats, alerts, pumpColor, pumpName, status } from '../lib/pumps.js';
+import { Container, Ic, PumpStats, alerts, pumpColor, pumpName, status } from '../lib/pumps.js';
 import { useStore } from '../lib/store.js';
 
 add({
@@ -33,14 +33,6 @@ function Running({ p }) {
 
 const count = (n, one, many) => (n === 1 ? t(one) : t(many, { n }));
 
-// 16 px line icons for the chips
-const ICON = {
-  err: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7.5v5.5M12 16.5v.01',
-  warn: 'M12 3.5 2.5 20h19L12 3.5zM12 10v4.5M12 17.5v.01',
-  boost: 'M6 12.5l6-6 6 6M6 19l6-6 6 6',  // double chevron: dosing raised
-};
-const Ic = ({ n }) => html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-  stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d=${ICON[n]}/></svg>`;
 function IcChip({ cls, icon, label, n }) {
   return html`<span class=${'chip ic ' + cls} title=${label} aria-label=${label}><${Ic} n=${icon}/>${n}</span>`;
 }

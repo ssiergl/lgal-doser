@@ -5,7 +5,7 @@ import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, getLang, num, t } from '../lib/i18n.js';
 import { hm, usePrefs } from '../lib/prefs.js';
-import { Container, PumpStats, PumpTabs, alerts, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
+import { Container, Ic, PumpStats, PumpTabs, alerts, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
 import { Amount, HoldButton, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
 import { ScheduleCard } from './schedule.js';
@@ -13,7 +13,7 @@ import { ScheduleCard } from './schedule.js';
 add({
   en: {
     'pump.none': 'There is no pump {n}.',
-    'ct.title': 'Container', 'ct.of': 'of {cap} ml', 'ct.refill': 'Refilled',
+    'ct.title': 'Container', 'ct.err': 'Alarm', 'ct.errs': 'Alarms', 'ct.warn': 'Warning', 'ct.warns': 'Warnings', 'ct.of': 'of {cap} ml', 'ct.refill': 'Refilled',
     'ct.edit': 'Change', 'ct.cap': 'Container size', 'ct.rem': 'Content now', 'ct.save': 'Save',
     'ct.off': 'No container tracking', 'ct.off.hint': 'Enter a container size to see the fill level and the range.',
     'ct.ok': 'Container saved', 'ct.refilled': 'Container set to full',
@@ -70,7 +70,7 @@ add({
   },
   de: {
     'pump.none': 'Pumpe {n} gibt es nicht.',
-    'ct.title': 'Behälter', 'ct.of': 'von {cap} ml', 'ct.refill': 'Nachgefüllt',
+    'ct.title': 'Behälter', 'ct.err': 'Alarm', 'ct.errs': 'Alarme', 'ct.warn': 'Warnung', 'ct.warns': 'Warnungen', 'ct.of': 'von {cap} ml', 'ct.refill': 'Nachgefüllt',
     'ct.edit': 'Ändern', 'ct.cap': 'Behältergröße', 'ct.rem': 'Inhalt jetzt', 'ct.save': 'Speichern',
     'ct.off': 'Keine Behälter-Erfassung', 'ct.off.hint': 'Behältergröße eintragen, um Füllstand und Reichweite zu sehen.',
     'ct.ok': 'Behälter gespeichert', 'ct.refilled': 'Behälter auf voll gesetzt',
@@ -132,31 +132,25 @@ const dec = v => String(v).replace(',', '.');
 
 // ---------------------------------------------------------------------------
 
-// Container with the pump's notices below (as on the overview card)
+// Notices of the pump below the container card (which keeps its size for
+// every pump): one card for alarms, one for warnings, only when there are any
+function PumpAlerts({ p, sp }) {
+  const al = alerts(p, sp);
+  return ['err', 'warn'].map(cls => {
+    const list = al.filter(a => a.cls === cls);
+    return list.length > 0 && html`<section class=${'card notice ' + cls}>
+      <h2><${Ic} n=${cls}/>${t(list.length > 1 ? 'ct.' + cls + 's' : 'ct.' + cls)}</h2>
+      <ul>${list.map(a => html`<li>${a.text}</li>`)}</ul></section>`;
+  });
+}
+
+// Container card, the same size for every pump
 function ContainerCard({ p, sp, nowLocal }) {
   const c = p.container;
-  const al = alerts(p, sp);
   const [edit, setEdit] = useState(false);
   const [cap, setCap] = useState('');
   const [rem, setRem] = useState('');
   const msg = useMsg();
-  // the canister from the title down to the last figure beside it (buttons
-  // below), as long as both fit side by side
-  const text = useRef(null);
-  const [tall, setTall] = useState(0);
-  useEffect(() => {
-    const el = text.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const row = el.closest('.hero-in');
-    const fit = () => {
-      const h = Math.min(360, Math.round(el.offsetHeight));
-      setTall(row.clientWidth >= h * 0.75 + 20 + 200 ? h : 0);
-    };
-    const ro = new ResizeObserver(fit);
-    ro.observe(row);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   const open = () => {
     setCap(c.tracked ? String(Math.round(c.capacity_ml * 10) / 10) : '');
     setRem(c.tracked ? String(Math.round(c.remaining_ml * 10) / 10) : '');
@@ -175,14 +169,14 @@ function ContainerCard({ p, sp, nowLocal }) {
   };
   return html`<section class="card hero" style=${{ '--pc': pumpColor(p.pump) }}>
     <div class="hero-in">
-      <${Container} p=${p} sp=${sp} size="l" style=${tall ? { height: tall + 'px', width: Math.round(tall * 0.75) + 'px' } : null}/>
+      <${Container} p=${p} sp=${sp} size="l"/>
       <div class="hero-text">
-        <div class="hero-info" ref=${text}>
+        <div class="hero-info">
           <h2>${t('ct.title')}</h2>
-          ${c.tracked ? html`
+          <div class="hero-amt">${c.tracked ? html`
             <div class="big num">${num(c.remaining_ml, 0)} ml</div>
             <div class="mut">${t('ct.of', { cap: num(c.capacity_ml, 0) })}</div>`
-          : html`<div class="mut">${t('ct.off')}</div><p class="mut small">${t('ct.off.hint')}</p>`}
+          : html`<div class="mut">${t('ct.off')}</div><p class="mut small">${t('ct.off.hint')}</p>`}</div>
           <div class="pc-stats hero-stats"><${PumpStats} p=${p} sp=${sp} nowLocal=${nowLocal} boostNote/></div>
         </div>
         <div class="row">
@@ -191,7 +185,6 @@ function ContainerCard({ p, sp, nowLocal }) {
         </div>
       </div>
     </div>
-    ${al.length > 0 && html`<ul class="alerts">${al.map(a => html`<li class=${a.cls}>${a.text}</li>`)}</ul>`}
     ${edit && html`<form class="sub" onSubmit=${save}>
       <div class="form-row">
         <label>${t('ct.cap')}<${Amount} value=${cap} onInput=${setCap}/></label>
@@ -559,6 +552,7 @@ export function PumpView({ pump }) {
     <div class="detail" key=${pump} style=${{ '--pc': pumpColor(p.pump) }}>
       <div class="col">
         <${ContainerCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
+        <${PumpAlerts} p=${p} sp=${sp}/>
         <${ScheduleCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
         <${BoostCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
         <${UsageCard} p=${p}/>

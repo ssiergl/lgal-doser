@@ -305,16 +305,26 @@ select.small { padding: 5px 8px; font-size: 13px; }
 }
 .detail h2 { margin-bottom: 10px; }
 .hero { border-top: 3px solid var(--pc); }
-.hero-in { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.hero-in { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
 .hero-text { flex: 1; min-width: 200px; display: grid; gap: 6px; }
-.hero-info { display: grid; gap: 6px; justify-items: start; }
+/* fixed places for every pump: amount, today block, boost note; without a
+   boost the room of the note stays empty above the buttons */
+.hero-info { display: grid; gap: 6px; justify-items: start; align-content: start; min-height: 240px; }
+.hero-amt { display: grid; gap: 6px; min-height: 64px; align-content: start; }
+.hero-amt p { margin: 0; }
+.hero .canister.l { width: 180px; height: 240px; }
 .hero-info h2 { margin: 0; }
 .hero-text .row { margin-top: 8px; }
 .hero-stats { justify-self: stretch; margin-top: 6px; gap: 11px; }
 .hero-stats .kv { font-size: 15.5px; }
 .hero .big { font-size: 34px; }
 .nx-boost { text-align: right; margin-top: -4px; }
-.hero > .alerts { margin-top: 14px; }
+.card.notice { border-left: 3px solid currentColor; padding-block: 12px; }
+.card.notice.err { color: var(--err); }
+.card.notice.warn { color: var(--warn); }
+.card.notice h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 6px; color: inherit; }
+.card.notice h2 svg { width: 18px; height: 18px; }
+.card.notice ul { margin: 0; padding-left: 26px; display: grid; gap: 4px; color: var(--text); font-size: 14px; }
 .big { font-size: 30px; font-weight: 700; line-height: 1.1; }
 .sub { border-top: 1px solid var(--line); margin-top: var(--gap); padding-top: 12px; }
 .diag-item p { margin: 6px 0 0; }
