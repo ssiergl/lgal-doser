@@ -77,59 +77,60 @@ void write_pump(Writer& w, const DeviceInfo& d, const Names& n, int p) {
     const std::string t = d.base + sfx;
     const std::string state = t + "state";
     lgal::Json& j = w.j();
+    const bool on = d.fitted[p];  // a pump that is not fitted has no entities
 
-    if (w.open(key + "state", "sensor", true)) {
+    if (w.open(key + "state", "sensor", on)) {
         w.name(label, n.state);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.activity }}").kv("device_class", "enum");
         j.arr("options").v("idle").v("dosing").v("priming").v("calibrating").end();
         j.kv("icon", "mdi:pump").end();
     }
-    if (w.open(key + "total", "sensor", true)) {
+    if (w.open(key + "total", "sensor", on)) {
         w.name(label, n.total);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.total_ml }}");
         j.kv("unit_of_measurement", "mL").kv("device_class", "volume").kv("state_class", "total_increasing");
         j.kv("suggested_display_precision", 1).end();
     }
-    if (w.open(key + "planned", "sensor", true)) {
+    if (w.open(key + "planned", "sensor", on)) {
         w.name(label, n.planned);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.planned_ml }}");
         j.kv("unit_of_measurement", "mL").kv("device_class", "volume").kv("state_class", "measurement");
         j.kv("suggested_display_precision", 1).end();
     }
-    if (w.open(key + "remaining", "sensor", true)) {
+    if (w.open(key + "remaining", "sensor", on)) {
         w.name(label, n.remaining);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.remaining_ml }}");
         j.kv("unit_of_measurement", "mL").kv("device_class", "volume_storage").kv("state_class", "measurement");
         j.kv("suggested_display_precision", 0).end();
     }
-    if (w.open(key + "days", "sensor", true)) {
+    if (w.open(key + "days", "sensor", on)) {
         w.name(label, n.days);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.days }}");
         j.kv("unit_of_measurement", "d").kv("device_class", "duration").kv("state_class", "measurement");
         j.kv("suggested_display_precision", 1).end();
     }
-    if (w.open(key + "next", "sensor", true)) {
+    if (w.open(key + "next", "sensor", on)) {
         w.name(label, n.next);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.next }}").kv("device_class", "timestamp").end();
     }
-    if (w.open(key + "tube", "sensor", true)) {
+    if (w.open(key + "tube", "sensor", on)) {
         w.name(label, n.tube);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.tube_h }}");
         j.kv("unit_of_measurement", "h").kv("device_class", "duration").kv("state_class", "total_increasing");
         j.kv("entity_category", "diagnostic").kv("suggested_display_precision", 1).kv("icon", "mdi:pipe").end();
     }
-    if (w.open(key + "schedule", "switch", d.control)) {
+    if (w.open(key + "schedule", "switch", on && d.control)) {
         w.name(label, n.schedule);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.schedule }}");
         j.kv("command_topic", t + "schedule/set").kv("icon", "mdi:calendar-clock").end();
     }
-    if (w.open(key + "amount", "number", d.control)) {
+    if (w.open(key + "amount", "number", on && d.control)) {
         w.name(label, n.amount);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.amount_ml }}");
         j.kv("command_topic", t + "amount/set").kv("min", 0.01, 2).kv("max", 500.0, 1).kv("step", 0.01, 2);
         j.kv("mode", "box").kv("unit_of_measurement", "mL").end();
     }
-    if (w.open(key + "dose", "button", d.control)) {
+    if (w.open(key + "dose", "button", on && d.control)) {
         w.name(label, n.dose);
         j.kv("command_topic", t + "dose/set").kv("payload_press", "PRESS").kv("icon", "mdi:water-plus").end();
     }

@@ -11,6 +11,7 @@
 #include "doser/ha_core.h"
 #include "doser/history.h"
 #include "doser/history_json.h"
+#include "doser/hwconfig.h"
 #include "doser/scheduler.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
@@ -157,6 +158,7 @@ ha::DeviceInfo device_info(const lgal::mqttcfg::Config& c) {
     d.control = c.control;
     d.update_source = !lgal::ota::settings().source.empty();
     for (int p = 0; p < ha::kPumps; ++p) {
+        d.fitted[p] = hwconfig::fitted(p);
         d.pump_names[p] = dosing::settings(p).name;
     }
     return d;
@@ -330,10 +332,14 @@ void task(void*) {
             std::memset(c.password, 0, sizeof(c.password));
         }
         for (int p = 0; p < ha::kPumps; ++p) {
-            lgal::Json j;
-            ha::write_pump_state(j, pump_state(p));
             char sfx[16];
             std::snprintf(sfx, sizeof(sfx), "pump/%d/state", p + 1);
+            if (!hwconfig::fitted(p)) {  // not fitted: clear a retained state from before
+                send(lgal::mqtt::topic(sfx), "", &pub.pump[p], refresh);
+                continue;
+            }
+            lgal::Json j;
+            ha::write_pump_state(j, pump_state(p));
             send(lgal::mqtt::topic(sfx), j.c_str(), &pub.pump[p], refresh);
         }
         lgal::Json j;

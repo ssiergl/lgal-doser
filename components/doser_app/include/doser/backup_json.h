@@ -72,6 +72,7 @@ struct Data {
     dose::Engineering dosing;
     sched::Config scheduler;
     motion::PumpConfig hw[5];
+    uint8_t fitted = 0;  // channel population (bit i = pump i+1), 0 = not in the document (older backups)
     uint16_t history_keep_days = 0;  // 0 = not in the document (older backups): unchanged
     // mqtt
     lgal::mqttcfg::Config mqtt;

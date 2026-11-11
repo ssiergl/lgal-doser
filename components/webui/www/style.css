@@ -538,6 +538,7 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .eng-pick { gap: 8px 14px; }
 .eng-toggles { display: grid; gap: 4px; }
 .eng-toggles .switch { margin-top: 0; padding: 4px 0; }
+.eng-toggles.cols { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); column-gap: 24px; }
 .dz-grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
 .dz-grid > .sub { margin-top: 0; border-top: 0; padding-top: 0; }
 .ipgrid label.field { align-content: start; }

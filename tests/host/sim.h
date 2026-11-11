@@ -172,6 +172,12 @@ PumpStatus status(int pump) {
 PumpConfig config(int) { return PumpConfig{}; }
 }  // namespace doser::motion
 
+namespace doser::hwconfig {
+uint8_t g_fitted = 0x1F;  // channel population (tests change it)
+uint8_t fitted_mask() { return g_fitted; }
+bool fitted(int pump) { return pump >= 0 && pump < 5 && (g_fitted >> pump & 1); }
+}  // namespace doser::hwconfig
+
 namespace lgal::timesync {
 Status status() {
     Status s{};

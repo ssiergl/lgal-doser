@@ -39,6 +39,7 @@ void write_pump(Json& j, int i) {
     snprintf(hex, sizeof(hex), "0x%08" PRIx32, s.drv_status);
     j.obj()
         .kv("pump", i + 1)
+        .kv("fitted", hwconfig::fitted(i))
         .kv("stepgen", s.stepgen ? s.stepgen : "?")
         .kv("present", s.present)
         .kv("configured", s.configured)
@@ -84,11 +85,36 @@ void write_pump(Json& j, int i) {
     j.end();
 }
 
+// Channel population ?pumps=1,2,4,5 (at least one); takes effect after a restart
+esp_err_t post_channels(httpd_req_t* req) {
+    if (!http::authorize_engineering(req)) return ESP_OK;
+    char list[24] = "";
+    if (!http::query_str(req, "pumps", list, sizeof(list))) return bad(req, "pumps=1,2,... required");
+    uint8_t mask = 0;
+    for (const char* c = list; *c; ++c) {
+        if (*c >= '1' && *c <= '5') mask |= uint8_t(1u << (*c - '1'));
+        else if (*c != ',') return bad(req, "pumps: numbers 1..5, separated by commas");
+    }
+    if (!mask) return bad(req, "pumps: at least one pump");
+    const esp_err_t err = hwconfig::save_fitted(mask);
+    if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_error", esp_err_to_name(err));
+    ESP_LOGI(TAG, "Channel population 0x%02x saved, in effect after a restart", mask);
+    return http::send_json(req, "{\"status\":\"ok\",\"restart\":true}");
+}
+
 esp_err_t get_status(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     Json j;
     j.obj();
     j.kv("drivers_enabled", motion::drivers_enabled()).kv("locked", motion::locked());
+    // channel population: in effect now and after the next restart
+    j.arr("fitted");
+    for (int i = 0; i < 5; ++i)
+        if (hwconfig::fitted_mask() >> i & 1) j.v(i + 1);
+    j.end().arr("fitted_next");
+    for (int i = 0; i < 5; ++i)
+        if (hwconfig::stored_fitted_mask() >> i & 1) j.v(i + 1);
+    j.end();
     j.arr("pumps");
     for (int i = 0; i < 5; ++i) write_pump(j, i);
     j.end();
@@ -265,6 +291,7 @@ esp_err_t post_eeprom_test(httpd_req_t* req) {
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;
     http::route(server, "/api/v1/hw/status", HTTP_GET, get_status);
+    http::route(server, "/api/v1/hw/channels", HTTP_POST, post_channels);
     http::route(server, "/api/v1/hw/pump/run", HTTP_POST, post_run);
     http::route(server, "/api/v1/hw/pump/stop", HTTP_POST, post_stop);
     http::route(server, "/api/v1/hw/pump/config", HTTP_POST, post_pump_config);

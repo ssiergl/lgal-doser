@@ -37,6 +37,7 @@ struct DeviceInfo {
     bool german = false;  // entity names in German
     bool control = false;
     bool update_source = false;   // firmware update entity (update source set)
+    bool fitted[kPumps] = {true, true, true, true, true};  // channel population: others are removed
     std::string pump_names[kPumps];  // "" = "Pumpe n" / "Pump n"
 };
 

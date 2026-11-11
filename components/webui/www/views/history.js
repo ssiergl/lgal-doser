@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { load, save } from '../lib/hub.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { hm, usePrefs } from '../lib/prefs.js';
-import { pumpColor, pumpName } from '../lib/pumps.js';
+import { pumpColor, pumpName, fittedOf } from '../lib/pumps.js';
 import { useStore } from '../lib/store.js';
 import { Seg } from '../lib/ui.js';
 
@@ -197,7 +197,7 @@ function DailyCard() {
   if (D.error) return html`<section class="card">${head}<p class="msg err">${errText(D.error)}</p></section>`;
   if (!D.today || !D.days.length) return html`<section class="card">${head}<p class="mut">${t('hi.notime')}</p></section>`;
 
-  const pumps = s.pumps || [];
+  const pumps = fittedOf(s.pumps);
   const anySkip = D.days.some(d => d.skipped.some(x => x > 0));
   return html`<section class="card">${head}
     <div class="hc-grid">${pumps.map(p => html`<${DayChart} key=${p.pump} n=${p.pump} name=${pumpName(p)} days=${D.days} today=${D.today} kind=${kind}/>`)}</div>
@@ -248,7 +248,7 @@ function EventsCard({ pump }) {
   };
   useEffect(() => { setList(null); load(0, []); }, [f.pump, f.kind, f.days]);
   const set = patch => setF(prev => ({ ...prev, ...patch }));
-  const pumps = s.pumps || [];
+  const pumps = fittedOf(s.pumps);
   const nameOf = n => { const p = pumps.find(x => x.pump === n); return p ? pumpName(p) : t('pump', { n }); };
 
   return html`<section class="card">
@@ -257,7 +257,7 @@ function EventsCard({ pump }) {
     <div class="row hi-filter">
       <select class="small" value=${f.pump} onChange=${e => set({ pump: +e.target.value })} aria-label=${t('hi.allpumps')}>
         <option value="0">${t('hi.allpumps')}</option>
-        ${[1, 2, 3, 4, 5].map(n => html`<option value=${n}>${nameOf(n)}</option>`)}
+        ${pumps.map(p => html`<option value=${p.pump}>${pumpName(p)}</option>`)}
       </select>
       <select class="small" value=${f.kind} onChange=${e => set({ kind: e.target.value })} aria-label=${t('hi.events')}>
         <option value="">${t('hi.all')}</option>

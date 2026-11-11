@@ -5,14 +5,14 @@ import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, getLang, num, t } from '../lib/i18n.js';
 import { hm, usePrefs } from '../lib/prefs.js';
-import { Container, Ic, PumpStats, PumpTabs, alerts, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
+import { Container, Ic, PumpStats, PumpTabs, alerts, fittedOf, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
 import { Amount, HoldButton, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
 import { ScheduleCard } from './schedule.js';
 
 add({
   en: {
-    'pump.none': 'There is no pump {n}.',
+    'pump.none': 'There is no pump {n}.', 'pump.unfitted': 'Pump {n} is not fitted.',
     'ct.title': 'Container', 'ct.err': 'Alarm', 'ct.errs': 'Alarms', 'ct.warn': 'Warning', 'ct.warns': 'Warnings', 'ct.of': 'of {cap} ml', 'ct.refill': 'Refilled',
     'ct.edit': 'Change', 'ct.cap': 'Container size', 'ct.rem': 'Content now', 'ct.save': 'Save',
     'ct.off': 'No container tracking', 'ct.off.hint': 'Enter a container size to see the fill level and the range.',
@@ -73,7 +73,7 @@ add({
     'chip.boost': 'Boost',
   },
   de: {
-    'pump.none': 'Pumpe {n} gibt es nicht.',
+    'pump.none': 'Pumpe {n} gibt es nicht.', 'pump.unfitted': 'Pumpe {n} ist nicht bestückt.',
     'ct.title': 'Behälter', 'ct.err': 'Alarm', 'ct.errs': 'Alarme', 'ct.warn': 'Warnung', 'ct.warns': 'Warnungen', 'ct.of': 'von {cap} ml', 'ct.refill': 'Nachgefüllt',
     'ct.edit': 'Ändern', 'ct.cap': 'Behältergröße', 'ct.rem': 'Inhalt jetzt', 'ct.save': 'Speichern',
     'ct.off': 'Keine Behälter-Erfassung', 'ct.off.hint': 'Behältergröße eintragen, um Füllstand und Reichweite zu sehen.',
@@ -556,11 +556,12 @@ export function PumpView({ pump }) {
   if (!s.pumps) return html`<div class="empty">…</div>`;
   const p = s.pumps[pump - 1];
   if (!p) return html`<div class="empty">${t('pump.none', { n: pump })}</div>`;
+  if (p.fitted === false) return html`<div class="empty">${t('pump.unfitted', { n: pump })}</div>`;
   const sp = s.sched ? s.sched.pumps[pump - 1] : null;
   const nowLocal = s.sched && s.sched.now_local;
   const pro = prefs.mode === 'pro';
   const st = status(p);
-  return html`<${PumpTabs} current=${pump} pumps=${s.pumps}/>
+  return html`<${PumpTabs} current=${pump} pumps=${fittedOf(s.pumps)}/>
     <div class="page-head" style=${{ '--pc': pumpColor(p.pump) }}>
       <span class="badge big-badge">${p.pump}</span><h1>${pumpName(p)}</h1><span class="spacer"></span>
       <span class=${'chip ' + st.cls}>${t(st.key)}</span>

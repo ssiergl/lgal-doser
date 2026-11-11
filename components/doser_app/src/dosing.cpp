@@ -6,6 +6,7 @@
 
 #include "doser/dosing_store.h"
 #include "doser/history.h"
+#include "doser/hwconfig.h"
 #include "doser/motion.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -135,6 +136,7 @@ esp_err_t start_move(int i, int32_t steps) {
 // Common check before every job
 const char* precheck(int i) {
     const Pump& p = s_p[i];
+    if (!hwconfig::fitted(i)) return "pump_not_fitted";
     if (p.set.mode == dose::Mode::Disabled) return "pump_disabled";
     if (p.job.act != Activity::Idle || motion::status(i).running) return "pump_busy";
     if (motion::locked()) return "locked";

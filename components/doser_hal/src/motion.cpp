@@ -29,6 +29,7 @@ struct Pump {
     Tmc2209 drv;
     PumpConfig cfg;
     tmc::DriverRegs regs{};
+    bool fitted = true;       // channel population: never probed or moved if false
     bool present = false;
     bool configured = false;
     bool tuned = false;       // StealthChop tuning AT#1 done after configuration
@@ -118,6 +119,7 @@ void fault_stop(int i, const char* why) {
 
 void health_check(int i) {
     Pump& p = s_pump[i];
+    if (!p.fitted) return;
     if (!p.present) {
         probe_and_configure(i);
         return;
@@ -177,6 +179,7 @@ void task(void*) {
         Lock l;
         for (int i = 0; i < kN; ++i) {
             s_pump[i].drv.bind(pins::kTmc[i].bus == pins::kUartBusA ? &s_bus[0] : &s_bus[1], pins::kTmc[i].addr);
+            if (!s_pump[i].fitted) continue;
             probe_and_configure(i);
             if (!s_pump[i].present) ESP_LOGW(TAG, "Pump %d: no driver (24 V on? module inserted?)", i + 1);
         }
@@ -231,11 +234,14 @@ void task(void*) {
 }
 }  // namespace
 
-esp_err_t init(const PumpConfig (&configs)[5]) {
+esp_err_t init(const PumpConfig (&configs)[5], uint8_t fitted) {
     s_mutex = xSemaphoreCreateMutex();
     s_ready = xSemaphoreCreateBinary();
     if (!s_mutex || !s_ready) return ESP_ERR_NO_MEM;
-    for (int i = 0; i < kN; ++i) s_pump[i].cfg = configs[i];
+    for (int i = 0; i < kN; ++i) {
+        s_pump[i].cfg = configs[i];
+        s_pump[i].fitted = fitted >> i & 1;
+    }
     if (xTaskCreatePinnedToCore(task, "motion", 4096, nullptr, 10, nullptr, 1) != pdPASS) return ESP_ERR_NO_MEM;
     if (xSemaphoreTake(s_ready, pdMS_TO_TICKS(5000)) != pdTRUE) return ESP_ERR_TIMEOUT;
     return s_init_err;
@@ -248,6 +254,7 @@ esp_err_t run(int pump, const Move& move) {
     Lock l;
     if (s_locked) return ESP_ERR_INVALID_STATE;
     Pump& p = s_pump[pump];
+    if (!p.fitted) return ESP_ERR_NOT_FOUND;
     if (ch->busy()) return ESP_ERR_INVALID_STATE;
     if (!p.configured && !move.force) return ESP_ERR_NOT_FOUND;
     if (move.sps == 0 || move.sps > p.cfg.max_sps()) return ESP_ERR_INVALID_ARG;
