@@ -21,6 +21,7 @@
 #include "doser/mqtt_ha.h"
 #include "doser/pins.h"
 #include "doser/posix_tz.h"
+#include "doser/rtc_trim.h"
 #include "doser/safe_init.h"
 #include "doser/schedule_api.h"
 #include "doser/schedule_core.h"
@@ -172,7 +173,14 @@ void init_time() {
         bool lost = true;
         return doser::rtc::present() && doser::rtc::read(utc, &lost) == ESP_OK && !lost;
     };
-    hooks.write = [](int64_t utc) { return doser::rtc::present() && doser::rtc::write(utc) == ESP_OK; };
+    // writes go through the trim module (in phase, keeps its drift measurement)
+    hooks.write = [](int64_t, bool ntp) {
+        if (!doser::rtc::present()) return false;
+        if (ntp) doser::rtc_trim::on_ntp();
+        else doser::rtc_trim::on_manual();
+        return true;
+    };
+    doser::rtc_trim::init();
     lgal::timesync::init(hooks, CONFIG_LGAL_TIMEZONE, CONFIG_LGAL_NTP_SERVER, [](const char* tz) {
         doser::tz::Zone z;
         return doser::tz::parse(tz, &z);

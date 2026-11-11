@@ -26,6 +26,12 @@ esp_err_t write(int64_t utc);  // also clears the "time lost" flag
 esp_err_t temperature(float* celsius);
 esp_err_t aging(int8_t* offset);
 esp_err_t set_aging(int8_t offset);  // drift fine adjustment, ~0.1 ppm/LSB
+// Waits for the next RTC second (max. 1.5 s) and returns RTC time minus
+// system time at that edge in ms (resolution about 1 ms)
+esp_err_t edge_offset(int32_t* offset_ms);
+// Writes the system time exactly at the start of a system second, so the
+// RTC second runs in phase with it (blocks up to 1 s)
+esp_err_t write_aligned();
 }  // namespace doser::rtc
 
 namespace doser::eeprom {

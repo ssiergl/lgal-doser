@@ -18,7 +18,8 @@ namespace lgal::timesync {
 struct RtcHooks {
     // true + utc if the RTC has a valid time
     std::function<bool(int64_t* utc)> read;
-    std::function<bool(int64_t utc)> write;
+    // utc is also the system time now; ntp = fresh NTP time (else set by hand)
+    std::function<bool(int64_t utc, bool ntp)> write;
 };
 
 enum class Source : uint8_t { None, Rtc, Ntp, Manual };

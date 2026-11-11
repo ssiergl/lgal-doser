@@ -67,7 +67,7 @@ bool load_from_rtc(const char* why) {
 void on_ntp(timeval* tv) {
     s_last_ntp = tv->tv_sec;
     s_source = Source::Ntp;
-    if (s_rtc.write) s_rtc_ok = s_rtc.write(tv->tv_sec);
+    if (s_rtc.write) s_rtc_ok = s_rtc.write(tv->tv_sec, true);
     char buf[32];
     time_t t = tv->tv_sec;
     tm lt{};
@@ -183,7 +183,7 @@ bool set_manual(int64_t utc) {
     if (utc < kMinValid) return false;
     set_system(utc);
     s_source = Source::Manual;
-    if (s_rtc.write) s_rtc_ok = s_rtc.write(utc);
+    if (s_rtc.write) s_rtc_ok = s_rtc.write(utc, false);
     ESP_LOGI(TAG, "Time set manually, RTC %s", s_rtc_ok ? "updated" : "unavailable");
     return true;
 }

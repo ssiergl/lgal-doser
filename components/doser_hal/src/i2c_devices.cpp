@@ -1,6 +1,9 @@
 #include "doser/i2c_devices.h"
 
+#include <sys/time.h>
+
 #include <algorithm>
+#include <climits>
 #include <cstring>
 
 #include "doser/civil_time.h"
@@ -8,6 +11,7 @@
 #include "driver/i2c_master.h"
 #include "esp_check.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -132,6 +136,38 @@ esp_err_t temperature(float* celsius) {
     ESP_RETURN_ON_ERROR(rtc_read_regs(0x11, r, 2), TAG, "rtc temp");
     *celsius = static_cast<int8_t>(r[0]) + (r[1] >> 6) * 0.25f;
     return ESP_OK;
+}
+
+esp_err_t edge_offset(int32_t* offset_ms) {
+    uint8_t first = 0, sec = 0;
+    ESP_RETURN_ON_ERROR(rtc_read_regs(0x00, &first, 1), TAG, "rtc sec");
+    const int64_t until = esp_timer_get_time() + 1500000;
+    do {
+        vTaskDelay(1);
+        ESP_RETURN_ON_ERROR(rtc_read_regs(0x00, &sec, 1), TAG, "rtc sec");
+        if (sec != first) {
+            timeval tv{};
+            gettimeofday(&tv, nullptr);
+            int64_t utc = 0;
+            bool lost = true;
+            ESP_RETURN_ON_ERROR(read(&utc, &lost), TAG, "rtc read");
+            const int64_t diff = utc * 1000 - (static_cast<int64_t>(tv.tv_sec) * 1000 + tv.tv_usec / 1000);
+            *offset_ms = static_cast<int32_t>(std::clamp<int64_t>(diff, INT32_MIN, INT32_MAX));
+            return ESP_OK;
+        }
+    } while (esp_timer_get_time() < until);
+    return ESP_ERR_TIMEOUT;  // oscillator not running
+}
+
+esp_err_t write_aligned() {
+    timeval tv{};
+    gettimeofday(&tv, nullptr);
+    const time_t start = tv.tv_sec;
+    vTaskDelay(pdMS_TO_TICKS(std::max<int>(0, 998 - static_cast<int>(tv.tv_usec / 1000))));
+    do {
+        gettimeofday(&tv, nullptr);
+    } while (tv.tv_sec == start);  // at most ~2 ms of polling
+    return write(tv.tv_sec);
 }
 
 esp_err_t aging(int8_t* offset) {

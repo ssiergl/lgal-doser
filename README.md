@@ -352,7 +352,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/hw/pump/config?pump=1&run_ma=…` | `run_ma`, `hold_ma`, `microsteps`, `full_steps`, `invert`, `accel`, `vstart` |
 | GET | `/api/v1/hw/tmc?pump=1` | TMC2209-Rohregister |
 | POST | `/api/v1/hw/time?utc=…` | Zeit manuell setzen (System + RTC) |
-| POST | `/api/v1/hw/rtc/aging?offset=…` | DS3231 Aging-Offset |
+| POST | `/api/v1/hw/rtc/aging?offset=…&auto=0\|1` | DS3231 Aging-Offset von Hand bzw. automatischer Abgleich per NTP ein/aus (ab Werk ein) |
 | POST | `/api/v1/hw/eeprom/test` | EEPROM-Schreib-/Lesetest |
 
 Coredump auswerten:
@@ -369,7 +369,7 @@ idf.py coredump-info -c coredump.elf
 | Schritt-Takte | Pumpe 1–4: RMT (exakte Schrittzahl per Encoder). Pumpe 5: MCPWM + PCNT (Zähler stoppt beim Zielwert). Trapezrampe in Ganzzahl-Arithmetik, alle 5 parallel, IRAM-sicher. |
 | EN | gemeinsam: an, sobald eine Pumpe fährt; 0,5 s nach der letzten Fahrt aus (außer Haltestrom > 0). |
 | Überwachung | alle 100 ms während der Fahrt: SG_RESULT, DRV_STATUS (Kurzschluss/Übertemperatur → Stopp). Reihum jede Sekunde: Treiber vorhanden, GSTAT. |
-| Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`) und NTP-Server (Standard `pool.ntp.org`, leer = aus) über `/api/v1/system/time` einstellbar, gespeichert in NVS. |
+| Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach, und zwar phasengenau zum Sekundenbeginn und erst ab 0,5 s Abweichung. Dazwischen misst die Firmware bei jedem NTP-Abgleich die Abweichung an der Sekundenflanke; nach mindestens einem Tag ergibt das die Drift in ppm, die den Aging-Offset korrigiert (etwa 0,1 ppm pro Schritt, abschaltbar im Engineering). Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`) und NTP-Server (Standard `pool.ntp.org`, leer = aus) über `/api/v1/system/time` einstellbar, gespeichert in NVS. |
 | EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). |
 
 Standardwerte pro Pumpe (im Engineering-Menü änderbar, in NVS gespeichert): 600 mA Laufstrom,
@@ -554,7 +554,7 @@ Eingabe.
 |---|---|
 | A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle 5 Pumpen. |
 | B · Grenzen | Entlüften max. Dauer und Totmann-Timeout, kleinste Einzeldosis, Fenster des Tageslimits, Zeitplan-Raster, max. Verzögerung einer geplanten Dosis. |
-| C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur und Aging-Offset. Aufbewahrungszeit des Verlaufs (1–60 Tage). |
+| C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur, Aging-Offset und automatischer Abgleich per NTP (Messung seit, Abweichung jetzt, letzte Korrektur). Aufbewahrungszeit des Verlaufs (1–60 Tage). |
 | D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen (den Werksreset gibt es in der Wartung). |
 | E · Datensicherung | Ganzes Gerät sichern und wiederherstellen (siehe [Datensicherung](#datensicherung-m6)). |
 
