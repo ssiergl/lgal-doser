@@ -8,7 +8,7 @@ add({
     'st.idle': 'Ready', 'st.dosing': 'Dosing', 'st.priming': 'Priming', 'st.calibrating': 'Calibrating',
     'st.disabled': 'Off', 'st.manual_only': 'Manual only',
     'al.low': 'Container almost empty', 'al.days': 'Lasts {d} more days',
-    'al.uncal': 'Not calibrated', 'al.limit': 'Daily limit reached', 'al.tube': 'Replace the tube',
+    'al.uncal': 'Not calibrated', 'al.recal': 'Calibration older than {m} months', 'al.limit': 'Daily limit reached', 'al.tube': 'Replace the tube',
     'al.fault': 'Last run stopped: driver fault',
     'al.delayed': 'Dose waiting (lock time)', 'al.skipped': '{n} doses skipped today', 'al.calib': 'Enter the measured amount',
     'day.tomorrow': 'tomorrow',
@@ -21,7 +21,7 @@ add({
     'st.idle': 'Bereit', 'st.dosing': 'Dosiert', 'st.priming': 'Entlüftet', 'st.calibrating': 'Kalibriert',
     'st.disabled': 'Aus', 'st.manual_only': 'Nur manuell',
     'al.low': 'Behälter fast leer', 'al.days': 'Reicht noch {d} Tage',
-    'al.uncal': 'Nicht kalibriert', 'al.limit': 'Tageslimit erreicht', 'al.tube': 'Schlauch tauschen',
+    'al.uncal': 'Nicht kalibriert', 'al.recal': 'Kalibrierung älter als {m} Monate', 'al.limit': 'Tageslimit erreicht', 'al.tube': 'Schlauch tauschen',
     'al.fault': 'Letzter Lauf abgebrochen: Treiberfehler',
     'al.delayed': 'Dosis wartet (Sperrzeit)', 'al.skipped': 'Heute {n} Dosen ausgelassen', 'al.calib': 'Gemessene Menge eintragen',
     'day.tomorrow': 'morgen',
@@ -63,6 +63,7 @@ export function alerts(p, sp) {
   if (p.daily.limit_ml && p.daily.used_ml >= p.daily.limit_ml) out.push({ cls: 'warn', text: t('al.limit') });
   if (sp && sp.skipped) out.push({ cls: 'warn', text: t('al.skipped', { n: sp.skipped }) });
   if (!p.calibration.calibrated && p.mode !== 'disabled') out.push({ cls: 'warn', text: t('al.uncal') });
+  else if (p.calibration.due && p.mode !== 'disabled') out.push({ cls: 'warn', text: t('al.recal', { m: p.calibration.remind_months }) });
   if (p.tube && p.tube.percent >= 100) out.push({ cls: 'warn', text: t('al.tube') });
   return out;
 }

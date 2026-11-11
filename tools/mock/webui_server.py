@@ -28,7 +28,7 @@ P[1]["last"] = {"result": "fault", "activity": "dosing", "target_ml": 2.5, "done
 P[2]["last"] = {"result": "success", "activity": "dosing", "target_ml": 2.0, "done_ml": 2.0, "at": int(time.time()) - 1800}
 for i, p in enumerate(P):
     p.update(mode="auto" if i != 3 else "disabled", tier=1, rset="global" if i == 0 else "off", rrev=0.25, limit=[80.0, 0, 20.0, 0, 5.0][i],
-             warn=0, low=0, mlrev=0.37 if i != 3 else 0.0, calat=int(time.time()) - 86400 * 20 if i != 3 else 0,
+             warn=0, low=0, mlrev=0.37 if i != 3 else 0.0, calat=int(time.time()) - 86400 * (100 if i == 2 else 20) if i != 3 else 0, recal=3,
              pending=False, ptarget=0.0, target=0.0, tube=12.4, total=345.678, kind="")
 GRID = 5
 WDN = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
@@ -226,7 +226,9 @@ def full(i):
     d = {"pump": n, "name": NAMES[i], "mode": p["mode"], "direction": "ccw" if eng_mock.CFG[i]["invert"] else "cw", "activity": p["activity"],
          "phase": "main" if p["activity"] != "idle" else "none", "last": dict(p["last"]),
          "calibration": {"calibrated": p["mlrev"] > 0, "ml_per_rev": p["mlrev"] or 0.37, "steps_per_ml": 3200 / (p["mlrev"] or 0.37),
-                         "calibrated_at": p["calat"], "target_ml": ENG["calib_ml"], "pending": p["pending"],
+                         "calibrated_at": p["calat"], "remind_months": p["recal"],
+                         "due": bool(p["mlrev"] and p["recal"] and p["calat"] and time.time() - p["calat"] >= p["recal"] * 2629746),
+                         "target_ml": ENG["calib_ml"], "pending": p["pending"],
                          **({"pending_steps": int(p["ptarget"] / 0.37 * 3200), "pending_target_ml": p["ptarget"]} if p["pending"] else {})},
          "speed": {"tier": p["tier"], "tiers": [{"rpm": 100, "ml_min": 37.0}, {"rpm": 200, "ml_min": 74.0}, {"rpm": 300, "ml_min": 111.0}]},
          "retract": (lambda r: {"setting": p["rset"], "global_rev": 0.25, "rev": r, "ml": round(r * 0.37, 3), "steps": int(r * 3200), "pending_rev": r})(0.0 if p["rset"] == "off" else 0.25 if p["rset"] == "global" else p["rrev"]),
@@ -303,6 +305,10 @@ def pumps_post(h, path, q):
                 if v in ("global", "off"): p["rset"] = v
                 elif float(v) == 0: p["rset"] = "off"
                 else: p.update(rset="own", rrev=num("retract_rev"))
+            if "remind_months" in q:
+                v = int(num("remind_months"))
+                if not 0 <= v <= 24: return err(h, "invalid_param", "remind_months=0..24")
+                p["recal"] = v
             w, l = p["warn"], p["low"]
             for k in ("warn_days", "low_days"):
                 if k in q:

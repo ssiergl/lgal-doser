@@ -40,6 +40,8 @@ add({
     'res.max_duration': 'stopped (max. time)', 'res.fault': 'driver fault', 'res.locked': 'locked (update)',
     'act.dosing': 'Dose', 'act.priming': 'Filling', 'act.calibrating': 'Calibration',
     'pset.title': 'Settings', 'pset.name': 'Name', 'pset.name.ph': 'e.g. KH or Calcium', 'pset.mode': 'Operation',
+    'pset.recal': 'Calibration reminder', 'pset.recal.off': 'Off', 'pset.recal.m': '{m} mon.',
+    'pset.recal.hint': 'Warns when the last calibration is older. The tube wears and the amount per turn drifts.',
     'mode.auto': 'Automatic', 'mode.manual_only': 'Manual only', 'mode.disabled': 'Off',
     'mode.hint.auto': 'Schedule and manual doses.', 'mode.hint.manual_only': 'Only manual doses, the schedule is paused.',
     'mode.hint.disabled': 'The pump does not run.',
@@ -92,6 +94,8 @@ add({
     'res.max_duration': 'gestoppt (max. Dauer)', 'res.fault': 'Treiberfehler', 'res.locked': 'gesperrt (Update)',
     'act.dosing': 'Dosis', 'act.priming': 'Füllen', 'act.calibrating': 'Kalibrierung',
     'pset.title': 'Einstellungen', 'pset.name': 'Name', 'pset.name.ph': 'z. B. KH oder Calcium', 'pset.mode': 'Betrieb',
+    'pset.recal': 'Kalibrier-Erinnerung', 'pset.recal.off': 'Aus', 'pset.recal.m': '{m} Mon.',
+    'pset.recal.hint': 'Warnt, wenn die letzte Kalibrierung älter ist. Der Schlauch altert, die Menge pro Umdrehung verschiebt sich.',
     'mode.auto': 'Automatisch', 'mode.manual_only': 'Nur manuell', 'mode.disabled': 'Aus',
     'mode.hint.auto': 'Zeitplan und manuelle Dosen.', 'mode.hint.manual_only': 'Nur manuelle Dosen, der Zeitplan ruht.',
     'mode.hint.disabled': 'Die Pumpe läuft nicht.',
@@ -408,6 +412,13 @@ function proActive(p) {
   return out;
 }
 
+// Off, 3, 6, 9, 12 months (and a value set elsewhere, up to 24)
+function recalOptions(cur) {
+  const ms = [0, 3, 6, 9, 12];
+  if (!ms.includes(cur)) ms.push(cur);
+  return ms.map(m => [m, m ? t('pset.recal.m', { m }) : t('pset.recal.off')]);
+}
+
 function SettingsCard({ p, pro }) {
   const [f, setF] = useState(null);
   const msg = useMsg();
@@ -416,7 +427,7 @@ function SettingsCard({ p, pro }) {
     setF({
       name: p.name, mode: p.mode, tier: p.speed.tier, retract: p.retract.setting,
       retractRev: String(p.retract.setting === 'own' ? p.retract.rev : p.retract.global_rev), limit: p.daily.limit_ml ? String(p.daily.limit_ml) : '0',
-      dir: p.direction,
+      dir: p.direction, recal: p.calibration.remind_months,
       warn: p.container.own_warn_days ? String(p.container.own_warn_days) : '',
       low: p.container.own_low_days ? String(p.container.own_low_days) : '',
     });
@@ -426,7 +437,7 @@ function SettingsCard({ p, pro }) {
   const set = patch => setF(prev => ({ ...prev, ...patch }));
   const save = e => {
     e.preventDefault();
-    const q = { pump: p.pump, name: f.name.trim(), mode: f.mode };
+    const q = { pump: p.pump, name: f.name.trim(), mode: f.mode, remind_months: f.recal };
     if (pro) {
       const lim = f.limit.trim() === '' ? 0 : parseNum(f.limit);
       const rr = f.retract === 'own' ? parseNum(f.retractRev) : 0;
@@ -447,6 +458,9 @@ function SettingsCard({ p, pro }) {
       <div class="field"><span class="lbl">${t('pset.mode')}</span>
         <${Seg} value=${f.mode} onChange=${v => set({ mode: v })} options=${['auto', 'manual_only', 'disabled'].map(m => [m, t('mode.' + m)])}/>
         <span class="mut small">${t('mode.hint.' + f.mode)}</span></div>
+      <div class="field"><span class="lbl">${t('pset.recal')}</span>
+        <${Seg} value=${f.recal} onChange=${v => set({ recal: v })} options=${recalOptions(f.recal)}/>
+        <span class="mut small">${t('pset.recal.hint')}</span></div>
       ${pro && html`<fieldset class="pro"><legend>${t('pset.pro')}</legend>
         <div class="field"><span class="lbl">${t('pset.tier')}</span>
           <${Seg} value=${f.tier} onChange=${v => set({ tier: v })}
