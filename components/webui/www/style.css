@@ -278,6 +278,7 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .hero-in { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
 .hero-text { flex: 1; min-width: 180px; display: grid; gap: 6px; justify-items: start; }
 .hero-text .row { margin-top: 8px; }
+.hero-text > .row.between { justify-self: stretch; margin-top: 0; }
 .big { font-size: 30px; font-weight: 700; line-height: 1.1; }
 .sub { border-top: 1px solid var(--line); margin-top: var(--gap); padding-top: 12px; }
 .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
