@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
+import { hub } from '../lib/hub.js';
 import { add, errText, getLang, t } from '../lib/i18n.js';
 import { useMsg } from '../lib/ui.js';
 
@@ -143,20 +144,33 @@ function KeysCard() {
   </section>`;
 }
 
-export function AccountCard({ pro }) {
-  const [S, setS] = useState(null);
-  const load = () => api('GET', '/api/v1/auth/status').then(setS).catch(e => setS({ error: e }));
-  useEffect(() => { load(); }, []);
+// Login status shared by the login card and the API key card
+const authHub = hub();
+let auth = null;
+const loadAuth = () => api('GET', '/api/v1/auth/status').then(j => { auth = j; }, e => { auth = { error: e }; })
+  .then(() => authHub.emit());
+function useAuth() {
+  authHub.use();
+  useEffect(() => { loadAuth(); }, []);
+  return auth;
+}
+
+export function AccountCard() {
+  const S = useAuth();
   const head = html`<h2>${t('ac.title')}</h2>`;
   if (!S) return html`<section class="card">${head}<p class="mut">…</p></section>`;
   if (S.error) return html`<section class="card">${head}<p class="msg err">${errText(S.error)}</p></section>`;
   const logout = () => api('POST', '/api/v1/auth/logout').catch(() => {}).then(() => { location.href = '/login'; });
-  return html`
-    <section class="card">
-      ${head}
-      <div class="row"><span class="small mut">${t('ac.info', { d: S.device })}</span>
-        <button type="button" class="sec small" onClick=${logout}>${t('ac.logout')}</button></div>
-      <${PasswordForm} set=${S.password_set} onDone=${load}/>
-    </section>
-    ${pro && S.password_set && html`<${KeysCard}/>`}`;
+  return html`<section class="card">
+    ${head}
+    <div class="row"><span class="small mut">${t('ac.info', { d: S.device })}</span>
+      <button type="button" class="sec small" onClick=${logout}>${t('ac.logout')}</button></div>
+    <${PasswordForm} set=${S.password_set} onDone=${loadAuth}/>
+  </section>`;
+}
+
+// API keys need an own admin password first
+export function ApiCard() {
+  const S = useAuth();
+  return S && S.password_set ? html`<${KeysCard}/>` : null;
 }
