@@ -11,6 +11,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "lgal/device.h"
+#include "lgal/events.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
 #include "lgal/json_reader.h"
@@ -369,6 +370,7 @@ esp_err_t put_mqtt(httpd_req_t* req) {
     const esp_err_t err = set_config(c);
     std::memset(&c, 0, sizeof(c));
     if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", esp_err_to_name(err));
+    events::note("mqtt", req);
     return send_doc(req);
 }
 
@@ -381,6 +383,7 @@ esp_err_t put_ca(httpd_req_t* req) {
         return http::send_error(req, storage ? "500 Internal Server Error" : "400 Bad Request", e,
                                 storage ? "Could not save the certificate" : "No valid PEM certificate");
     }
+    events::note("mqtt", req);
     return send_doc(req);
 }
 
@@ -391,6 +394,7 @@ esp_err_t delete_ca(httpd_req_t* req) {
         return http::send_error(req, in_use ? "409 Conflict" : "500 Internal Server Error", e,
                                 in_use ? "The certificate is used by the active connection" : "Storage error");
     }
+    events::note("mqtt", req);
     return send_doc(req);
 }
 

@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "doser/event_source.h"
 #include "doser/hwconfig.h"
 #include "doser/i2c_devices.h"
 #include "doser/motion.h"
@@ -99,6 +100,7 @@ esp_err_t post_channels(httpd_req_t* req) {
     const esp_err_t err = hwconfig::save_fitted(mask);
     if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_error", esp_err_to_name(err));
     ESP_LOGI(TAG, "Channel population 0x%02x saved, in effect after a restart", mask);
+    note_system(req, "channels", mask);
     return http::send_json(req, "{\"status\":\"ok\",\"restart\":true}");
 }
 
@@ -227,6 +229,7 @@ esp_err_t post_pump_config(httpd_req_t* req) {
     if (err == ESP_ERR_INVALID_ARG) return bad(req, "Invalid (current 50..1500 mA, hold <= run, microsteps 1..256)");
     if (err == ESP_ERR_INVALID_STATE) return http::send_error(req, "409 Conflict", "pump_busy", "Pump is running");
     hwconfig::save_pump(p, c);
+    note_system(req, "engineering");
     if (err != ESP_OK) return http::send_error(req, "502 Bad Gateway", "driver_config_failed", "Saved, but driver could not be configured");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
@@ -264,6 +267,7 @@ esp_err_t post_time(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     int64_t utc = 0;
     if (!http::query_int(req, "utc", &utc) || !lgal::timesync::set_manual(utc)) return bad(req, "utc invalid");
+    note_system(req, "time_set");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 
@@ -276,6 +280,7 @@ esp_err_t post_aging(httpd_req_t* req) {
         return http::send_error(req, "409 Conflict", "ntp_active", "Trimmed automatically from the time server");
     if (rtc::set_aging(static_cast<int8_t>(v)) != ESP_OK)
         return http::send_error(req, "503 Service Unavailable", "rtc_unavailable", "RTC not reachable");
+    note_system(req, "engineering");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 

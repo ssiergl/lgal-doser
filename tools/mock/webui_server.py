@@ -161,6 +161,11 @@ def lock_conflicts(locks):
                                 "second": {"pump": s[0] + 1, "time": "%02d:%02d" % divmod(s[1], 60)}, "next_day": False, "gap_min": r["gap_min"]})
     return out[:8]
 
+def note(kind, pump, code, **extra):
+    """Live history entry (source "manual": the web interface)"""
+    import hist_mock
+    hist_mock.add_now(kind, pump, "manual", code, **extra)
+
 def put_sched(h, i, body):
     kind = body.get("kind", "none")
     if kind not in ("none", "spread", "times"): return h.send(400, {"error": {"code": "invalid_param", "message": "kind", "field": "kind"}})
@@ -181,6 +186,10 @@ def put_sched(h, i, body):
     lim = P[i]["limit"]
     if lim and sum(u for _, u in today_slots(i)) / 1000 > lim:
         SCHED[i] = old; return h.send(409, {"error": {"code": "exceeds_daily_limit", "message": "x", "pump": i + 1}})
+    if kind == "none": note("schedule", i + 1, "cleared")
+    else:
+        _, _, sl = expand(new)
+        note("schedule", i + 1, "set", daily_ml=round(sum(u for _, u in sl) / 1000, 3), doses=len(sl))
     return h.send(200, sched_json(i))
 
 def put_locks(h, body):
@@ -199,6 +208,7 @@ def put_locks(h, body):
     cf = lock_conflicts(new)
     if cf: return h.send(409, {"error": {"code": "conflict", "message": "x", "conflicts": cf}})
     LOCKS = new
+    note("locks", 0, "set", rules=len(new["rules"]))
     return h.send(200, LOCKS)
 
 CLIENTS = {}  # id -> socket
@@ -287,7 +297,11 @@ def pumps_post(h, path, q):
     if not 1 <= n <= 5: return err(h, "invalid_param", "pump")
     i = n - 1; p = P[i]
     if path == "/api/v1/pumps/boost":
-        if q.get("action") == "stop": BOOST[i] = None; return h.send(200, {"status": "ok"})
+        if q.get("action") == "stop":
+            b = BOOST[i]
+            if b: note("boost", n, "cancelled", total_ml=b["total_ml"], done_ml=round(b["total_ml"] - b["remaining_ml"], 3),
+                       **({"days": b["days"]} if b["days"] else {"doses": b["doses"]}))
+            BOOST[i] = None; return h.send(200, {"status": "ok"})
         try: ml, days, doses = float(q["ml"]), int(q.get("days", 0)), int(q.get("doses", 0))
         except (KeyError, ValueError): return err(h, "invalid_param", "ml/days/doses")
         if not (0.02 <= ml <= 10000) or bool(days) == bool(doses) or not (0 <= days <= 30 and 0 <= doses <= 100):
@@ -295,6 +309,7 @@ def pumps_post(h, path, q):
         now = int(time.time())
         if p["mode"] != "auto" or not slots_between(i, now, now + (days or 31) * 86400): return err(h, "no_slots", "No scheduled doses")
         BOOST[i] = {"total_ml": ml, "remaining_ml": round(ml * 0.8, 3) if ml > 20 else ml, "days": days, "doses": doses, "start_utc": now}
+        note("boost", n, "started", total_ml=ml, **({"days": days} if days else {"doses": doses}))
         return h.send(200, {"status": "ok"})
     num = lambda k: float(q[k])
     if path == "/api/v1/pumps/prime":  # prime() takes the lock itself
@@ -309,7 +324,9 @@ def pumps_post(h, path, q):
                                                 retry_local=time.strftime("%Y-%m-%d %H:%M", time.localtime(time.time() + 600)))
             if q.get("ml") == "14": return h.send(202, {"status": "queued"})
             if "tier" in q: p["tier_dose"] = int(q["tier"])
-            p.update(activity="dosing", start=time.time(), done=0.0, target=ml); return h.send(200, {"status": "dosing"})
+            p.update(activity="dosing", start=time.time(), done=0.0, target=ml)
+            note("dose", n, "success", target_ml=ml, done_ml=ml)  # the mock books it at once
+            return h.send(200, {"status": "dosing"})
         if path == "/api/v1/pumps/calibrate":
             a = q.get("action")
             if a == "start":
@@ -325,6 +342,8 @@ def pumps_post(h, path, q):
             if a == "cancel": p["pending"] = False; return h.send(200, {"status": "ok"})
             return err(h, "invalid_param", "action")
         if path == "/api/v1/pumps/settings":
+            if "mode" in q and q["mode"] != p["mode"]: note("mode", n, "set", mode=q["mode"])
+            if any(k != "pump" and k != "mode" for k in q): note("settings", n, "set")
             if "name" in q: NAMES[i] = q["name"][:23]
             if "mode" in q: p["mode"] = q["mode"]
             if "tier" in q: p["tier"] = int(q["tier"])

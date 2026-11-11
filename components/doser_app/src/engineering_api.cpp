@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "doser/event_source.h"
 #include "doser/history.h"
 #include "doser/i2c_devices.h"
 #include "doser/motion.h"
@@ -107,6 +108,7 @@ esp_err_t post_reset(httpd_req_t* req) {
         const esp_err_t err = lgal::net::set_config(lgal::netcfg::Config{}, 1000);
         if (err != ESP_OK)
             return http::send_error(req, "500 Internal Server Error", "internal_error", esp_err_to_name(err));
+        note_system(req, "network");
         return http::send_json(req, "{\"status\":\"ok\"}");
     }
     // the factory reset is the admin's (maintenance, with password), not here

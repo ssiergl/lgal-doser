@@ -15,6 +15,7 @@
 #include <cstdint>
 
 #include "doser/dosing_core.h"
+#include "doser/history_core.h"
 #include "doser/schedule_core.h"
 #include "esp_err.h"
 
@@ -78,7 +79,11 @@ void calibrate_cancel(int pump);
 void stop(int pump);
 void stop_all();
 
-const char* set_settings(int pump, const dose::PumpSettings& s);
+// Records a mode change (history "mode") and any other change ("settings";
+// also_changed: settings outside PumpSettings changed with it, e.g. the
+// direction). source None records nothing (backup restore logs on its own).
+const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source = history::Source::None,
+                         bool also_changed = false);
 // Chemical lock times between pumps, checked on every dose (all triggers).
 // Priming and calibration are not affected (operator present, measuring cup).
 void set_locks(const sched::Locks& l);

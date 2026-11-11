@@ -518,10 +518,25 @@ Werkseinstellungen löschen die Historie mit; einzeln löscht sie das Engineerin
 | `calibration` | übernommene Kalibrierung (`ul_per_rev`, `measured_ml`, `target_ml`) |
 | `tube` | Schlauchzähler gesetzt (`hours`) |
 | `alarm` | Beginn eines Alarms: `container_low`, `tube_worn`, `rtc_fault` (Pumpe 0 = Gerät); Treiberfehler und Tageslimit stehen schon als Ergebnis bzw. ausgelassene Dosis drin |
+| `alarm_end` | Ende eines Alarms, gleiche Codes |
+| `boost` | `started` (`total_ml`, `days` oder `doses`), `cancelled` (von Hand, `done_ml` bis dahin), `finished` (von selbst: alle Dosen gegeben oder Zeitraum vorbei, `done_ml`) |
+| `mode` | Betriebsart geändert (`mode`: `auto`, `manual_only`, `disabled`) |
+| `schedule` | Zeitplan gespeichert (`set` mit `daily_ml` und `doses` pro Tag) oder gelöscht (`cleared`) |
+| `settings` | übrige Pumpeneinstellungen geändert (Name, Geschwindigkeit, Limits, Schwellen, Drehrichtung) |
+| `locks` | Sperrregeln geändert (Pumpe 0, `rules`) |
+| `system` | Gerät (Pumpe 0): `boot` (`reason`: `power_on`, `restart`, `crash`, `watchdog`, `brownout`, …), `updated` (`version`, `from`), `restored` (Datensicherung), `time_set`, `cleared` (Verlauf gelöscht – der erste Eintrag danach), `settings` (Sprache, Zeitzone, LED, Name), `network`, `mqtt`, `channels` (`pumps`), `engineering`, `password`, `key_added`, `key_removed` |
+
+`source` sagt, wer es war: `manual` = Weboberfläche (angemeldeter Browser), `api` = API-Key,
+`mqtt` = Home Assistant/MQTT, `schedule` = Zeitplan (auch das Ende eines Boosts), `boost` =
+Dosis mit Boost-Anteil; ohne `source` hat das Gerät es selbst festgestellt (Alarme, Start). Eine von Hand in der Weboberfläche ausgelöste Dosis ist damit `manual`. Was eine
+Datensicherung beim Einspielen ändert, steht nur als `system`/`restored` im Verlauf.
+Start und Firmwarewechsel werden nachgetragen, sobald die Uhrzeit gültig ist (RTC sofort,
+sonst nach der ersten Zeitsynchronisation), mit dem Zeitpunkt des Starts.
 
 Die CSV hat die Spalten `utc,local,kind,pump,source,code,target_ml,done_ml,value`; `value` ist
-der Inhalt (Behälter), µl pro Umdrehung (Kalibrierung), Stunden (Schlauch) oder die Anzahl
-(ausgelassen).
+der Inhalt (Behälter), µl pro Umdrehung (Kalibrierung), Stunden (Schlauch), die Anzahl
+(ausgelassen), Tage bzw. negative Dosenzahl (Boost), die Betriebsart (Modus), Dosen pro Tag
+(Zeitplan), die Zahl der Regeln (Sperrregeln), Startgrund bzw. Version (System).
 
 ## MQTT / Home Assistant (M6)
 
@@ -568,9 +583,10 @@ Assistant neu (`homeassistant/status` = `online`), sendet das Gerät Discovery u
 Dosen über MQTT laufen wie manuelle Dosen (Tageslimit, Sperrzeiten, Behälter) und stehen
 mit Quelle `mqtt` im Verlauf.
 
-**Ereignisse** (`<basis>/event`, Funktionsbeschreibung 1 und 9): Dosen, ausgelassene Dosen,
-Entlüften, Kalibrierung, Behälter, Schlauch und Alarme gehen in der Reihenfolge des Verlaufs
-raus, z. B. `{"utc":1794330000,"local":"2026-11-10 18:20:00","kind":"dose","pump":2,"source":"schedule","code":"success","target_ml":1.5,"done_ml":1.5,"replay":false}`.
+**Ereignisse** (`<basis>/event`, Funktionsbeschreibung 1 und 9): alle Einträge des
+[Verlaufs](#historie-m6) – Dosen, ausgelassene Dosen, Entlüften, Kalibrierung, Behälter,
+Schlauch, Boost, Betriebsart, Zeitplan, Einstellungen, Alarme und Geräte-Ereignisse – gehen in
+der Reihenfolge des Verlaufs raus, z. B. `{"utc":1794330000,"local":"2026-11-10 18:20:00","kind":"dose","pump":2,"source":"schedule","code":"success","target_ml":1.5,"done_ml":1.5,"replay":false}`.
 Das Gerät merkt sich, bis wohin gesendet ist (NVS, höchstens einmal pro Minute geschrieben).
 Nach einem Ausfall von Netz oder Broker oder einem Neustart folgen die im Verlauf gepufferten
 Ereignisse (bis zur Aufbewahrungszeit) mit `"replay":true`, etwa 80 pro Sekunde; der Zeitplan

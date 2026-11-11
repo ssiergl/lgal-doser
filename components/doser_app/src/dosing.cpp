@@ -530,7 +530,17 @@ void stop_all() {
     for (int i = 0; i < kN; ++i) stop(i);
 }
 
-const char* set_settings(int pump, const dose::PumpSettings& s) {
+namespace {
+// Any setting other than the mode differs
+bool settings_differ(const dose::PumpSettings& a, const dose::PumpSettings& b) {
+    return std::strcmp(a.name, b.name) != 0 || a.speed_tier != b.speed_tier || a.retract_mrev != b.retract_mrev ||
+           a.daily_limit_ul != b.daily_limit_ul || a.capacity_ul != b.capacity_ul ||
+           a.warn_days != b.warn_days || a.low_days != b.low_days ||
+           a.recal_months != b.recal_months || a.ul_per_rev != b.ul_per_rev;
+}
+}  // namespace
+
+const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source, bool also_changed) {
     if (!valid_pump(pump)) return "invalid_param";
     if (s.speed_tier >= dose::kTiers || s.retract_mrev < -1 || s.retract_mrev > 2000 ||
         s.daily_limit_ul > 10000000 || s.capacity_ul > 100000000 || s.ul_per_rev < 0.0f ||
@@ -540,9 +550,16 @@ const char* set_settings(int pump, const dose::PumpSettings& s) {
     // the alarm threshold may not lie above the warning one
     if (dose::low_days(s, s_eng) > dose::warn_days(s, s_eng)) return "invalid_param";
     Pump& p = s_p[pump];
+    const dose::PumpSettings before = p.set;
     p.set = s;
     p.set.name[sizeof(p.set.name) - 1] = 0;
-    return dosing_store::save_settings(pump, p.set) == ESP_OK ? nullptr : "storage_error";
+    if (dosing_store::save_settings(pump, p.set) != ESP_OK) return "storage_error";
+    if (source != history::Source::None) {
+        if (before.mode != p.set.mode)
+            history::note(history::Kind::Mode, pump, source, "set", 0, 0, static_cast<int32_t>(p.set.mode));
+        if (also_changed || settings_differ(before, p.set)) history::note(history::Kind::Settings, pump, source, "set");
+    }
+    return nullptr;
 }
 
 void set_locks(const sched::Locks& l) {

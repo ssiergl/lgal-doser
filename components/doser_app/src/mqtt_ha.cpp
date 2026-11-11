@@ -108,7 +108,7 @@ void execute(const ha::Command& c) {
                 break;
             }
             s.mode = c.on ? dose::Mode::Auto : dose::Mode::ManualOnly;
-            if (const char* e = dosing::set_settings(c.pump, s))
+            if (const char* e = dosing::set_settings(c.pump, s, history::Source::Mqtt))
                 ESP_LOGW(TAG, "Pump %d: mode not changed (%s)", c.pump + 1, e);
             break;
         }

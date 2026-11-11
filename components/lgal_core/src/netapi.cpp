@@ -4,6 +4,7 @@
 #include <string>
 
 #include "esp_log.h"
+#include "lgal/events.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
 #include "lgal/json_reader.h"
@@ -131,6 +132,7 @@ esp_err_t put_settings(httpd_req_t* req) {
     const esp_err_t err = net::set_config(c, kApplyDelayMs);
     std::memset(c.password, 0, sizeof(c.password));
     if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", esp_err_to_name(err));
+    events::note("network", req);
     return send_settings(req, net::config());
 }
 

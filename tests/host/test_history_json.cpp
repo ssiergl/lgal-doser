@@ -94,6 +94,50 @@ static void test_kinds_and_csv() {
     CHECK(hj::csv_line(t, local_at(kDay, 8, 0), line, 20) == 0);
 }
 
+static void test_change_events() {
+    std::printf("Change and device events\n");
+    lgal::Json j;
+    j.arr();
+    hj::write_event(j, ev(Kind::Boost, 1, 3000, 0, -6, "started"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Boost, 1, 3000, 1500, 3, "cancelled"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Mode, 2, 0, 0, 1, "set"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Schedule, 3, 4000, 0, 4, "set"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Schedule, 3, 0, 0, 0, "cleared"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Locks, 0, 0, 0, 2, "set"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::AlarmEnd, 4, 0, 0, 0, "container_low"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::System, 0, 0, 0, 9, "boot"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::System, 0, 0, 900, 10200, "updated"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::System, 0, 0, 0, 0x0B, "channels"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Settings, 5, 0, 0, 0, "set"), local_at(kDay, 8, 0));
+    j.end();
+    lgal::JsonReader r;
+    CHECK(r.parse(j.c_str(), j.str().size(), g_tok, 256));
+    auto a = r.root();
+    int64_t v = 0;
+    CHECK(a[0]["kind"].equals("boost") && a[0]["code"].equals("started") && a[0]["total_ml"].get_decimal(1000, &v) && v == 3000);
+    CHECK(a[0]["doses"].get(&v) && v == 6 && !a[0]["days"].valid() && !a[0]["done_ml"].valid());
+    CHECK(a[1]["days"].get(&v) && v == 3 && a[1]["done_ml"].get_decimal(1000, &v) && v == 1500);
+    CHECK(a[2]["kind"].equals("mode") && a[2]["mode"].equals("manual_only"));
+    CHECK(a[3]["daily_ml"].get_decimal(1000, &v) && v == 4000 && a[3]["doses"].get(&v) && v == 4);
+    CHECK(a[4]["code"].equals("cleared") && !a[4]["daily_ml"].valid());
+    CHECK(a[5]["kind"].equals("locks") && a[5]["rules"].get(&v) && v == 2);
+    CHECK(a[6]["kind"].equals("alarm_end") && a[6]["code"].equals("container_low"));
+    CHECK(a[7]["kind"].equals("system") && a[7]["reason"].equals("brownout"));
+    CHECK(a[8]["version"].equals("1.2.0") && a[8]["from"].equals("0.9.0"));
+    CHECK(a[9]["pumps"].size() == 3 && a[9]["pumps"][2].get(&v) && v == 4);
+    CHECK(a[10]["kind"].equals("settings") && a[10]["code"].equals("set"));
+
+    uint16_t m = 0;
+    CHECK(hj::parse_kinds("boost,mode,schedule,settings,locks,alarm_end,system", &m) && m == 0xFE00);
+    char line[160];
+    size_t n = hj::csv_line(ev(Kind::Mode, 2, 0, 0, 2, "set"), local_at(kDay, 8, 0), line, sizeof(line));
+    CHECK(n > 0 && std::string(line) == "1794000000,2026-11-07 08:00:00,mode,2,schedule,set,0.000,0.000,disabled\r\n");
+    n = hj::csv_line(ev(Kind::System, 0, 0, 0, 10203, "updated"), local_at(kDay, 8, 0), line, sizeof(line));
+    CHECK(n > 0 && std::string(line) == "1794000000,2026-11-07 08:00:00,system,0,schedule,updated,0.000,0.000,1.2.3\r\n");
+    n = hj::csv_line(ev(Kind::System, 0, 0, 0, 1, "boot"), local_at(kDay, 8, 0), line, sizeof(line));
+    CHECK(n > 0 && std::string(line).find(",power_on\r\n") != std::string::npos);
+}
+
 static void test_daily() {
     std::printf("Daily sums\n");
     static hj::Daily d;
@@ -130,6 +174,7 @@ static void test_daily() {
 int main() {
     test_event_json();
     test_kinds_and_csv();
+    test_change_events();
     test_daily();
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;

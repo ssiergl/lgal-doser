@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "doser/dosing.h"
+#include "doser/event_source.h"
 #include "doser/hwconfig.h"
 #include "doser/motion.h"
 #include "doser/schedule_json.h"
@@ -187,7 +188,7 @@ esp_err_t post_dose(httpd_req_t* req) {
     int64_t retry_at = 0;
     bool queued = false;
     const char* e =
-        scheduler::manual_dose(p, static_cast<uint32_t>(ul), dosing::Trigger::Api, tier_arg(req), &retry_at, &queued);
+        scheduler::manual_dose(p, static_cast<uint32_t>(ul), trigger_of(req), tier_arg(req), &retry_at, &queued);
     if (e && !std::strcmp(e, "collision_lock")) {
         Json j;
         j.obj().obj("error").kv("code", e).kv("message", "Lock time to another pump is running");
@@ -317,7 +318,7 @@ esp_err_t post_settings(httpd_req_t* req) {
         mc.driver.invert = ccw;
         if (turn && motion::status(p).running) return fail(req, "pump_busy");
     }
-    if (const char* e = dosing::set_settings(p, s)) return fail(req, e);
+    if (const char* e = dosing::set_settings(p, s, source_of(req), turn)) return fail(req, e);
     if (turn) {
         const esp_err_t err = motion::set_config(p, mc);
         if (err == ESP_ERR_INVALID_STATE) return fail(req, "pump_busy");
@@ -424,6 +425,7 @@ esp_err_t post_engineering(httpd_req_t* req) {
     }
     if (const char* f = dose::validate(e, 600)) return fail(req, "invalid_param", f);
     if (const char* err = dosing::set_engineering(e)) return fail(req, err);
+    note_system(req, "engineering");
     return get_engineering(req);
 }
 

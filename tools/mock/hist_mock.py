@@ -12,6 +12,12 @@ def _add(utc, kind, pump, source, code, target=0.0, done=0.0, **extra):
     e.update(extra)
     EV.append(e)
 
+def add_now(kind, pump, source, code, **extra):
+    """Entry made by a request of the mock (newest)"""
+    target, done = extra.pop("target_ml", 0.0), extra.pop("done_ml", 0.0)
+    if kind == "boost" and code != "started": extra["done_ml"] = done
+    _add(time.time(), kind, pump, source, code, target, done, **extra)
+
 def _gen():
     rnd = random.Random(7)
     now = time.time()
@@ -47,7 +53,31 @@ def _gen():
             _add(day0 + 17 * 3600 + 90, "calibration", 1, None, "set", target_ml=20.0, measured_ml=18.5, ul_per_rev=342.25)
         if d == 25: _add(day0 + 16 * 3600, "tube", 4, None, "set", hours=0)
         if d == 3: _add(day0 + 11 * 3600, "alarm", 5, None, "container_low")
+        if d == 2: _add(day0 + 15 * 3600, "alarm_end", 5, None, "container_low")
         if d == 1: _add(day0 + 14 * 3600, "alarm", 2, None, "container_low")
+        if d == 8:
+            _add(day0 + 7 * 3600 + 30, "boost", 1, "manual", "started", total_ml=12.0, doses=5)
+            _add(day0 + 16 * 3600 + 50, "boost", 1, "schedule", "finished", total_ml=12.0, done_ml=12.0, doses=5)
+        if d == 4:
+            _add(day0 + 10 * 3600, "boost", 3, "api", "started", total_ml=6.0, days=3)
+            _add(day0 + 20 * 3600, "boost", 3, "manual", "cancelled", total_ml=6.0, done_ml=2.0, days=3)
+        if d == 15:
+            _add(day0 + 9 * 3600, "mode", 4, "manual", "set", mode="disabled")
+            _add(day0 + 9 * 3600 + 40, "settings", 4, "manual", "set")
+            _add(day0 + 9 * 3600 + 300, "schedule", 2, "manual", "set", daily_ml=30.0, doses=6)
+            _add(day0 + 9 * 3600 + 400, "locks", 0, "manual", "set", rules=2)
+        if d == 10:
+            _add(day0 + 22 * 3600, "mode", 5, "mqtt", "set", mode="manual_only")
+            _add(day0 + 23 * 3600, "mode", 5, "mqtt", "set", mode="auto")
+        if d == 22:
+            _add(day0 + 6 * 3600, "system", 0, None, "boot", reason="power_on")
+            _add(day0 + 6 * 3600 + 1, "system", 0, None, "updated", version="0.1.0", **{"from": "0.0.9"})
+        if d == 18: _add(day0 + 12 * 3600, "system", 0, "manual", "network")
+        if d == 7:
+            _add(day0 + 13 * 3600, "system", 0, "manual", "restored")
+            _add(day0 + 13 * 3600 + 30, "system", 0, "manual", "password")
+            _add(day0 + 13 * 3600 + 60, "system", 0, "manual", "key_added")
+    _add(now - 7200, "system", 0, None, "boot", reason="restart")
     _add(now - 3500, "alarm", 2, None, "container_low")
     EV.sort(key=lambda e: e["utc"])
 _gen()
@@ -64,7 +94,8 @@ def _filter(q):
         return None
     if not 0 <= pump <= 5 or (q.get("days") and not 1 <= days <= 60): return None
     kinds = [k for k in q.get("kind", "").split(",") if k]
-    if any(k not in ("dose", "prime", "calib_run", "skip", "container", "calibration", "tube", "alarm") for k in kinds): return None
+    if any(k not in ("dose", "prime", "calib_run", "skip", "container", "calibration", "tube", "alarm", "boost", "mode",
+                     "schedule", "settings", "locks", "alarm_end", "system") for k in kinds): return None
     if days:
         lt = time.localtime()
         frm = time.time() - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec) - (days - 1) * 86400

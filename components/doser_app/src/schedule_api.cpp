@@ -6,6 +6,7 @@
 #include <new>
 #include <string>
 
+#include "doser/event_source.h"
 #include "doser/schedule_json.h"
 #include "doser/scheduler.h"
 #include "lgal/http.h"
@@ -173,7 +174,7 @@ esp_err_t put_schedule(httpd_req_t* req) {
     sj::Error err;
     if (!sj::parse_schedule(b.doc.root(), scheduler::today(), &s, &err)) return fail_input(req, err);
     scheduler::SaveResult r;
-    if (const char* e = scheduler::set_schedule(p, s, &r)) return fail_validation(req, e, r);
+    if (const char* e = scheduler::set_schedule(p, s, &r, source_of(req))) return fail_validation(req, e, r);
     return send_schedule(req, p);
 }
 
@@ -199,7 +200,7 @@ esp_err_t put_locks(httpd_req_t* req) {
     sj::Error err;
     if (!sj::parse_locks(b.doc.root(), &l, &err)) return fail_input(req, err);
     scheduler::SaveResult r;
-    if (const char* e = scheduler::set_locks(l, &r)) return fail_validation(req, e, r);
+    if (const char* e = scheduler::set_locks(l, &r, source_of(req))) return fail_validation(req, e, r);
     return send_locks(req);
 }
 
@@ -211,7 +212,7 @@ esp_err_t post_boost(httpd_req_t* req) {
     char action[8] = "";
     http::query_str(req, "action", action, sizeof(action));
     if (!std::strcmp(action, "stop")) {
-        scheduler::boost_stop(p);
+        scheduler::boost_stop(p, source_of(req));
         return http::send_json(req, "{\"status\":\"ok\"}");
     }
     if (action[0]) return fail(req, "invalid_param", "action=stop or ml= with days= or doses=");
@@ -224,7 +225,7 @@ esp_err_t post_boost(httpd_req_t* req) {
     if (by_doses && (doses < 1 || doses > sched::kMaxBoostDoses))
         return fail(req, "invalid_param", "doses=1..100 required");
     if (const char* e = scheduler::boost_start(p, static_cast<uint32_t>(ul), static_cast<uint16_t>(days),
-                                               static_cast<uint16_t>(doses)))
+                                               static_cast<uint16_t>(doses), source_of(req)))
         return fail(req, e);
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
@@ -342,6 +343,7 @@ esp_err_t post_engineering(httpd_req_t* req) {
         // existing schedules do not fit the new grid
         return http::send_error(req, "409 Conflict", e, "Existing schedules do not fit the new parameters");
     }
+    note_system(req, "engineering");
     return get_engineering(req);
 }
 }  // namespace

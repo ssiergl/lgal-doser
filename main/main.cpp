@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <utility>
 
 #include "doser/alarms.h"
 #include "doser/backup_api.h"
@@ -28,6 +29,8 @@
 #include "doser/scheduler.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
+#include "esp_system.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "lgal/auth.h"
@@ -35,6 +38,7 @@
 #include "lgal/captive.h"
 #include "lgal/device.h"
 #include "lgal/entropy.h"
+#include "lgal/events.h"
 #include "lgal/http.h"
 #include "lgal/led.h"
 #include "lgal/logbuf.h"
@@ -42,11 +46,13 @@
 #include "lgal/net.h"
 #include "lgal/netapi.h"
 #include "lgal/ota.h"
+#include "lgal/ota_manifest.h"
 #include "lgal/settings.h"
 #include "lgal/setup.h"
 #include "lgal/sysapi.h"
 #include "lgal/timesync.h"
 #include "lgal/ws.h"
+#include "nvs.h"
 #include "sdkconfig.h"
 #include "webui/webui.h"
 
@@ -89,10 +95,12 @@ doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
     return in;
 }
 
-// History entry when an alarm condition starts. Conditions already present at
-// boot were logged before the restart; without a valid clock record() drops.
-void log_alarm_onsets(uint16_t now) {
+// History entries when an alarm condition starts or ends. Conditions already
+// present at boot were logged before the restart; without a valid clock
+// record() drops.
+void log_alarm_changes(uint16_t now) {
     using doser::alarms::Cond;
+    namespace history = doser::history;
     static bool first = true;
     static uint16_t prev = 0;
     if (first) {
@@ -100,22 +108,67 @@ void log_alarm_onsets(uint16_t now) {
         prev = now;
         return;
     }
-    const uint16_t started = now & ~prev;
+    const uint16_t started = now & ~prev, ended = prev & ~now;
     prev = now;
-    if (!started) return;
-    doser::history::Event e;
-    e.kind = doser::history::Kind::Alarm;
-    if (started & (1u << doser::alarms::kRtcBit)) {
-        e.code = doser::history::code_of("rtc_fault");
-        doser::history::record(e);
+    for (const auto& [bits, kind] : {std::pair{started, history::Kind::Alarm}, std::pair{ended, history::Kind::AlarmEnd}}) {
+        if (!bits) continue;
+        if (bits & (1u << doser::alarms::kRtcBit)) history::note(kind, -1, history::Source::None, "rtc_fault");
+        for (int i = 0; i < 5; ++i)
+            for (int c = 0; c < doser::alarms::kConds; ++c)
+                if (bits & doser::alarms::cond_bit(i, static_cast<Cond>(c)))
+                    history::note(kind, i, history::Source::None, doser::alarms::cond_code(static_cast<Cond>(c)));
     }
-    for (int i = 0; i < 5; ++i)
-        for (int c = 0; c < doser::alarms::kConds; ++c) {
-            if (!(started & doser::alarms::cond_bit(i, static_cast<Cond>(c)))) continue;
-            e.pump = static_cast<uint8_t>(i + 1);
-            e.code = doser::history::code_of(doser::alarms::cond_code(static_cast<Cond>(c)));
-            doser::history::record(e);
+}
+
+// "1.2.3" -> 10203 for the history (0 = not a version)
+int32_t version_value(const char* s) {
+    lgal::ota::Version v;
+    if (!lgal::ota::parse_version(s, &v) || v.major > 9999 || v.minor > 99 || v.patch > 99) return 0;
+    return static_cast<int32_t>(v.major * 10000 + v.minor * 100 + v.patch);
+}
+
+// Start of the device and a changed firmware for the history, as soon as the
+// clock is valid (from the RTC right away, else after the first time sync)
+void log_boot(const lgal::timesync::Status& ts) {
+    namespace history = doser::history;
+    static bool done = false;
+    if (done || !ts.valid || !history::ready()) return;
+    done = true;
+    history::Event e;
+    e.utc = static_cast<uint32_t>(ts.utc - esp_timer_get_time() / 1000000);
+    e.kind = history::Kind::System;
+    e.code = history::code_of("boot");
+    e.value = static_cast<int32_t>(esp_reset_reason());
+    history::record(e);
+
+    const char* version = esp_app_get_description()->version;
+    nvs_handle_t h;
+    if (nvs_open("doser", NVS_READWRITE, &h) != ESP_OK) return;
+    char last[32] = "";
+    size_t len = sizeof(last);
+    const bool known = nvs_get_str(h, "fw", last, &len) == ESP_OK;
+    if (!known || std::strcmp(last, version) != 0) {
+        if (known) {  // not on the very first start
+            e.utc = 0;
+            e.code = history::code_of("updated");
+            e.value = version_value(version);
+            e.done_ul = static_cast<uint32_t>(version_value(last));
+            history::record(e);
+            ESP_LOGI(TAG, "Firmware changed: %s -> %s", last, version);
         }
+        nvs_set_str(h, "fw", version);
+        nvs_commit(h);
+    }
+    nvs_close(h);
+}
+
+// Changes in the core (network, MQTT, device settings, password, keys)
+void log_core_event(const char* code, lgal::events::By by) {
+    namespace history = doser::history;
+    const history::Source src = by == lgal::events::By::ApiKey    ? history::Source::Api
+                                : by == lgal::events::By::Browser ? history::Source::Manual
+                                                                  : history::Source::None;
+    history::note(history::Kind::System, -1, src, code);
 }
 
 void update_status_led() {
@@ -129,7 +182,8 @@ void update_status_led() {
         const auto in = alarm_input(ts);
         al = doser::alarms::evaluate(in);
         const uint16_t conditions = doser::alarms::conditions(in);
-        log_alarm_onsets(conditions);
+        log_alarm_changes(conditions);
+        log_boot(ts);
         doser::mqtt_ha::set_alarms(al.critical, al.warning, conditions);
     }
     lgal::led::set(State::Critical, al.critical);
@@ -207,6 +261,7 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(lgal::settings::init());
     lgal::device::init();
     lgal::auth::init();
+    lgal::events::set_hook(log_core_event);
     print_banner();
     // event history on the LittleFS partition
     if (doser::history::init() != ESP_OK) ESP_LOGE(TAG, "History not available");

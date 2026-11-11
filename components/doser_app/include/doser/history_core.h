@@ -26,8 +26,19 @@ enum class Kind : uint8_t {
     Calibration,  // calibration applied (value = µl per revolution × 1000, done = measured µl)
     Tube,         // tube counter set (value = hours)
     Alarm,        // alarm or warning started (code)
+    Boost,        // "started" (target = total µl, value = days or -doses), "cancelled"/"finished" (done = dosed µl)
+    Mode,         // pump mode changed (value = dose::Mode)
+    Schedule,     // plan changed: "set" (target = µl per day, value = doses per day) or "cleared"
+    Settings,     // other pump settings changed (name, speed, limits, thresholds, direction)
+    Locks,        // lock rules changed (device, value = number of rules)
+    AlarmEnd,     // alarm or warning over (code)
+    System,       // device (pump 0), code: "boot" (value = esp_reset_reason), "updated" (value = new,
+                  // done = previous version as major*10000+minor*100+patch), "restored" (value = backup
+                  // parts), "time_set", "cleared" (history), "settings" (device), "channels" (value = mask),
+                  // "engineering", "network", "mqtt", "password", "key_added", "key_removed"
 };
-constexpr uint8_t kKindMax = static_cast<uint8_t>(Kind::Alarm);
+constexpr uint8_t kKindMax = static_cast<uint8_t>(Kind::System);
+static_assert(kKindMax < 16, "Filter::kinds is a 16 bit mask");
 
 enum class Source : uint8_t { None, Manual, Api, Schedule, Boost, Mqtt };
 

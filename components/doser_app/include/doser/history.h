@@ -18,6 +18,20 @@ bool ready();
 // Queue an event. utc 0 = now; dropped without a valid clock or when the queue is full.
 void record(const Event& e);
 
+// Event "now" of a pump (0-based) or of the device (pump < 0)
+inline void note(Kind kind, int pump, Source source, const char* code, uint32_t target_ul = 0, uint32_t done_ul = 0,
+                 int32_t value = 0) {
+    Event e;
+    e.kind = kind;
+    e.pump = pump >= 0 && pump < 5 ? static_cast<uint8_t>(pump + 1) : 0;
+    e.source = source;
+    e.code = code_of(code);
+    e.target_ul = target_ul;
+    e.done_ul = done_ul;
+    e.value = value;
+    record(e);
+}
+
 // Run a query under the store lock (cb must not call record()).
 size_t query(const Filter& f, bool (*cb)(const Event&, void*), void* ctx);
 
