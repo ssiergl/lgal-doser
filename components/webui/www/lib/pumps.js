@@ -13,6 +13,8 @@ add({
     'al.delayed': 'Dose waiting (lock time)', 'al.skipped': '{n} doses skipped today', 'al.calib': 'Enter the measured amount',
     'day.tomorrow': 'tomorrow',
     'ct.untracked': 'not tracked',
+    'ov.today': 'Today', 'ov.range': 'Lasts', 'ov.next': 'Next', 'ov.none': '–',
+    'ov.days': '{d} days', 'ov.day1': '< 1 day', 'ov.next.boost': 'incl. {ml} ml boost',
   },
   de: {
     'pump': 'Pumpe {n}',
@@ -24,6 +26,8 @@ add({
     'al.delayed': 'Dosis wartet (Sperrzeit)', 'al.skipped': 'Heute {n} Dosen ausgelassen', 'al.calib': 'Gemessene Menge eintragen',
     'day.tomorrow': 'morgen',
     'ct.untracked': 'nicht erfasst',
+    'ov.today': 'Heute', 'ov.range': 'Reicht', 'ov.next': 'Nächste', 'ov.none': '–',
+    'ov.days': '{d} Tage', 'ov.day1': '< 1 Tag', 'ov.next.boost': 'inkl. {ml} ml Boost',
   },
 });
 
@@ -120,4 +124,24 @@ export function Container({ p, sp, size = 'm' }) {
     <rect x="14" y="24" width="92" height="130" rx="16" class=${'outline ' + level}/>
     <text x="60" y="96" class="pct">${c.tracked ? num(pct, 0) + '%' : '–'}</text>
   </svg>`;
+}
+
+// Today's amount with bar, range and next dose (dashboard card, container card)
+// boostNote: spell out the boost share of the next dose (else only a tooltip)
+export function PumpStats({ p, sp, nowLocal, boostNote }) {
+  const used = p.daily.used_ml, plan = sp ? sp.planned_today_ml : 0;
+  const pct = plan > 0 ? Math.min(100, (used / plan) * 100) : used > 0 ? 100 : 0;
+  const d = daysLeft(sp), nx = sp && sp.next;
+  const none = html`<span class="mut">${t('ov.none')}</span>`;
+  return html`<div class="today">
+      <div class="kv"><span class="mut">${t('ov.today')}</span>
+        <b class="num">${num(used, 1)}<span class="mut"> / ${num(plan, 1)}</span> ml</b></div>
+      <div class="bar"><i style=${{ width: pct + '%', background: pumpColor(p.pump) }}></i></div>
+    </div>
+    <div class="kv"><span class="mut">${t('ov.range')}</span><b class="num">${d === null ? none
+      : html`<span class=${daysCls(d, p.container)}>${d < 1 ? t('ov.day1') : t('ov.days', { d: num(d, 0) })}</span>`}</b></div>
+    <div class="kv"><span class="mut">${t('ov.next')}</span>
+      <b class="num">${nx ? html`${whenLocal(nx.local, nowLocal)} <span class=${nx.boost_ml ? 'acc' : 'mut'}
+        title=${nx.boost_ml ? t('ov.next.boost', { ml: num(nx.boost_ml, 1) }) : null}>· ${num(nx.ml, 1)} ml</span>` : none}</b></div>
+    ${boostNote && nx && nx.boost_ml > 0 && html`<div class="small acc num nx-boost">${t('ov.next.boost', { ml: num(nx.boost_ml, 1) })}</div>`}`;
 }
