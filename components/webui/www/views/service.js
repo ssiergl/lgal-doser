@@ -383,8 +383,8 @@ function TubeCard({ eng, pumps, reload }) {
       <span class="grow">${pumpName(p)}<br/><span class="small mut num">${num(p.tube.hours, 1)} h · ${num(p.tube.percent, 0)} %</span></span>
       <span class="amount"><input type="text" inputmode="numeric" aria-label=${t('sv.tube')} placeholder=${num(Math.floor(p.tube.hours))}
         value=${hours[i]} onInput=${e => { const v = e.target.value; setHours(o => o.map((x, k) => (k === i ? v : x))); }}/><span>h</span></span>
-      <button type="button" class="sec small" disabled=${busy || hours[i] === ''} onClick=${() => setTube(p.pump, parse(hours[i]))}>${t('sv.tube.set')}</button>
-      <button type="button" class="sec small" disabled=${busy} onClick=${() => setTube(p.pump, 0)}>${t('sv.tube.reset')}</button>
+      <button type="button" class="sec" disabled=${busy || hours[i] === ''} onClick=${() => setTube(p.pump, parse(hours[i]))}>${t('sv.tube.set')}</button>
+      <button type="button" class="sec" disabled=${busy} onClick=${() => setTube(p.pump, 0)}>${t('sv.tube.reset')}</button>
     </li>`)}</ul>
     ${msg.node}
   </form>`;
@@ -519,7 +519,7 @@ function DiagCard({ hw, pumps }) {
       <dt>${t('sv.fl.cs')}</dt><dd class="num">${f.cs_actual ?? '–'}</dd>
       <dt>DRV_STATUS · GSTAT</dt><dd class="mono">${p.drv_status} · ${p.gstat}</dd>
     </dl>
-    <button type="button" class="sec small" disabled=${busy} onClick=${read}>${t('sv.regs')}</button>
+    <button type="button" class="sec" disabled=${busy} onClick=${read}>${t('sv.regs')}</button>
     ${regs && html`<dl class="stats mono" style="margin-top:12px">${Object.entries(regs).map(([k, v]) =>
       html`<dt>${k}</dt><dd>${v === null ? t('sv.regs.none') : v}</dd>`)}</dl>`}
     ${msg.node}
@@ -560,7 +560,7 @@ function TelemetryCard({ tel, hw, paused }) {
     ${paused && html`<p class="small mut">${t('sv.paused')}</p>`}
     <div class="sub">
       <div class="row between"><b>${t('sv.eeprom')}</b>
-        <button type="button" class="sec small" disabled=${busy || !hw.eeprom.present} onClick=${eeTest}>${t('sv.eeprom.run')}</button></div>
+        <button type="button" class="sec" disabled=${busy || !hw.eeprom.present} onClick=${eeTest}>${t('sv.eeprom.run')}</button></div>
       <p class="small mut">${t(hw.eeprom.present ? 'sv.eeprom.h' : 'sv.eeprom.none')}</p>
       ${msg.node}
     </div>
@@ -582,14 +582,14 @@ function Danger({ id, run, typed }) {
   };
   return html`<div class="sub">
     <div class="row between"><b>${t(id)}</b>
-      ${!ask && html`<button type="button" class="danger small" onClick=${() => setAsk(true)}>${t(id)}</button>`}</div>
+      ${!ask && html`<button type="button" class="danger" onClick=${() => setAsk(true)}>${t(id)}</button>`}</div>
     <p class="small mut">${t(id + '.h')}</p>
     ${ask && html`<div class="row">
       ${typed && html`<input type="text" autocomplete="off" spellcheck="false" aria-label=${t('sv.dz.type')}
         placeholder=${t('sv.dz.type')} value=${word} onInput=${e => setWord(e.target.value)}/>`}
       <span>${t('sv.dz.sure')}</span>
-      <button type="button" class="danger small" disabled=${busy || (typed && word.trim() !== 'RESET')} onClick=${go}>${t('sv.dz.yes')}</button>
-      <button type="button" class="sec small" onClick=${() => { setAsk(false); setWord(''); }}>${t('sv.dz.no')}</button>
+      <button type="button" class="danger" disabled=${busy || (typed && word.trim() !== 'RESET')} onClick=${go}>${t('sv.dz.yes')}</button>
+      <button type="button" class="sec" onClick=${() => { setAsk(false); setWord(''); }}>${t('sv.dz.no')}</button>
     </div>`}
     ${msg.node}
   </div>`;
@@ -653,7 +653,7 @@ export function ServiceView() {
   const lock = () => lockEngineering().then(loadAuth).catch(setErr);
   const head = html`<div class="page-head"><h1>${t('sv.title')}</h1>
     ${auth && auth.engineering && html`<span class="chip svc">${t('sv.left', { m: Math.max(1, Math.ceil(auth.engineering_left_s / 60)) })}</span>
-      <span class="spacer"></span><button type="button" class="sec small" onClick=${lock}>${t('sv.lock')}</button>`}</div>`;
+      <span class="spacer"></span><button type="button" class="sec" onClick=${lock}>${t('sv.lock')}</button>`}</div>`;
 
   if (!auth) return html`${head}${err ? html`<p class="msg err">${errText(err)}</p>` : html`<p class="mut">${t('sv.loading')}</p>`}`;
   if (locked) {

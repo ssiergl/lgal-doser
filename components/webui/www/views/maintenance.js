@@ -315,8 +315,8 @@ function DiagCard({ info }) {
   return html`<section class="card"><h2>${t('mt.diag')}</h2>
     ${info.system.coredump
       ? html`<p class="small warn">${t('mt.core')}</p>
-        <div class="row"><a class="btn sec small" href="/api/v1/system/coredump" download="coredump.elf">${t('mt.core.dl')}</a>
-          <button type="button" class="sec small" onClick=${delCore}>${t('mt.core.del')}</button></div>`
+        <div class="row"><a class="btn sec" href="/api/v1/system/coredump" download="coredump.elf">${t('mt.core.dl')}</a>
+          <button type="button" class="sec" onClick=${delCore}>${t('mt.core.del')}</button></div>`
       : html`<p class="small mut">${t('mt.core.none')}</p>`}
     <div class="row savebar">
       ${log === null

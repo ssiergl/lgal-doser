@@ -126,8 +126,8 @@ export function BackupSection() {
       <span>${t('bk.secrets')}</span></label>
     ${secrets && html`<p class="small warn">${t('bk.secrets.hint')}</p>`}
     <div class="row">
-      <button type="button" class="sec small" disabled=${busy} onClick=${exportNow}>${t('bk.export')}</button>
-      <label class=${'btn sec small' + (busy ? ' disabled' : '')}>${t('bk.import')}
+      <button type="button" class="sec" disabled=${busy} onClick=${exportNow}>${t('bk.export')}</button>
+      <label class=${'btn sec' + (busy ? ' disabled' : '')}>${t('bk.import')}
         <input type="file" accept="application/json,.json" hidden onChange=${load}/></label>
     </div>
     ${doc && html`<div class="bk-restore">

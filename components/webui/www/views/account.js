@@ -125,14 +125,14 @@ function KeysCard() {
     ${head}
     ${k.keys.length ? html`<ul class="keys">${k.keys.map(x => html`<li key=${x.slot}>
         <b>${x.name}</b>${x.created > 0 && html`<span class="small mut">${t('ac.keys.created', { d: date(x.created) })}</span>`}
-        <button type="button" class="ghost small" onClick=${() => del(x)}>${t('ac.keys.delete')}</button></li>`)}</ul>`
+        <button type="button" class="ghost" onClick=${() => del(x)}>${t('ac.keys.delete')}</button></li>`)}</ul>`
       : html`<p class="small mut">${t('ac.keys.none')}</p>`}
     ${fresh && html`<div class="newkey" role="status">
       <span class="small">${t('ac.keys.once')}</span>
       <code>${fresh.key}</code>
       <div class="row">
-        <button type="button" class="small" onClick=${() => copy(fresh.key).then(() => setCopied(true)).catch(() => {})}>${copied ? t('ac.keys.copied') : t('ac.keys.copy')}</button>
-        <button type="button" class="sec small" onClick=${() => setFresh(null)}>${t('ac.keys.done')}</button>
+        <button type="button" onClick=${() => copy(fresh.key).then(() => setCopied(true)).catch(() => {})}>${copied ? t('ac.keys.copied') : t('ac.keys.copy')}</button>
+        <button type="button" class="sec" onClick=${() => setFresh(null)}>${t('ac.keys.done')}</button>
       </div></div>`}
     <form class="row nowrap savebar" novalidate onSubmit=${create}>
       <input aria-label=${t('ac.keys.name')} placeholder=${t('ac.keys.name')} maxlength="23" autocomplete="off"
@@ -164,7 +164,7 @@ export function AccountCard() {
   return html`<section class="card">
     ${head}
     <div class="row"><span class="small mut">${t('ac.info', { d: S.device })}</span>
-      <button type="button" class="sec small" onClick=${logout}>${t('ac.logout')}</button></div>
+      <button type="button" class="sec" onClick=${logout}>${t('ac.logout')}</button></div>
     <${PasswordForm} set=${S.password_set} onDone=${loadAuth}/>
   </section>`;
 }

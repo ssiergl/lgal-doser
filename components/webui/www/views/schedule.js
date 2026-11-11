@@ -478,8 +478,8 @@ function ScheduleIO({ p, s, onSaved, grid }) {
   return html`<div class="sched-io">
     <p class="small mut">${t('sc.io.hint')}</p>
     <div class="row">
-      <button type="button" class="sec small" onClick=${() => exportFile(p, s)}>${t('sc.export')}</button>
-      <label class=${'btn sec small' + (busy ? ' disabled' : '')}>${t('sc.import')}
+      <button type="button" class="sec" onClick=${() => exportFile(p, s)}>${t('sc.export')}</button>
+      <label class=${'btn sec' + (busy ? ' disabled' : '')}>${t('sc.import')}
         <input type="file" accept="application/json,.json" hidden disabled=${busy} onChange=${pick}/></label>
     </div>
     ${msg.node}

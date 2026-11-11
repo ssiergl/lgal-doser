@@ -253,7 +253,7 @@ function EventsCard({ pump }) {
 
   return html`<section class="card">
     <div class="row between"><h2>${t('hi.events')}</h2>
-      <a class="btn sec small" href=${'/api/v1/history.csv?' + query(f)} download>${t('hi.csv')}</a></div>
+      <a class="btn sec" href=${'/api/v1/history.csv?' + query(f)} download>${t('hi.csv')}</a></div>
     <div class="row hi-filter">
       <select class="small" value=${f.pump} onChange=${e => set({ pump: +e.target.value })} aria-label=${t('hi.allpumps')}>
         <option value="0">${t('hi.allpumps')}</option>
@@ -274,7 +274,7 @@ function EventsCard({ pump }) {
         <span class="hi-d num">${detail(e)}</span>
         <span class=${'hi-c small ' + codeCls(e)}>${t('hc.' + e.code)}</span>
       </li>`)}</ul>`}
-    ${more && html`<button class="sec small" disabled=${busy} onClick=${() => load(list.length, list)}>${t('hi.more')}</button>`}
+    ${more && html`<button class="sec" disabled=${busy} onClick=${() => load(list.length, list)}>${t('hi.more')}</button>`}
   </section>`;
 }
 
