@@ -182,8 +182,26 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .links a::after { content: "›"; float: right; color: var(--mut); }
 
 /* ---- dashboard ---- */
-.pumps { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-@media (min-width: 1100px) { .pumps { grid-template-columns: repeat(5, 1fr); } }
+/* Wide screens: three cards in the first row, the rest share the last row
+   in full (5 = 3 + 2, 4 = 2 + 2), so the grid never has a hole. Columns have
+   a fixed minimum, so a long name never widens its card, and subgrid rows
+   keep the header, stats and notices of a row on the same lines. */
+.pumps { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) and (max-width: 899px) {
+  .pumps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pumps > :nth-child(odd):last-child { grid-column: 1 / -1; }
+}
+@media (min-width: 900px) {
+  .pumps { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .pumps > * { grid-column: span 2; }
+  .pumps > :nth-child(3n+1):nth-last-child(2), .pumps > :nth-child(3n+1):nth-last-child(2) ~ *,
+  .pumps > :first-child:nth-last-child(4), .pumps > :first-child:nth-last-child(4) ~ * { grid-column: span 3; }
+  .pumps > :nth-child(3n+1):last-child { grid-column: 1 / -1; }
+}
+@supports (grid-template-rows: subgrid) {
+  .pumps > .pump-card { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; }
+  .pumps > .pump-card > * + * { margin-top: 12px; }
+}
 .pump-card {
   display: flex; flex-direction: column; gap: 12px; color: var(--text); text-decoration: none;
   border-top: 3px solid var(--pc); transition: transform .12s ease, border-color .12s ease;
@@ -196,13 +214,8 @@ select.small { padding: 5px 8px; font-size: 13px; }
   flex: none; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center;
   font-size: 13px; font-weight: 700; color: var(--bg); background: var(--pc);
 }
-.pc-body { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
-.pc-body .canister { align-self: center; width: 96px; height: 128px; }
-@media (max-width: 560px) {
-  .pumps { grid-template-columns: 1fr; }
-  .pc-body { flex-direction: row; align-items: center; }
-  .pc-body .canister { width: 84px; height: 112px; }
-}
+.pc-body { display: flex; gap: 18px; align-items: center; min-width: 0; }
+.pc-body .canister { width: 84px; height: 112px; }
 .pc-stats { flex: 1; display: grid; gap: 7px; min-width: 0; }
 .kv { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .kv b { font-weight: 600; text-align: right; white-space: nowrap; }
