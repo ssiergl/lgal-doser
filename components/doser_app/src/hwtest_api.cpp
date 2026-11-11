@@ -104,7 +104,8 @@ esp_err_t get_status(httpd_req_t* req) {
         if (rtc::aging(&aging) == ESP_OK) j.kv("aging", static_cast<int>(aging));
         j.kv("battery_warning", rtc_trim::battery_warning());
         const auto t = rtc_trim::status();
-        j.obj("trim").kv("automatic", t.state.automatic != 0).kv("measuring", t.state.anchored != 0);
+        // with a time server the aging is trimmed automatically, without one it is set by hand
+        j.obj("trim").kv("automatic", lgal::timesync::ntp_server()[0] != 0).kv("measuring", t.state.anchored != 0);
         if (t.state.anchored) j.kv("since", t.state.anchor_utc).kv("start_offset_ms", t.state.anchor_ms);
         if (t.measured_at) j.kv("offset_ms", t.offset_ms).kv("measured_at", t.measured_at);
         if (t.state.trim_utc)
@@ -242,15 +243,13 @@ esp_err_t post_time(httpd_req_t* req) {
 
 esp_err_t post_aging(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
-    int64_t v = 0, a = 0;
-    const bool has_offset = http::query_int(req, "offset", &v);
-    const bool has_auto = http::query_int(req, "auto", &a);
-    if (!has_offset && !has_auto) return bad(req, "offset=-128..127 or auto=0|1");
-    if (has_offset && (v < -128 || v > 127)) return bad(req, "offset=-128..127");
-    if (has_offset && rtc::set_aging(static_cast<int8_t>(v)) != ESP_OK)
+    int64_t v = 0;
+    if (!http::query_int(req, "offset", &v) || v < -128 || v > 127) return bad(req, "offset=-128..127");
+    // with a time server the trim owns the register
+    if (lgal::timesync::ntp_server()[0])
+        return http::send_error(req, "409 Conflict", "ntp_active", "Trimmed automatically from the time server");
+    if (rtc::set_aging(static_cast<int8_t>(v)) != ESP_OK)
         return http::send_error(req, "503 Service Unavailable", "rtc_unavailable", "RTC not reachable");
-    if (has_auto && rtc_trim::set_automatic(a != 0) != ESP_OK)
-        return http::send_error(req, "500 Internal Server Error", "internal_error", "not saved");
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 

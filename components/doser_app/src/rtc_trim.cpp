@@ -80,7 +80,6 @@ void handle_ntp() {
     if (!d.set_rtc && !d.anchor && !d.trim) return;
     apply(&s, d, now, off, aging);
     Lock l;
-    s.automatic = s_state.automatic;  // may have changed meanwhile
     s_state = s;
     save(s_state);
 }
@@ -132,13 +131,6 @@ Status status() {
     st.offset_ms = s_offset;
     st.measured_at = s_measured_at;
     return st;
-}
-
-esp_err_t set_automatic(bool on) {
-    Lock l;
-    s_state.automatic = on ? 1 : 0;
-    s_state.anchored = 0;  // a new measurement starts with the next NTP sync
-    return nvs_blob::save(kNs, kKey, kVersion, s_state);
 }
 
 }  // namespace doser::rtc_trim

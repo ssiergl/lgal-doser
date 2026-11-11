@@ -8,6 +8,8 @@
 // 0.1 ppm per step, positive = slower) is corrected by that amount and a new
 // anchor starts. In between the RTC is not rewritten, otherwise the drift
 // could not be seen; it is only set when it is off by half a second or more.
+// Without a time server there is no reference: the aging register is then
+// set by hand (engineering) and the trim does not run.
 
 #include <cstdint>
 
@@ -22,7 +24,7 @@ inline constexpr int kMaxStep = 30;            // largest correction per round
 
 // Stored state (NVS)
 struct State {
-    uint8_t automatic = 1;   // trim switched on (factory setting)
+    uint8_t reserved = 1;    // was the on/off switch: the trim always runs with NTP
     uint8_t ever_set = 0;    // the firmware has set the RTC at least once
     uint8_t anchored = 0;
     int8_t aging = 0;        // aging register when the anchor was taken

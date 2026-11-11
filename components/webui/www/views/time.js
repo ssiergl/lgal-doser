@@ -20,7 +20,7 @@ add({
     'tm.off': 'Differs from this browser by {m} min.',
     'tm.zone': 'Time zone', 'tm.custom': 'Other (POSIX string) …', 'tm.posix': 'POSIX time zone',
     'tm.suggest': 'This browser uses {z}.', 'tm.use': 'Use it',
-    'tm.ntp': 'Time server (NTP)', 'tm.ntp.hint': 'Empty = no time server; the time then comes from the clock module.',
+    'tm.ntp': 'Time server (NTP)', 'tm.ntp.hint': 'Empty = no time server; the time then comes from the clock module and can be set by hand. With a time server the device sets and trims the clock itself.',
     'tm.browser': 'Take the time from this browser', 'tm.browser.ok': 'Time taken from this browser.',
     'tm.saved': 'Time settings saved.', 'tm.field': 'Please check: {f}',
     'tm.manual': 'Set by hand', 'tm.date': 'Date', 'tm.time': 'Time', 'tm.set': 'Set time',
@@ -36,7 +36,7 @@ add({
     'tm.off': 'Weicht um {m} min von diesem Browser ab.',
     'tm.zone': 'Zeitzone', 'tm.custom': 'Andere (POSIX-Angabe) …', 'tm.posix': 'POSIX-Zeitzone',
     'tm.suggest': 'Dieser Browser nutzt {z}.', 'tm.use': 'Übernehmen',
-    'tm.ntp': 'Zeitserver (NTP)', 'tm.ntp.hint': 'Leer = kein Zeitserver; die Zeit kommt dann vom Uhrenmodul.',
+    'tm.ntp': 'Zeitserver (NTP)', 'tm.ntp.hint': 'Leer = kein Zeitserver; die Zeit kommt dann vom Uhrenmodul und lässt sich von Hand stellen. Mit Zeitserver stellt und gleicht das Gerät die Uhr selbst ab.',
     'tm.browser': 'Uhrzeit von diesem Browser übernehmen', 'tm.browser.ok': 'Uhrzeit von diesem Browser übernommen.',
     'tm.saved': 'Zeiteinstellungen gespeichert.', 'tm.field': 'Bitte prüfen: {f}',
     'tm.manual': 'Von Hand stellen', 'tm.date': 'Datum', 'tm.time': 'Uhrzeit', 'tm.set': 'Uhrzeit setzen',
@@ -173,7 +173,7 @@ export function TimeCard({ pro }) {
         value=${d.ntp} onInput=${e => set({ ntp: e.target.value })}/>
       <p class="small mut">${t('tm.ntp.hint')}</p></div>`}
     <${SaveBar} busy=${busy} dirty=${dirty} onDiscard=${() => { setDraft(draftOf(T)); msg.clear(); }}/>
-    ${pro && html`<${ManualTime} T=${T} busy=${busy} setBusy=${setBusy} msg=${msg}
+    ${pro && !T.ntp_server && html`<${ManualTime} T=${T} busy=${busy} setBusy=${setBusy} msg=${msg}
       done=${j => { take(j, false); reloadAll(); }}/>`}
     ${msg.node}
   </form>`;

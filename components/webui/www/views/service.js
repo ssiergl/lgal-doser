@@ -46,11 +46,12 @@ add({
     'sv.hist': 'History', 'sv.hist.keep': 'Keep events for', 'sv.hist.h': 'A shorter time deletes older days within a minute.',
     'sv.rtc': 'Clock module (DS3231)', 'sv.rtc.none': 'Clock module not found.', 'sv.rtc.temp': 'Temperature', 'sv.rtc.aging': 'Aging offset',
     'sv.rtc.h': 'About 0.1 ppm per step; positive values slow the clock down, negative speed it up. Range −128 … 127.',
-    'sv.rtc.auto': 'Trim automatically from NTP', 'sv.rtc.auto.h': 'Measures the drift against the time server over at least a day and corrects the aging offset. A value entered by hand starts a new measurement.',
+    'sv.rtc.auto': 'Trimmed automatically: with a time server the device measures the drift over at least a day and corrects the aging offset itself.',
+    'sv.rtc.manual': 'No time server: the aging offset is set by hand here.',
+    'err.ntp_active': 'A time server is set – the aging offset is trimmed automatically.',
     'sv.rtc.since': 'Measuring since', 'sv.rtc.off': 'Deviation now', 'sv.rtc.last': 'Last correction',
     'sv.rtc.last.v': '{d}: {ppm} ppm, {from} → {to}', 'sv.rtc.wait': 'waits for the next NTP sync',
     'sv.rtc.lost': 'The clock module had lost the time while the device was off – check its backup battery.',
-    'sv.rtc.on': 'Automatic trim switched on.', 'sv.rtc.offd': 'Automatic trim switched off.',
     'sv.raw': 'Raw stepper test', 'sv.raw.h': 'Moves a pump head by exact steps – bypasses container tracking, schedule and history. For hardware checks only.',
     'sv.raw.dir': 'Direction', 'sv.fwd': 'Forward', 'sv.rev': 'Backward', 'sv.steps': 'Steps', 'sv.sps': 'Frequency',
     'sv.force': 'Step even if the driver does not answer', 'sv.start': 'Start', 'sv.stop': 'Stop', 'sv.estop': 'Stop now',
@@ -107,11 +108,12 @@ add({
     'sv.hist': 'Verlauf', 'sv.hist.keep': 'Ereignisse aufbewahren für', 'sv.hist.h': 'Eine kürzere Zeit löscht ältere Tage innerhalb einer Minute.',
     'sv.rtc': 'Uhrenmodul (DS3231)', 'sv.rtc.none': 'Uhrenmodul nicht gefunden.', 'sv.rtc.temp': 'Temperatur', 'sv.rtc.aging': 'Aging-Offset',
     'sv.rtc.h': 'Etwa 0,1 ppm pro Schritt; positive Werte bremsen die Uhr, negative beschleunigen sie. Bereich −128 … 127.',
-    'sv.rtc.auto': 'Automatisch per NTP abgleichen', 'sv.rtc.auto.h': 'Misst die Abweichung zum Zeitserver über mindestens einen Tag und korrigiert den Aging-Offset. Ein von Hand eingetragener Wert startet eine neue Messung.',
+    'sv.rtc.auto': 'Automatischer Abgleich: Mit Zeitserver misst das Gerät die Abweichung über mindestens einen Tag und korrigiert den Aging-Offset selbst.',
+    'sv.rtc.manual': 'Kein Zeitserver: Den Aging-Offset hier von Hand einstellen.',
+    'err.ntp_active': 'Ein Zeitserver ist eingetragen – der Aging-Offset wird automatisch abgeglichen.',
     'sv.rtc.since': 'Messung läuft seit', 'sv.rtc.off': 'Abweichung jetzt', 'sv.rtc.last': 'Letzte Korrektur',
     'sv.rtc.last.v': '{d}: {ppm} ppm, {from} → {to}', 'sv.rtc.wait': 'wartet auf den nächsten NTP-Abgleich',
     'sv.rtc.lost': 'Das Uhrenmodul hatte die Uhrzeit verloren, während das Gerät aus war – Pufferbatterie prüfen.',
-    'sv.rtc.on': 'Automatischer Abgleich eingeschaltet.', 'sv.rtc.offd': 'Automatischer Abgleich ausgeschaltet.',
     'sv.raw': 'Raw-Stepper-Test', 'sv.raw.h': 'Fährt einen Pumpenkopf um exakt X Schritte – am Behälter-Tracking, Zeitplan und Verlauf vorbei. Nur zur Hardwareprüfung.',
     'sv.raw.dir': 'Richtung', 'sv.fwd': 'Vorwärts', 'sv.rev': 'Rückwärts', 'sv.steps': 'Schritte', 'sv.sps': 'Frequenz',
     'sv.force': 'Auch ohne Treiberantwort takten', 'sv.start': 'Start', 'sv.stop': 'Stopp', 'sv.estop': 'Sofort stoppen',
@@ -459,12 +461,6 @@ function RtcCard({ hw, reload }) {
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
   const tr = rtc.trim || {};
-  const setAuto = on => {
-    setBusy(true);
-    eapi('POST', '/api/v1/hw/rtc/aging?' + qs({ auto: on ? 1 : 0 }))
-      .then(() => { msg.ok(t(on ? 'sv.rtc.on' : 'sv.rtc.offd')); return reload(); })
-      .catch(e => msg.err(e)).finally(() => setBusy(false));
-  };
   const day = utc => new Date(utc * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short', ...hourCycle() });
   return html`<form class="card" novalidate onSubmit=${submit}>
     <h2>${t('sv.rtc')}</h2>
@@ -477,10 +473,10 @@ function RtcCard({ hw, reload }) {
           ${tr.offset_ms !== undefined && html`<dt>${t('sv.rtc.off')}</dt><dd class="num">${tr.offset_ms > 0 ? '+' : ''}${num(tr.offset_ms, 0)} ms</dd>`}`}
         ${tr.last && html`<dt>${t('sv.rtc.last')}</dt><dd class="num">${t('sv.rtc.last.v',
           { d: day(tr.last.at), ppm: (tr.last.ppm > 0 ? '+' : '') + num(tr.last.ppm, 2), from: tr.last.from, to: tr.last.to })}</dd>`}</dl>
-      <${Toggle} checked=${!!tr.automatic} disabled=${busy} onChange=${setAuto}>${t('sv.rtc.auto')}<//>
-      <p class="small mut">${t('sv.rtc.auto.h')}</p>
-      <${Num} f=${kAging} d=${d} set=${x => setD(x)} bad=${!!bad} hint=${t('sv.rtc.h')}/>
-      <${Save} busy=${busy} dirty=${parse(d.aging) !== rtc.aging}/>`}
+      ${tr.automatic ? html`<p class="small mut">${t('sv.rtc.auto')}</p>` : html`
+        <p class="small mut">${t('sv.rtc.manual')}</p>
+        <${Num} f=${kAging} d=${d} set=${x => setD(x)} bad=${!!bad} hint=${t('sv.rtc.h')}/>
+        <${Save} busy=${busy} dirty=${parse(d.aging) !== rtc.aging}/>`}`}
     ${msg.node}
   </form>`;
 }
