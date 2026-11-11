@@ -28,7 +28,7 @@ add({
     'prime.rest': 'No live connection – stops 0.5 s after releasing.',
     'cal.title': 'Calibration', 'cal.ok': 'Calibrated: {v} ml per revolution', 'cal.none': 'Not calibrated yet – amounts use the nominal value.',
     'cal.when': 'on {d}', 'cal.s1': 'Put the tube end into a measuring cup.', 'cal.s2': 'Start: the pump delivers about {ml} ml.',
-    'cal.s2d': 'Start: the pump delivers the standard amount.', 'cal.target': 'Target amount',
+    'cal.ask.start': 'Is the tube end of pump {n} in the measuring cup? The pump now delivers about {ml} ml.', 'cal.target': 'Target amount',
     'cal.start': 'Start calibration', 'cal.running': 'Calibration running … {done} ml',
     'cal.measured': 'Measured amount', 'cal.ask': 'The pump should have delivered {ml} ml. How much is in the cup?',
     'cal.apply': 'Apply', 'cal.discard': 'Discard', 'cal.done': 'New calibration saved',
@@ -78,7 +78,7 @@ add({
     'prime.rest': 'Keine Live-Verbindung – stoppt 0,5 s nach dem Loslassen.',
     'cal.title': 'Kalibrierung', 'cal.ok': 'Kalibriert: {v} ml pro Umdrehung', 'cal.none': 'Noch nicht kalibriert – Mengen nutzen den Nennwert.',
     'cal.when': 'am {d}', 'cal.s1': 'Schlauchende in einen Messbecher halten.', 'cal.s2': 'Starten: Die Pumpe fördert etwa {ml} ml.',
-    'cal.s2d': 'Starten: Die Pumpe fördert die Standardmenge.', 'cal.target': 'Zielmenge',
+    'cal.ask.start': 'Steckt das Schlauchende von Pumpe {n} im Messbecher? Die Pumpe fördert jetzt etwa {ml} ml.', 'cal.target': 'Zielmenge',
     'cal.start': 'Kalibrierung starten', 'cal.running': 'Kalibrierung läuft … {done} ml',
     'cal.measured': 'Gemessene Menge', 'cal.ask': 'Die Pumpe sollte {ml} ml fördern. Wie viel ist im Becher?',
     'cal.apply': 'Übernehmen', 'cal.discard': 'Verwerfen', 'cal.done': 'Neue Kalibrierung gespeichert',
@@ -243,10 +243,11 @@ function CalibCard({ p, pro }) {
   const [measured, setMeasured] = useState('');
   const msg = useMsg();
   const running = p.activity === 'calibrating';
-  const start = () => {
+  const start = async () => {
     const v = target.trim() === '' ? undefined : parseNum(target);
-    if (Number.isNaN(v)) { msg.err({ code: 'invalid_param' }); return; }
+    if (Number.isNaN(v) || v === 0) { msg.err({ code: 'invalid_param' }); return; }
     msg.clear();
+    if (!(await ask(t('cal.ask.start', { n: p.pump, ml: num(v ?? cal.target_ml, 1) }), { ok: t('cal.start') }))) return;
     api('POST', '/api/v1/pumps/calibrate?' + qs({ pump: p.pump, action: 'start', ml: v === undefined ? undefined : dec(v) }))
       .then(refresh).catch(msg.err);
   };
@@ -274,9 +275,9 @@ function CalibCard({ p, pro }) {
   } else {
     body = html`<ol class="steps small">
         <li>${t('cal.s1')}</li>
-        <li>${target.trim() ? t('cal.s2', { ml: target }) : t('cal.s2d')}</li>
+        <li>${t('cal.s2', { ml: target.trim() || num(cal.target_ml, 1) })}</li>
       </ol>
-      ${pro && html`<div class="form-row"><label>${t('cal.target')}<${Amount} value=${target} onInput=${setTarget} placeholder="20"/></label></div>`}
+      ${pro && html`<div class="form-row"><label>${t('cal.target')}<${Amount} value=${target} onInput=${setTarget} placeholder=${num(cal.target_ml, 1)}/></label></div>`}
       <button class="sec" onClick=${start} disabled=${p.activity !== 'idle' || p.mode === 'disabled'}>${t('cal.start')}</button>`;
   }
   return html`<section class="card"><h2>${t('cal.title')}</h2>
