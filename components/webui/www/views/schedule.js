@@ -375,7 +375,12 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
   const dirty = JSON.stringify(bodyOf(d)) !== JSON.stringify(bodyOf(draftOf(s)));
   const ex = expand(d, grid);
   const planned = today ? daySlots(d, dayNum(today), grid).reduce((a, x) => a + x.ul, 0) / 1000 : 0;
-  const switchKind = kind => set({ kind, ...(kind === 'times' && !d.times.length ? { times: [newRow()] } : {}) });
+  // Spread -> single times: start from the doses the spread plan gives
+  const fromSpread = () => {
+    const sl = d.kind === 'spread' ? ex.slots : [];
+    return sl.length && sl.length <= kMaxTimes ? sl.map(x => ({ time: hhmm(x.min), ml: text(x.ul / 1000) })) : [newRow()];
+  };
+  const switchKind = kind => set({ kind, ...(kind === 'times' && !d.times.length ? { times: fromSpread() } : {}) });
   const switchDays = mode => setDays({ mode, anchor: d.days.anchor || today || '', weekdays: d.days.weekdays.length ? d.days.weekdays : [...WD] });
   const toggleWd = w => setDays({ weekdays: d.days.weekdays.includes(w) ? d.days.weekdays.filter(x => x !== w) : [...d.days.weekdays, w] });
   const typing = d.kind === 'spread' && Number.isNaN(parseNum(d.ml));
