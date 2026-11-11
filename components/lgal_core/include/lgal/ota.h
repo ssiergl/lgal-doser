@@ -4,11 +4,11 @@
 //
 //   POST /api/v1/ota/firmware   body = raw .bin (application/octet-stream)
 //   POST /api/v1/ota/url        {"url":"https://…/firmware.bin"} -> 202 {"status":"started"};
-//                               the device downloads the image itself
+//                               the device downloads the image itself (engineering)
 //   GET  /api/v1/ota/status     {"state":"idle|running|failed|rebooting","source":"api",
 //                               "http","received","total" (null = unknown),"error"?,"detail"?}
 //   GET  /api/v1/ota/settings   {"allow_http"}
-//   PUT  /api/v1/ota/settings   {"allow_http"?}
+//   PUT  /api/v1/ota/settings   {"allow_http"?} (engineering)
 //   MQTT "<base>/ota/state"     progress and result (not retained)
 //
 // URLs: https with the server certificate checked against the CA bundle.
