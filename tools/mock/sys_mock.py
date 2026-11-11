@@ -44,7 +44,7 @@ def info_json():
 IPRE = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
 
 # URL update: a ".bin" address downloads 1.6 MB in 6 s and restarts, anything else gets HTTP 404 after 2 s
-OTA = {"allow_http": False, "mqtt_update": False, "t0": 0, "url": "", "http": False, "rebooted": False}
+OTA = {"allow_http": False, "t0": 0, "url": "", "http": False, "rebooted": False}
 
 def ota_status():
     if not OTA["t0"]: return {"state": "idle"}
@@ -142,11 +142,10 @@ def route(h, method, path, q, body):
         h.send(200, {"status": "rebooting"}); restart(); return True  # the mock keeps its state
     if path == "/api/v1/ota/settings":
         if method == "PUT":
-            for k in ("allow_http", "mqtt_update"):
-                if k in body:
-                    if not isinstance(body[k], bool): err(h, 400, "invalid_param", k); return True
-                    OTA[k] = body[k]
-        h.send(200, {k: OTA[k] for k in ("allow_http", "mqtt_update")}); return True
+            if "allow_http" in body:
+                if not isinstance(body["allow_http"], bool): err(h, 400, "invalid_param", "allow_http"); return True
+                OTA["allow_http"] = body["allow_http"]
+        h.send(200, {"allow_http": OTA["allow_http"]}); return True
     if path == "/api/v1/ota/status" and method == "GET": h.send(200, ota_status()); return True
     if path == "/api/v1/ota/url" and method == "POST":
         u = str(body.get("url", "")).strip()
