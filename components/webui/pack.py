@@ -9,7 +9,10 @@ as-is with "Content-Encoding: gzip". Format (little endian):
             u32 offset (from blob start) | u32 length | char etag[16] }
   data
 
-Usage: pack.py <www dir> <output file>
+Usage: pack.py <www dir> <output file> [<path>=<file> ...]
+
+Each <path>=<file> adds a file from outside www/ under that path, e.g. the
+license texts from the repository root as licenses/gpl-3.0.txt.
 """
 import gzip
 import hashlib
@@ -27,6 +30,7 @@ MIME = {
     ".json": "application/json",
     ".ico": "image/x-icon",
     ".png": "image/png",
+    ".txt": "text/plain; charset=utf-8",
 }
 
 
@@ -53,6 +57,9 @@ def gz(data):
 def main():
     root, out = sys.argv[1], sys.argv[2]
     files = collect(root)
+    for extra in sys.argv[3:]:
+        path, full = extra.split("=", 1)
+        files.append((path, MIME[os.path.splitext(path)[1]], full))
     entries, blobs = [], []
     for path, mime, full in files:
         raw = open(full, "rb").read()
