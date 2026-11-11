@@ -360,6 +360,7 @@ static void test_boost() {
     boost_start(b, 30000, 3, day);
     CHECK(boost_active(b, day));
     // started at noon: only 2 slots left today
+    CHECK(boost_preview(b, day, 2) == 5000 && b.remaining_ul == 30000);  // preview takes nothing
     CHECK(boost_take(b, day, 2) == 5000);
     CHECK(boost_take(b, day, 1) == 5000);
     // day 2: 20 ml for 2 days -> 10 ml, 4 slots

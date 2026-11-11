@@ -476,6 +476,7 @@ Status status(int pump) {
         s.has_next = true;
         s.next_utc = d.utc;
         s.next_ul = d.ul;
+        s.next_boost_ul = sched::boost_preview(r.run.boost, d.day, d.remaining_today);
     }
     if (set.mode == dose::Mode::Auto) {
         s.planned_today_ul = sched::day_total(r.sch, day);

@@ -232,7 +232,10 @@ void write_status(Json& j, int p) {
     if (s.has_next) {
         j.obj("next");
         write_instant(j, "at", "local", s.next_utc);
-        j.kv("ml", ml(s.next_ul), 3).end();
+        // ml includes the expected boost share, boost_ml names it
+        j.kv("ml", ml(s.next_ul + s.next_boost_ul), 3);
+        if (s.next_boost_ul) j.kv("boost_ml", ml(s.next_boost_ul), 3);
+        j.end();
     } else {
         j.null("next");
     }
