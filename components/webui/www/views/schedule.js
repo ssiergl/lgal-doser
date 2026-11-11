@@ -10,7 +10,7 @@ import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { setMode } from '../lib/prefs.js';
 import { pumpName } from '../lib/pumps.js';
 import { reloadSched } from '../lib/store.js';
-import { Amount, Seg, parseNum, useMsg } from '../lib/ui.js';
+import { Amount, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
 
 const WD = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const kMaxTimes = 24;
@@ -321,7 +321,8 @@ function SimpleEditor({ pump, s, onSaved, limit }) {
     save(bodyOf(draft), t('sc.saved'), grid);
   };
   const remove = () => {
-    if (confirm(t('sc.remove.ask', { n: pump }))) save(bodyOf({ ...draft, kind: 'none' }), t('sc.removed'), grid);
+    ask(t('sc.remove.ask', { n: pump }), { ok: t('sc.remove'), danger: true })
+      .then(yes => yes && save(bodyOf({ ...draft, kind: 'none' }), t('sc.removed'), grid));
   };
   const empty = s.kind === 'none';
   const planned = ex.slots.reduce((a, x) => a + x.ul, 0) / 1000;
@@ -471,8 +472,8 @@ function ScheduleIO({ p, s, onSaved, grid }) {
       if (!doc || doc.format !== kFormat || !doc.schedule || typeof doc.schedule !== 'object') { msg.err(t('sc.import.bad')); return; }
       if (doc.version > 1) { msg.err(t('sc.import.newer')); return; }
       const d = doc.exported ? new Date(doc.exported).toLocaleDateString(getLang()) : '–';
-      if (!confirm(t('sc.import.ask', { name: doc.name || t('pump', { n: doc.pump }), d, n: p.pump }))) return;
-      save(doc.schedule, t('sc.import.ok'), grid);
+      return ask(t('sc.import.ask', { name: doc.name || t('pump', { n: doc.pump }), d, n: p.pump }), { ok: t('sc.import') })
+        .then(yes => yes && save(doc.schedule, t('sc.import.ok'), grid));
     }).catch(() => msg.err(t('sc.import.bad')));
   };
   return html`<div class="sched-io">

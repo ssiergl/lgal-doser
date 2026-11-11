@@ -7,7 +7,7 @@ import { add, getLang, num, t } from '../lib/i18n.js';
 import { usePrefs } from '../lib/prefs.js';
 import { Container, PumpTabs, alerts, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { reloadPumps, reloadSched, useStore } from '../lib/store.js';
-import { Amount, HoldButton, Seg, parseNum, useMsg } from '../lib/ui.js';
+import { Amount, HoldButton, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
 import { ScheduleCard } from './schedule.js';
 
 add({
@@ -290,8 +290,8 @@ function CalibCard({ p, pro }) {
 function UsageCard({ p, sp, nowLocal }) {
   const msg = useMsg();
   const d = p.daily, tb = p.tube, last = p.last || {};
-  const resetTube = () => {
-    if (!confirm(t('use.tube.ask', { n: p.pump }))) return;
+  const resetTube = async () => {
+    if (!(await ask(t('use.tube.ask', { n: p.pump }), { ok: t('use.tube.reset') }))) return;
     api('POST', '/api/v1/pumps/tube?' + qs({ pump: p.pump, hours: 0 })).then(() => { msg.ok(t('use.tube.ok')); refresh(); }).catch(msg.err);
   };
   const none = html`<span class="mut">${t('use.none')}</span>`;
@@ -336,7 +336,8 @@ function BoostCard({ p, sp, nowLocal }) {
   let body;
   if (b) {
     const done = Math.max(0, b.total_ml - b.remaining_ml);
-    const stop = () => { if (confirm(t('bo.stop.ask', { n: p.pump, ml: num(b.remaining_ml, 1) }))) run({ action: 'stop' }, t('bo.stopped')); };
+    const stop = () => ask(t('bo.stop.ask', { n: p.pump, ml: num(b.remaining_ml, 1) }), { ok: t('bo.stop') })
+      .then(yes => yes && run({ action: 'stop' }, t('bo.stopped')));
     body = html`<p><b class="num">${t('bo.active', { rest: num(b.remaining_ml, 1), total: num(b.total_ml, 1) })}</b></p>
       <div class="bar"><i style=${{ width: Math.min(100, (done / (b.total_ml || 1)) * 100) + '%' }}></i></div>
       <p class="small mut">${t('bo.until', { days: b.days, start: dayText(b.start), end: dayText(b.start, b.days - 1) })}</p>

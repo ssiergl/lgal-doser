@@ -5,6 +5,7 @@ import { html } from './lib/html.js';
 import { add, initLang, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
 import { start, useStore } from './lib/store.js';
+import { DialogHost } from './lib/ui.js';
 import { Dashboard } from './views/dashboard.js';
 import { EngDialog, lockForeignUnlock } from './views/engineering.js';
 import { HistoryView } from './views/history.js';
@@ -126,7 +127,8 @@ function App() {
     <${Header} route=${route}/>
     <main><${Banners}/>${page}</main>
     <${Footer}/>
-    <${Nav} route=${route} cls="bottom"/>`;
+    <${Nav} route=${route} cls="bottom"/>
+    <${DialogHost}/>`;
 }
 
 initLang();

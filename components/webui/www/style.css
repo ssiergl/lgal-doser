@@ -376,6 +376,8 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .dialog .spacer { flex: 1; }
 .dialog h3 { margin-top: 14px; }
 .dialog .ok { color: var(--ok); }
+.ask p { margin: 0 0 16px; white-space: pre-line; }
+.row.end { justify-content: flex-end; }
 
 /* ---- status LED ---- */
 .led-dot { flex: none; display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); border: 1px solid color-mix(in srgb, var(--c) 60%, var(--line)); }

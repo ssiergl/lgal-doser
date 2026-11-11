@@ -8,7 +8,7 @@ import { html } from '../lib/html.js';
 import { add, errText, num, t } from '../lib/i18n.js';
 import { usePrefs } from '../lib/prefs.js';
 import { reloadInfo, useStore } from '../lib/store.js';
-import { useMsg } from '../lib/ui.js';
+import { ask, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -213,11 +213,11 @@ function UrlUpdateCard({ busyPumps, opts }) {
   }).catch(() => setTimeout(poll, 2000));  // the device may be restarting
   const http = isHttp(url);
   const blocked = http && !opts.allow_http;
-  const start = e => {
+  const start = async e => {
     e.preventDefault();
     msg.clear();
     if (blocked) { msg.err(t('mt.url.http.off')); return; }
-    if (http && !confirm(t('mt.url.http.ask'))) return;
+    if (http && !(await ask(t('mt.url.http.ask'), { ok: t('mt.url.start'), danger: true }))) return;
     setBusy(true);
     api('POST', '/api/v1/ota/url', { url: url.trim() })
       .then(() => { setSt({ state: 'running', received: 0, total: null }); setTimeout(poll, 500); })
@@ -242,12 +242,12 @@ function UrlUpdateCard({ busyPumps, opts }) {
 // Pro view: http for URL updates (warned) and updates over MQTT, both off from the factory
 function UpdateOptsCard({ opts, setOpts, base }) {
   const msg = useMsg();
-  const save = patch => {
-    if (patch.allow_http && !confirm(t('mt.opt.http.ask'))) return;
+  const save = async (patch, box) => {
+    if (patch.allow_http && !(await ask(t('mt.opt.http.ask'), { danger: true }))) { box.checked = false; return; }
     api('PUT', '/api/v1/ota/settings', patch).then(j => { setOpts(j); msg.ok(t('mt.opt.saved')); }).catch(e => msg.err(e));
   };
   return html`<section class="card"><h2>${t('mt.opt')}</h2>
-    <label class="check"><input type="checkbox" checked=${opts.allow_http} onChange=${e => save({ allow_http: e.target.checked })}/>
+    <label class="check"><input type="checkbox" checked=${opts.allow_http} onChange=${e => save({ allow_http: e.target.checked }, e.target)}/>
       <span>${t('mt.opt.http')}<br/><span class=${'small ' + (opts.allow_http ? 'warn' : 'mut')}>${t(opts.allow_http ? 'mt.opt.http.on' : 'mt.opt.http.h')}</span></span></label>
     <label class="check"><input type="checkbox" checked=${opts.mqtt_update} onChange=${e => save({ mqtt_update: e.target.checked })}/>
       <span>${t('mt.opt.mqtt')}<br/><span class=${'small ' + (opts.mqtt_update ? 'warn' : 'mut')}>${t('mt.opt.mqtt.h', { t: base + '/ota/set' })}</span></span></label>
@@ -258,8 +258,8 @@ function UpdateOptsCard({ opts, setOpts, base }) {
 function RestartCard() {
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  const restart = () => {
-    if (!confirm(t('mt.restart.confirm'))) return;
+  const restart = async () => {
+    if (!(await ask(t('mt.restart.confirm'), { ok: t('mt.restart') }))) return;
     setBusy(true);
     api('POST', '/api/v1/system/reboot')
       .then(() => { msg.ok(t('mt.restarting')); return waitForDevice(msg); })
@@ -280,9 +280,9 @@ function FactoryCard() {
   const [done, setDone] = useState(false);
   const msg = useMsg();
   const close = () => { setOpen(false); setPw(''); msg.clear(); };
-  const go = e => {
+  const go = async e => {
     e.preventDefault();
-    if (!pw || !confirm(t('mt.fac.ask'))) return;
+    if (!pw || !(await ask(t('mt.fac.ask'), { ok: t('mt.fac.go'), danger: true }))) return;
     setBusy(true);
     api('POST', '/api/v1/system/factory_reset', { password: pw })
       .then(() => { setPw(''); setDone(true); msg.ok(t('mt.fac.done')); })
