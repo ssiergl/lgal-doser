@@ -253,6 +253,29 @@ Ablauf und Schutz:
   **Rollback** auf die vorherige Firmware.
 - Die Pumpentreiber werden für die Dauer des Updates abgeschaltet.
 
+**Update-Quelle:** Eine feste Adresse für das Release-Manifest, z. B.
+`https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`. Ab Werk aus
+`CONFIG_LGAL_OTA_SOURCE` (leer = keine Quelle), ändern lässt sie sich nur im
+[Engineering-Menü](#engineering-menü-m6). Das Manifest nennt die Version und je
+Modulvariante (`N8R8`, `N16R8`, `N32R8`, nach Flash-Größe des Builds) Datei, SHA-256 und
+optional Größe:
+
+```json
+{"version":"0.2.0","notes":"https://github.com/<owner>/<repo>/releases/tag/v0.2.0",
+ "builds":[{"variant":"N16R8","url":"lgal_doser-N16R8.bin","sha256":"<64 Hex-Zeichen>","size":1234567}]}
+```
+
+- `url` absolut oder relativ zur eingestellten Manifest-Adresse (nicht zum Ziel einer Weiterleitung);
+  `notes` wird nur als http(s)-Adresse übernommen. Manifest höchstens 4 KB.
+- Versionen nach Semantic Versioning, eine Vorabversion (`1.0.0-rc.1`) ist älter als `1.0.0`.
+  Angeboten wird nur eine neuere Version als die laufende.
+- **Automatisch prüfen** (ab Werk an): etwa 10 min nach dem Start, danach täglich, nach einem
+  Fehler stündlich. Das meldet nur – installiert wird nie ohne Auftrag.
+- Installieren lädt das Manifest noch einmal, dann die Datei der eigenen Variante; stimmen
+  SHA-256 oder Größe nicht, wird das Image verworfen, bevor es aktiv wird. Sonst wie beim Upload
+  (gesperrt, solange eine Pumpe läuft; Rollback-Schutz).
+- Für Quelle und Datei gelten https und die http-Regel wie beim Update von einer Adresse.
+
 **Update von einer Adresse:** Das Gerät lädt die `.bin` selbst herunter, z. B. von einer
 Release-Seite – im [Engineering-Menü](#engineering-menü-m6) oder per REST mit Engineering-Freischaltung:
 
@@ -315,9 +338,12 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
 | POST | `/api/v1/system/factory_reset` | `{"password":"…"}` – Werksreset mit Neustart; nur mit Browser-Sitzung (kein API-Key) und Admin-Passwort, Fehlversuche zählen wie beim Login (403 `wrong_password`, 429 `too_many_attempts`) |
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
+| GET | `/api/v1/ota/release` | letzte Prüfung der Update-Quelle: `{"source","variant","current","auto_check","checking","checked_at"(null = noch nicht / Uhr unbekannt),"latest"(null = unbekannt),"available","notes"?,"error"?,"detail"?}` |
+| POST | `/api/v1/ota/release/check` | Quelle jetzt prüfen → 202 `started` (Ergebnis bei `GET /api/v1/ota/release`); 400 `no_source` |
+| POST | `/api/v1/ota/release/install` | neuere Version der Quelle installieren → 202 `started`, Fortschritt bei `GET /api/v1/ota/status`; Fehler dort u. a. `no_update`, `sha256_mismatch`, `manifest_invalid`, `no_build`; 409 `pump_running` / `ota_in_progress` |
 | POST | `/api/v1/ota/url` | Engineering. `{"url":"https://…"}` → 202 `started`, das Gerät lädt selbst; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |
-| GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api\|mqtt","http","received","total","error"?,"detail"?}` |
-| GET / PUT | `/api/v1/ota/settings` | `{"allow_http"}`, ab Werk `false`; Ändern nur mit Engineering |
+| GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api","http","received","total","error"?,"detail"?}` |
+| GET / PUT | `/api/v1/ota/settings` | `{"source","auto_check","allow_http"}`; `auto_check` ab Werk `true`, `allow_http` ab Werk `false`. `source` und `allow_http` ändern nur mit Engineering (`source` gesetzt → sofortige Prüfung) |
 | GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
 | POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle); verwirft eine vorgemerkte Dosis |

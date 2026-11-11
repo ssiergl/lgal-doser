@@ -2,8 +2,11 @@
 
 #include <atomic>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <memory>
+#include <mutex>
 
 #include "esp_app_desc.h"
 #include "esp_app_format.h"
@@ -20,6 +23,8 @@
 #include "lgal/json_reader.h"
 #include "lgal/led.h"
 #include "lgal/mqtt.h"
+#include "lgal/ota_manifest.h"
+#include "lgal/sha256.h"
 #include "nvs.h"
 #include "sdkconfig.h"
 
@@ -39,6 +44,18 @@ LockHook s_lock;
 std::atomic<bool> s_busy{false};
 std::function<bool()> s_health;
 std::atomic<bool> s_allow_http{false};
+std::atomic<bool> s_auto_check{true};
+std::function<void()> s_change;
+
+// Update source and the last check (s_rel_mux)
+std::mutex s_rel_mux;
+std::string s_source;
+ReleaseInfo s_rel;
+char s_rel_detail[64] = "";
+std::atomic<int64_t> s_next_check_us{0};  // esp_timer time of the next automatic check
+constexpr int64_t kCheckTickUs = 10LL * 60 * 1000000;  // the first check ~10 min after the start
+constexpr int64_t kCheckPeriodUs = 24LL * 3600 * 1000000;
+constexpr int64_t kRetryUs = 3600LL * 1000000;  // after a failed check
 
 // URL update progress (s_mux)
 portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
@@ -225,13 +242,14 @@ esp_err_t post_firmware(httpd_req_t* req) {
     return ESP_OK;
 }
 
-// --- update from a URL ---------------------------------------------------------
+// --- download from an address ---------------------------------------------------
 
 bool scheme_http(const char* url) { return strncasecmp(url, "http://", 7) == 0; }
 bool scheme_https(const char* url) { return strncasecmp(url, "https://", 8) == 0; }
 
-// nullptr = acceptable; otherwise "invalid_url" or "http_not_allowed"
-const char* check_url(const char* url) {
+// nullptr = acceptable; otherwise "invalid_url" or (unless format_only)
+// "http_not_allowed"
+const char* check_url(const char* url, bool format_only = false) {
     const size_t len = strnlen(url, kMaxUrl + 1);
     if (len == 0 || len > kMaxUrl) return "invalid_url";
     for (size_t i = 0; i < len; ++i)
@@ -240,7 +258,7 @@ const char* check_url(const char* url) {
     if (!http && !scheme_https(url)) return "invalid_url";
     const char* host = url + (http ? 7 : 8);
     if (!*host || *host == '/' || *host == ':' || *host == '?' || *host == '#') return "invalid_url";
-    if (http && !s_allow_http) return "http_not_allowed";
+    if (http && !format_only && !s_allow_http) return "http_not_allowed";
     return nullptr;
 }
 
@@ -253,6 +271,12 @@ void set_progress(State st, const char* error = nullptr, const char* detail = nu
     if (detail) std::snprintf(s_prog.detail, sizeof(s_prog.detail), "%s", detail);
     portEXIT_CRITICAL(&s_mux);
     publish_state();
+}
+
+void mark_http() {
+    portENTER_CRITICAL(&s_mux);
+    s_prog.http = true;
+    portEXIT_CRITICAL(&s_mux);
 }
 
 void write_status(Json& j) {
@@ -269,8 +293,9 @@ void write_status(Json& j) {
     j.end();
 }
 
-// "<base>/ota/state" (not retained), whenever the state changes
+// "<base>/ota/state" (not retained) and the change hook, whenever the state changes
 void publish_state() {
+    if (s_change) s_change();
     if (!mqtt::connected()) return;
     Json j;
     write_status(j);
@@ -279,80 +304,82 @@ void publish_state() {
 
 struct UrlJob {
     std::string url;
+    bool verify = false;      // compare with sha256 before switching (update source)
+    uint8_t sha256[crypto::kSha256Len] = {};
+    uint32_t size = 0;        // expected size, 0 = unknown
 };
 
 void fail_url(const char* code, const char* detail) {
-    ESP_LOGE(TAG, "URL update failed: %s (%s)", code, detail);
+    ESP_LOGE(TAG, "Update failed: %s (%s)", code, detail);
     finish(false);
     set_progress(State::Failed, code, detail);
 }
 
-void url_task(void* arg) {
-    std::unique_ptr<UrlJob> job(static_cast<UrlJob*>(arg));
-    publish_state();
-    const esp_partition_t* target = esp_ota_get_next_update_partition(nullptr);
-    std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[kChunk]);
-    if (!buf || !target) {
-        fail_url("no_memory", "Out of memory");
-        vTaskDelete(nullptr);
-        return;
-    }
+esp_http_client_handle_t make_client(const char* url) {
     esp_http_client_config_t cfg{};
-    cfg.url = job->url.c_str();
+    cfg.url = url;
     cfg.timeout_ms = kTimeoutMs;
     cfg.buffer_size = kChunk;
     cfg.buffer_size_tx = 2048;  // redirect targets with signed query strings are long
     cfg.crt_bundle_attach = esp_crt_bundle_attach;  // https: server certificate checked
     cfg.disable_auto_redirect = true;               // every hop is checked below
     cfg.keep_alive_enable = false;
-    esp_http_client_handle_t client = esp_http_client_init(&cfg);
-    if (!client) {
-        fail_url("no_memory", "HTTP client");
-        vTaskDelete(nullptr);
-        return;
-    }
+    return esp_http_client_init(&cfg);
+}
 
-    const char* code = nullptr;
-    char detail[64] = "";
-    int64_t length = -1;
+// Sends the request and follows redirects, each hop checked. nullptr = HTTP
+// 200 with *length = Content-Length (<= 0 unknown); *http = a hop was plain http.
+const char* open_follow(esp_http_client_handle_t client, int64_t* length, bool* http, char (&detail)[64]) {
     for (int hop = 0;; ++hop) {
         const esp_err_t e = esp_http_client_open(client, 0);
         if (e != ESP_OK) {
-            code = "download_failed";
             std::snprintf(detail, sizeof(detail), "%s", esp_err_to_name(e));
-            break;
+            return "download_failed";
         }
-        length = esp_http_client_fetch_headers(client);
+        *length = esp_http_client_fetch_headers(client);
         const int status = esp_http_client_get_status_code(client);
         if (status == 301 || status == 302 || status == 303 || status == 307 || status == 308) {
-            if (hop >= kMaxRedirects) {
-                code = "too_many_redirects";
-                break;
-            }
+            if (hop >= kMaxRedirects) return "too_many_redirects";
             esp_http_client_set_redirection(client);
             esp_http_client_close(client);
-            char next[kMaxUrl + 1] = "";
+            char next[16] = "";  // only the scheme is checked
             esp_http_client_get_url(client, next, sizeof(next));
-            if (scheme_http(next) && !s_allow_http) {  // no silent downgrade to http
-                code = "http_not_allowed";
-                std::snprintf(detail, sizeof(detail), "redirect to http");
-                break;
-            }
             if (scheme_http(next)) {
-                portENTER_CRITICAL(&s_mux);
-                s_prog.http = true;
-                portEXIT_CRITICAL(&s_mux);
+                if (!s_allow_http) {  // no silent downgrade to http
+                    std::snprintf(detail, sizeof(detail), "redirect to http");
+                    return "http_not_allowed";
+                }
+                *http = true;
             }
             continue;
         }
         if (status != 200) {
-            code = "http_status";
             std::snprintf(detail, sizeof(detail), "HTTP %d", status);
-        } else if (length > 0 && (length < int64_t(kHeaderLen) || length > int64_t(target->size))) {
-            code = "invalid_size";
-            std::snprintf(detail, sizeof(detail), "%lld bytes", static_cast<long long>(length));
+            return "http_status";
         }
-        break;
+        return nullptr;
+    }
+}
+
+// Downloads the image into the inactive slot and restarts on success
+// (update task, s_busy taken).
+void download(const UrlJob& job) {
+    const esp_partition_t* target = esp_ota_get_next_update_partition(nullptr);
+    std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[kChunk]);
+    esp_http_client_handle_t client = buf && target ? make_client(job.url.c_str()) : nullptr;
+    if (!client) {
+        fail_url("no_memory", "Out of memory");
+        return;
+    }
+    char detail[64] = "";
+    int64_t length = -1;
+    bool http = false;
+    const char* code = open_follow(client, &length, &http, detail);
+    if (http) mark_http();
+    if (!code && length > 0 &&
+        (length < int64_t(kHeaderLen) || length > int64_t(target->size) || (job.size && length != job.size))) {
+        code = "invalid_size";
+        std::snprintf(detail, sizeof(detail), "%lld bytes", static_cast<long long>(length));
     }
 
     if (!code) {
@@ -361,8 +388,9 @@ void url_task(void* arg) {
         portENTER_CRITICAL(&s_mux);
         s_prog.total = length > 0 ? static_cast<int32_t>(length) : -1;
         portEXIT_CRITICAL(&s_mux);
-        ESP_LOGI(TAG, "URL update: %lld bytes -> %s", static_cast<long long>(length), target->label);
+        ESP_LOGI(TAG, "Download: %lld bytes -> %s", static_cast<long long>(length), target->label);
         auto w = std::make_unique<Writer>(target);
+        crypto::Sha256 sha;
         size_t received = 0;
         int64_t last_pub = 0;
         bool ok = true;
@@ -380,6 +408,7 @@ void url_task(void* arg) {
                 ok = w->fail("invalid_size", "Image larger than the slot");
                 break;
             }
+            if (job.verify) sha.update(buf.get(), size_t(n));
             if (!w->feed(buf.get(), n)) {
                 ok = false;
                 break;
@@ -394,6 +423,13 @@ void url_task(void* arg) {
                 publish_state();
             }
         }
+        if (ok && job.verify) {  // before the image can become the boot partition
+            uint8_t got[crypto::kSha256Len];
+            sha.finish(got);
+            if (job.size && received != job.size) ok = w->fail("invalid_size", "Size differs from the manifest");
+            else if (!crypto::equal_ct(got, job.sha256, sizeof(got)))
+                ok = w->fail("sha256_mismatch", "SHA-256 differs from the manifest");
+        }
         if (ok) ok = w->finish();
         if (!ok) {
             code = w->code;
@@ -406,22 +442,217 @@ void url_task(void* arg) {
     if (code) {
         fail_url(code, detail);
     } else {
-        ESP_LOGI(TAG, "URL update successful, rebooting in 2 s");
+        ESP_LOGI(TAG, "Update successful, rebooting in 2 s");
         set_progress(State::Rebooting);
         led::set(led::State::Ota, true);  // pumps stay locked until the reboot
         schedule_restart(2000);
     }
+}
+
+void url_task(void* arg) {
+    std::unique_ptr<UrlJob> job(static_cast<UrlJob*>(arg));
+    publish_state();
+    download(*job);
     vTaskDelete(nullptr);
+}
+
+// Fresh progress for an update that starts now (s_busy taken)
+void start_progress(const char* source, bool http) {
+    portENTER_CRITICAL(&s_mux);
+    s_prog = Progress{};
+    s_prog.state = State::Running;
+    std::snprintf(s_prog.source, sizeof(s_prog.source), "%s", source);
+    s_prog.http = http;
+    portEXIT_CRITICAL(&s_mux);
+}
+
+// Gives s_busy back when the update task could not be started
+const char* spawn_failed() {
+    s_busy = false;
+    portENTER_CRITICAL(&s_mux);
+    s_prog = Progress{};
+    portEXIT_CRITICAL(&s_mux);
+    return "no_memory";
+}
+
+// --- update source ---------------------------------------------------------------
+
+std::string source_url() {
+    std::lock_guard<std::mutex> l(s_rel_mux);
+    return s_source;
+}
+
+// Variant of this build ("N16R8"): the partition table belongs to the flash size
+const char* variant() { return variant_for_flash_mb(uint32_t(std::atoi(CONFIG_ESPTOOLPY_FLASHSIZE))); }
+
+bool newer(const std::string& version) {
+    Version have, got;
+    return parse_version(running_version(), &have) && parse_version(version.c_str(), &got) &&
+           compare_versions(got, have) > 0;
+}
+
+// Fetches and parses the manifest of the update source. nullptr = ok.
+const char* fetch_manifest(const std::string& url, Release* rel, char (&detail)[64]) {
+    if (url.empty()) return "no_source";
+    if (const char* e = check_url(url.c_str())) return e;
+    if (!variant()) return "unknown_variant";
+    esp_http_client_handle_t client = make_client(url.c_str());
+    if (!client) return "no_memory";
+    int64_t length = -1;
+    bool http = false;
+    const char* code = open_follow(client, &length, &http, detail);
+    std::string body;
+    if (!code && length > int64_t(kMaxManifest)) code = "manifest_invalid";
+    char chunk[512];
+    while (!code) {
+        const int n = esp_http_client_read(client, chunk, sizeof(chunk));
+        if (n < 0 || (n == 0 && !esp_http_client_is_complete_data_received(client))) {
+            code = "download_failed";
+            std::snprintf(detail, sizeof(detail), "Transfer aborted");
+        } else if (n == 0) {
+            break;
+        } else if (body.size() + size_t(n) > kMaxManifest) {
+            code = "manifest_invalid";
+            std::snprintf(detail, sizeof(detail), "larger than %u bytes", unsigned(kMaxManifest));
+        } else {
+            body.append(chunk, size_t(n));
+        }
+    }
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+    // relative file addresses refer to the configured address, not to a redirect target
+    if (!code) code = parse_manifest(body.data(), body.size(), variant(), url.c_str(), rel);
+    return code;
+}
+
+const char* start_check();
+
+// Keeps the result of a check of url; after a failure the last known release stays.
+void store_check(const std::string& url, const char* code, const char* detail, const Release& rel) {
+    const time_t now = time(nullptr);
+    bool available = false, stale = false;
+    {
+        std::lock_guard<std::mutex> l(s_rel_mux);
+        s_rel.checking = false;
+        stale = url != s_source;  // the source changed meanwhile: the result does not apply
+        if (!stale) {
+            s_rel.checked = true;
+            s_rel.checked_at = now > 1700000000 ? int64_t(now) : 0;
+            s_rel.error = code;
+            std::snprintf(s_rel_detail, sizeof(s_rel_detail), "%s", code ? detail : "");
+            if (!code) {
+                s_rel.latest = rel.version;
+                s_rel.notes = rel.notes;
+                s_rel.available = newer(rel.version);
+            }
+            available = s_rel.available;
+        }
+    }
+    if (stale) {
+        start_check();  // the new source
+        return;
+    }
+    s_next_check_us = esp_timer_get_time() + (code ? kRetryUs : kCheckPeriodUs);
+    if (code) ESP_LOGW(TAG, "Update check failed: %s (%s)", code, detail);
+    else ESP_LOGI(TAG, "Update source: %s (running %s)%s", rel.version.c_str(), running_version(), available ? ", newer" : "");
+    if (s_change) s_change();
+}
+
+void check_task(void*) {
+    Release rel;
+    char detail[64] = "";
+    const std::string url = source_url();
+    const char* code = fetch_manifest(url, &rel, detail);
+    store_check(url, code, detail, rel);
+    vTaskDelete(nullptr);
+}
+
+// Checks again and installs the release if it is newer (s_busy taken)
+void install_task(void*) {
+    publish_state();
+    Release rel;
+    char detail[64] = "";
+    const std::string url = source_url();
+    const char* code = fetch_manifest(url, &rel, detail);
+    store_check(url, code, detail, rel);
+    if (!code && !newer(rel.version)) code = "no_update";
+    if (code) {
+        fail_url(code, detail);
+        vTaskDelete(nullptr);
+        return;
+    }
+    UrlJob job;
+    job.url = rel.url;
+    job.verify = true;
+    std::memcpy(job.sha256, rel.sha256, sizeof(job.sha256));
+    job.size = rel.size;
+    if (scheme_http(job.url.c_str())) mark_http();
+    ESP_LOGW(TAG, "Installing %s from the update source", rel.version.c_str());
+    download(job);
+    vTaskDelete(nullptr);
+}
+
+// nullptr = check running (also when one was already running)
+const char* start_check() {
+    {
+        std::lock_guard<std::mutex> l(s_rel_mux);
+        if (s_source.empty()) return "no_source";
+        if (s_rel.checking) return nullptr;
+        s_rel.checking = true;
+    }
+    s_next_check_us = esp_timer_get_time() + kCheckPeriodUs;
+    // TLS needs a large stack; the task lives only for the check
+    if (xTaskCreate(check_task, "ota_check", 8192, nullptr, 3, nullptr) != pdPASS) {
+        std::lock_guard<std::mutex> l(s_rel_mux);
+        s_rel.checking = false;
+        return "no_memory";
+    }
+    if (s_change) s_change();
+    return nullptr;
+}
+
+// Every 10 min: automatic check when due (esp_timer task, only starts a task)
+void check_timer_cb(void*) {
+    if (s_auto_check && !s_busy && esp_timer_get_time() >= s_next_check_us) start_check();
+}
+
+void write_release(Json& j) {
+    const ReleaseInfo r = release_info();
+    std::string detail;
+    bool source;
+    {
+        std::lock_guard<std::mutex> l(s_rel_mux);
+        detail = s_rel_detail;
+        source = !s_source.empty();
+    }
+    j.obj().kv("source", source).kv("variant", variant() ? variant() : "").kv("current", running_version());
+    j.kv("auto_check", s_auto_check.load()).kv("checking", r.checking);
+    if (r.checked && r.checked_at) j.kv("checked_at", r.checked_at);
+    else j.null("checked_at");
+    if (r.latest.empty()) j.null("latest");
+    else j.kv("latest", r.latest);
+    j.kv("available", r.available);
+    if (!r.notes.empty()) j.kv("notes", r.notes);
+    if (r.error) j.kv("error", r.error).kv("detail", detail);
+    j.end();
 }
 
 // --- settings --------------------------------------------------------------------
 
 void load_settings() {
+    std::string src = CONFIG_LGAL_OTA_SOURCE;
     nvs_handle_t h;
-    if (nvs_open(kNs, NVS_READONLY, &h) != ESP_OK) return;
-    uint8_t v = 0;
-    if (nvs_get_u8(h, "http", &v) == ESP_OK) s_allow_http = v != 0;
-    nvs_close(h);
+    if (nvs_open(kNs, NVS_READONLY, &h) == ESP_OK) {
+        uint8_t v = 0;
+        if (nvs_get_u8(h, "http", &v) == ESP_OK) s_allow_http = v != 0;
+        if (nvs_get_u8(h, "auto", &v) == ESP_OK) s_auto_check = v != 0;
+        char buf[kMaxUrl + 1];
+        size_t len = sizeof(buf);
+        if (nvs_get_str(h, "src", buf, &len) == ESP_OK) src = buf;  // also "" = removed
+        nvs_close(h);
+    }
+    std::lock_guard<std::mutex> l(s_rel_mux);
+    s_source = src;
 }
 
 esp_err_t save_settings(const Settings& s) {
@@ -429,14 +660,27 @@ esp_err_t save_settings(const Settings& s) {
     esp_err_t err = nvs_open(kNs, NVS_READWRITE, &h);
     if (err != ESP_OK) return err;
     err = nvs_set_u8(h, "http", s.allow_http);
+    if (err == ESP_OK) err = nvs_set_u8(h, "auto", s.auto_check);
+    if (err == ESP_OK) err = nvs_set_str(h, "src", s.source.c_str());
     if (err == ESP_OK) err = nvs_commit(h);
     nvs_close(h);
-    if (err == ESP_OK) s_allow_http = s.allow_http;
-    return err;
+    if (err != ESP_OK) return err;
+    s_allow_http = s.allow_http;
+    s_auto_check = s.auto_check;
+    std::lock_guard<std::mutex> l(s_rel_mux);
+    if (s.source != s_source) {  // results of the old source no longer apply
+        const bool checking = s_rel.checking;
+        s_rel = ReleaseInfo{};
+        s_rel.checking = checking;
+        s_rel_detail[0] = 0;
+    }
+    s_source = s.source;
+    return ESP_OK;
 }
 
 void write_settings(Json& j) {
-    j.obj().kv("allow_http", s_allow_http.load()).end();
+    const Settings s = settings();
+    j.obj().kv("source", s.source).kv("auto_check", s.auto_check).kv("allow_http", s.allow_http).end();
 }
 
 esp_err_t get_settings(httpd_req_t* req) {
@@ -447,17 +691,31 @@ esp_err_t get_settings(httpd_req_t* req) {
 }
 
 esp_err_t put_settings(httpd_req_t* req) {
-    if (!http::authorize_engineering(req)) return ESP_OK;
+    if (!http::authorize(req)) return ESP_OK;
     std::string body;
     JsonReader doc;
-    JsonToken tok[8];
-    if (!http::read_json(req, 256, &body, &doc, tok, 8)) return ESP_OK;
+    JsonToken tok[12];
+    if (!http::read_json(req, kMaxUrl + 128, &body, &doc, tok, 12)) return ESP_OK;
     const JsonValue root = doc.root();
+    const JsonValue vs = root["source"], va = root["auto_check"], vh = root["allow_http"];
+    // where firmware may come from is up to the manufacturer
+    if ((vs.valid() || vh.valid()) && !http::authorize_engineering(req)) return ESP_OK;
     Settings s = settings();
-    const JsonValue vh = root["allow_http"];
+    const std::string old_source = s.source;
+    if (vs.valid()) {
+        char url[kMaxUrl + 2] = "";
+        if (!vs.get(url, sizeof(url)) || (url[0] && check_url(url, true)))
+            return http::send_error(req, "400 Bad Request", "invalid_url", "source");
+        s.source = url;
+    }
+    if (va.valid() && !va.get(&s.auto_check)) return http::send_error(req, "400 Bad Request", "invalid_param", "auto_check");
     if (vh.valid() && !vh.get(&s.allow_http)) return http::send_error(req, "400 Bad Request", "invalid_param", "allow_http");
-    if (s.allow_http && !s_allow_http) ESP_LOGW(TAG, "plain http allowed for firmware URLs");
+    if (s.allow_http && !s_allow_http) ESP_LOGW(TAG, "plain http allowed for firmware updates");
     if (save_settings(s) != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", "Could not save");
+    if (s.source != old_source) {
+        ESP_LOGW(TAG, "Update source %s", s.source.empty() ? "removed" : "changed");
+        if (!s.source.empty()) start_check();
+    }
     Json j;
     write_settings(j);
     return http::send_json(req, j.c_str());
@@ -468,6 +726,16 @@ esp_err_t get_status(httpd_req_t* req) {
     Json j;
     write_status(j);
     return http::send_json(req, j.c_str());
+}
+
+esp_err_t start_error(httpd_req_t* req, const char* e, const std::string& reason) {
+    if (!std::strcmp(e, "invalid_url")) return http::send_error(req, "400 Bad Request", e, "Invalid URL (http:// or https://)");
+    if (!std::strcmp(e, "http_not_allowed"))
+        return http::send_error(req, "400 Bad Request", e, "Plain http is not allowed (setting allow_http)");
+    if (!std::strcmp(e, "no_source")) return http::send_error(req, "400 Bad Request", e, "No update source set");
+    if (!std::strcmp(e, "ota_in_progress")) return http::send_error(req, "409 Conflict", e, "An update is already in progress");
+    if (!std::strcmp(e, "guard")) return http::send_error(req, "409 Conflict", reason.c_str(), "Update not allowed right now");
+    return http::send_error(req, "500 Internal Server Error", e, e);
 }
 
 esp_err_t post_url(httpd_req_t* req) {
@@ -481,13 +749,27 @@ esp_err_t post_url(httpd_req_t* req) {
         return http::send_error(req, "400 Bad Request", "invalid_url", "url required");
     std::string reason;
     const char* e = start_url(url, "api", &reason);
-    if (!e) return http::send_json(req, "{\"status\":\"started\"}", "202 Accepted");
-    if (!std::strcmp(e, "invalid_url")) return http::send_error(req, "400 Bad Request", e, "Invalid URL (http:// or https://)");
-    if (!std::strcmp(e, "http_not_allowed"))
-        return http::send_error(req, "400 Bad Request", e, "Plain http is not allowed (setting allow_http)");
-    if (!std::strcmp(e, "ota_in_progress")) return http::send_error(req, "409 Conflict", e, "An update is already in progress");
-    if (!std::strcmp(e, "guard")) return http::send_error(req, "409 Conflict", reason.c_str(), "Update not allowed right now");
-    return http::send_error(req, "500 Internal Server Error", e, e);
+    return e ? start_error(req, e, reason) : http::send_json(req, "{\"status\":\"started\"}", "202 Accepted");
+}
+
+esp_err_t get_release(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    Json j;
+    write_release(j);
+    return http::send_json(req, j.c_str());
+}
+
+esp_err_t post_check(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    const char* e = start_check();
+    return e ? start_error(req, e, "") : http::send_json(req, "{\"status\":\"started\"}", "202 Accepted");
+}
+
+esp_err_t post_install(httpd_req_t* req) {
+    if (!http::authorize(req)) return ESP_OK;
+    std::string reason;
+    const char* e = start_release_install("api", &reason);
+    return e ? start_error(req, e, reason) : http::send_json(req, "{\"status\":\"started\"}", "202 Accepted");
 }
 
 void rollback_task(void*) {
@@ -515,12 +797,22 @@ const char* state_name(State s) {
 
 void set_guard(Guard guard) { s_guard = std::move(guard); }
 void set_lock_hook(LockHook hook) { s_lock = std::move(hook); }
+void set_change_hook(std::function<void()> hook) { s_change = std::move(hook); }
 bool in_progress() { return s_busy; }
+const char* running_version() { return esp_app_get_description()->version; }
 
 Settings settings() {
     Settings s;
     s.allow_http = s_allow_http;
+    s.auto_check = s_auto_check;
+    std::lock_guard<std::mutex> l(s_rel_mux);
+    s.source = s_source;
     return s;
+}
+
+ReleaseInfo release_info() {
+    std::lock_guard<std::mutex> l(s_rel_mux);
+    return s_rel;
 }
 
 const char* start_url(const char* url, const char* source, std::string* reason) {
@@ -530,24 +822,29 @@ const char* start_url(const char* url, const char* source, std::string* reason) 
         if (reason) *reason = why;
         return e;
     }
-    auto* job = new (std::nothrow) UrlJob{url};
-    portENTER_CRITICAL(&s_mux);
-    s_prog = Progress{};
-    s_prog.state = State::Running;
-    std::snprintf(s_prog.source, sizeof(s_prog.source), "%s", source);
-    s_prog.http = scheme_http(url);
-    portEXIT_CRITICAL(&s_mux);
+    auto* job = new (std::nothrow) UrlJob{};
+    if (job) job->url = url;
+    start_progress(source, scheme_http(url));
     // TLS needs a large stack; the task lives only for the update
     if (!job || xTaskCreate(url_task, "ota_url", 8192, job, 4, nullptr) != pdPASS) {
         delete job;
-        s_busy = false;
-        portENTER_CRITICAL(&s_mux);
-        s_prog = Progress{};
-        portEXIT_CRITICAL(&s_mux);
-        return "no_memory";
+        return spawn_failed();
     }
     ESP_LOGW(TAG, "URL update started (%s, %s)", source, scheme_http(url) ? "http" : "https");
     return nullptr;  // the task reports the state
+}
+
+const char* start_release_install(const char* source, std::string* reason) {
+    if (source_url().empty()) return "no_source";
+    std::string why;
+    if (const char* e = begin_update(why)) {
+        if (reason) *reason = why;
+        return e;
+    }
+    start_progress(source, false);
+    if (xTaskCreate(install_task, "ota_rel", 8192, nullptr, 4, nullptr) != pdPASS) return spawn_failed();
+    ESP_LOGW(TAG, "Update from the source requested (%s)", source);
+    return nullptr;
 }
 
 esp_err_t register_handlers(httpd_handle_t server) {
@@ -563,9 +860,16 @@ esp_err_t register_handlers(httpd_handle_t server) {
     http::route(server, "/api/v1/ota/status", HTTP_GET, get_status);
     http::route(server, "/api/v1/ota/settings", HTTP_GET, get_settings);
     http::route(server, "/api/v1/ota/settings", HTTP_PUT, put_settings);
+    http::route(server, "/api/v1/ota/release", HTTP_GET, get_release);
+    http::route(server, "/api/v1/ota/release/check", HTTP_POST, post_check);
+    http::route(server, "/api/v1/ota/release/install", HTTP_POST, post_install);
+    esp_timer_create_args_t args{};
+    args.callback = check_timer_cb;
+    args.name = "ota_check";
+    esp_timer_handle_t t;
+    if (esp_timer_create(&args, &t) == ESP_OK) esp_timer_start_periodic(t, kCheckTickUs);
     return ESP_OK;
 }
-
 void start_rollback_guard(std::function<bool()> health_check) {
     const esp_partition_t* running = esp_ota_get_running_partition();
     esp_ota_img_states_t state;
