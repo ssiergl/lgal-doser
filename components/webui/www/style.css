@@ -177,6 +177,8 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .grid.settings { display: block; columns: 320px; column-gap: var(--gap); }
 .grid.settings > * { break-inside: avoid; margin: 0 0 var(--gap); }
 .grid.settings:has(> :only-child) { columns: auto; }
+/* two cards: two wide columns instead of a third empty one */
+.grid.settings:has(> :nth-child(2):last-child) { columns: 320px 2; }
 .links { list-style: none; padding: 0; margin: 8px 0 0; }
 .links li { border-top: 1px solid var(--line); }
 .links li:first-child { border-top: 0; }
