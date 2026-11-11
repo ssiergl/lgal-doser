@@ -214,13 +214,17 @@ esp_err_t post_boost(httpd_req_t* req) {
         scheduler::boost_stop(p);
         return http::send_json(req, "{\"status\":\"ok\"}");
     }
-    if (action[0]) return fail(req, "invalid_param", "action=stop or ml=&days=");
-    int64_t ul = 0, days = 0;
+    if (action[0]) return fail(req, "invalid_param", "action=stop or ml= with days= or doses=");
+    int64_t ul = 0, days = 0, doses = 0;
     if (!http::query_decimal(req, "ml", 1000, &ul) || ul <= 0 || ul > UINT32_MAX)
         return fail(req, "invalid_param", "ml required");
-    if (!http::query_int(req, "days", &days) || days < 1 || days > sched::kMaxInterval)
-        return fail(req, "invalid_param", "days=1..30 required");
-    if (const char* e = scheduler::boost_start(p, static_cast<uint32_t>(ul), static_cast<uint16_t>(days)))
+    const bool by_days = http::query_int(req, "days", &days), by_doses = http::query_int(req, "doses", &doses);
+    if (by_days == by_doses) return fail(req, "invalid_param", "days= or doses= required");
+    if (by_days && (days < 1 || days > sched::kMaxInterval)) return fail(req, "invalid_param", "days=1..30 required");
+    if (by_doses && (doses < 1 || doses > sched::kMaxBoostDoses))
+        return fail(req, "invalid_param", "doses=1..100 required");
+    if (const char* e = scheduler::boost_start(p, static_cast<uint32_t>(ul), static_cast<uint16_t>(days),
+                                               static_cast<uint16_t>(doses)))
         return fail(req, e);
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
@@ -280,12 +284,14 @@ void write_status(Json& j, int p) {
             .kv("total_ml", ml(s.boost.total_ul), 3)
             .kv("remaining_ml", ml(s.boost.remaining_ul), 3)
             .kv("days", s.boost.days)
+            .kv("doses", s.boost.doses)
             .kv("start", d)
             .kv("doses_left", s.boost.slots_left)
             .kv("per_dose_ml", ml(sched::boost_share(s.boost)), 3)
             .kv("today_ml", ml(s.boost_today_ul), 3);
         write_instant(j, "start_utc", "start_local", s.boost.start_utc);
-        write_instant(j, "end_utc", "end_local", sched::boost_end(s.boost));
+        if (s.boost_until > 0) write_instant(j, "end_utc", "end_local", s.boost_until);
+        else j.null("end_utc").null("end_local");
         j.end();
     } else {
         j.null("boost");

@@ -399,6 +399,21 @@ static void test_boost() {
     // no slots in the window: nothing starts
     boost_start(b, 6000, 2, t0, 0);
     CHECK(!boost_active(b, t0) && b.remaining_ul == 0);
+
+    // window of the next 13 doses: no time limit, ends with the 13th slot
+    boost_start(b, 13000, 0, t0, 13);
+    CHECK(boost_active(b, t0 + 40 * 86400) && b.doses == 13 && b.slots_left == 13 && boost_end(b) == INT64_MAX);
+    CHECK(boost_take(b, t0 + 20 * 86400) == 1000);  // a slot far ahead still belongs to it
+    boost_pass(b, t0 + 20 * 86400, 1);
+    boost_recount(b, 40);  // schedule changed: the count of doses stays
+    CHECK(b.slots_left == 12 && boost_share(b) == 1000);
+    boost_pass(b, t0 + 21 * 86400, 12);
+    CHECK(b.remaining_ul == 0 && !boost_active(b, t0));
+    boost_start(b, 13000, 0, t0, 13);
+    boost_recount(b, 0);  // plan without slots: over
+    CHECK(b.remaining_ul == 0);
+    boost_start(b, 13000, 0, t0, kMaxBoostDoses + 1);  // too many doses
+    CHECK(b.remaining_ul == 0);
 }
 
 
@@ -407,22 +422,25 @@ static void test_forecast() {
     PumpSchedule ps;
     const int64_t now = utc_of(2026, 11, 6, 6, 0);
     Boost none;
-    CHECK(remaining_days(ps, none, day, now, 500000) < 0);
+    CHECK(remaining_days(ps, none, 0, day, now, 500000) < 0);
     ps = spread(480, 1200, 4, 10000);
-    CHECK(remaining_days(ps, none, day, now, 500000) == 50.0f);
-    CHECK(remaining_days(ps, none, day, now, 0) == 0.0f);
+    CHECK(remaining_days(ps, none, 0, day, now, 500000) == 50.0f);
+    CHECK(remaining_days(ps, none, 0, day, now, 0) == 0.0f);
     Boost b;
     boost_start(b, 30000, 3, now, 12);
-    const float with_boost = remaining_days(ps, b, day, now, 500000);  // 100 ml in 7 days
+    const float with_boost = remaining_days(ps, b, boost_end(b), day, now, 500000);  // 100 ml in 7 days
     CHECK(with_boost > 34.9f && with_boost < 35.1f);
     boost_start(b, 140000, 14, now, 56);  // half of it falls into the next 7 days
-    const float long_boost = remaining_days(ps, b, day, now, 500000);  // 140 ml in 7 days
+    const float long_boost = remaining_days(ps, b, boost_end(b), day, now, 500000);  // 140 ml in 7 days
     CHECK(long_boost > 24.9f && long_boost < 25.1f);
+    boost_start(b, 30000, 0, now, 12);  // window in doses, the last one in 3 days
+    const float by_doses = remaining_days(ps, b, now + 3 * 86400, day, now, 500000);
+    CHECK(by_doses > 34.9f && by_doses < 35.1f);
     ps.days = weekdays(0x1F);  // Monday to Friday
-    const float weekdays_only = remaining_days(ps, none, day, now, 500000);
+    const float weekdays_only = remaining_days(ps, none, 0, day, now, 500000);
     CHECK(weekdays_only > 69.9f && weekdays_only < 70.1f);
     ps = times({{480, 4000}, {1200, 6000}});
-    CHECK(remaining_days(ps, none, day, now, 500000) == 50.0f);
+    CHECK(remaining_days(ps, none, 0, day, now, 500000) == 50.0f);
 }
 
 static void test_run_records() {

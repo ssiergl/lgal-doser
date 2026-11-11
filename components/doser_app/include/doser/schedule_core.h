@@ -207,21 +207,27 @@ Action on_due(const PumpSchedule& s, const Due& d, int64_t now);
 Cursor resume_point(const PumpSchedule& s, const Cursor& c, int64_t now);
 
 // ---------------------------------------------------------------------------
-// Boost: extra amount on top of the existing slots for `days` x 24 h from
-// its start, spread evenly over the slots in that window. Every slot gets
-// remaining / slots_left; the share of a skipped or failed slot goes to
-// the slots after it.
+// Boost: extra amount on top of the existing slots, spread evenly over the
+// slots of its window: either `days` x 24 h from its start or the next
+// `doses` slots. Every slot gets remaining / slots_left; the share of a
+// skipped or failed slot goes to the slots after it.
+inline constexpr uint16_t kMaxBoostDoses = 100;
 struct Boost {
     uint32_t remaining_ul = 0;  // 0 = no boost active
     uint32_t total_ul = 0;      // as started (display)
-    uint16_t days = 0;
+    uint16_t days = 0;          // window in days, 0 = window in doses
     uint16_t slots_left = 0;    // slots of the window not processed yet
-    uint32_t reserved = 0;
+    uint16_t doses = 0;         // window in doses (days == 0), as started
+    uint16_t reserved = 0;
     int64_t start_utc = 0;
 };
 static_assert(sizeof(Boost) == 24);
-inline int64_t boost_end(const Boost& b) { return b.start_utc + int64_t(b.days) * 86400; }
-// slots: slots in (now, now + days x 24 h], counted by the caller
+// Time limit of the window; a window in doses has none, it ends with its last slot
+inline int64_t boost_end(const Boost& b) {
+    return b.days ? b.start_utc + int64_t(b.days) * 86400 : INT64_MAX;
+}
+// days > 0: window of days x 24 h holding `slots` slots (counted by the caller);
+// days == 0: window of the next `slots` slots (1..kMaxBoostDoses)
 void boost_start(Boost& b, uint32_t total_ul, uint16_t days, int64_t now, int slots);
 bool boost_active(const Boost& b, int64_t now);
 // Share of the next slot of the window (display)
@@ -233,7 +239,8 @@ void boost_refund(Boost& b, uint32_t ul);
 // n slots up to slot_utc were processed (run or skipped). The boost ends
 // with the last slot of its window.
 void boost_pass(Boost& b, int64_t slot_utc, int n);
-// Schedule changed: slots still to come in the window
+// Schedule changed: slots still to come in the window. A window in doses
+// keeps its count; it ends only when the plan has no slot left (slots <= 0).
 void boost_recount(Boost& b, int slots);
 
 // ---------------------------------------------------------------------------
@@ -268,7 +275,9 @@ int newest(const RunRecord& a, const RunRecord& b);
 
 // ---------------------------------------------------------------------------
 // Forecast: days until the container is empty, based on the plan of the
-// next 7 days incl. boost. < 0 = no consumption planned.
-float remaining_days(const PumpSchedule& s, const Boost& b, int32_t today, int64_t now, int64_t remaining_ul);
+// next 7 days incl. boost (its window ends at boost_until). < 0 = no
+// consumption planned.
+float remaining_days(const PumpSchedule& s, const Boost& b, int64_t boost_until, int32_t today, int64_t now,
+                     int64_t remaining_ul);
 
 }  // namespace doser::sched

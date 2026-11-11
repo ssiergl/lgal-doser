@@ -60,6 +60,9 @@ add({
     'bo.title': 'Boost', 'bo.hint': 'An extra amount, e.g. to raise a value. It is spread evenly over all scheduled doses from now for the chosen days (days × 24 h) and ends by itself.',
     'bo.ml': 'Extra amount', 'bo.days': 'Spread over', 'bo.dunit': 'days', 'bo.start': 'Start boost',
     'bo.per': '≈ {ml} ml extra per day · until {end}', 'bo.started': 'Boost started',
+    'bo.by.days': 'Days', 'bo.by.doses': 'Doses', 'bo.nunit': 'doses',
+    'bo.hint.doses': 'An extra amount, e.g. to raise a value. It is spread evenly over the next scheduled doses and ends with the last of them.',
+    'bo.per.dose': '≈ {ml} ml extra per dose', 'err.doses': 'Spread over 1 to {max} doses',
     'bo.active': '{rest} of {total} ml still to dose', 'bo.until': 'Until {end} · {n} doses left at {ml} ml',
     'bo.wait': 'Starts with the next scheduled dose.', 'bo.stop': 'End boost',
     'bo.stop.ask': 'End the boost of pump {n}? The remaining {ml} ml are dropped.', 'bo.stopped': 'Boost ended',
@@ -118,6 +121,9 @@ add({
     'bo.title': 'Boost', 'bo.hint': 'Eine Zusatzmenge, z. B. um einen Wert anzuheben. Sie wird gleichmäßig auf alle geplanten Dosen ab jetzt für die gewählten Tage (Tage × 24 h) verteilt und endet von selbst.',
     'bo.ml': 'Zusatzmenge', 'bo.days': 'Verteilen auf', 'bo.dunit': 'Tage', 'bo.start': 'Boost starten',
     'bo.per': '≈ {ml} ml zusätzlich pro Tag · bis {end}', 'bo.started': 'Boost gestartet',
+    'bo.by.days': 'Tage', 'bo.by.doses': 'Dosen', 'bo.nunit': 'Dosen',
+    'bo.hint.doses': 'Eine Zusatzmenge, z. B. um einen Wert anzuheben. Sie wird gleichmäßig auf die nächsten geplanten Dosen verteilt und endet mit der letzten davon.',
+    'bo.per.dose': '≈ {ml} ml zusätzlich je Dosis', 'err.doses': 'Auf 1 bis {max} Dosen verteilen',
     'bo.active': 'Noch {rest} von {total} ml offen', 'bo.until': 'Bis {end} · noch {n} Dosen à {ml} ml',
     'bo.wait': 'Beginnt mit der nächsten geplanten Dosis.', 'bo.stop': 'Boost beenden',
     'bo.stop.ask': 'Boost von Pumpe {n} beenden? Die restlichen {ml} ml entfallen.', 'bo.stopped': 'Boost beendet',
@@ -391,9 +397,13 @@ function dayText(date, plus = 0) {
   return `${d.getUTCDate()}.${d.getUTCMonth() + 1}.`;
 }
 
-function BoostCard({ p, sp, nowLocal }) {
+const kMaxBoostDoses = 100;  // sched::kMaxBoostDoses
+
+function BoostCard({ p, sp, nowLocal, pro }) {
   const [ml, setMl] = useState('');
   const [days, setDays] = useState('3');
+  const [doses, setDoses] = useState('5');
+  const [by, setBy] = useState('days');  // window in days or (pro) in doses
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
   const b = sp && sp.boost;
@@ -410,28 +420,34 @@ function BoostCard({ p, sp, nowLocal }) {
       .then(yes => yes && run({ action: 'stop' }, t('bo.stopped')));
     body = html`<p><b class="num">${t('bo.active', { rest: num(b.remaining_ml, 2), total: num(b.total_ml, 2) })}</b></p>
       <div class="bar"><i style=${{ width: Math.min(100, (done / (b.total_ml || 1)) * 100) + '%' }}></i></div>
-      <p class="small mut">${t('bo.until', { end: whenLocal(b.end_local, nowLocal), n: b.doses_left, ml: num(b.per_dose_ml, 2) })}</p>
+      ${b.end_local && html`<p class="small mut">${t('bo.until', { end: whenLocal(b.end_local, nowLocal), n: b.doses_left, ml: num(b.per_dose_ml, 2) })}</p>`}
       ${!b.active && html`<p class="small mut">${t('bo.wait')}</p>`}
       <div class="row"><button type="button" class="sec" onClick=${stop} disabled=${busy}>${t('bo.stop')}</button></div>`;
   } else {
-    const v = parseNum(ml), n = parseInt(days, 10);
-    const ok = v > 0 && n >= 1 && n <= 30;
+    const byDoses = pro && by === 'doses';
+    const v = parseNum(ml), n = parseInt(byDoses ? doses : days, 10);
+    const nOk = byDoses ? n >= 1 && n <= kMaxBoostDoses : n >= 1 && n <= 30;
+    const ok = v > 0 && nOk;
     const planned = sp ? sp.planned_today_ml : 0;
     const noPlan = sp && !planned && !sp.next;
     const lim = p.daily.limit_ml;
     const submit = e => {
       e.preventDefault();
-      if (!ok) { msg.err({ code: 'invalid_param' }); return; }
-      run({ ml: dec(v), days: n }, t('bo.started')).then(() => setMl(''));
+      if (!ok) { msg.err(v > 0 && byDoses ? t('err.doses', { max: kMaxBoostDoses }) : { code: 'invalid_param' }); return; }
+      run({ ml: dec(v), ...(byDoses ? { doses: n } : { days: n }) }, t('bo.started')).then(() => setMl(''));
     };
-    body = html`<p class="small mut">${t('bo.hint')}</p>
+    body = html`<p class="small mut">${t(byDoses ? 'bo.hint.doses' : 'bo.hint')}</p>
       <form novalidate onSubmit=${submit}>
+        ${pro && html`<${Seg} value=${by} onChange=${setBy} options=${[['days', t('bo.by.days')], ['doses', t('bo.by.doses')]]}/>`}
         <div class="form-row">
           <label>${t('bo.ml')}<${Amount} value=${ml} onInput=${setMl}/></label>
-          <label>${t('bo.days')}<${Amount} value=${days} onInput=${setDays} unit=${t('bo.dunit')}/></label>
+          ${byDoses
+            ? html`<label>${t('bo.days')}<${Amount} value=${doses} onInput=${setDoses} unit=${t('bo.nunit')}/></label>`
+            : html`<label>${t('bo.days')}<${Amount} value=${days} onInput=${setDays} unit=${t('bo.dunit')}/></label>`}
         </div>
-        ${ok && today && html`<p class="small">${t('bo.per', { ml: num(v / n, 2), end: dayText(today, n) + ' ' + hm(nowLocal.slice(11, 16)) })}</p>`}
-        ${ok && lim > 0 && planned + v / n > lim && html`<p class="small warn">${t('bo.limit', { p: num(planned + v / n, 2), l: num(lim, 2) })}</p>`}
+        ${ok && byDoses && html`<p class="small">${t('bo.per.dose', { ml: num(v / n, 2) })}</p>`}
+        ${ok && !byDoses && today && html`<p class="small">${t('bo.per', { ml: num(v / n, 2), end: dayText(today, n) + ' ' + hm(nowLocal.slice(11, 16)) })}</p>`}
+        ${ok && !byDoses && lim > 0 && planned + v / n > lim && html`<p class="small warn">${t('bo.limit', { p: num(planned + v / n, 2), l: num(lim, 2) })}</p>`}
         ${noPlan && html`<p class="small warn">${t('bo.noplan')}</p>`}
         <div class="row"><button type="submit" disabled=${busy || !ok}>${t('bo.start')}</button></div>
       </form>`;
@@ -555,7 +571,7 @@ export function PumpView({ pump }) {
         <${ContainerCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
         <${PumpAlerts} p=${p} sp=${sp}/>
         <${ScheduleCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
-        <${BoostCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
+        <${BoostCard} p=${p} sp=${sp} nowLocal=${nowLocal} pro=${pro}/>
         <${UsageCard} p=${p} pro=${pro}/>
       </div>
       <div class="col">

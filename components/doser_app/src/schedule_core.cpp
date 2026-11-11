@@ -390,11 +390,12 @@ uint16_t slot_count(int n) { return static_cast<uint16_t>(n < 0 ? 0 : n > 0xFFFF
 
 void boost_start(Boost& b, uint32_t total_ul, uint16_t days, int64_t now, int slots) {
     b = Boost{};
-    if (!total_ul || !days || slots <= 0) return;
+    if (!total_ul || slots <= 0 || (!days && slots > kMaxBoostDoses)) return;
     b.remaining_ul = total_ul;
     b.total_ul = total_ul;
     b.days = days;
     b.slots_left = slot_count(slots);
+    if (!days) b.doses = b.slots_left;
     b.start_utc = now;
 }
 
@@ -434,7 +435,7 @@ void boost_pass(Boost& b, int64_t slot_utc, int n) {
 void boost_recount(Boost& b, int slots) {
     if (!b.remaining_ul) return;
     if (slots <= 0) b = Boost{};
-    else b.slots_left = slot_count(slots);
+    else if (b.days) b.slots_left = slot_count(slots);
 }
 
 // ---------------------------------------------------------------------------
@@ -460,11 +461,12 @@ int newest(const RunRecord& a, const RunRecord& b) {
 }
 
 // ---------------------------------------------------------------------------
-float remaining_days(const PumpSchedule& s, const Boost& b, int32_t today, int64_t now, int64_t remaining_ul) {
+float remaining_days(const PumpSchedule& s, const Boost& b, int64_t boost_until, int32_t today, int64_t now,
+                     int64_t remaining_ul) {
     double planned = 0;
     for (int32_t d = today; d < today + 7; ++d) planned += day_total(s, d);
     if (boost_active(b, now)) {  // the part of the rest that falls into the next 7 days
-        const double left = double(boost_end(b) - now), week = 7.0 * 86400;
+        const double left = double(boost_until - now), week = 7.0 * 86400;
         planned += left <= week ? b.remaining_ul : b.remaining_ul * week / left;
     }
     const double per_day = planned / 7;
