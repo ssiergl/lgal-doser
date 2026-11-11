@@ -294,13 +294,14 @@ function UsageCard({ p, sp, nowLocal }) {
     if (!confirm(t('use.tube.ask', { n: p.pump }))) return;
     api('POST', '/api/v1/pumps/tube?' + qs({ pump: p.pump, hours: 0 })).then(() => { msg.ok(t('use.tube.ok')); refresh(); }).catch(msg.err);
   };
+  const none = html`<span class="mut">${t('use.none')}</span>`;
   const lastText = last.result
-    ? `${t('act.' + last.activity)} · ${num(last.done_ml, 2)} ml · ${t('res.' + last.result)}` : t('use.none');
+    ? `${t('act.' + last.activity)} · ${num(last.done_ml, 2)} ml · ${t('res.' + last.result)}` : none;
   return html`<section class="card usage"><h2>${t('use.title')}</h2>
     <dl class="stats">
       <dt>${t('use.today')}</dt><dd class="num">${num(d.used_ml, 2)} ml</dd>
-      <dt>${t('use.plan')}</dt><dd class="num">${sp ? num(sp.planned_today_ml, 2) + ' ml' : t('use.none')}</dd>
-      <dt>${t('use.next')}</dt><dd class="num">${sp && sp.next ? `${whenLocal(sp.next.local, nowLocal)} · ${num(sp.next.ml, 2)} ml` : t('use.none')}</dd>
+      <dt>${t('use.plan')}</dt><dd class="num">${sp ? num(sp.planned_today_ml, 2) + ' ml' : none}</dd>
+      <dt>${t('use.next')}</dt><dd class="num">${sp && sp.next ? `${whenLocal(sp.next.local, nowLocal)} · ${num(sp.next.ml, 2)} ml` : none}</dd>
       <dt>${t('use.limit')}</dt><dd class="num">${d.limit_ml ? num(d.limit_ml, 1) + ' ml' : t('use.off')}</dd>
       <dt>${t('use.last')}</dt><dd>${lastText}</dd>
       <dt>${t('use.total')}</dt><dd class="num">${num(p.total_ml, 1)} ml</dd>

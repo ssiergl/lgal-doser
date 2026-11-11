@@ -64,7 +64,7 @@ function PumpCard({ p, sp, nowLocal }) {
         <${Today} p=${p} sp=${sp}/>
         <div class="kv"><span class="mut">${t('dash.range')}</span><b class="num"><${Range} d=${daysLeft(sp)}/></b></div>
         <div class="kv"><span class="mut">${t('dash.next')}</span>
-          <b class="num">${sp && sp.next ? html`${whenLocal(sp.next.local, nowLocal)} <span class="mut">· ${num(sp.next.ml, 1)} ml</span>` : t('dash.none')}</b></div>
+          <b class="num">${sp && sp.next ? html`${whenLocal(sp.next.local, nowLocal)} <span class="mut">· ${num(sp.next.ml, 1)} ml</span>` : html`<span class="mut">${t('dash.none')}</span>`}</b></div>
         ${p.container.tracked && html`<div class="mut small num">${t('dash.left', { ml: num(p.container.remaining_ml, 0) })}</div>`}
         ${sp && sp.boost && html`<div class="small num acc">${t('dash.boost', { ml: num(sp.boost.remaining_ml, 1) })}</div>`}
       </div>
