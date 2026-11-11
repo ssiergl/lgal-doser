@@ -209,10 +209,10 @@ function DoseCard({ p, pro, nowLocal }) {
       </div>
       <div class="row">
         <button type="submit" disabled=${busy || p.mode === 'disabled'}>${t('dose.btn')}</button>
-        ${busy && html`<button type="button" class="danger" onClick=${stop}>■ ${t('dose.stop')}</button>`}
+        ${p.activity === 'dosing' && html`<button type="button" class="danger" onClick=${stop}>■ ${t('dose.stop')}</button>`}
       </div>
     </form>
-    ${busy && p.activity !== 'calibrating' && html`<${Progress} p=${p}/>`}
+    ${p.activity === 'dosing' && html`<${Progress} p=${p}/>`}
     ${msg.node}
   </section>`;
 }
