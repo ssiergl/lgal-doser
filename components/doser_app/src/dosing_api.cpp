@@ -110,6 +110,7 @@ void write_pump(Json& j, int i) {
         .kv("ml_per_rev", upr / 1000.0, 4)
         .kv("steps_per_ml", s.steps_per_rev ? s.steps_per_rev * 1000.0 / upr : 0.0, 1)
         .kv("calibrated_at", set.calibrated_at)
+        .kv("target_ml", ml(eng.calib_target_ul), 1)  // amount of a calibration run without ml=
         .kv("pending", s.calib_pending);
     if (s.calib_pending) j.kv("pending_steps", s.calib_steps).kv("pending_target_ml", ml(s.calib_target_ul), 3);
     j.end();

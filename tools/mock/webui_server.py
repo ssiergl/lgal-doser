@@ -215,7 +215,7 @@ def full(i):
     d = {"pump": n, "name": NAMES[i], "mode": p["mode"], "direction": "ccw" if eng_mock.CFG[i]["invert"] else "cw", "activity": p["activity"],
          "phase": "main" if p["activity"] != "idle" else "none", "last": dict(p["last"]),
          "calibration": {"calibrated": p["mlrev"] > 0, "ml_per_rev": p["mlrev"] or 0.37, "steps_per_ml": 3200 / (p["mlrev"] or 0.37),
-                         "calibrated_at": p["calat"], "pending": p["pending"],
+                         "calibrated_at": p["calat"], "target_ml": ENG["calib_ml"], "pending": p["pending"],
                          **({"pending_steps": int(p["ptarget"] / 0.37 * 3200), "pending_target_ml": p["ptarget"]} if p["pending"] else {})},
          "speed": {"tier": p["tier"], "tiers": [{"rpm": 100, "ml_min": 37.0}, {"rpm": 200, "ml_min": 74.0}, {"rpm": 300, "ml_min": 111.0}]},
          "retract": (lambda r: {"setting": p["rset"], "global_rev": 0.25, "rev": r, "ml": round(r * 0.37, 3), "steps": int(r * 3200), "pending_rev": r})(0.0 if p["rset"] == "off" else 0.25 if p["rset"] == "global" else p["rrev"]),
