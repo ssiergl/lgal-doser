@@ -85,9 +85,27 @@ def expand(p):
         out.append((m, base + (1 if i < rest else 0)))
     return None, None, out
 
-def today_slots(i):
-    p = SCHED[i]; day = dnum(time.strftime("%Y-%m-%d"))
+def slots_on(i, day):
+    p = SCHED[i]
     return sorted(expand(p)[2]) if p["kind"] != "none" and p["enabled"] and active(p["days"], day) else []
+
+def today_slots(i): return slots_on(i, dnum(time.strftime("%Y-%m-%d")))
+
+def next_slot(i, now):
+    """First slot after now within 8 days (like the firmware) -> (utc, ul) or None; DST ignored"""
+    lt = time.localtime(now); midnight = now - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec)
+    day0 = dnum(time.strftime("%Y-%m-%d", lt))
+    for k in range(9):
+        for m, u in slots_on(i, day0 + k):
+            if midnight + k * 86400 + m * 60 > now: return midnight + k * 86400 + m * 60, u
+    return None
+
+def remaining_days(i):
+    """Like sched::remaining_days: container / average of the next 7 days incl. the boost"""
+    day0 = dnum(time.strftime("%Y-%m-%d"))
+    per_day = sum(u for k in range(7) for _, u in slots_on(i, day0 + k)) / 7000
+    if BOOST[i]: per_day += BOOST[i]["remaining_ml"] / max(1, BOOST[i]["days"])
+    return round(P[i]["remaining"] / per_day, 1) if per_day > 0 else None
 
 def sched_json(i):
     sl = today_slots(i)
@@ -347,9 +365,11 @@ class H(BaseHTTPRequestHandler):
             now = int(time.time())
             pumps = []
             for i in range(5):
-                PLAN[i] = sum(u for _, u in today_slots(i)) / 1000
-                rd = round(P[i]["remaining"] / PLAN[i], 1) if PLAN[i] and CAP[i] else None
-                pumps.append({"pump": i + 1, "next": {"at": now + 1500 + 600 * i, "local": time.strftime("%Y-%m-%d %H:%M", time.localtime(now + 1500 + 600 * i)), "ml": round(PLAN[i] / 12, 3)} if PLAN[i] else None,
+                auto = P[i]["mode"] == "auto"
+                PLAN[i] = sum(u for _, u in today_slots(i)) / 1000 if auto else 0
+                rd = remaining_days(i) if auto and CAP[i] else None
+                nx = next_slot(i, now) if auto else None
+                pumps.append({"pump": i + 1, "next": {"at": nx[0], "local": time.strftime("%Y-%m-%d %H:%M", time.localtime(nx[0])), "ml": round(nx[1] / 1000, 3)} if nx else None,
                               "delayed": None, "queued": None, "skipped": 0, "last_skip": None, "last_run": None,
                               "planned_today_ml": PLAN[i], "remaining_days": rd, "boost": BOOST[i]})
             return self.send(200, {"clock_valid": True, "now": now, "now_local": time.strftime("%Y-%m-%d %H:%M"), "pumps": pumps})
