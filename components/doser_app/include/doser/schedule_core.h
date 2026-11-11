@@ -3,9 +3,9 @@
 //
 // Every pump has exactly one plan. It runs on certain days (daily, weekdays
 // or every N days) and is either "spread" ("X ml in N doses between A and
-// B") or "times" (single times, each with its own amount); it can be paused
-// as a whole. Times are local wall-clock minutes on
-// a grid (default 5 min); the mapping to UTC around DST changes is done with
+// B") or "times" (single times, each with its own amount). Whether it runs
+// at all is the pump's mode (auto / manual only). Times are local wall-clock
+// minutes on a grid (default 5 min); the mapping to UTC around DST changes is done with
 // tz::to_utc (gap: shifted forward, ambiguous: first occurrence).
 //
 // Days are counted as local day numbers (days since 1970-01-01 in local time).
@@ -69,7 +69,7 @@ struct TimeDose {
 
 struct PumpSchedule {
     Kind kind = Kind::None;
-    uint8_t enabled = 1;          // 0 = paused
+    uint8_t reserved = 0;         // formerly the pause flag; keeps the stored layout
     PowerLoss power_loss = PowerLoss::SkipMissed;
     uint8_t time_count = 0;       // Times: used entries (ascending, distinct)
     uint16_t catch_up_min = 60;   // CatchUpWindow: only slots at most this old
@@ -90,13 +90,13 @@ struct Slot {
 };
 
 // Slots of the plan on a day it runs (sorted by time), independent of days
-// and pause; a plan without kind has none. Returns the number of slots or
+// and mode; a plan without kind has none. Returns the number of slots or
 // -1 with *err: "invalid_time", "off_grid", "invalid_range", "invalid_count",
 // "slots_too_dense", "duplicate_time", "dose_too_small", "dose_too_large",
 // "invalid_days", "invalid_kind"; *entry: affected entry of "times" or -1.
 int expand(const PumpSchedule& s, uint16_t grid_min, uint32_t min_dose_ul, Slot* out, int max, const char** err,
            int* entry = nullptr);
-// Plan active on that day (has a kind, not paused, day rule)
+// Plan active on that day (has a kind, day rule)
 bool runs_on(const PumpSchedule& s, int32_t day);
 // Slots of the pump on a day (empty if it does not run), sorted by time
 int day_slots(const PumpSchedule& s, int32_t day, uint16_t grid_min, Slot* out, int max);

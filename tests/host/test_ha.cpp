@@ -136,8 +136,7 @@ static void test_states() {
     s.days = 12.34f;
     s.has_next = true;
     s.next_utc = 1794034800;
-    s.has_schedule = true;
-    s.schedule_on = true;
+    s.automatic = true;
     s.amount_ul = 2500;
     s.tube_h = 12.34f;
     s.last = "success";
@@ -147,7 +146,6 @@ static void test_states() {
           R"({"activity":"dosing","total_ml":123.456,"planned_ml":5.000,"remaining_ml":480.3,"days":12.3,)"
           R"("next":"2026-11-07T07:00:00+00:00","schedule":"ON","amount_ml":2.500,"tube_h":12.3,"last":"success"})");
     PumpState e;
-    e.schedule_on = true;  // without a schedule: OFF
     lgal::Json j2;
     write_pump_state(j2, e);
     CHECK(std::string(j2.c_str()) ==

@@ -34,12 +34,12 @@ GRID = 5
 WDN = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 D = {"mode": "daily"}
 SCHED = [
-    {"kind": "spread", "enabled": True, "start": "08:00", "end": "20:00", "count": 12, "ml": 60.0, "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
-    {"kind": "spread", "enabled": True, "start": "09:00", "end": "21:00", "count": 6, "ml": 30.0, "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
-    {"kind": "times", "enabled": True, "times": [{"time": "10:00", "ml": 5.0}, {"time": "22:00", "ml": 2.5}],
+    {"kind": "spread", "start": "08:00", "end": "20:00", "count": 12, "ml": 60.0, "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
+    {"kind": "spread", "start": "09:00", "end": "21:00", "count": 6, "ml": 30.0, "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
+    {"kind": "times", "times": [{"time": "10:00", "ml": 5.0}, {"time": "22:00", "ml": 2.5}],
      "days": {"mode": "weekdays", "weekdays": ["mon", "wed", "fri", "sat"]}, "power_loss": "catch_up_window", "catch_up_min": 90},
-    {"kind": "none", "enabled": True, "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
-    {"kind": "times", "enabled": True, "times": [{"time": "12:00", "ml": 2.0}], "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
+    {"kind": "none", "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
+    {"kind": "times", "times": [{"time": "12:00", "ml": 2.0}], "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
 ]
 BOOST = [None] * 5  # {"total_ml", "remaining_ml", "days", "start", "active"}
 LOCKS = {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]}
@@ -87,7 +87,7 @@ def expand(p):
 
 def slots_on(i, day):
     p = SCHED[i]
-    return sorted(expand(p)[2]) if p["kind"] != "none" and p["enabled"] and active(p["days"], day) else []
+    return sorted(expand(p)[2]) if p["kind"] != "none" and active(p["days"], day) else []
 
 def today_slots(i): return slots_on(i, dnum(time.strftime("%Y-%m-%d")))
 
@@ -128,7 +128,7 @@ def lock_conflicts(locks):
 def put_sched(h, i, body):
     kind = body.get("kind", "none")
     if kind not in ("none", "spread", "times"): return h.send(400, {"error": {"code": "invalid_param", "message": "kind", "field": "kind"}})
-    new = {"kind": kind, "enabled": body.get("enabled", True), "days": body.get("days") or D,
+    new = {"kind": kind, "days": body.get("days") or D,
            "power_loss": body.get("power_loss", "skip_missed"), "catch_up_min": body.get("catch_up_min", 60)}
     if kind == "spread":
         new.update(start=body["start"], count=body["count"], end=body.get("end", body["start"]) if body["count"] > 1 else body["start"], ml=body["ml"])
@@ -249,7 +249,7 @@ def pumps_post(h, path, q):
         try: ml, days = float(q["ml"]), int(q["days"])
         except (KeyError, ValueError): return err(h, "invalid_param", "ml/days")
         if not (0.02 <= ml <= 10000 and 1 <= days <= 30): return err(h, "invalid_param", "ml/days")
-        if SCHED[i]["kind"] == "none" or not SCHED[i]["enabled"]: return err(h, "no_slots", "No scheduled doses")
+        if SCHED[i]["kind"] == "none": return err(h, "no_slots", "No scheduled doses")
         BOOST[i] = {"active": True, "total_ml": ml, "remaining_ml": round(ml * 0.8, 3) if ml > 20 else ml, "days": days, "start": time.strftime("%Y-%m-%d")}
         return h.send(200, {"status": "ok"})
     num = lambda k: float(q[k])

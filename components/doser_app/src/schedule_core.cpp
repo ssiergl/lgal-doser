@@ -173,7 +173,7 @@ int expand(const PumpSchedule& s, uint16_t grid_min, uint32_t min_dose_ul, Slot*
 }
 
 bool runs_on(const PumpSchedule& s, int32_t day) {
-    return s.kind != Kind::None && s.enabled && active_on(s.days, day);
+    return s.kind != Kind::None && active_on(s.days, day);
 }
 
 int day_slots(const PumpSchedule& s, int32_t day, uint16_t grid_min, Slot* out, int max) {
@@ -253,7 +253,7 @@ struct Checker {
     void check_plans(int pa, int pb, int64_t gap, const char* code) {
         const PumpSchedule& a = all[pa];
         const PumpSchedule& b = all[pb];
-        if (a.kind == Kind::None || b.kind == Kind::None || !a.enabled || !b.enabled) return;
+        if (a.kind == Kind::None || b.kind == Kind::None) return;
         Slot sa[kMaxSlotsPerDay], sb[kMaxSlotsPerDay];
         const int na = expand(a, ctx.grid_min, 0, sa, kMaxSlotsPerDay, nullptr);
         const int nb = expand(b, ctx.grid_min, 0, sb, kMaxSlotsPerDay, nullptr);

@@ -198,7 +198,7 @@ nicht, `idf.py build` reicht.
 | Seiten | Übersicht, Pumpe (Detail mit Zeitplan), Verlauf, Einstellungen, Wartung (`/#/maintenance`, aus den Einstellungen). Adressen als Hash-Routen, z. B. `/#/pump/3` oder `/#/history/3` (Ereignisse vorgefiltert auf Pumpe 3); alte Links `/#/schedule/3` öffnen die Pumpe. |
 | Übersicht | Pro Pumpe: Behälter-Grafik mit Füllstand (Rand gelb ab 25 %, rot ab 10 %, gestrichelt ohne Behälter-Erfassung), heute dosiert / geplant, Reichweite in Tagen (aus dem Zeitplan), nächste Dosis, laufende Dosierung und Hinweise (Treiberfehler im letzten Lauf, Behälter fast leer, Kalibrierung, Tageslimit, Schlauch, Sperrzeit, ausgelassene Dosen). |
 | Pumpe | Große Behälter-Grafik mit „Nachgefüllt“ und „Ändern“ (Größe 0 = ohne Erfassung), jetzt dosieren mit Fortschritt und Stopp (Sperrzeit: Meldung mit Ende bzw. „startet danach“), Schlauch füllen per Halten (WebSocket mit Totmann, sonst REST), Kalibrier-Assistent (Start → Messbecher → gemessene Menge übernehmen oder verwerfen), Verbrauch (heute, geplant, nächste Dosis, letzter Lauf, gesamt, Schlauchstunden mit Zurücksetzen) und Einstellungen. Name und Betrieb (automatisch / nur manuell / aus) für alle; Geschwindigkeit beim Dosieren, Zielmenge der Kalibrierung und Feintuning nur in Profi. Einfach zeigt aktive Profi-Werte als Hinweis. |
-| Zeitplan | Karte im Pumpen-Detail: die Dosen von heute auf einer 24-h-Leiste mit aktueller Uhrzeit, darunter der Plan – genau einer pro Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** Planart „Verteilt“ (Tagesmenge in N Dosen) oder „Einzelzeiten“ (bis 24 Uhrzeiten mit eigener Menge), täglich / Wochentage / alle N Tage, pausierbar, sowie das Verhalten nach Stromausfall. Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Uhrzeit bzw. Pumpen und Uhrzeiten gemeldet. Für alle: Zeitplan der Pumpe als JSON-Datei exportieren und (auch auf eine andere Pumpe) importieren; das Gerät prüft den importierten Plan wie einen bearbeiteten. |
+| Zeitplan | Karte im Pumpen-Detail: die Dosen von heute auf einer 24-h-Leiste mit aktueller Uhrzeit, darunter der Plan – genau einer pro Pumpe. **Einfach:** Tagesmenge in N Dosen zwischen zwei Uhrzeiten, täglich, mit Vorschau der Uhrzeiten; ein in Profi angelegter Plan wird nur zusammengefasst und bleibt aktiv (bearbeiten in Profi oder durch einfachen Plan ersetzen). **Profi:** Planart „Verteilt“ (Tagesmenge in N Dosen) oder „Einzelzeiten“ (bis 24 Uhrzeiten mit eigener Menge), täglich / Wochentage / alle N Tage, sowie das Verhalten nach Stromausfall. Ob der Plan läuft, bestimmt der Betrieb der Pumpe (automatisch / nur manuell). Die Leiste zeigt ungespeicherte Änderungen sofort; Raster-, Tageslimit- und Sperrzeit-Konflikte werden mit Uhrzeit bzw. Pumpen und Uhrzeiten gemeldet. Für alle: Zeitplan der Pumpe als JSON-Datei exportieren und (auch auf eine andere Pumpe) importieren; das Gerät prüft den importierten Plan wie einen bearbeiteten. |
 | Verlauf | Für alle: dosierte Menge pro Tag als kleines Diagramm je Pumpe (7, 14, 30 oder 60 Tage), wahlweise Linie (Standard) oder Balken (im Browser gemerkt), mit beschrifteten Achsen (ml; Wochentage bzw. Datum, „heute“ immer beschriftet), Summe und Tagesmittel; Zeigen oder Tippen nennt Tag, Menge, Anzahl Dosen und ausgelassene Dosen (Punkt unter der Achse), dazu eine Tabellenansicht. Nur Profi: Ereignisliste (Dosen, ausgelassene Dosen, Füllen, Kalibrierung, Behälter, Schlauch, Alarme) mit Filter nach Pumpe, Art und Zeitraum, „Mehr laden“ und CSV-Export. Das Pumpen-Detail verlinkt unter „Verbrauch“ auf den Verlauf der Pumpe. |
 | Boost | Karte im Pumpen-Detail (Einfach und Profi): Zusatzmenge über 1–30 Tage mit Vorschau „≈ X ml zusätzlich pro Tag“, Hinweis bei fehlendem Zeitplan, Betrieb ≠ automatisch oder Überschreiten des Tageslimits. Ein laufender Boost zeigt Rest, Fortschritt und Enddatum und lässt sich beenden; Übersicht und Kopfzeile zeigen ihn ebenfalls. |
 | Sperrzeiten | Nur Profi, in den Einstellungen: Pumpenpaare mit Mindestabstand in Minuten (bis 10 Regeln) und ob eine manuelle Dosis in der Sperrzeit abgelehnt wird oder wartet. Das Gerät prüft beim Speichern alle Zeitpläne gegen die Regeln und meldet Kollisionen. |
@@ -407,7 +407,7 @@ Die Weboberfläche bedient das pro Pumpe; die Engineering-Parameter liegen im
 
 | Thema | Umsetzung |
 |---|---|
-| Plan | genau einer pro Pumpe: „verteilt“ („X ml in N Dosen zwischen A und B“, gleichmäßig auf das Raster gelegt, Rundungsrest auf die ersten Dosen, höchstens 96 Dosen pro Tag) oder „Einzelzeiten“ (bis 24 Uhrzeiten, jede mit eigener Menge). Tage, Pause und Stromausfall-Verhalten gelten für den ganzen Plan. |
+| Plan | genau einer pro Pumpe: „verteilt“ („X ml in N Dosen zwischen A und B“, gleichmäßig auf das Raster gelegt, Rundungsrest auf die ersten Dosen, höchstens 96 Dosen pro Tag) oder „Einzelzeiten“ (bis 24 Uhrzeiten, jede mit eigener Menge). Tage und Stromausfall-Verhalten gelten für den ganzen Plan; ob er läuft, bestimmt der Betrieb der Pumpe. |
 | Tage | täglich, Wochentage oder „alle N Tage“ (1–30) ab einem Startdatum. |
 | Raster | Zeiten auf dem Zeitplan-Raster (Standard 5 min, Engineering). Ortszeit der Geräte-Zeitzone. |
 | Zeitumstellung | Zeitzone als POSIX-Regel. Fällt eine Zeit in die Lücke im Frühjahr, wird sie nach hinten verschoben; eine doppelte Stunde im Herbst wird einmal (beim ersten Auftreten) dosiert. |
@@ -424,7 +424,7 @@ Zeitplan als JSON (`PUT /api/v1/pumps/schedule?pump=1`; unbekannte Felder werden
 GET-Ergebnis kann also bearbeitet zurückgeschickt werden):
 
 ```json
-{"kind": "spread", "enabled": true, "start": "08:00", "end": "20:00", "count": 12, "ml": 24,
+{"kind": "spread", "start": "08:00", "end": "20:00", "count": 12, "ml": 24,
  "days": {"mode": "daily"}, "power_loss": "skip_missed", "catch_up_min": 60}
 
 {"kind": "times", "times": [{"time": "09:00", "ml": 5}, {"time": "21:30", "ml": 2.5}],
@@ -439,8 +439,8 @@ Sperrzeiten (`PUT /api/v1/schedule/locks`):
 {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]}
 ```
 
-`"end"` braucht es nur bei mehr als einer Dosis; Einzelzeiten werden beim Speichern sortiert,
-`"enabled": false` pausiert den Plan. Fehler nennen die Stelle (`"entry": 2, "field": "ml"` für
+`"end"` braucht es nur bei mehr als einer Dosis; Einzelzeiten werden beim Speichern sortiert.
+Fehler nennen die Stelle (`"entry": 2, "field": "ml"` für
 die zweite Uhrzeit in sortierter Reihenfolge) bzw. bei 409 `conflict` die
 kollidierenden Dosen (`"conflicts": [{"code": "collision_lock", "first": {…}, "second": {…}, "gap_min": 5}]`).
 Zeitpunkte kommen als UTC-Sekunden plus Ortszeit des Geräts (`"at"` + `"local"`), weil der
@@ -494,7 +494,7 @@ Topics unter dem Basis-Topic (Standard: `lg-aquatic-life/<gerätetyp>/<hostname>
 | `<basis>/event` | jedes Verlaufs-Ereignis einzeln (QoS 1), Felder wie `GET /api/v1/history` plus `"replay"`; siehe unten |
 | `<basis>/pump/<n>/dose/set` | `PRESS` = eingestellte Menge, oder Menge in ml (`2.5`) – nur mit Steuerung |
 | `<basis>/pump/<n>/amount/set` | Menge für `PRESS` in ml (im RAM, Start 1 ml) – nur mit Steuerung |
-| `<basis>/pump/<n>/schedule/set` | `ON` / `OFF` – Zeitplan fortsetzen / pausieren – nur mit Steuerung |
+| `<basis>/pump/<n>/schedule/set` | `ON` / `OFF` – Betrieb automatisch / nur manuell (eine ausgeschaltete Pumpe bleibt aus) – nur mit Steuerung |
 | `<basis>/stop/set` | beliebig – alle Pumpen stoppen – nur mit Steuerung |
 | `<basis>/ota/set` | Adresse der Firmware (`https://…/….bin`) – nur mit „Firmware-Update über MQTT erlauben“ |
 | `<basis>/ota/state` | Fortschritt wie `GET /api/v1/ota/status` (beim Start, alle 5 s, am Ende) oder `{"state":"refused","error":…}` |

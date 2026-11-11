@@ -10,7 +10,7 @@
 //   commands (only with "control" enabled):
 //   <b>/pump/<n>/dose/set     "PRESS" = stored amount, or an amount in ml ("2.5")
 //   <b>/pump/<n>/amount/set   amount in ml for "PRESS"
-//   <b>/pump/<n>/schedule/set ON | OFF (pause/resume the schedule)
+//   <b>/pump/<n>/schedule/set ON | OFF (mode auto / manual only)
 //   <b>/stop/set              any payload: stop all pumps
 // Discovery: one retained device message <prefix>/device/<id>/config with
 // all entities. Entities that do not apply (control off) are sent with the
@@ -48,8 +48,7 @@ struct PumpState {
     float days = -1.0f;          // < 0 = unknown
     bool has_next = false;
     int64_t next_utc = 0;
-    bool has_schedule = false;
-    bool schedule_on = false;
+    bool automatic = false;      // mode auto: the schedule runs
     uint32_t amount_ul = 0;
     float tube_h = 0.0f;         // tube operating hours
     const char* last = nullptr;  // result of the last job
@@ -72,7 +71,7 @@ struct Command {
     int pump = -1;      // 0..4
     bool press = false; // dose: use the stored amount
     uint32_t ul = 0;    // dose/amount
-    bool on = false;    // schedule
+    bool on = false;    // schedule: mode auto (ON) or manual only (OFF)
 };
 constexpr uint32_t kMaxCommandUl = 1000000;  // 1 l: plausibility only, dosing checks the limits
 // Topic and payload as received (not terminated). false = not ours or invalid.

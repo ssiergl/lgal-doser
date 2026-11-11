@@ -80,7 +80,7 @@ def _backup(secrets):
         pumps.append({"pump": i + 1, "name": ["KH", "Calcium", "Magnesium", "", "Spurenelemente"][i], "mode": "auto" if i != 3 else "disabled",
                       "tier": 1, "daily_limit_ml": [80, 0, 20, 0, 5][i], "retract_mrev": -1 if i == 0 else 0,
                       "capacity_ml": [2000, 2000, 1000, 0, 500][i], "ul_per_rev": 370.0, "calibrated_at": int(_t.time()) - 86400 * 20,
-                      "schedule": {"kind": "none", "enabled": True, "power_loss": "skip_missed", "catch_up_min": 60}})
+                      "schedule": {"kind": "none", "power_loss": "skip_missed", "catch_up_min": 60}})
     doc = {"format": "lgal-doser-backup", "version": 1, "firmware": "0.5.0-dev", "device": "lgal-doser-e4f5", "exported_utc": int(_t.time()),
            "system": {"language": "de", "timezone": "CET-1CEST,M3.5.0,M10.5.0/3", "ntp_server": "pool.ntp.org",
                       "led_night": {"enabled": False, "start": "22:00", "end": "07:00", "brightness": 0}},

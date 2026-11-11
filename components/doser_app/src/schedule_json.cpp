@@ -93,12 +93,6 @@ bool parse_schedule(const JsonValue& v, int32_t today, sched::PumpSchedule* out,
     char buf[20];
     const JsonValue kind = v["kind"];
     if (kind.valid() && (!kind.get(buf, sizeof(buf)) || !sched::parse_kind(buf, &s.kind))) return fail(err, "kind");
-    const JsonValue en = v["enabled"];
-    if (en.valid()) {
-        bool b = true;
-        if (!en.get(&b)) return fail(err, "enabled");
-        s.enabled = b ? 1 : 0;
-    }
     const JsonValue pl = v["power_loss"];
     if (pl.valid() && (!pl.get(buf, sizeof(buf)) || !sched::parse_power_loss(buf, &s.power_loss)))
         return fail(err, "power_loss");
@@ -137,7 +131,7 @@ bool parse_schedule(const JsonValue& v, int32_t today, sched::PumpSchedule* out,
 
 void write_schedule(Json& j, const sched::PumpSchedule& s) {
     char t[6];
-    j.kv("kind", sched::kind_str(s.kind)).kv("enabled", s.enabled != 0);
+    j.kv("kind", sched::kind_str(s.kind));
     if (s.kind == sched::Kind::Spread) {
         fmt_hhmm(s.start_min, t);
         j.kv("start", t);

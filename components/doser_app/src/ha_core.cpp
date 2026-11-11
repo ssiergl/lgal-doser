@@ -202,7 +202,7 @@ void write_pump_state(lgal::Json& j, const PumpState& s) {
     } else {
         j.null("next");
     }
-    j.kv("schedule", s.has_schedule && s.schedule_on ? "ON" : "OFF");
+    j.kv("schedule", s.automatic ? "ON" : "OFF");
     j.kv("amount_ml", ml(s.amount_ul), 3).kv("tube_h", static_cast<double>(s.tube_h), 1);
     if (s.last) j.kv("last", s.last);
     else j.null("last");
