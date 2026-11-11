@@ -224,7 +224,7 @@ select.small { padding: 5px 8px; font-size: 13px; }
   .pumps > :nth-child(3n+1):last-child { grid-column: 1 / -1; }
 }
 @supports (grid-template-rows: subgrid) {
-  .pumps > .pump-card { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; }
+  .pumps > .pump-card { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; }
   .pumps > .pump-card > * + * { margin-top: 12px; }
 }
 .pump-card {
@@ -240,8 +240,14 @@ select.small { padding: 5px 8px; font-size: 13px; }
   font-size: 13px; font-weight: 700; color: var(--bg); background: var(--pc);
 }
 .pc-body { display: flex; gap: 18px; align-items: center; min-width: 0; }
-.pc-body .canister { width: 84px; height: 112px; }
-.pc-stats { flex: 1; display: grid; gap: 7px; min-width: 0; }
+.pc-body .canister { width: 108px; height: 144px; }
+.pc-stats { flex: 1; display: grid; gap: 9px; min-width: 0; }
+.pump-card .pc-head h2 { font-size: 18px; }
+.pump-card .kv { font-size: 15.5px; }
+.pump-card .pc-stats > .small { font-size: 14px; }
+.pc-foot { display: grid; gap: 10px; align-content: end; }
+.chip.ic { display: inline-flex; align-items: center; gap: 3px; padding-inline: 6px; }
+.chip.ic svg { width: 14px; height: 14px; }
 .kv { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .kv b { font-weight: 600; text-align: right; white-space: nowrap; }
 .kv .err, .err { color: var(--err); }
@@ -252,7 +258,7 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .bar i { display: block; height: 100%; border-radius: 3px; background: var(--acc); transition: width .3s ease; }
 .bar.indet i { width: 40% !important; animation: indet 1.4s ease-in-out infinite; }
 @keyframes indet { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
-.running { background: var(--card-2); border-radius: 10px; padding: 8px 10px; margin-top: auto; }
+.running { background: var(--card-2); border-radius: 10px; padding: 8px 10px; }
 .running .bar i { background: var(--pc); }
 .alerts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
 .alerts li { padding-left: 14px; position: relative; }
