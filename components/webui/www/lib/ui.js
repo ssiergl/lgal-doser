@@ -1,12 +1,13 @@
-// Small shared UI pieces: messages, decimal input, segmented control, save bar,
-// hold button.
+// Small shared UI pieces: messages, decimal input, segmented control, switch,
+// save bar, hold button, confirmation dialog.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from './html.js';
+import { hub } from './hub.js';
 import { add, errText, t } from './i18n.js';
 
 add({
-  en: { 'ui.save': 'Save', 'ui.discard': 'Discard', 'ui.unsaved': 'Unsaved changes' },
-  de: { 'ui.save': 'Speichern', 'ui.discard': 'Verwerfen', 'ui.unsaved': 'Ungespeicherte Änderungen' },
+  en: { 'ui.save': 'Save', 'ui.discard': 'Discard', 'ui.unsaved': 'Unsaved changes', 'ui.ok': 'Confirm', 'ui.cancel': 'Cancel' },
+  de: { 'ui.save': 'Speichern', 'ui.discard': 'Verwerfen', 'ui.unsaved': 'Ungespeicherte Änderungen', 'ui.ok': 'Bestätigen', 'ui.cancel': 'Abbrechen' },
 });
 
 // Decimal text ("2,5" or "2.5") -> number, NaN if invalid
@@ -83,4 +84,47 @@ export function HoldButton({ label, activeLabel, onStart, onBeat, onStop, every 
     onPointerDown=${start} onPointerUp=${stop} onPointerCancel=${stop} onLostPointerCapture=${stop}
     onKeyDown=${key} onKeyUp=${keyUp} onBlur=${stop} onContextMenu=${e => e.preventDefault()}>
     ${held ? activeLabel : label}</button>`;
+}
+
+// Confirmation dialog in place of window.confirm(): ask(text, {ok, danger})
+// resolves true or false. <DialogHost/> renders it once for the whole app.
+const dialogs = hub();
+let asking = null;   // {text, ok, danger, resolve}
+
+export function ask(text, { ok, danger = false } = {}) {
+  if (asking) asking.resolve(false);
+  return new Promise(resolve => { asking = { text, ok, danger, resolve }; dialogs.emit(); });
+}
+
+function answer(v) {
+  if (!asking) return;
+  const r = asking.resolve;
+  asking = null;
+  dialogs.emit();
+  r(v);
+}
+
+export function DialogHost() {
+  dialogs.use();
+  const first = useRef(null);
+  const a = asking;
+  useEffect(() => {
+    if (!a) return undefined;
+    const back = document.activeElement;
+    if (first.current) first.current.focus();
+    const esc = e => { if (e.key === 'Escape') answer(false); };
+    addEventListener('keydown', esc);
+    return () => { removeEventListener('keydown', esc); if (back && back.focus) back.focus(); };
+  }, [a]);
+  if (!a) return null;
+  // a dangerous action starts focused on "cancel", so Enter cannot trigger it by accident
+  return html`<div class="overlay" onClick=${e => { if (e.target === e.currentTarget) answer(false); }}>
+    <section class="card dialog ask" role="alertdialog" aria-modal="true" aria-describedby="ask-text">
+      <p id="ask-text">${a.text}</p>
+      <div class="row end">
+        <button type="button" class="sec" ref=${a.danger ? first : null} onClick=${() => answer(false)}>${t('ui.cancel')}</button>
+        <button type="button" class=${a.danger ? 'danger' : ''} ref=${a.danger ? null : first} onClick=${() => answer(true)}>${a.ok || t('ui.ok')}</button>
+      </div>
+    </section>
+  </div>`;
 }

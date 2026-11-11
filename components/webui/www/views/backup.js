@@ -5,7 +5,7 @@ import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, t } from '../lib/i18n.js';
 import { reloadAll } from '../lib/store.js';
-import { useMsg } from '../lib/ui.js';
+import { ask, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -96,8 +96,8 @@ export function BackupSection() {
     }).catch(() => msg.err(t('bk.bad')));
   };
 
-  const restore = () => {
-    if (!pick.length || !confirm(t('bk.ask'))) return;
+  const restore = async () => {
+    if (!pick.length || !(await ask(t('bk.ask'), { ok: t('bk.restore'), danger: true }))) return;
     setBusy(true);
     api('POST', '/api/v1/backup?parts=' + pick.join(','), doc)
       .then(r => {

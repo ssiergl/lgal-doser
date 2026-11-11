@@ -5,7 +5,7 @@ import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { hub } from '../lib/hub.js';
 import { add, errText, getLang, t } from '../lib/i18n.js';
-import { useMsg } from '../lib/ui.js';
+import { ask, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -115,8 +115,8 @@ function KeysCard() {
       .catch(e => msg.err(e))
       .finally(() => setBusy(false));
   };
-  const del = key => {
-    if (!confirm(t('ac.keys.del', { n: key.name }))) return;
+  const del = async key => {
+    if (!(await ask(t('ac.keys.del', { n: key.name }), { ok: t('ac.keys.delete'), danger: true }))) return;
     api('DELETE', '/api/v1/auth/keys?slot=' + key.slot)
       .then(() => { msg.ok(t('ac.keys.deleted', { n: key.name })); load(); })
       .catch(e => msg.err(e));
