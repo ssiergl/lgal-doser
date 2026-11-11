@@ -2,11 +2,16 @@
 # Builds and runs the host tests (no ESP-IDF needed).
 #   tests/host/run.sh        Tests
 #   tests/host/run.sh -v     simulations with engine log
+#   SAN=1 tests/host/run.sh  under AddressSanitizer and UndefinedBehaviorSanitizer
 set -e
 cd "$(dirname "$0")/../.."
 OUT="${TMPDIR:-/tmp}/lgal_host_tests"
 mkdir -p "$OUT"
 CXX="c++ -std=c++20 -O1 -Wall -Wextra -Werror"
+if [ -n "$SAN" ]; then
+    CXX="$CXX -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all"
+    export ASAN_OPTIONS=detect_leaks=0  # LeakSanitizer is not available on macOS
+fi
 
 $CXX \
     -I components/doser_hal/include \

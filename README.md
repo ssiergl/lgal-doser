@@ -16,6 +16,7 @@ main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
+tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
 
@@ -45,6 +46,24 @@ Host-Tests (ohne ESP-IDF, laufen auf dem Mac):
 
 ```bash
 tests/host/run.sh
+```
+
+Dieselben Tests unter AddressSanitizer und UndefinedBehaviorSanitizer (findet
+Speicherfehler, Überläufe und undefiniertes Verhalten):
+
+```bash
+SAN=1 tests/host/run.sh
+```
+
+Fuzzer für alles, was Eingaben von außen liest: API-Bodies (JSON, Datensicherung, Netz,
+MQTT, Zeitplan, Sperren), Query-Werte, Cookie-/Authorization-Header, WebSocket-Origin,
+Update-Manifest und DNS-Pakete im Setup-WLAN. Er verändert gültige Beispiel-Dokumente
+zufällig (Byte- und JSON-Wert-Ebene) und läuft immer unter beiden Sanitizern. Argumente:
+Runden pro Ziel (Standard 200000) und Seed; ein Absturz ist mit demselben Seed
+reproduzierbar.
+
+```bash
+tests/fuzz/run.sh 1000000 2
 ```
 
 Nach Änderungen an `sdkconfig.defaults` muss `sdkconfig` neu erzeugt werden
