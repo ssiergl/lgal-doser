@@ -471,7 +471,8 @@ Status status(int pump) {
     // pending slot first (cursor not advanced yet), otherwise from now on
     sched::Cursor from = r.pending ? r.run.cursor : sched::Cursor{ts.utc, UINT32_MAX};
     if (from.utc < r.run.cursor.utc || (from.utc == r.run.cursor.utc && from.tag < r.run.cursor.tag)) from = r.run.cursor;
-    if (sched::next_due(r.sch, s_zone, s_cfg.grid_min, from, ts.utc + 8 * 86400, &d)) {
+    // manual-only and disabled pumps never run the plan: no next dose
+    if (set.mode == dose::Mode::Auto && sched::next_due(r.sch, s_zone, s_cfg.grid_min, from, ts.utc + 8 * 86400, &d)) {
         s.has_next = true;
         s.next_utc = d.utc;
         s.next_ul = d.ul;
