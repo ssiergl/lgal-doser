@@ -296,7 +296,7 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .page-head .big-badge { width: 32px; height: 32px; font-size: 17px; border-radius: 9px; align-self: center; }
 .page-head h1 { min-width: 0; overflow-wrap: anywhere; }
 .page-head .chip { align-self: center; }
-.detail { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
+.detail { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 .detail .col { display: grid; gap: var(--gap); min-width: 0; }
 @media (max-width: 900px) {
   .detail { grid-template-columns: minmax(0, 1fr); }
