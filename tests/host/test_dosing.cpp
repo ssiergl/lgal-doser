@@ -94,6 +94,21 @@ static void test_abort_and_container() {
     CHECK_STR(dosing::set_container(p, 100000, -1), "pump_busy");
     CHECK(sim::run_until_idle(p));
     CHECK_STR(dosing::set_container(p, 600000, -1), "invalid_param");  // > capacity
+    // a forgotten refill: the container stops at 0 ml, the dose still runs
+    CHECK(dosing::set_container(p, 1500, -1) == nullptr);
+    CHECK(dosing::dose(p, 2000, dosing::Trigger::Api) == nullptr);
+    CHECK(dosing::status(p).state.remaining_ul == 0);
+    CHECK(sim::run_until_idle(p));
+    CHECK(dosing::status(p).state.remaining_ul == 0);
+    // aborted with less pumped than was left: the rest comes back
+    CHECK(dosing::set_container(p, 15000, -1) == nullptr);
+    CHECK(dosing::dose(p, 20000, dosing::Trigger::Api) == nullptr);
+    CHECK(dosing::status(p).state.remaining_ul == 0);
+    for (int i = 0; i < 100; ++i) sim::tick();
+    dosing::stop(p);
+    CHECK(sim::run_until_idle(p));
+    s = dosing::status(p);
+    CHECK(s.last_done_ul < 15000 && s.state.remaining_ul == int32_t(15000 - s.last_done_ul));
 }
 
 static void test_stop_during_unretract() {
