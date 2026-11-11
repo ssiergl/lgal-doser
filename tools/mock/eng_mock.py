@@ -103,8 +103,7 @@ def route(h, method, path, q, eng_ok):
     if path == "/api/v1/engineering/reset" and method == "POST":
         w = q.get("what")
         if w == "network": h.send(200, {"status": "ok"}); return True
-        if w == "factory": h.send(200, {"status": "rebooting"}); return True
-        _err(h, "invalid_param", "what=network|factory"); return True
+        _err(h, "invalid_param", "what=network"); return True
     if path == "/api/v1/hw/status" and method == "GET": h.send(200, _status()); return True
     def pump():
         try: p = int(q.get("pump", "0"))

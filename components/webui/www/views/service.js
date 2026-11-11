@@ -66,12 +66,11 @@ add({
     'sv.danger': 'Danger zone',
     'sv.dz.hist': 'Delete history', 'sv.dz.hist.h': 'Deletes all recorded events.',
     'sv.dz.net': 'Reset network settings', 'sv.dz.net.h': 'LAN back to DHCP, WLAN removed. The device may get a new address.',
-    'sv.dz.fac': 'Factory reset', 'sv.dz.fac.h': 'Deletes everything: settings, schedules, calibration, counters, history, passwords and keys. The device restarts in setup mode.',
-    'sv.dz.sure': 'Really?', 'sv.dz.yes': 'Yes, do it', 'sv.dz.no': 'Cancel', 'sv.dz.type': 'Type RESET to confirm',
+    'sv.dz.sure': 'Really?', 'sv.dz.yes': 'Yes, do it', 'sv.dz.no': 'Cancel',
     'sv.dz.hist.ok': 'History deleted.', 'sv.dz.net.ok': 'Network settings reset – the device applies them in a moment.',
-    'sv.dz.fac.ok': 'The device is erasing everything and restarts. Afterwards connect to its setup network.',
-    'sv.f.driver_lost': 'driver lost', 'sv.f.driver_reset': 'driver reset', 'sv.f.driver_error': 'driver error',
-    'sv.f.short_circuit': 'short circuit', 'sv.f.overtemperature': 'overtemperature',
+    'sv.f.driver_lost': 'stopped: driver stopped answering', 'sv.f.driver_reset': 'stopped: driver restarted (24 V dropped?)',
+    'sv.f.driver_error': 'stopped: driver reports an error', 'sv.f.short_circuit': 'stopped: short circuit at the motor',
+    'sv.f.overtemperature': 'stopped: driver overheated',
     'err.driver_config_failed': 'Saved, but the driver could not be configured',
     'sv.sps.range': 'Frequency out of range', 'err.rtc_unavailable': 'Clock module not reachable',
   },
@@ -123,12 +122,11 @@ add({
     'sv.danger': 'Gefahrenzone',
     'sv.dz.hist': 'Verlauf löschen', 'sv.dz.hist.h': 'Löscht alle aufgezeichneten Ereignisse.',
     'sv.dz.net': 'Netzwerkeinstellungen zurücksetzen', 'sv.dz.net.h': 'LAN wieder per DHCP, WLAN entfernt. Das Gerät bekommt eventuell eine neue Adresse.',
-    'sv.dz.fac': 'Werksreset', 'sv.dz.fac.h': 'Löscht alles: Einstellungen, Zeitpläne, Kalibrierung, Zähler, Verlauf, Passwörter und Schlüssel. Das Gerät startet im Einrichtungsmodus neu.',
-    'sv.dz.sure': 'Wirklich?', 'sv.dz.yes': 'Ja, ausführen', 'sv.dz.no': 'Abbrechen', 'sv.dz.type': 'Zum Bestätigen RESET eingeben',
+    'sv.dz.sure': 'Wirklich?', 'sv.dz.yes': 'Ja, ausführen', 'sv.dz.no': 'Abbrechen',
     'sv.dz.hist.ok': 'Verlauf gelöscht.', 'sv.dz.net.ok': 'Netzwerkeinstellungen zurückgesetzt – das Gerät übernimmt sie gleich.',
-    'sv.dz.fac.ok': 'Das Gerät löscht alles und startet neu. Danach mit seinem Einrichtungsnetz verbinden.',
-    'sv.f.driver_lost': 'Treiber verloren', 'sv.f.driver_reset': 'Treiber-Reset', 'sv.f.driver_error': 'Treiberfehler',
-    'sv.f.short_circuit': 'Kurzschluss', 'sv.f.overtemperature': 'Übertemperatur',
+    'sv.f.driver_lost': 'abgebrochen: Treiber antwortet nicht mehr', 'sv.f.driver_reset': 'abgebrochen: Treiber neu gestartet (24 V kurz weg?)',
+    'sv.f.driver_error': 'abgebrochen: Treiber meldet Fehler', 'sv.f.short_circuit': 'abgebrochen: Kurzschluss am Motor',
+    'sv.f.overtemperature': 'abgebrochen: Treiber überhitzt',
     'err.driver_config_failed': 'Gespeichert, aber der Treiber ließ sich nicht konfigurieren',
     'sv.sps.range': 'Frequenz außerhalb des Bereichs', 'err.rtc_unavailable': 'Uhrenmodul nicht erreichbar',
   },
@@ -611,14 +609,13 @@ function TelemetryCard({ tel, hw, paused }) {
 // ---------------------------------------------------------------------------
 // D: resets
 
-function Danger({ id, run, typed }) {
+function Danger({ id, run }) {
   const [ask, setAsk] = useState(false);
-  const [word, setWord] = useState('');
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
   const go = () => {
     setBusy(true);
-    run().then(() => { setAsk(false); setWord(''); msg.ok(t(id + '.ok')); })
+    run().then(() => { setAsk(false); msg.ok(t(id + '.ok')); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
   return html`<div class="sub">
@@ -626,11 +623,9 @@ function Danger({ id, run, typed }) {
       ${!ask && html`<button type="button" class="danger" onClick=${() => setAsk(true)}>${t(id)}</button>`}</div>
     <p class="small mut">${t(id + '.h')}</p>
     ${ask && html`<div class="row">
-      ${typed && html`<input type="text" autocomplete="off" spellcheck="false" aria-label=${t('sv.dz.type')}
-        placeholder=${t('sv.dz.type')} value=${word} onInput=${e => setWord(e.target.value)}/>`}
       <span>${t('sv.dz.sure')}</span>
-      <button type="button" class="danger" disabled=${busy || (typed && word.trim() !== 'RESET')} onClick=${go}>${t('sv.dz.yes')}</button>
-      <button type="button" class="sec" onClick=${() => { setAsk(false); setWord(''); }}>${t('sv.dz.no')}</button>
+      <button type="button" class="danger" disabled=${busy} onClick=${go}>${t('sv.dz.yes')}</button>
+      <button type="button" class="sec" onClick=${() => setAsk(false)}>${t('sv.dz.no')}</button>
     </div>`}
     ${msg.node}
   </div>`;
@@ -641,7 +636,6 @@ function DangerCard() {
     <h2>${t('sv.danger')}</h2>
     <${Danger} id="sv.dz.hist" run=${() => eapi('DELETE', '/api/v1/history')}/>
     <${Danger} id="sv.dz.net" run=${() => eapi('POST', '/api/v1/engineering/reset?what=network')}/>
-    <${Danger} id="sv.dz.fac" typed run=${() => eapi('POST', '/api/v1/engineering/reset?what=factory')}/>
   </section>`;
 }
 
