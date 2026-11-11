@@ -89,7 +89,7 @@ void write_pumps(Json& j, const Data& d) {
         j.obj().kv("pump", i + 1).kv("name", p.name).kv("mode", dose::mode_str(p.mode)).kv("tier", static_cast<int>(p.speed_tier));
         j.kv("daily_limit_ml", ml(p.daily_limit_ul), 3).kv("retract_mrev", static_cast<int>(p.retract_mrev));
         j.kv("capacity_ml", ml(p.capacity_ul), 3);
-        j.kv("warn_days", p.warn_days).kv("low_days", p.low_days);
+        j.kv("warn_days", p.warn_days).kv("low_days", p.low_days).kv("recal_months", p.recal_months);
         j.kv("ul_per_rev", static_cast<double>(p.ul_per_rev), 3).kv("calibrated_at", p.calibrated_at);
         j.obj("schedule");
         sched_json::write_schedule(j, d.schedules[i]);
@@ -217,6 +217,8 @@ bool parse_pump(const JsonValue& v, int i, int32_t today, Data* d, Error* err) {
     // thresholds: optional (older backups have none)
     if (!opt_u8(v["warn_days"], 60, &p.warn_days)) return failf(err, "pumps[%d].%s", i, "warn_days");
     if (!opt_u8(v["low_days"], 60, &p.low_days)) return failf(err, "pumps[%d].%s", i, "low_days");
+    if (!opt_u8(v["recal_months"], dose::kMaxRecalMonths, &p.recal_months))
+        return failf(err, "pumps[%d].%s", i, "recal_months");
     if (!get_ul(v["capacity_ml"], 100000000, &p.capacity_ul)) return failf(err, "pumps[%d].%s", i, "capacity_ml");
     int64_t milli = 0;
     if (!v["ul_per_rev"].get_decimal(1000, &milli) || milli < 0 || milli > 100000000)

@@ -311,6 +311,33 @@ static void test_engineering() {
     bad = e;
     bad.warn_days = bad.low_days = 0;  // both off
     CHECK(dose::validate(bad, 600) == nullptr);
+    s.warn_days = 0;
+    s.low_days = 0;
+
+    // calibration reminder: default 3 months, 0 = off, at most 24
+    dose::PumpSettings c;
+    CHECK(c.recal_months == 3);
+    c.ul_per_rev = 340.0f;
+    c.calibrated_at = 1790000000;
+    const int64_t month = 2629746;
+    CHECK(!dose::calibration_due(c, c.calibrated_at + 3 * month - 1));
+    CHECK(dose::calibration_due(c, c.calibrated_at + 3 * month));
+    CHECK(!dose::calibration_due(c, 0));                     // no valid time
+    CHECK(!dose::calibration_due(c, c.calibrated_at - 10));  // clock behind
+    c.recal_months = 12;
+    CHECK(!dose::calibration_due(c, c.calibrated_at + 11 * month));
+    CHECK(dose::calibration_due(c, c.calibrated_at + 12 * month));
+    c.recal_months = 0;
+    CHECK(!dose::calibration_due(c, c.calibrated_at + 100 * month));
+    c.recal_months = 3;
+    c.calibrated_at = 0;  // never calibrated: no reminder
+    CHECK(!dose::calibration_due(c, 1800000000));
+    s.recal_months = 25;
+    CHECK_STR(dosing::set_settings(2, s), "invalid_param");
+    s.recal_months = 24;
+    CHECK(dosing::set_settings(2, s) == nullptr && dosing::settings(2).recal_months == 24);
+    s.recal_months = 3;
+    CHECK(dosing::set_settings(2, s) == nullptr);
 }
 
 // Retraction switched off (factory default): a pending retraction is

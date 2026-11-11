@@ -53,14 +53,19 @@ struct PumpSettings {
     uint32_t capacity_ul = 0;      // container size, 0 = not tracked
     uint8_t warn_days = 0;         // own container thresholds in days, 0 = engineering default
     uint8_t low_days = 0;          //   (in the padding before calibrated_at: stored layout unchanged)
+    uint8_t recal_months = 3;      // reminder to calibrate again after months, 0 = off
     int64_t calibrated_at = 0;     // UTC of the last calibration
 };
+constexpr uint8_t kMaxRecalMonths = 24;
 
 float ul_per_rev(const PumpSettings& p);  // calibrated or nominal value
 uint16_t retract_mrev(const PumpSettings& p, const Engineering& e);
 // Container thresholds of a pump (days of supply): own value or the engineering default
 uint8_t warn_days(const PumpSettings& p, const Engineering& e);
 uint8_t low_days(const PumpSettings& p, const Engineering& e);
+// The calibration is older than the reminder interval (months of 30.44
+// days). false when off, never calibrated or without a valid time (now).
+bool calibration_due(const PumpSettings& p, int64_t now);
 
 // ---------------------------------------------------------------------------
 // Conversion (rounded; 64 bit against overflow)
