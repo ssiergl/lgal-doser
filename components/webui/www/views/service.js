@@ -651,9 +651,9 @@ export function ServiceView() {
   }, []);
 
   const lock = () => lockEngineering().then(loadAuth).catch(setErr);
-  const head = html`<div class="page-head"><h1>${t('sv.title')}</h1>
+  const head = html`<div class="page-head"><h1>${t('sv.title')}</h1><span class="spacer"></span>
     ${auth && auth.engineering && html`<span class="chip svc">${t('sv.left', { m: Math.max(1, Math.ceil(auth.engineering_left_s / 60)) })}</span>
-      <span class="spacer"></span><button type="button" class="sec" onClick=${lock}>${t('sv.lock')}</button>`}</div>`;
+      <button type="button" class="sec" onClick=${lock}>${t('sv.lock')}</button>`}</div>`;
 
   if (!auth) return html`${head}${err ? html`<p class="msg err">${errText(err)}</p>` : html`<p class="mut">${t('sv.loading')}</p>`}`;
   if (locked) {

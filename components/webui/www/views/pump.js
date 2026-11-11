@@ -450,7 +450,7 @@ export function PumpView({ pump }) {
   const al = alerts(p, sp);
   return html`<${PumpTabs} current=${pump} pumps=${s.pumps}/>
     <div class="page-head" style=${{ '--pc': pumpColor(p.pump) }}>
-      <span class="badge big-badge">${p.pump}</span><h1>${pumpName(p)}</h1>
+      <span class="badge big-badge">${p.pump}</span><h1>${pumpName(p)}</h1><span class="spacer"></span>
       <span class=${'chip ' + st.cls}>${t(st.key)}</span>
       ${sp && sp.boost && html`<span class="chip acc">${t('chip.boost')} +${num(sp.boost.remaining_ml, 1)} ml</span>`}
     </div>
