@@ -14,7 +14,7 @@ components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitpla
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  ap_password.py, ota_upload.py, mock/ (Geräte-Mock für die Weboberfläche)
-tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant)
+tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
 ```
