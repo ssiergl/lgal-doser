@@ -3,7 +3,7 @@
 // area, M6). Pure logic, host-tested; backup_api.cpp collects and applies.
 //
 //   {"format":"lgal-doser-backup","version":1,"firmware","device","exported_utc",
-//    "system":{"language","timezone","ntp_server",
+//    "system":{"language","timezone","ntp_server","name"?,"own_hostname"?,
 //              "led_night":{"enabled","start","end","brightness"}},
 //    "network":{"mode","lan":{...},"wlan":{...}, "wlan_password"?},
 //    "pumps":[{"pump":1,"name","mode","tier","daily_limit_ml","retract_mrev",
@@ -58,6 +58,9 @@ struct Data {
     char timezone[65] = "";
     char ntp_server[65] = "";
     lgal::led::NightMode led;
+    bool names = false;  // name and own host name are in the document (older backups lack them)
+    char name[33] = "";
+    char own_hostname[33] = "";
     // network
     lgal::netcfg::Config net;
     bool wlan_password = false;  // net.password is part of the document

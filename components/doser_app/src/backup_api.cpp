@@ -39,6 +39,9 @@ void collect(bk::Data* d) {
     std::snprintf(d->timezone, sizeof(d->timezone), "%s", lgal::timesync::timezone());
     std::snprintf(d->ntp_server, sizeof(d->ntp_server), "%s", lgal::timesync::ntp_server());
     d->led = lgal::settings::led_night();
+    d->names = true;
+    std::snprintf(d->name, sizeof(d->name), "%s", lgal::device::name().c_str());
+    std::snprintf(d->own_hostname, sizeof(d->own_hostname), "%s", lgal::device::own_hostname().c_str());
     d->net = lgal::net::config();
     for (int i = 0; i < 5; ++i) {
         d->pumps[i] = dosing::settings(i);
@@ -64,7 +67,7 @@ esp_err_t get_backup(httpd_req_t* req) {
     d->wlan_password = secrets != 0;
     d->mqtt_password = secrets != 0;
     const auto ts = lgal::timesync::status();
-    const std::string& host = lgal::device::hostname();
+    const std::string host = lgal::device::hostname();
     Json j;
     bk::write(j, *d, {esp_app_get_description()->version, host.c_str(), ts.valid ? ts.utc : 0},
               [](Json& jj) { lgal::auth::write_secrets(jj); });
@@ -148,8 +151,10 @@ esp_err_t post_backup(httpd_req_t* req) {
     }
     if (todo & bk::kSystem) {
         if (lgal::settings::set_language(d->language) != ESP_OK || lgal::timesync::set_timezone(d->timezone) != ESP_OK ||
-            lgal::timesync::set_ntp_server(d->ntp_server) != ESP_OK || lgal::settings::set_led_night(d->led) != ESP_OK)
+            lgal::timesync::set_ntp_server(d->ntp_server) != ESP_OK || lgal::settings::set_led_night(d->led) != ESP_OK ||
+            (d->names && lgal::device::set_names(d->name, d->own_hostname) != ESP_OK))
             return apply_failed(req, bk::kSystem, "storage_error", applied);
+        if (d->names) lgal::net::apply_hostname();
         applied |= bk::kSystem;
     }
     if (todo & bk::kPumps) {

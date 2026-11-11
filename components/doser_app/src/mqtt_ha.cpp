@@ -148,7 +148,8 @@ ha::DeviceInfo device_info(const lgal::mqttcfg::Config& c) {
     std::string sid = lgal::device::short_id();
     d.id = "lgal_doser_" + sid;
     for (auto& ch : sid) ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
-    d.name = "LGAL Doser " + sid;
+    d.name = lgal::device::name();
+    if (d.name.empty()) d.name = "LGAL Doser " + sid;
     d.firmware = esp_app_get_description()->version;
     d.url = "http://" + lgal::device::hostname() + ".local/";
     d.base = lgal::mqtt::base_topic();

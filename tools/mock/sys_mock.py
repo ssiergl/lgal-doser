@@ -33,14 +33,39 @@ def down(): return time.time() < SYS["down_until"]
 def restart(delay=6):
     SYS["down_until"] = time.time() + delay; SYS["boot"] = time.time() + delay; ENG["until"] = 0
 
+# Device name and host name (lgal/device_name.h)
+DEVICE = {"name": "", "own": ""}
+DEFAULT_HOST = "lgal-doser-e4f5"
+_LATIN = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss", "æ": "ae"}
+
+def slug(name):
+    import unicodedata
+    out, dash = "", False
+    for ch in name.lower():
+        s = None
+        if ch.isascii() and ch.isalnum(): s = ch
+        elif ch in _LATIN: s = _LATIN[ch]
+        elif "\u00e0" <= ch <= "\u00ff":
+            b = unicodedata.normalize("NFD", ch)[0]
+            if b.isascii() and b.isalpha(): s = b
+        if s is None: dash = True; continue
+        if dash and out: out += "-"
+        dash = False; out += s
+    return out[:32].rstrip("-")
+
+def hostname(): return DEVICE["own"] or slug(DEVICE["name"]) or DEFAULT_HOST
+
+def device_json():
+    return {"name": DEVICE["name"], "hostname": hostname(), "own_hostname": DEVICE["own"], "default_hostname": DEFAULT_HOST}
+
 def info_json():
-    return {"device": {"vendor": "LG Aquatic Life", "model": "LGAL-Doser", "hostname": "lgal-doser-e4f5", "mac": "AA:BB:CC:00:11:22", "setup_completed": True},
+    return {"device": {"vendor": "LG Aquatic Life", "model": "LGAL-Doser", "hostname": hostname(), "mac": "AA:BB:CC:00:11:22", "setup_completed": True},
             "firmware": {"project": "lgal_doser", "version": SYS["version"], "idf": "v6.0.3", "built": "Nov  7 2026 10:00:00",
                          "partition": SYS["partition"], "ota_state": "VALID", "last_invalid_partition": SYS["invalid"]},
             "system": {"uptime_s": int(max(0, time.time() - SYS["boot"])) + 2 * 86400 + 3 * 3600, "reset_reason": "SW", "heap_free": 182000,
                        "heap_min_free": 151000, "heap_largest_block": 98000, "psram_free": 8200000, "coredump": SYS["coredump"]},
             "network": {"active": "lan", "eth_present": True, "eth_link": True, "eth_ip": "192.168.1.50", "wlan": "off", "wlan_ip": None, "ap_active": False, "ap_clients": 0},
-            "time": time_json(), "language": "de", "languages": ["en", "de"], "links": LINKS}
+            "time": time_json(), "language": "de", "languages": ["en", "de"], "device_name": DEVICE["name"], "links": LINKS}
 IPRE = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
 
 # URL update: a ".bin" address downloads 1.6 MB in 6 s and restarts, anything else gets HTTP 404 after 2 s
@@ -132,6 +157,19 @@ def route(h, method, path, q, body):
     import eng_mock
     if eng_mock.route(h, method, path, q, lambda: ENG["until"] > time.time()): return True
     if path == "/api/v1/system/info" and method == "GET": h.send(200, info_json()); return True
+    if path == "/api/v1/system/device":
+        if method == "GET": h.send(200, device_json()); return True
+        if method == "PUT":
+            name, own = DEVICE["name"], DEVICE["own"]
+            if "name" in body:
+                name = str(body["name"]).strip(" ")
+                if len(name.encode()) > 32 or any(ord(c) < 32 or ord(c) == 127 for c in name) or (name and not name.strip()):
+                    err(h, 400, "invalid_param", "name", field="name"); return True
+            if "own_hostname" in body:
+                own = str(body["own_hostname"]).strip(" ").lower()
+                if own and not re.match(r"^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$", own):
+                    err(h, 400, "invalid_param", "own_hostname", field="own_hostname"); return True
+            DEVICE.update(name=name, own=own); h.send(200, device_json()); return True
     if path == "/api/v1/system/led":
         if method == "GET": h.send(200, led_json()); return True
         if method == "PUT":
@@ -157,10 +195,10 @@ def route(h, method, path, q, body):
         if method == "DELETE": SYS["coredump"] = False; h.send(200, {"status": "deleted"}); return True
     if path == "/api/v1/system/reboot" and method == "POST": h.send(200, {"status": "rebooting"}); restart(); return True
     if path == "/api/v1/setup" and method == "GET":
-        h.send(200, {"completed": True, "password_set": AUTH["password_set"], "connected": True, "hostname": "lgal-doser-e4f5",
-                     "urls": ["http://lgal-doser-e4f5.local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
+        h.send(200, {"completed": True, "password_set": AUTH["password_set"], "connected": True, "hostname": hostname(),
+                     "urls": ["http://" + hostname() + ".local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
     if path == "/api/v1/setup/complete" and method == "POST":
-        h.send(200, {"status": "ok", "ap_off_in_s": 20, "urls": ["http://lgal-doser-e4f5.local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
+        h.send(200, {"status": "ok", "ap_off_in_s": 20, "urls": ["http://" + hostname() + ".local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
     if path == "/api/v1/system/factory_reset" and method == "POST":
         if body.get("password") != AUTH["password"]: err(h, 403, "wrong_password", "Wrong password"); return True
         h.send(200, {"status": "rebooting"}); restart(); return True  # the mock keeps its state
@@ -277,7 +315,7 @@ def route(h, method, path, q, body):
         return True
     if path == "/api/v1/auth/status" and method == "GET":
         h.send(200, {"logged_in": True, "via": "session", "password_set": AUTH["password_set"], "setup_completed": True,
-                     "engineering": ENG["until"] > time.time(), "engineering_left_s": int(max(0, ENG["until"] - time.time())), "recovery": False, "device": "lgal-doser-e4f5"}); return True
+                     "engineering": ENG["until"] > time.time(), "engineering_left_s": int(max(0, ENG["until"] - time.time())), "recovery": False, "device": hostname()}); return True
     if path == "/api/v1/auth/password" and method == "POST":
         if AUTH["password_set"] and body.get("current") != AUTH["password"]: err(h, 403, "wrong_password", "Current password is wrong"); return True
         n = body.get("new", "")

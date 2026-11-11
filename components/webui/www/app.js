@@ -73,8 +73,9 @@ function Header({ route }) {
   const s = useStore();
   const prefs = usePrefs();
   const host = s.info && s.info.device ? s.info.device.hostname : '';
+  const name = (s.info && s.info.device_name) || 'Doser';
   return html`<header class="top"><div class="top-in">
-    <a class="brand" href="#/"><img src="/ui/icon.svg" alt=""/><div><b>LG Aquatic Life</b><span>Doser${host ? ' · ' + host : ''}</span></div></a>
+    <a class="brand" href="#/"><img src="/ui/icon.svg" alt=""/><div><b>LG Aquatic Life</b><span>${name}${host ? ' · ' + host : ''}</span></div></a>
     <span class="spacer"></span>
     <span class=${'live hide-s' + (s.live ? ' on' : '')}><i></i>${t(s.live ? 'live.on' : 'live.off')}</span>
     <div class="seg" title=${t('mode.title')}>

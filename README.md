@@ -210,6 +210,7 @@ nicht, `idf.py build` reicht.
 | Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; nur mit [Update-Quelle](#ota-update) die Karte „Updates“: installierte und verfügbare Version (Badge „Aktuell“ / „Neu: x.y.z“), Zeit der letzten Prüfung, Link „Was ist neu“, „Nach Updates suchen“, „x.y.z installieren“ mit Rückfrage und Fortschritt, Schalter „Täglich prüfen“; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage; Werkseinstellungen mit erneuter Eingabe des Admin-Passworts. Nur Profi: Warnung, solange http für Updates erlaubt ist, Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk- und MQTT-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
+| Gerät | In den Einstellungen: Gerätename (bis 32 Bytes, z. B. „Riffbecken“) für Kopfzeile, Home Assistant und mDNS-Dienst. Der Hostname folgt daraus (Kleinbuchstaben, Umlaute als ae/oe/ue/ss, sonst „-“, z. B. `riffbecken.local`); nur Profi: eigener Hostname (a–z, 0–9, „-“, bis 32 Zeichen). Ohne Namen bleibt `lgal-doser-xxxx`. mDNS übernimmt den Namen sofort, der Router nach der nächsten Adressvergabe. MQTT-Topics und Home-Assistant-IDs bleiben, bis man in der MQTT-Karte „Topics auf den Gerätenamen umziehen“ drückt. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten; Zeitformat 24 Stunden (Standard) oder 12 Stunden mit AM/PM für alle angezeigten Uhrzeiten (im Browser gemerkt; Eingabefelder für Uhrzeiten folgen dem Browser). |
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel, danach direkt das [Engineering-Menü](#engineering-menü-m6) (ist der Bereich schon freigeschaltet, sofort). Dort liegen auch die [Datensicherung](#datensicherung-m6) und „Jetzt sperren“. |
 | Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Links auf Netzwerk und Einrichtung) für den Fall, dass die Oberfläche nicht lädt. Sie ist bewusst nirgends verlinkt: Adresse von Hand eingeben, z. B. `http://lgal-doser-xxxx.local/recovery` (Hinweis gehört in die Bedienungsanleitung). |
@@ -330,6 +331,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / PUT | `/api/v1/system/led` | angezeigter Zustand (`shown`) und Nachtmodus / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (fehlende Felder bleiben, 400 `invalid_param` mit `field`) |
 | GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` oder statt `utc` `"local":"2026-11-10T18:30"` (Ortszeit des Geräts; alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
 | GET | `/setup` | Ersteinrichtung |
+| GET / PUT | `/api/v1/system/device` | `name`, `hostname` (in Gebrauch), `own_hostname` (`""` = aus dem Namen), `default_hostname` / `{"name","own_hostname"}` teilweise; 400 `invalid_param` mit `field` |
 | GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
 | POST | `/api/v1/setup/complete` | Einrichtung abschließen (409 `password_not_set` / `not_connected`), Setup-WLAN aus nach 20 s |
 | GET | `/i18n.js` | gemeinsame Übersetzungsbasis der Seiten (ohne Anmeldung) |
@@ -360,7 +362,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | DELETE | `/api/v1/history` | Historie löschen (Engineering) |
 | GET | `/api/v1/backup?secrets=0\|1` | Datensicherung der ganzen Konfiguration (Engineering, siehe [Datensicherung](#datensicherung-m6)) |
 | POST | `/api/v1/backup?parts=system,network,pumps,engineering,mqtt,auth` | Sicherung einspielen (Engineering); erst alles prüfen, dann die gewählten Teile übernehmen; 409 `pump_busy` solange eine Pumpe läuft |
-| GET / PUT | `/api/v1/mqtt` | MQTT-Einstellungen (ohne Passwort, `password_set`), Basis-Topic und Port in Gebrauch, Verbindungsstatus `disabled\|connecting\|connected` mit letztem Fehler, CA-Info; PUT teilweise, Passwort weglassen = behalten, `""` = löschen |
+| GET / PUT | `/api/v1/mqtt` | MQTT-Einstellungen (ohne Passwort, `password_set`), Basis-Topic und Port in Gebrauch, `name_topic` (Basis-Topic mit dem aktuellen Hostnamen), Verbindungsstatus `disabled\|connecting\|connected` mit letztem Fehler, CA-Info; PUT teilweise, Passwort weglassen = behalten, `""` = löschen |
 | PUT / DELETE | `/api/v1/mqtt/ca` | CA-Zertifikat(e) als PEM-Text im Body (max. 8 KB, wird geprüft) bzw. entfernen (409 `ca_in_use`, solange TLS „eigenes CA-Zertifikat“ aktiv ist) |
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h`, `warn_days` (Warnung, wenn der Behälter weniger Tage reicht, Standard 7), `low_days` (Alarm „fast leer“, Standard 4; je 0 = aus, Alarm höchstens gleich Warnung) |
 | GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |
@@ -507,8 +509,12 @@ mit Last Will ab und baut die Verbindung nach Fehlern alle 10 s neu auf. Verschl
 | TLS, öffentliches Zertifikat | Port 8883, Server-Zertifikat gegen die in der Firmware enthaltene Liste öffentlicher Zertifizierungsstellen geprüft (z. B. Cloud-Broker) |
 | TLS, eigenes CA-Zertifikat | Port 8883, gegen ein hochgeladenes CA-Zertifikat (PEM, z. B. vom eigenen Mosquitto mit selbst signiertem Zertifikat) |
 
-Topics unter dem Basis-Topic (Standard: `lg-aquatic-life/<gerätetyp>/<hostname>`, z. B.
-`lg-aquatic-life/doser/lgal-doser-e4f5`), Zustände `retained`, Ereignisse nicht:
+Topics unter dem Basis-Topic (Standard: `lg-aquatic-life/<gerätetyp>/<werks-hostname>`, z. B.
+`lg-aquatic-life/doser/lgal-doser-e4f5`), Zustände `retained`, Ereignisse nicht. Bekommt das Gerät
+einen Namen, bleibt das Topic zunächst; „Topics auf den Gerätenamen umziehen“ (MQTT-Karte, sichtbar
+solange das Topic vom Namen abweicht) setzt es auf `lg-aquatic-life/<gerätetyp>/<hostname>`. Nach
+jeder Änderung des Basis-Topics löscht das Gerät beim Broker die gespeicherten (`retained`)
+Nachrichten unter dem alten. Client-ID und Home-Assistant-IDs hängen an der MAC und ändern sich nie:
 
 | Topic | Inhalt |
 |---|---|
@@ -552,8 +558,8 @@ Start beginnt der Strom mit dem aktuellen Zeitpunkt.
 **Zeitplan pro Pumpe** (alle): im Pumpen-Detail als JSON-Datei exportieren und importieren, auch
 auf eine andere Pumpe (`{"format":"lgal-doser-schedule","version":1,…,"schedule":{…}}`).
 
-**Ganzes Gerät** (nur Engineering, Bereich E des Engineering-Menüs): eine Datei mit Sprache, Zeitzone,
-Zeitserver, LED-Nachtmodus, Netzwerk, allen Pumpen-Einstellungen inkl. Kalibrierung, Zeitplänen,
+**Ganzes Gerät** (nur Engineering, Bereich E des Engineering-Menüs): eine Datei mit Gerätename und eigenem Hostname,
+Sprache, Zeitzone, Zeitserver, LED-Nachtmodus, Netzwerk, allen Pumpen-Einstellungen inkl. Kalibrierung, Zeitplänen,
 Sperrzeiten, Servicewerten, Hardware-Parametern (Ströme, Mikroschritte), der Aufbewahrungszeit des Verlaufs und
 den MQTT-Einstellungen samt CA-Zertifikat.
 Behälterinhalt, Zähler und Verlauf gehören nicht dazu. Beim Export wählbar:

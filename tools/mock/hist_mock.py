@@ -82,9 +82,11 @@ def _backup(secrets):
                       "capacity_ml": [2000, 2000, 1000, 0, 500][i], "ul_per_rev": 370.0, "calibrated_at": int(_t.time()) - 86400 * 20,
                       "warn_days": 0, "low_days": 0,
                       "schedule": {"kind": "none", "power_loss": "skip_missed", "catch_up_min": 60}})
-    doc = {"format": "lgal-doser-backup", "version": 1, "firmware": "0.5.0-dev", "device": "lgal-doser-e4f5", "exported_utc": int(_t.time()),
+    import sys_mock
+    doc = {"format": "lgal-doser-backup", "version": 1, "firmware": "0.5.0-dev", "device": sys_mock.hostname(), "exported_utc": int(_t.time()),
            "system": {"language": "de", "timezone": "CET-1CEST,M3.5.0,M10.5.0/3", "ntp_server": "pool.ntp.org",
-                      "led_night": {"enabled": False, "start": "22:00", "end": "07:00", "brightness": 0}},
+                      "led_night": {"enabled": False, "start": "22:00", "end": "07:00", "brightness": 0},
+                      "name": sys_mock.DEVICE["name"], "own_hostname": sys_mock.DEVICE["own"]},
            "network": {"mode": "auto", "lan": {"dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""},
                        "wlan": {"ssid": "HomeNet", "password_set": True, "dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""}},
            "pumps": pumps, "locks": {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]},

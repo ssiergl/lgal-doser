@@ -50,6 +50,9 @@ std::string s_base;  // base topic
 std::string s_lwt;   // "<base>/status"
 std::string s_run_base;
 mqttcfg::Config s_run_cfg;  // password wiped
+// Previous base topic after a change: its retained messages are deleted on
+// connect (subscribed with "#", answered with empty retained messages)
+std::string s_clean;
 ConnectHandler s_on_connect = nullptr;
 DataHandler s_on_data = nullptr;
 
@@ -63,6 +66,15 @@ struct Guard {
 };
 
 int64_t now_ms() { return esp_timer_get_time() / 1000; }
+
+std::string default_base(const std::string& host) {
+    return std::string(mqttcfg::kDefaultPrefix) + CONFIG_LGAL_DEVICE_TYPE + "/" + host;
+}
+
+bool under(const char* topic, int len, const std::string& base) {
+    return len > static_cast<int>(base.size()) && std::strncmp(topic, base.c_str(), base.size()) == 0 &&
+           topic[base.size()] == '/';
+}
 
 // error: nullptr keeps the last error (except when connected or disabled)
 void set_state(State st, const char* error, bool connect = false) {
@@ -107,6 +119,7 @@ void on_event(void*, esp_event_base_t, int32_t id, void* data) {
             set_state(State::Connected, nullptr, true);
             ESP_LOGI(TAG, "Connected");
             esp_mqtt_client_publish(ev->client, s_lwt.c_str(), "online", 6, 1, 1);
+            if (!s_clean.empty()) esp_mqtt_client_subscribe(ev->client, (s_clean + "/#").c_str(), 1);
             Session s(ev->client);
             if (s_on_connect) s_on_connect(s);
             break;
@@ -123,7 +136,15 @@ void on_event(void*, esp_event_base_t, int32_t id, void* data) {
             break;
         case MQTT_EVENT_DATA:
             // commands are short: fragmented messages are ignored
-            if (!ev->topic || ev->current_data_offset != 0 || ev->data_len != ev->total_data_len) break;
+            if (!ev->topic) break;
+            if (!s_clean.empty() && under(ev->topic, ev->topic_len, s_clean)) {
+                // left over below the old base topic: delete (an empty retained message)
+                if (ev->retain && ev->current_data_offset == 0 && ev->total_data_len > 0 &&
+                    !under(ev->topic, ev->topic_len, s_run_base))
+                    esp_mqtt_client_publish(ev->client, std::string(ev->topic, ev->topic_len).c_str(), "", 0, 1, 1);
+                break;
+            }
+            if (ev->current_data_offset != 0 || ev->data_len != ev->total_data_len) break;
             if (s_on_data) s_on_data(ev->topic, ev->topic_len, ev->data, ev->data_len);
             break;
         default: break;
@@ -208,8 +229,12 @@ void start() {
         Guard g(s_mx);
         c = s_cfg;
         s_base = c.base_topic[0] ? std::string(c.base_topic)
-                                 : std::string(mqttcfg::kDefaultPrefix) + CONFIG_LGAL_DEVICE_TYPE + "/" + device::hostname();
+                                 : default_base(device::default_hostname());
         s_lwt = s_base + "/status";
+        // a changed base topic: clean up below the old one (not when the new
+        // one lies below it)
+        if (!s_run_base.empty() && s_run_base != s_base && s_base.rfind(s_run_base + "/", 0) != 0) s_clean = s_run_base;
+        else if (s_run_base != s_base) s_clean.clear();
         s_run_base = s_base;
         s_run_cfg = c;
         std::memset(s_run_cfg.password, 0, sizeof(s_run_cfg.password));
@@ -230,7 +255,7 @@ void start() {
         }
         mc.broker.verification.certificate = s_ca;  // kept by reference
     }
-    mc.credentials.client_id = device::hostname().c_str();
+    mc.credentials.client_id = device::default_hostname().c_str();
     if (c.username[0]) {
         mc.credentials.username = c.username;
         if (c.password[0]) mc.credentials.authentication.password = c.password;
@@ -303,7 +328,10 @@ esp_err_t send_doc(httpd_req_t* req) {
     j.obj().obj("settings");
     mqttcfg::write(j, c);
     j.end();
-    j.kv("base_topic", base_topic()).kv("port", static_cast<int>(mqttcfg::port(c)));
+    // name_topic: default base topic with the current host name (offered as
+    // "move to the device name" while it differs)
+    j.kv("base_topic", base_topic()).kv("name_topic", default_base(device::hostname()));
+    j.kv("port", static_cast<int>(mqttcfg::port(c)));
     j.obj("status").kv("state", state_name(st.state));
     if (st.error) j.kv("error", st.error);
     else j.null("error");

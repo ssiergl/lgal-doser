@@ -29,6 +29,9 @@ static void sample(bk::Data* d) {
     std::strcpy(d->timezone, "CET-1CEST,M3.5.0,M10.5.0/3");
     std::strcpy(d->ntp_server, "pool.ntp.org");
     d->led = {true, 22 * 60 + 30, 6 * 60, 10};
+    d->names = true;
+    std::strcpy(d->name, "Riffbecken");
+    std::strcpy(d->own_hostname, "riff-1");
     d->net.mode = lgal::netcfg::Mode::Auto;
     d->net.lan.dhcp = false;
     lgal::netcfg::parse_ipv4("192.168.1.50", &d->net.lan.ip);
@@ -122,6 +125,7 @@ static void test_round_trip() {
     CHECK(out.parts == bk::kAllParts);
     CHECK(!std::strcmp(out.language, "de") && !std::strcmp(out.timezone, d.timezone) && !std::strcmp(out.ntp_server, "pool.ntp.org"));
     CHECK(out.led.enabled && out.led.start_min == 22 * 60 + 30 && out.led.end_min == 360 && out.led.brightness == 10);
+    CHECK(out.names && !std::strcmp(out.name, "Riffbecken") && !std::strcmp(out.own_hostname, "riff-1"));
     CHECK(!out.net.lan.dhcp && out.net.lan.ip == d.net.lan.ip && out.net.lan.gateway == d.net.lan.gateway);
     CHECK(!std::strcmp(out.net.ssid, "Reef") && !std::strcmp(out.net.password, "test-wlan-pw") && out.wlan_password);
     CHECK(out.mqtt.enabled && !std::strcmp(out.mqtt.host, "broker.local") && out.mqtt.tls == lgal::mqttcfg::Tls::Custom);
@@ -249,6 +253,19 @@ static void expect_error(const char* from, const char* to, const char* code, con
     CHECK(match);
 }
 
+// Backups from before the device name: the name stays as it is
+static void test_without_names() {
+    static bk::Data d, base, out;
+    sample(&d);
+    std::string doc = doc_of(d);
+    replace(&doc, ",\"name\":\"Riffbecken\",\"own_hostname\":\"riff-1\"", "");
+    CHECK(doc.find("Riffbecken") == std::string::npos);
+    lgal::JsonReader r;
+    bk::Error err;
+    CHECK(parse_str(doc, base, &out, &err, &r));
+    CHECK(!out.names);
+}
+
 static void test_errors() {
     std::printf("Validation errors\n");
     expect_error("\"format\":\"lgal-doser-backup\"", "\"format\":\"other\"", "invalid_format", "format");
@@ -257,6 +274,9 @@ static void test_errors() {
     expect_error("\"brightness\":10", "\"brightness\":101", "invalid_param", "system.led_night.brightness");
     expect_error("\"start\":\"22:30\"", "\"start\":\"25:00\"", "invalid_param", "system.led_night.start");
     expect_error("\"language\":\"de\"", "\"language\":\"\"", "invalid_param", "system.language");
+    expect_error("\"own_hostname\":\"riff-1\"", "\"own_hostname\":\"Riff_1\"", "invalid_param", "system.own_hostname");
+    expect_error("\"name\":\"Riffbecken\"", "\"name\":\"Riff\\tbecken\"", "invalid_param", "system.name");
+    expect_error("\"name\":\"Riffbecken\"", "\"name\":\"   \"", "invalid_param", "system.name");
     expect_error("\"gateway\":\"192.168.1.1\"", "\"gateway\":\"10.0.0.1\"", "invalid_param", nullptr);
     expect_error("\"wlan_password\":\"test-wlan-pw\"", "\"wlan_password\":\"short\"", "invalid_param", "wlan.password");
     expect_error("\"tier\":2", "\"tier\":3", "invalid_param", "pumps[0].tier");
@@ -285,6 +305,7 @@ int main() {
     test_round_trip();
     test_parts_and_secrets();
     test_errors();
+    test_without_names();
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

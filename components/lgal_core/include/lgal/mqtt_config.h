@@ -9,7 +9,7 @@
 // PUT accepts partial documents: missing members keep their value. The
 // password is never sent back ("password_set" instead); an omitted password
 // keeps the stored one, "" clears it. port 0 = default (1883, TLS 8883),
-// base_topic "" = kDefaultPrefix + device type + "/" + host name of the device
+// base_topic "" = kDefaultPrefix + device type + "/" + factory host name of the device
 // (spec: lg-aquatic-life/<device-type>/<device-id>/...).
 
 #include <cstdint>
