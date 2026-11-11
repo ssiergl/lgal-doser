@@ -119,6 +119,7 @@ void write_pump(Json& j, int i) {
         .kv("calibrated_at", set.calibrated_at)
         .kv("remind_months", static_cast<int>(set.recal_months))
         .kv("due", dose::calibration_due(set, now_utc()))
+        .kv("tube_changed", (s.state.flags & dose::kTubeChanged) != 0)  // calibrate again
         .kv("target_ml", ml(eng.calib_target_ul), 1)  // amount of a calibration run without ml=
         .kv("pending", s.calib_pending);
     if (s.calib_pending) j.kv("pending_steps", s.calib_steps).kv("pending_target_ml", ml(s.calib_target_ul), 3);

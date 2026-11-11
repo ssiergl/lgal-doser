@@ -37,8 +37,9 @@ add({
     'cal.apply': 'Apply', 'cal.discard': 'Discard', 'cal.done': 'New calibration saved',
     'use.title': 'Consumption', 'use.limit': 'Daily limit',
     'use.last': 'Last run', 'use.total': 'Total dosed', 'use.tube': 'Tube', 'use.tube.v': '{h} of {lim} h',
-    'use.tube.reset': 'Tube replaced', 'use.tube.ask': 'Reset the tube counter of pump {n}?', 'use.tube.ok': 'Tube counter reset',
-    'use.none': '–', 'use.off': 'off', 'use.history': 'History',
+    'use.tube.reset': 'Tube replaced', 'use.tube.ask': 'Reset the tube counter of pump {n}? A new tube conveys a little differently: calibrate the pump again afterwards.',
+    'use.tube.ok': 'Tube counter reset – please calibrate again',
+    'use.none': '–', 'use.off': 'off',
     'res.success': 'done', 'res.aborted': 'stopped', 'res.heartbeat_lost': 'stopped (connection)',
     'res.max_duration': 'stopped (max. time)', 'res.fault': 'driver fault', 'res.locked': 'locked (update)',
     'act.dosing': 'Dose', 'act.priming': 'Filling', 'act.calibrating': 'Calibration',
@@ -94,8 +95,9 @@ add({
     'cal.apply': 'Übernehmen', 'cal.discard': 'Verwerfen', 'cal.done': 'Neue Kalibrierung gespeichert',
     'use.title': 'Verbrauch', 'use.limit': 'Tageslimit',
     'use.last': 'Letzter Lauf', 'use.total': 'Insgesamt dosiert', 'use.tube': 'Schlauch', 'use.tube.v': '{h} von {lim} h',
-    'use.tube.reset': 'Schlauch getauscht', 'use.tube.ask': 'Schlauchzähler von Pumpe {n} zurücksetzen?', 'use.tube.ok': 'Schlauchzähler zurückgesetzt',
-    'use.none': '–', 'use.off': 'aus', 'use.history': 'Verlauf',
+    'use.tube.reset': 'Schlauch getauscht', 'use.tube.ask': 'Schlauchzähler von Pumpe {n} zurücksetzen? Ein neuer Schlauch fördert etwas anders: die Pumpe danach neu kalibrieren.',
+    'use.tube.ok': 'Schlauchzähler zurückgesetzt – bitte neu kalibrieren',
+    'use.none': '–', 'use.off': 'aus',
     'res.success': 'fertig', 'res.aborted': 'gestoppt', 'res.heartbeat_lost': 'gestoppt (Verbindung)',
     'res.max_duration': 'gestoppt (max. Dauer)', 'res.fault': 'Treiberfehler', 'res.locked': 'gesperrt (Update)',
     'act.dosing': 'Dosis', 'act.priming': 'Füllen', 'act.calibrating': 'Kalibrierung',
@@ -359,7 +361,7 @@ function CalibCard({ p, pro }) {
   </section>`;
 }
 
-function UsageCard({ p }) {
+function UsageCard({ p, pro }) {
   const msg = useMsg();
   const d = p.daily, tb = p.tube, last = p.last || {};
   const resetTube = async () => {
@@ -377,8 +379,7 @@ function UsageCard({ p }) {
       <dt>${t('use.tube')}</dt><dd class="num">${t('use.tube.v', { h: num(tb.hours, 1), lim: tb.limit_h })}
         <div class="bar"><i style=${{ width: Math.min(100, tb.percent) + '%', background: tb.percent >= 100 ? 'var(--err)' : undefined }}></i></div></dd>
     </dl>
-    <div class="row"><button class="sec" onClick=${resetTube}>${t('use.tube.reset')}</button>
-      <a class="btn sec" href=${'#/history/' + p.pump}>${t('use.history')}</a></div>
+    ${pro && html`<div class="row"><button class="sec" onClick=${resetTube}>${t('use.tube.reset')}</button></div>`}
     ${msg.node}
   </section>`;
 }
@@ -555,7 +556,7 @@ export function PumpView({ pump }) {
         <${PumpAlerts} p=${p} sp=${sp}/>
         <${ScheduleCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
         <${BoostCard} p=${p} sp=${sp} nowLocal=${nowLocal}/>
-        <${UsageCard} p=${p}/>
+        <${UsageCard} p=${p} pro=${pro}/>
       </div>
       <div class="col">
         <${DoseCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>

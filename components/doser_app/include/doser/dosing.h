@@ -87,7 +87,8 @@ sched::RunParams run_params(int pump);
 const char* set_engineering(const dose::Engineering& e);
 // Container: set remaining amount (refill), capacity (-1 = unchanged)
 const char* set_container(int pump, int64_t remaining_ul, int64_t capacity_ul);
-// Tube counter: reset or set to hours
+// Tube counter: reset (0 = new tube, the pump has to be calibrated again) or
+// set to hours
 const char* set_tube_hours(int pump, uint32_t hours);
 
 dose::Engineering engineering();

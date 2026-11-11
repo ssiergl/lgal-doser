@@ -108,13 +108,18 @@ uint32_t window_start_hour(LimitMode m, int64_t now_utc, int64_t local_midnight_
 struct PumpState {
     int32_t remaining_ul;    // remaining amount in container (negative = overdue)
     uint16_t retracted_mrev; // executed retraction [1/1000 rev], compensate before the next run
-    uint8_t reserved[2];
+    uint8_t flags;          // kTubeChanged (older records: 0)
+    uint8_t reserved;
     uint64_t tube_ms;       // tube runtime
     uint64_t total_ul;      // total dosed (statistics)
     Ledger ledger;
     uint32_t last_end;      // UTC end of the last job (lock times between pumps), 0 = unknown
 };
 static_assert(sizeof(PumpState) == 136);
+
+// The tube counter was reset (new tube) after the last calibration: the
+// pump has to be calibrated again; a calibration clears it.
+constexpr uint8_t kTubeChanged = 1;
 
 // Check before starting a dose. nullptr = allowed, otherwise error code:
 // "pump_disabled", "dose_too_small", "dose_too_large", "daily_limit"
