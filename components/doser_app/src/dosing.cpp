@@ -500,8 +500,9 @@ const char* calibrate_apply(int pump, uint32_t measured_ul) {
     p.calib_pending = false;
     if (dosing_store::save_settings(pump, p.set) != ESP_OK) return "storage_error";
     // The collected amount is missing from the container
-    if (p.set.capacity_ul) {
-        p.st.remaining_ul = drained(p.st.remaining_ul, measured_ul);
+    if (p.set.capacity_ul) p.st.remaining_ul = drained(p.st.remaining_ul, measured_ul);
+    if (p.set.capacity_ul || (p.st.flags & dose::kTubeChanged)) {
+        p.st.flags &= static_cast<uint8_t>(~dose::kTubeChanged);
         dosing_store::save_state(pump, p.st);
     }
     log_setting(history::Kind::Calibration, pump, "set", p.calib_target, measured_ul,
@@ -595,6 +596,7 @@ const char* set_tube_hours(int pump, uint32_t hours) {
     if (!valid_pump(pump) || hours > 100000) return "invalid_param";
     Guard g;
     s_p[pump].st.tube_ms = uint64_t(hours) * 3600000ULL;
+    if (hours == 0) s_p[pump].st.flags |= dose::kTubeChanged;
     dosing_store::save_state(pump, s_p[pump].st);
     log_setting(history::Kind::Tube, pump, "set", 0, 0, static_cast<int32_t>(hours));
     return nullptr;

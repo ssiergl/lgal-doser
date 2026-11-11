@@ -29,7 +29,7 @@ P[2]["last"] = {"result": "success", "activity": "dosing", "target_ml": 2.0, "do
 for i, p in enumerate(P):
     p.update(mode="auto" if i != 3 else "disabled", tier=1, rset="global" if i == 0 else "off", rrev=0.25, limit=[80.0, 0, 20.0, 0, 5.0][i],
              warn=0, low=0, mlrev=0.37 if i != 3 else 0.0, calat=int(time.time()) - 86400 * (100 if i == 2 else 20) if i != 3 else 0, recal=3,
-             pending=False, ptarget=0.0, target=0.0, tube=12.4, total=345.678, kind="")
+             pending=False, ptarget=0.0, target=0.0, tube=12.4, newtube=False, total=345.678, kind="")
 GRID = 5
 WDN = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 D = {"mode": "daily"}
@@ -249,7 +249,7 @@ def full(i):
     d = {"pump": n, "name": NAMES[i], "mode": p["mode"], "direction": "ccw" if eng_mock.CFG[i]["invert"] else "cw", "activity": p["activity"],
          "phase": "main" if p["activity"] != "idle" else "none", "last": dict(p["last"]),
          "calibration": {"calibrated": p["mlrev"] > 0, "ml_per_rev": p["mlrev"] or 0.37, "steps_per_ml": 3200 / (p["mlrev"] or 0.37),
-                         "calibrated_at": p["calat"], "remind_months": p["recal"],
+                         "calibrated_at": p["calat"], "remind_months": p["recal"], "tube_changed": p["newtube"],
                          "due": bool(p["mlrev"] and p["recal"] and p["calat"] and time.time() - p["calat"] >= p["recal"] * 2629746),
                          "target_ml": ENG["calib_ml"], "pending": p["pending"],
                          **({"pending_steps": int(p["ptarget"] / 0.37 * 3200), "pending_target_ml": p["ptarget"]} if p["pending"] else {})},
@@ -315,7 +315,7 @@ def pumps_post(h, path, q):
                 if not p["pending"]: return err(h, "no_calibration_run", status=409)
                 m = num("measured_ml")
                 if not (0.5 * p["ptarget"] <= m <= 2 * p["ptarget"]): return err(h, "measured_out_of_range")
-                p["mlrev"] = round(0.37 * m / p["ptarget"], 4); p["calat"] = int(time.time()); p["pending"] = False
+                p["mlrev"] = round(0.37 * m / p["ptarget"], 4); p["calat"] = int(time.time()); p["pending"] = False; p["newtube"] = False
                 return h.send(200, {"status": "ok"})
             if a == "cancel": p["pending"] = False; return h.send(200, {"status": "ok"})
             return err(h, "invalid_param", "action")
@@ -351,7 +351,8 @@ def pumps_post(h, path, q):
                 CAP[i] = num("capacity_ml"); p["remaining"] = num("remaining_ml") if "remaining_ml" in q else CAP[i]
             elif "remaining_ml" in q: p["remaining"] = min(CAP[i], num("remaining_ml"))
             return h.send(200, {"status": "ok"})
-        if path == "/api/v1/pumps/tube": p["tube"] = num("hours"); return h.send(200, {"status": "ok"})
+        if path == "/api/v1/pumps/tube":
+            p["tube"] = num("hours"); p["newtube"] = p["newtube"] or p["tube"] == 0; return h.send(200, {"status": "ok"})
     return err(h, "not_found", status=404)
 
 def frame(text):
