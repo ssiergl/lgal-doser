@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, ApiError } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
-import { usePrefs } from '../lib/prefs.js';
+import { hourCycle, usePrefs } from '../lib/prefs.js';
 import { reloadInfo, useStore } from '../lib/store.js';
 import { ask, Toggle, useMsg } from '../lib/ui.js';
 
@@ -267,7 +267,7 @@ function ReleaseCard({ rel, setRel, busyPumps }) {
   };
   const auto = on => api('PUT', '/api/v1/ota/settings', { auto_check: on })
     .then(j => setRel({ ...rel, auto_check: j.auto_check })).catch(e => msg.err(e));
-  const at = rel.checked_at ? new Date(rel.checked_at * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short' }) : null;
+  const at = rel.checked_at ? new Date(rel.checked_at * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short', ...hourCycle() }) : null;
   const busy = dl.busy || rel.checking;
   return html`<section class="card">
     <div class="row between"><h2>${t('mt.rel')}</h2>

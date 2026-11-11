@@ -1,6 +1,7 @@
 // Shared pump helpers: names, colours, state, warnings, the container graphic.
 import { html } from './html.js';
 import { add, getLang, num, t } from './i18n.js';
+import { hm as clock } from './prefs.js';
 
 add({
   en: {
@@ -68,12 +69,13 @@ export function alerts(p, sp) {
   return out;
 }
 
-// Device-local "YYYY-MM-DD HH:MM" relative to now_local -> "14:30", "tomorrow 08:00", "12.11. 08:00"
 // "2026-11-12 08:00" -> "08:00" today, "tomorrow 08:00", "Wed 08:00" within
-// a week, otherwise "19.11. 08:00" (calendar dates, no time zone shift)
+// a week, otherwise "19.11. 08:00" (calendar dates, no time zone shift;
+// times in the chosen clock)
 export function whenLocal(local, nowLocal) {
   if (!local) return '–';
-  const [d, hm] = local.split(' ');
+  const [d, time] = local.split(' ');
+  const hm = clock(time);
   const today = nowLocal ? nowLocal.split(' ')[0] : '';
   if (d === today) return hm;
   if (today) {

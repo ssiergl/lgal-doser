@@ -2,7 +2,7 @@
 // network, MQTT, API keys (pro) and device pages.
 import { html } from '../lib/html.js';
 import { add, languages, setLang, t, useLang } from '../lib/i18n.js';
-import { setMode, setTheme, usePrefs } from '../lib/prefs.js';
+import { setClock, setMode, setTheme, usePrefs } from '../lib/prefs.js';
 import { AccountCard, ApiCard } from './account.js';
 import { LedCard } from './led.js';
 import { LocksCard } from './locks.js';
@@ -12,13 +12,13 @@ import { TimeCard } from './time.js';
 
 add({
   en: {
-    'set.title': 'Settings', 'set.look': 'Appearance', 'set.lang': 'Language', 'set.theme': 'Theme',
+    'set.title': 'Settings', 'set.look': 'Appearance', 'set.lang': 'Language', 'set.theme': 'Theme', 'set.clock': 'Time format', 'clock.24': '24 hours', 'clock.12': '12 hours (AM/PM)',
     'theme.auto': 'Like the system', 'theme.dark': 'Dark', 'theme.light': 'Light',
     'set.mode': 'View', 'set.mode.hint': 'Simple shows what daily use needs. Pro adds detailed schedules, pump fine-tuning, rules between pumps and network options. Settings made in Pro stay active in Simple. Stored in this browser.',
     'set.device': 'Device', 'set.setup': 'Setup wizard', 'set.maint': 'Maintenance and firmware update',
   },
   de: {
-    'set.title': 'Einstellungen', 'set.look': 'Darstellung', 'set.lang': 'Sprache', 'set.theme': 'Farbschema',
+    'set.title': 'Einstellungen', 'set.look': 'Darstellung', 'set.lang': 'Sprache', 'set.theme': 'Farbschema', 'set.clock': 'Zeitformat', 'clock.24': '24 Stunden', 'clock.12': '12 Stunden (AM/PM)',
     'theme.auto': 'Wie das System', 'theme.dark': 'Dunkel', 'theme.light': 'Hell',
     'set.mode': 'Ansicht', 'set.mode.hint': 'Einfach zeigt, was der Alltag braucht. Profi ergänzt detaillierte Zeitpläne, Pumpen-Feintuning, Regeln zwischen Pumpen und Netzwerk-Optionen. In Profi Eingestelltes bleibt in Einfach aktiv. Gespeichert in diesem Browser.',
     'set.device': 'Gerät', 'set.setup': 'Einrichtungsassistent', 'set.maint': 'Wartung und Firmware-Update',
@@ -37,6 +37,8 @@ export function SettingsView() {
         <div class="field"><label>${t('set.lang')}</label>${seg(lang, languages, setLang)}</div>
         <div class="field"><label>${t('set.theme')}</label>
           ${seg(prefs.theme, ['auto', 'dark', 'light'].map(v => [v, t('theme.' + v)]), setTheme)}</div>
+        <div class="field"><label>${t('set.clock')}</label>
+          ${seg(prefs.clock, ['24', '12'].map(v => [v, t('clock.' + v)]), setClock)}</div>
         <div class="field"><label>${t('set.mode')}</label>
           ${seg(prefs.mode, ['beginner', 'pro'].map(v => [v, t('mode.' + v)]), setMode)}
           <p class="mut small">${t('set.mode.hint')}</p></div>

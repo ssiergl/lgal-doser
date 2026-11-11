@@ -5,7 +5,7 @@ import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { load, save } from '../lib/hub.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
-import { usePrefs } from '../lib/prefs.js';
+import { hm, usePrefs } from '../lib/prefs.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
 import { useStore } from '../lib/store.js';
 import { Seg } from '../lib/ui.js';
@@ -268,7 +268,7 @@ function EventsCard({ pump }) {
     ${err && html`<p class="msg err">${errText(err)}</p>`}
     ${!list ? html`<p class="mut">…</p>` : !list.length ? html`<p class="mut">${t('hi.none')}</p>` : html`
       <ul class="hi-list">${list.map(e => html`<li style=${{ '--pc': e.pump ? pumpColor(e.pump) : 'var(--mut)' }}>
-        <span class="hi-t num small mut">${e.local.slice(8, 10)}.${e.local.slice(5, 7)}. ${e.local.slice(11, 16)}</span>
+        <span class="hi-t num small mut">${e.local.slice(8, 10)}.${e.local.slice(5, 7)}. ${hm(e.local.slice(11, 16))}</span>
         <span class="hi-p"><i class="sw"></i>${e.pump ? nameOf(e.pump) : t('hi.device')}</span>
         <span class="hi-k">${t('hk.' + e.kind)}${e.source && e.kind !== 'skip' ? html` <span class="small mut">· ${t('hs.' + e.source)}</span>` : ''}</span>
         <span class="hi-d num">${detail(e)}</span>

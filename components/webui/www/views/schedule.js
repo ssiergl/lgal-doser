@@ -7,7 +7,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
-import { setMode } from '../lib/prefs.js';
+import { hm, hourLabel, setMode } from '../lib/prefs.js';
 import { pumpName } from '../lib/pumps.js';
 import { reloadSched } from '../lib/store.js';
 import { Amount, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
@@ -215,19 +215,19 @@ export function errorText(e, grid, body) {
   const info = e.body && e.body.error;
   if (e.code === 'conflict' && info && info.conflicts) {
     return info.conflicts.map(c => t('sc.cf.' + (c.code === 'collision_lock' ? 'collision_lock' : 'overlap'), {
-      p1: c.first.pump, t1: c.first.time, p2: c.second.pump, t2: c.second.time, g: c.gap_min,
+      p1: c.first.pump, t1: hm(c.first.time), p2: c.second.pump, t2: hm(c.second.time), g: c.gap_min,
       d: c.next_day ? t('sc.cf.next') : '',
     })).join('\n');
   }
   const base = errText({ code: e.code || 'invalid_param', message: e.message, vars: { g: grid } });
   const entry = info && info.entry;  // 1-based, in the sorted order of the body sent
   const time = entry && body && body.times && body.times[entry - 1] && body.times[entry - 1].time;
-  return time ? t('sc.err.entry', { time, e: base }) : base;
+  return time ? t('sc.err.entry', { time: hm(time), e: base }) : base;
 }
 
 const localError = (ex, grid) => {
   const base = t('err.' + ex.err, { g: grid });
-  return ex.entry ? t('sc.err.entry', { time: ex.entry, e: base }) : base;
+  return ex.entry ? t('sc.err.entry', { time: hm(ex.entry), e: base }) : base;
 };
 
 // ---------------------------------------------------------------------------
@@ -236,10 +236,10 @@ const localError = (ex, grid) => {
 function DayBar({ slots, nowMin }) {
   const total = slots.reduce((a, x) => a + x.ul, 0);
   return html`<div class="daybar">
-    <div class="tl-axis">${[0, 6, 12, 18, 24].map(h => html`<span style=${{ left: (h / 24) * 100 + '%' }}>${h}</span>`)}</div>
+    <div class="tl-axis">${[0, 6, 12, 18, 24].map(h => html`<span style=${{ left: (h / 24) * 100 + '%' }}>${hourLabel(h)}</span>`)}</div>
     <div class="tl-track">
       ${nowMin !== null && html`<i class="tl-now" style=${{ left: (nowMin / 1440) * 100 + '%' }}></i>`}
-      ${slots.map(x => html`<i class="tl-dot" title=${hhmm(x.min) + ' · ' + num(x.ul / 1000, 2) + ' ml'}
+      ${slots.map(x => html`<i class="tl-dot" title=${hm(hhmm(x.min)) + ' · ' + num(x.ul / 1000, 2) + ' ml'}
         style=${{ left: (x.min / 1440) * 100 + '%' }}></i>`)}
     </div>
     <span class="small mut">${t('sc.total', { ml: num(total / 1000, 2) })}</span>
@@ -260,7 +260,7 @@ function Preview({ slots, err, grid }) {
   const even = slots.every((s, i) => i === 0 || s.min - slots[i - 1].min === gap);
   return html`<div class="preview small">
     <span class="mut">${t('sc.each', { n: slots.length, ml: num(slots[0].ul / 1000, 2) })}${even && gap ? ' · ' + (gap % 60 ? t('sc.every', { m: gap }) : t('sc.everyh', { h: gap / 60 })) : ''}</span>
-    <div class="times">${slots.map(s => html`<span class="chip">${hhmm(s.min)}</span>`)}</div>
+    <div class="times">${slots.map(s => html`<span class="chip">${hm(hhmm(s.min))}</span>`)}</div>
   </div>`;
 }
 

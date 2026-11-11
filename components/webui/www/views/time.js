@@ -6,6 +6,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, getLang, t } from '../lib/i18n.js';
+import { hm } from '../lib/prefs.js';
 import { reloadAll } from '../lib/store.js';
 import { SaveBar, useMsg } from '../lib/ui.js';
 import { browserZone, ZONES, zoneIndex } from '../lib/zones.js';
@@ -89,6 +90,9 @@ function ManualTime({ T, busy, setBusy, done, msg }) {
 }
 
 // Seconds ago -> "5 minutes ago" in the UI language
+// "2026-11-11 18:26:02 CET" with the time in the chosen clock
+const localText = l => l.replace(/\d{2}:\d{2}(:\d{2})?/, m => hm(m));
+
 function ago(s) {
   const rtf = new Intl.RelativeTimeFormat(getLang(), { numeric: 'auto' });
   if (s < 3600) return rtf.format(-Math.round(s / 60), 'minute');
@@ -145,7 +149,7 @@ export function TimeCard({ pro }) {
   return html`<form class="card" novalidate onSubmit=${submit}>
     ${head}
     <dl class="stats">
-      <dt>${t('tm.now')}</dt><dd>${T.valid ? T.local : html`<span class="warn">${t('tm.invalid')}</span>`}</dd>
+      <dt>${t('tm.now')}</dt><dd>${T.valid ? localText(T.local) : html`<span class="warn">${t('tm.invalid')}</span>`}</dd>
       <dt>${t('tm.src')}</dt><dd>${t('tm.src.' + T.source)}</dd>
       ${pro && html`<dt>${t('tm.last')}</dt><dd>${T.last_ntp_sync > 0 && T.valid ? ago(Math.max(0, T.utc - T.last_ntp_sync)) : t('tm.never')}</dd>`}
     </dl>
