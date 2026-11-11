@@ -190,21 +190,21 @@ static void test_calibration() {
     const int p = 0;
     auto& m = sim::motor[p];
     m.moves.clear();
-    CHECK_STR(dosing::calibrate_apply(p, 18500), "no_calibration_run");
-    CHECK(dosing::calibrate_start(p) == nullptr);  // default 20 ml
+    CHECK_STR(dosing::calibrate_apply(p, 9250), "no_calibration_run");
+    CHECK(dosing::calibrate_start(p) == nullptr);  // default 10 ml
     CHECK(sim::run_until_idle(p));
     auto s = dosing::status(p);
-    CHECK(s.calib_pending && s.calib_steps == steps_for(20000) && s.calib_target_ul == 20000);
+    CHECK(s.calib_pending && s.calib_steps == steps_for(10000) && s.calib_target_ul == 10000);
     // retracted before (test 1) -> compensate first
-    CHECK(m.moves.size() == 3 && m.moves[0] == int32_t(kRetract) && m.moves[1] == int32_t(steps_for(20000)));
+    CHECK(m.moves.size() == 3 && m.moves[0] == int32_t(kRetract) && m.moves[1] == int32_t(steps_for(10000)));
     CHECK_STR(dosing::calibrate_apply(p, 500), "measured_out_of_range");
-    CHECK(dosing::calibrate_apply(p, 18500) == nullptr);
+    CHECK(dosing::calibrate_apply(p, 9250) == nullptr);
     s = dosing::status(p);
     CHECK(!s.calib_pending && std::fabs(s.settings.ul_per_rev - 342.25f) < 0.1f);
     auto* run = sim::last_event(history::Kind::CalibRun, 1);
     auto* cal = sim::last_event(history::Kind::Calibration, 1);
-    CHECK(run && run->target_ul == 20000 && std::strcmp(history::code_str(run->code), "success") == 0);
-    CHECK(cal && cal->target_ul == 20000 && cal->done_ul == 18500 && cal->value >= 342150 && cal->value <= 342350);
+    CHECK(run && run->target_ul == 10000 && std::strcmp(history::code_str(run->code), "success") == 0);
+    CHECK(cal && cal->target_ul == 10000 && cal->done_ul == 9250 && cal->value >= 342150 && cal->value <= 342350);
     // next dose uses the new value
     m.moves.clear();
     CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
@@ -250,7 +250,7 @@ static void test_fault() {
 static void test_engineering() {
     sim::reset();
     auto e = dosing::engineering();
-    CHECK(e.retract_mrev == 250 && e.calib_target_ul == 20000 && e.tier_rpm[0] == 100 && e.tier_rpm[2] == 300);
+    CHECK(e.retract_mrev == 250 && e.calib_target_ul == 10000 && e.tier_rpm[0] == 100 && e.tier_rpm[2] == 300);
     e.retract_mrev = 500;
     e.tier_rpm[1] = 250;
     CHECK(dosing::set_engineering(e) == nullptr);

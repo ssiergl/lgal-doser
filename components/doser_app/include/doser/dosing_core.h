@@ -27,7 +27,7 @@ bool parse_limit_mode(const char* s, LimitMode* out);
 // Global engineering parameters (super admin, functional spec 11.2)
 struct Engineering {
     uint16_t retract_mrev = 250;            // anti-drip retraction [1/1000 rev] for pumps set to "global"
-    uint32_t calib_target_ul = 20000;       // calibration target amount (default 20 ml)
+    uint32_t calib_target_ul = 10000;       // calibration target amount (default 10 ml)
     uint16_t tier_rpm[kTiers] = {100, 200, 300};  // slow / normal / fast
     uint16_t prime_max_s = 60;              // priming emergency timeout
     uint16_t prime_heartbeat_ms = 500;      // dead-man timeout while priming
