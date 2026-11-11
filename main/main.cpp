@@ -76,7 +76,7 @@ doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
         const auto d = doser::dosing::status(i);
         const auto s = doser::scheduler::status(i);
         auto& a = in.pumps[i];
-        a.active = d.settings.mode != doser::dose::Mode::Disabled;
+        a.active = doser::hwconfig::fitted(i) && d.settings.mode != doser::dose::Mode::Disabled;
         a.fault = d.last_result && std::strcmp(d.last_result, "fault") == 0;
         a.limit_hit_today = today >= 0 && s.last_skip_reason && std::strcmp(s.last_skip_reason, "daily_limit") == 0 &&
                             doser::sched::day_of(doser::scheduler::to_local(s.last_skip_at)) == today;
@@ -160,7 +160,7 @@ void init_hardware() {
     doser::rtc::init();
     doser::eeprom::init();
 
-    const esp_err_t err = doser::motion::init(pumps);
+    const esp_err_t err = doser::motion::init(pumps, doser::hwconfig::fitted_mask());
     if (err != ESP_OK) ESP_LOGE(TAG, "Pump hardware not ready: %s", esp_err_to_name(err));
 
     // Dosing engine: load settings (NVS) and run state (EEPROM)

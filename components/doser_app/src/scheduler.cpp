@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "doser/history.h"
+#include "doser/hwconfig.h"
 #include "doser/schedule_store.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -290,7 +291,8 @@ void tick() {
     Guard g;
     refresh_zone();
     if (!s_ready) init_cursors(ts.utc);
-    for (int p = 0; p < kN; ++p) process(p, ts.utc);
+    for (int p = 0; p < kN; ++p)
+        if (hwconfig::fitted(p)) process(p, ts.utc);
 }
 
 void task(void*) {
@@ -454,7 +456,7 @@ const char* boost_start(int pump, uint32_t total_ul, uint16_t days, uint16_t dos
     PumpRt& r = s_rt[pump];
     refresh_zone();
     // manual-only and disabled pumps never run the plan
-    const bool aut = dosing::settings(pump).mode == dose::Mode::Auto;
+    const bool aut = hwconfig::fitted(pump) && dosing::settings(pump).mode == dose::Mode::Auto;
     const sched::Cursor from = open_from(r, ts.utc);
     const int n = !aut ? 0 : days ? slots_until(r, from, ts.utc + int64_t(days) * 86400) : has_slot(r, from) ? doses : 0;
     if (n <= 0) return "no_slots";
@@ -516,6 +518,8 @@ Status status(int pump) {
     Status s{};
     if (!valid_pump(pump)) return s;
     const auto set = dosing::settings(pump);
+    // a pump that is not fitted never runs the plan, like a disabled one
+    const bool aut = hwconfig::fitted(pump) && set.mode == dose::Mode::Auto;
     const int32_t remaining_ul = dosing::status(pump).state.remaining_ul;
     const auto ts = lgal::timesync::status();
     Guard g;
@@ -541,14 +545,14 @@ Status status(int pump) {
     sched::Due d;
     const sched::Cursor from = open_from(r, ts.utc);
     // manual-only and disabled pumps never run the plan: no next dose
-    if (set.mode == dose::Mode::Auto && sched::next_due(r.sch, s_zone, s_cfg.grid_min, from, ts.utc + 8 * 86400, &d)) {
+    if (aut && sched::next_due(r.sch, s_zone, s_cfg.grid_min, from, ts.utc + 8 * 86400, &d)) {
         s.has_next = true;
         s.next_utc = d.utc;
         s.next_ul = d.ul;
         s.next_boost_ul = d.utc <= sched::boost_end(r.run.boost) ? sched::boost_share(r.run.boost) : 0;
     }
     if (r.run.boost.remaining_ul) s.boost_until = boost_until(r, ts.utc);
-    if (set.mode == dose::Mode::Auto) {
+    if (aut) {
         s.planned_today_ul = sched::day_total(r.sch, day);
         s.boost_today_ul = boost_today(r, day, s.boost_until);
         if (set.capacity_ul)

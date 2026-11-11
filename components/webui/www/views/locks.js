@@ -6,7 +6,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, t } from '../lib/i18n.js';
-import { pumpColor, pumpName } from '../lib/pumps.js';
+import { pumpColor, pumpName, fittedOf } from '../lib/pumps.js';
 import { reloadSched, useStore } from '../lib/store.js';
 import { Amount, Seg, useMsg } from '../lib/ui.js';
 import { errorText } from './schedule.js';
@@ -77,13 +77,15 @@ export function LocksCard() {
   if (!st.pumps || !saved) return html`<section class="card">${head}<p class="mut">…</p></section>`;
   if (saved.error) return html`<section class="card">${head}<p class="msg err">${errText(saved.error)}</p></section>`;
 
+  const fit = fittedOf(st.pumps);
   const set = patch => setDraft(prev => ({ ...prev, ...patch }));
   const setRule = (i, patch) => setDraft(prev => ({ ...prev, rules: prev.rules.map((r, k) => (k === i ? { ...r, ...patch } : r)) }));
   const addRule = () => {
     // first pair without a rule
     const used = new Set(d.rules.map(r => Math.min(r.a, r.b) + '-' + Math.max(r.a, r.b)));
     const pairs = [];
-    for (let x = 1; x <= 5; ++x) for (let y = x + 1; y <= 5; ++y) pairs.push([x, y]);
+    const ns = fit.map(p => p.pump);
+    ns.forEach((x, i) => ns.slice(i + 1).forEach(y => pairs.push([x, y])));
     const [a, b] = pairs.find(([x, y]) => !used.has(x + '-' + y)) || [1, 2];
     set({ rules: [...d.rules, { a, b, gap: '5' }] });
   };
@@ -106,9 +108,9 @@ export function LocksCard() {
       ${head}
       ${!d.rules.length && html`<p class="small mut">${t('lk.none')}</p>`}
       <div class="lrules">${d.rules.map((r, i) => html`<div class=${'lrow' + (bad && bad.i === i ? ' bad' : '')} key=${i}>
-        <${PumpSelect} value=${r.a} pumps=${st.pumps} onChange=${v => setRule(i, { a: v })}/>
+        <${PumpSelect} value=${r.a} pumps=${fit} onChange=${v => setRule(i, { a: v })}/>
         <span class="mut" aria-hidden="true">↔</span>
-        <${PumpSelect} value=${r.b} pumps=${st.pumps} onChange=${v => setRule(i, { b: v })}/>
+        <${PumpSelect} value=${r.b} pumps=${fit} onChange=${v => setRule(i, { b: v })}/>
         <${Amount} value=${r.gap} onInput=${v => setRule(i, { gap: v })} unit="min"/>
         <button type="button" class="ghost" title=${t('lk.del')} aria-label=${t('lk.del')}
           onClick=${() => set({ rules: d.rules.filter((_, k) => k !== i) })}>✕</button>

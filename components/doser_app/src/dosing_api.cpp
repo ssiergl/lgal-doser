@@ -36,6 +36,7 @@ constexpr ErrInfo kErrors[] = {
     {"no_steps", "400 Bad Request", "Calibration run has no steps"},
     {"pump_busy", "409 Conflict", "Pump is busy"},
     {"pump_disabled", "409 Conflict", "Pump is disabled"},
+    {"pump_not_fitted", "409 Conflict", "Pump is not fitted"},
     {"pump_manual_only", "409 Conflict", "Pump is set to manual only"},
     {"locked", "409 Conflict", "Pumps are locked (update in progress)"},
     {"daily_limit", "409 Conflict", "Daily limit would be exceeded"},
@@ -90,6 +91,7 @@ void write_pump(Json& j, int i) {
 
     j.obj()
         .kv("pump", i + 1)
+        .kv("fitted", hwconfig::fitted(i))
         .kv("name", set.name)
         .kv("mode", dose::mode_str(set.mode))
         .kv("direction", motion::config(i).driver.invert ? "ccw" : "cw")

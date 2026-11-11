@@ -87,6 +87,7 @@ static void sample(bk::Data* d) {
     d->hw[1].driver.invert = true;
     d->hw[1].driver.microsteps = 32;
     d->history_keep_days = 30;
+    d->fitted = 0x0F;  // pump 5 not fitted
 }
 
 static void fake_auth(lgal::Json& j) { j.kv("password", "00").kv("keys", "11"); }
@@ -152,7 +153,8 @@ static void test_round_trip() {
     CHECK(out.pumps[0].recal_months == 3 && out.pumps[1].recal_months == 6 && out.pumps[2].recal_months == 0);
     CHECK(out.hw[1].driver.run_ma == 700 && out.hw[1].driver.hold_ma == 100 && out.hw[1].driver.invert &&
           out.hw[1].driver.microsteps == 32 && out.hw[0].driver.run_ma == 600);
-    CHECK(out.history_keep_days == 30);
+    CHECK(out.history_keep_days == 30 && out.fitted == 0x0F);
+    CHECK(doc.find("\"fitted\":[1,2,3,4]") != std::string::npos);
     // a second write gives the same document
     out.parts = bk::kAllParts;
     CHECK(doc_of(out) == doc);
@@ -162,6 +164,10 @@ static void test_round_trip() {
     CHECK(old.find("keep_days") == std::string::npos);
     static bk::Data out2;
     CHECK(parse_str(old, base, &out2, &err, &r) && out2.history_keep_days == 0);
+    // files from before the channel population: unchanged (0)
+    old = doc;
+    replace(&old, ",\"fitted\":[1,2,3,4]", "");
+    CHECK(parse_str(old, base, &out2, &err, &r) && out2.fitted == 0);
     // files from before the container thresholds: defaults stay
     old = doc;
     for (const char* t : {",\"warn_days\":10,\"low_days\":4", ",\"warn_days\":14,\"low_days\":5"})
@@ -294,6 +300,8 @@ static void test_errors() {
     expect_error("\"microsteps\":32", "\"microsteps\":12", "invalid_param", "engineering.hardware.pumps[1].microsteps");
     expect_error("\"keep_days\":30", "\"keep_days\":61", "invalid_param", "engineering.history.keep_days");
     expect_error("\"keep_days\":30", "\"keep_days\":0", "invalid_param", "engineering.history.keep_days");
+    expect_error("\"fitted\":[1,2,3,4]", "\"fitted\":[1,6]", "invalid_param", "engineering.hardware.fitted");
+    expect_error("\"fitted\":[1,2,3,4]", "\"fitted\":[]", "invalid_param", "engineering.hardware.fitted");
     expect_error("\"host\":\"broker.local\"", "\"host\":\"bro ker\"", "invalid_param", "mqtt.host");
     expect_error("\"base_topic\":\"aq/doser\"", "\"base_topic\":\"aq/#\"", "invalid_param", "mqtt.base_topic");
     expect_error("MIIBtest\\n-----END CERTIFICATE-----", "MIIBtest", "invalid_certificate", "mqtt.ca_pem");

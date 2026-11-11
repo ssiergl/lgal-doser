@@ -52,6 +52,7 @@ void collect(bk::Data* d) {
     d->dosing = dosing::engineering();
     d->scheduler = scheduler::config();
     d->history_keep_days = history::keep_days();
+    d->fitted = hwconfig::stored_fitted_mask();
     d->mqtt = lgal::mqtt::config();
     d->mqtt_ca = lgal::mqtt::ca_pem();
 }
@@ -145,6 +146,9 @@ esp_err_t post_backup(httpd_req_t* req) {
                 return apply_failed(req, bk::kEngineering, e == ESP_ERR_INVALID_STATE ? "pump_busy" : "invalid_param", applied);
             hwconfig::save_pump(i, d->hw[i]);  // also when the driver did not answer
         }
+        // channel population: in effect after the next restart
+        if (d->fitted && hwconfig::save_fitted(d->fitted) != ESP_OK)
+            return apply_failed(req, bk::kEngineering, "storage_error", applied);
         if (d->history_keep_days && history::set_keep_days(d->history_keep_days) != ESP_OK)
             return apply_failed(req, bk::kEngineering, "storage_error", applied);
         applied |= bk::kEngineering;

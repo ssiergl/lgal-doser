@@ -346,7 +346,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/ota/url` | Engineering. `{"url":"https://…"}` → 202 `started`, das Gerät lädt selbst; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |
 | GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api\|mqtt","http","received","total","error"?,"detail"?}` |
 | GET / PUT | `/api/v1/ota/settings` | `{"source","auto_check","allow_http"}`; `auto_check` ab Werk `true`, `allow_http` ab Werk `false`. `source` und `allow_http` ändern nur mit Engineering (`source` gesetzt → sofortige Prüfung) |
-| GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
+| GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen; `fitted` = bestückt |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
 | POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle); verwirft eine vorgemerkte Dosis |
 | POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat (besser per WebSocket) |
@@ -372,7 +372,8 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
 | POST | `/api/v1/engineering/reset?what=network` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s); den Werksreset gibt es nur in der Wartung mit Admin-Passwort |
-| GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik |
+| GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik; Bestückung `fitted` (jetzt) und `fitted_next` (nach dem nächsten Neustart) |
+| POST | `/api/v1/hw/channels?pumps=1,2,3,4` | Bestückung speichern (mindestens eine Pumpe), wirkt nach einem Neustart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |
 | POST | `/api/v1/hw/pump/config?pump=1&run_ma=…` | `run_ma`, `hold_ma`, `microsteps`, `full_steps`, `invert`, `accel`, `vstart` |
@@ -560,7 +561,7 @@ auf eine andere Pumpe (`{"format":"lgal-doser-schedule","version":1,…,"schedul
 
 **Ganzes Gerät** (nur Engineering, Bereich E des Engineering-Menüs): eine Datei mit Gerätename und eigenem Hostname,
 Sprache, Zeitzone, Zeitserver, LED-Nachtmodus, Netzwerk, allen Pumpen-Einstellungen inkl. Kalibrierung, Zeitplänen,
-Sperrzeiten, Servicewerten, Hardware-Parametern (Ströme, Mikroschritte), der Aufbewahrungszeit des Verlaufs und
+Sperrzeiten, Servicewerten, Hardware-Parametern (Ströme, Mikroschritte, Bestückung – diese wirkt nach einem Neustart), der Aufbewahrungszeit des Verlaufs und
 den MQTT-Einstellungen samt CA-Zertifikat.
 Behälterinhalt, Zähler und Verlauf gehören nicht dazu. Beim Export wählbar:
 
@@ -585,7 +586,7 @@ Eingabe.
 
 | Bereich | Inhalt |
 |---|---|
-| A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle 5 Pumpen. |
+| A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle bestückten Pumpen. Bestückung: welche Pumpen eingebaut sind (mindestens eine); eine nicht bestückte Pumpe wird nie angesprochen (keine Treiber-Abfrage, kein Zeitplan, kein Alarm, Dosieren → 409 `pump_not_fitted`) und ist in der Weboberfläche und in Home Assistant ausgeblendet, ihre Einstellungen bleiben erhalten. Wirkt nach einem Neustart (Speichern startet das Gerät neu). |
 | B · Grenzen | Entlüften max. Dauer und Totmann-Timeout, kleinste Einzeldosis, Fenster des Tageslimits, Zeitplan-Raster, max. Verzögerung einer geplanten Dosis. |
 | C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur, Aging-Offset: mit Zeitserver automatischer Abgleich (Messung seit, Abweichung jetzt, letzte Korrektur), ohne Zeitserver Eingabe von Hand, Hinweis bei leerer Pufferbatterie. Verlauf: aufgezeichnete Tage und Größe, verlorene Ereignisse, Aufbewahrungszeit (1–60 Tage). |
 | D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen (den Werksreset gibt es in der Wartung). |

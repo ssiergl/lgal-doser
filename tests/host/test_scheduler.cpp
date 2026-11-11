@@ -368,6 +368,22 @@ static void test_set_all() {
     CHECK(scheduler::schedule(4).kind == before[4].kind);
 }
 
+static void test_not_fitted() {
+    // pump 5 with a plan, then not fitted: no next dose, nothing dosed, no boost
+    CHECK(scheduler::set_schedule(4, spread(480, 1200, 4, 4000)) == nullptr);
+    CHECK(scheduler::status(4).has_next);
+    hwconfig::g_fitted = 0x0F;
+    const uint64_t b = total(4);
+    const auto st = scheduler::status(4);
+    CHECK(!st.has_next && st.planned_today_ul == 0);
+    CHECK_STR(scheduler::boost_start(4, 3000, 3), "no_slots");
+    CHECK_STR(dosing::dose(4, 1000, dosing::Trigger::Manual), "pump_not_fitted");
+    sim::run_until(sim::utc() + 2 * 86400);
+    CHECK(total(4) == b && scheduler::status(4).skipped == st.skipped);
+    hwconfig::g_fitted = 0x1F;
+    CHECK(scheduler::status(4).has_next);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -396,6 +412,8 @@ int main(int argc, char**) {
     test_queue_and_clock_jump();
     std::printf("Scheduler: replace all\n");
     test_set_all();
+    std::printf("Scheduler: pump not fitted\n");
+    test_not_fitted();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

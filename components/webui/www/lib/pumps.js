@@ -97,6 +97,10 @@ export function whenLocal(local, nowLocal) {
   return `${+day}.${+m}. ${hm}`;
 }
 
+// Pumps that are fitted (channel population in the engineering menu); the
+// others are hidden everywhere
+export const fittedOf = pumps => (pumps || []).filter(p => p.fitted !== false);
+
 // Pump switcher in the pump colours; base is the link prefix ('#/pump/')
 export function PumpTabs({ current, pumps, base = '#/pump/' }) {
   return html`<nav class="pump-tabs">${pumps.map(p => html`

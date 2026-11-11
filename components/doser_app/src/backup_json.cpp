@@ -123,7 +123,14 @@ void write_engineering(Json& j, const Data& d) {
         j.kv("full_steps", static_cast<int>(c.full_steps)).kv("accel", static_cast<int64_t>(c.accel));
         j.kv("v_start", static_cast<int64_t>(c.v_start)).end();
     }
-    j.end().end();
+    j.end();
+    if (d.fitted) {
+        j.arr("fitted");
+        for (int i = 0; i < 5; ++i)
+            if (d.fitted >> i & 1) j.v(i + 1);
+        j.end();
+    }
+    j.end();
     if (d.history_keep_days) j.obj("history").kv("keep_days", static_cast<int>(d.history_keep_days)).end();
     j.end();
 }
@@ -326,6 +333,15 @@ bool parse_engineering(const JsonValue& v, Data* d, Error* err) {
         c.v_start = static_cast<uint32_t>(x);
     }
     if (hp[5].valid()) return fail(err, "invalid_param", "engineering.hardware.pumps");
+    d->fitted = 0;
+    const JsonValue fv = v["hardware"]["fitted"];
+    if (fv.valid()) {
+        for (int i = 0; fv[i].valid(); ++i) {
+            if (i >= 5 || !get_int(fv[i], 1, 5, &x)) return fail(err, "invalid_param", "engineering.hardware.fitted");
+            d->fitted |= uint8_t(1u << (x - 1));
+        }
+        if (!d->fitted) return fail(err, "invalid_param", "engineering.hardware.fitted");
+    }
     d->history_keep_days = 0;
     if (v["history"].valid()) {
         if (!get_int(v["history"]["keep_days"], history::kKeepDaysMin, history::kKeepDaysMax, &x))

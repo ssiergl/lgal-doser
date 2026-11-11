@@ -128,7 +128,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // After an update or restart: wait until the device answers again, then reload
 // (sessions live in RAM, so the reload usually ends on the login page)
-async function waitForDevice(msg) {
+export async function waitForDevice(msg) {
   const t0 = Date.now();
   await sleep(4000);
   while (Date.now() - t0 < 120000) {

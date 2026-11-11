@@ -12,6 +12,10 @@ namespace {
 constexpr const char* TAG = "hwconfig";
 constexpr const char* kNs = "hw";
 constexpr uint16_t kVersion = 1;
+uint8_t s_fitted = kAllFitted;         // in effect since startup
+uint8_t s_fitted_saved = kAllFitted;   // in effect after the next restart
+
+bool valid_mask(uint8_t m) { return m != 0 && (m & ~kAllFitted) == 0; }
 
 template <typename T>
 struct Blob {
@@ -53,7 +57,22 @@ void load(motion::PumpConfig (&pumps)[5]) {
         snprintf(key, sizeof(key), "pump%d", i);
         load_blob(h, key, &pumps[i]);
     }
+    uint8_t m = kAllFitted;
+    if (load_blob(h, "fitted", &m) && valid_mask(m)) s_fitted = s_fitted_saved = m;
     nvs_close(h);
+    for (int i = 0; i < 5; ++i)
+        if (!fitted(i)) ESP_LOGI(TAG, "Pump %d: not fitted", i + 1);
+}
+
+uint8_t fitted_mask() { return s_fitted; }
+bool fitted(int pump) { return pump >= 0 && pump < 5 && (s_fitted >> pump & 1); }
+uint8_t stored_fitted_mask() { return s_fitted_saved; }
+
+esp_err_t save_fitted(uint8_t mask) {
+    if (!valid_mask(mask)) return ESP_ERR_INVALID_ARG;
+    const esp_err_t err = save_blob("fitted", mask);
+    if (err == ESP_OK) s_fitted_saved = mask;
+    return err;
 }
 
 esp_err_t save_pump(int pump, const motion::PumpConfig& cfg) {

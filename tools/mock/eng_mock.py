@@ -9,6 +9,13 @@ CFG = [{"run_ma": 650, "hold_ma": 0, "microsteps": 16, "full_steps": 200, "inver
 RAW = [{"running": False, "start": 0.0, "steps": 0, "sps": 1, "pos": 0, "sg_min": 0} for _ in range(5)]
 RTC = {"aging": 0}
 ntp_on = lambda: bool(__import__("sys_mock").TIME["ntp_server"])
+FIT = {"now": [1, 2, 3, 4, 5], "next": [1, 2, 3, 4, 5], "saved": 0.0}  # channel population (hwconfig)
+
+def fitted():
+    """Pumps fitted now: a saved population takes effect with the next restart"""
+    if FIT["saved"] and __import__("sys_mock").SYS["boot"] > FIT["saved"]: FIT["now"] = list(FIT["next"]); FIT["saved"] = 0.0
+    return FIT["now"]
+
 UART = [{"transfers": 18234, "timeouts": 2, "crc_errors": 0, "echo_errors": 0}, {"transfers": 4521, "timeouts": 0, "crc_errors": 0, "echo_errors": 0}]
 
 def _err(h, code="invalid_param", msg="x", status=400):
@@ -27,7 +34,7 @@ def _raw(i):
 def _pump(i):
     c, r = CFG[i], _raw(i)
     spr = _spr(i)
-    return {"pump": i + 1, "stepgen": "rmt" if i < 4 else "mcpwm", "present": i != 3, "configured": i != 3, "version": 0x21,
+    return {"pump": i + 1, "fitted": i + 1 in fitted(), "stepgen": "rmt" if i < 4 else "mcpwm", "present": i != 3, "configured": i != 3, "version": 0x21,
             "running": r["running"], "reverse": r["steps"] < 0, "position": r["pos"], "target": abs(r["steps"]),
             "velocity": r["sps"] if r["running"] else 0, "rpm": round(r["sps"] * 60 / spr, 1) if r["running"] else 0.0,
             "sg_result": random.randint(180, 260) if r["running"] else 0, "sg_min": r["sg_min"], "tstep": 0, "pwm_scale_sum": 40,
@@ -38,7 +45,7 @@ def _pump(i):
             "config": {**c, "steps_per_rev": spr, "max_sps": spr * 10}}
 
 def _status():
-    return {"drivers_enabled": any(r["running"] for r in RAW), "locked": False, "pumps": [_pump(i) for i in range(5)],
+    return {"drivers_enabled": any(r["running"] for r in RAW), "locked": False, "fitted": fitted(), "fitted_next": FIT["next"], "pumps": [_pump(i) for i in range(5)],
             "rtc": {"present": True, "utc": int(time.time()), "time_lost": False, "temp_c": 24.75, "aging": RTC["aging"],
                     "battery_warning": False, "trim": {"automatic": ntp_on(), "measuring": ntp_on(), **({"since": int(time.time()) - 15 * 3600,
                     "start_offset_ms": 4, "offset_ms": 9, "measured_at": int(time.time()) - 600} if ntp_on() else {}),
@@ -109,6 +116,10 @@ def route(h, method, path, q, eng_ok):
         if w == "network": h.send(200, {"status": "ok"}); return True
         _err(h, "invalid_param", "what=network"); return True
     if path == "/api/v1/hw/status" and method == "GET": h.send(200, _status()); return True
+    if path == "/api/v1/hw/channels" and method == "POST":
+        ns = sorted({int(x) for x in q.get("pumps", "").split(",") if x in "12345" and x})
+        if not ns: _err(h, msg="pumps: at least one pump"); return True
+        fitted(); FIT.update(next=ns, saved=time.time()); h.send(200, {"status": "ok", "restart": True}); return True
     def pump():
         try: p = int(q.get("pump", "0"))
         except ValueError: return -1

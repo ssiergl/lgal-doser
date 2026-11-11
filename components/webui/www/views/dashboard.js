@@ -3,7 +3,7 @@
 // (the texts are on the pump page, one tap away).
 import { html } from '../lib/html.js';
 import { add, num, t } from '../lib/i18n.js';
-import { Container, Ic, PumpStats, alerts, pumpColor, pumpName, status } from '../lib/pumps.js';
+import { Container, Ic, PumpStats, alerts, pumpColor, pumpName, status, fittedOf } from '../lib/pumps.js';
 import { useStore } from '../lib/store.js';
 
 add({
@@ -71,5 +71,5 @@ export function Dashboard() {
   const sched = s.sched ? s.sched.pumps : [];
   const nowLocal = s.sched && s.sched.now_local;
   return html`<div class="page-head"><h1>${t('dash.title')}</h1></div>
-    <div class="grid pumps">${s.pumps.map((p, i) => html`<${PumpCard} key=${p.pump} p=${p} sp=${sched[i]} nowLocal=${nowLocal}/>`)}</div>`;
+    <div class="grid pumps">${fittedOf(s.pumps).map(p => html`<${PumpCard} key=${p.pump} p=${p} sp=${sched[p.pump - 1]} nowLocal=${nowLocal}/>`)}</div>`;
 }

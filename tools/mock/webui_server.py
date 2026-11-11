@@ -250,7 +250,7 @@ def live():
 
 def full(i):
     p = P[i]; n = i + 1
-    d = {"pump": n, "name": NAMES[i], "mode": p["mode"], "direction": "ccw" if eng_mock.CFG[i]["invert"] else "cw", "activity": p["activity"],
+    d = {"pump": n, "fitted": n in eng_mock.fitted(), "name": NAMES[i], "mode": p["mode"], "direction": "ccw" if eng_mock.CFG[i]["invert"] else "cw", "activity": p["activity"],
          "phase": "main" if p["activity"] != "idle" else "none", "last": dict(p["last"]),
          "calibration": {"calibrated": p["mlrev"] > 0, "ml_per_rev": p["mlrev"] or 0.37, "steps_per_ml": 3200 / (p["mlrev"] or 0.37),
                          "calibrated_at": p["calat"], "remind_months": p["recal"], "tube_changed": p["newtube"],

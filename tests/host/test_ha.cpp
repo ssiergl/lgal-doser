@@ -79,7 +79,7 @@ static void test_discovery() {
             CHECK(v.size() == 1 && str(v["platform"]) != "<none>");  // removal stub
         }
     }
-    // control off: schedule/amount/dose per pump and stop are stubs; level only on pump 3;
+    // control off: schedule/amount/dose per pump and stop are stubs;
     // no update source: the firmware entity is a stub
     CHECK(full == 5 * 7 + 2);
     const auto total = c["lgal_doser_eeff_p1_total"];
@@ -135,6 +135,24 @@ static void test_discovery() {
     int stubs = 0;
     for (int i = 0; i < c2.size(); ++i) stubs += c2.value_at(i).size() == 1;
     CHECK(stubs == 0);
+
+    // pump 3 not fitted: all its entities become removal stubs
+    d.fitted[2] = false;
+    Doc nf;
+    {
+        lgal::Json j;
+        write_discovery(j, d);
+        nf.text = j.c_str();
+    }
+    CHECK(nf.parse());
+    const auto c3 = nf.r.root()["components"];
+    CHECK(c3.size() == 5 * 10 + 4);
+    CHECK(c3["lgal_doser_eeff_p3_total"].size() == 1 && str(c3["lgal_doser_eeff_p3_total"]["platform"]) == "sensor");
+    CHECK(c3["lgal_doser_eeff_p3_tube"].size() == 1 && c3["lgal_doser_eeff_p3_dose"].size() == 1);
+    CHECK(c3["lgal_doser_eeff_p4_total"].size() > 1);
+    stubs = 0;
+    for (int i = 0; i < c3.size(); ++i) stubs += c3.value_at(i).size() == 1;
+    CHECK(stubs == 10);  // pump 3: all 10
 }
 
 static void test_states() {

@@ -14,10 +14,10 @@ import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { hourCycle } from '../lib/prefs.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
 import { reloadPumps, useStore } from '../lib/store.js';
-import { Seg, Toggle, useMsg } from '../lib/ui.js';
+import { Seg, Toggle, ask, useMsg } from '../lib/ui.js';
 import { BackupSection } from './backup.js';
 import { EngUnlock, lockEngineering } from './engineering.js';
-import { UpdateSourceCard, UrlUpdateCard } from './maintenance.js';
+import { UpdateSourceCard, UrlUpdateCard, waitForDevice } from './maintenance.js';
 
 add({
   en: {
@@ -29,6 +29,9 @@ add({
     'sv.retract': 'Anti-drip retraction ("default")', 'sv.retract.h': '≈ {ml} ml', 'sv.retract.note': 'Anti-drip retraction: each pump uses off (factory setting), this default or its own value (pump settings, pro view).',
     'sv.calib': 'Calibration target', 'sv.tier': 'Speed {n}', 'sv.tier.n': ['slow', 'normal', 'fast'],
     'sv.tier.h': '≈ {ml} ml/min · {sps} steps/s', 'sv.tiers.asc': 'The speeds must not decrease from slow to fast.',
+    'sv.ch': 'Channel population', 'sv.ch.h': 'Which pumps are fitted. A pump that is not fitted is never driven and is hidden everywhere (web interface, Home Assistant). Its settings are kept. Takes effect after a restart.',
+    'sv.ch.ask': 'Save the channel population and restart the device? Running doses are stopped.', 'sv.ch.ok': 'Save and restart',
+    'sv.ch.none': 'At least one pump must be fitted', 'sv.ch.pending': 'Saved – takes effect after the next restart.',
     'sv.drv': 'Stepper driver', 'sv.drv.h': 'TMC2209 via UART. Values are stored and written to the driver at once (only at standstill).',
     'sv.run_ma': 'Run current', 'sv.hold_ma': 'Hold current', 'sv.hold.h': '0 = motor free at standstill',
     'sv.micro': 'Microsteps', 'sv.full': 'Full steps per revolution', 'sv.accel': 'Acceleration', 'sv.vstart': 'Start speed',
@@ -92,6 +95,9 @@ add({
     'sv.retract': 'Anti-Tropf-Rückzug („Standard“)', 'sv.retract.h': '≈ {ml} ml', 'sv.retract.note': 'Anti-Tropf-Rückzug: jede Pumpe nutzt aus (ab Werk), diesen Standard oder einen eigenen Wert (Pumpeneinstellungen, Profi-Ansicht).',
     'sv.calib': 'Kalibrier-Zielmenge', 'sv.tier': 'Stufe {n}', 'sv.tier.n': ['langsam', 'normal', 'schnell'],
     'sv.tier.h': '≈ {ml} ml/min · {sps} Schritte/s', 'sv.tiers.asc': 'Die Stufen dürfen von langsam nach schnell nicht kleiner werden.',
+    'sv.ch': 'Bestückung', 'sv.ch.h': 'Welche Pumpen eingebaut sind. Eine nicht bestückte Pumpe wird nie angesteuert und ist überall ausgeblendet (Weboberfläche, Home Assistant). Ihre Einstellungen bleiben erhalten. Wirkt nach einem Neustart.',
+    'sv.ch.ask': 'Bestückung speichern und Gerät neu starten? Laufende Dosierungen werden beendet.', 'sv.ch.ok': 'Speichern und neu starten',
+    'sv.ch.none': 'Mindestens eine Pumpe muss bestückt sein', 'sv.ch.pending': 'Gespeichert – wirkt nach dem nächsten Neustart.',
     'sv.drv': 'Schrittmotortreiber', 'sv.drv.h': 'TMC2209 per UART. Werte werden gespeichert und sofort in den Treiber geschrieben (nur im Stillstand).',
     'sv.run_ma': 'Laufstrom', 'sv.hold_ma': 'Haltestrom', 'sv.hold.h': '0 = Motor im Stillstand frei',
     'sv.micro': 'Mikroschritte', 'sv.full': 'Vollschritte pro Umdrehung', 'sv.accel': 'Beschleunigung', 'sv.vstart': 'Startgeschwindigkeit',
@@ -264,8 +270,8 @@ const kDrv = [
 const drvOf = c => ({ run_ma: str(c.run_ma), hold_ma: str(c.hold_ma), full_steps: str(c.full_steps),
   accel: str(c.accel), vstart: str(c.v_start), microsteps: c.microsteps, invert: c.invert });
 
-function DriverCard({ hw, pumps, reload }) {
-  const [n, setN] = useState(1);
+function DriverCard({ hw, pumps, fit, reload }) {
+  const [n, setN] = useState(fit[0]);
   const p = hw.pumps[n - 1];
   const [d, setD] = useState(drvOf(p.config));
   const [all, setAll] = useState(false);
@@ -283,7 +289,7 @@ function DriverCard({ hw, pumps, reload }) {
     if (bad) return msg.err(checkText(bad));
     if (parse(d.hold_ma) > parse(d.run_ma)) return msg.err(checkText({ ...kDrv[1], max: parse(d.run_ma) }));
     setBusy(true);
-    const targets = all ? [1, 2, 3, 4, 5] : [n];
+    const targets = all ? fit : [n];
     targets.reduce((pr, k) => pr.then(() => eapi('POST', '/api/v1/hw/pump/config?' + qs({ pump: k, ...q }))), Promise.resolve())
       .then(() => { msg.ok(t('sv.saved')); return reload(); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
@@ -292,7 +298,7 @@ function DriverCard({ hw, pumps, reload }) {
   return html`<form class="card w6" novalidate onSubmit=${submit}>
     <h2>${t('sv.drv')}</h2>
     <p class="small mut">${t('sv.drv.h')}</p>
-    <div class="row eng-pick"><${PumpPick} n=${n} set=${setN} pumps=${pumps}/>
+    <div class="row eng-pick"><${PumpPick} n=${n} set=${setN} pumps=${pumps} fit=${fit}/>
       <span class=${'chip ' + (p.present ? 'ok' : 'err')}>${t(p.present ? 'sv.present' : 'sv.absent')}</span>
       ${p.fault && html`<span class="chip err">${tr('sv.f.' + p.fault, p.fault)}</span>`}
       <span class="small mut">${p.stepgen} · ${t('sv.run_ma')} ${p.run_ma} mA · ${t('sv.hold_ma')} ${p.hold_ma} mA</span>
@@ -314,8 +320,45 @@ function DriverCard({ hw, pumps, reload }) {
   </form>`;
 }
 
-function PumpPick({ n, set, pumps }) {
-  return html`<${Seg} value=${n} onChange=${set} options=${[1, 2, 3, 4, 5].map(k =>
+// ---------------------------------------------------------------------------
+// A: channel population (which pumps are fitted); takes effect after a restart
+
+const kAll = [1, 2, 3, 4, 5];
+
+function ChannelCard({ hw, pumps }) {
+  const saved = hw.fitted_next || kAll, key = saved.join(',');
+  const [d, setD] = useState(saved);
+  const [busy, setBusy] = useState(false);
+  const msg = useMsg();
+  useEffect(() => setD(saved), [key]);
+  const pending = key !== (hw.fitted || kAll).join(',');  // saved, the restart is still due
+  const toggle = (k, on) => setD(o => kAll.filter(x => (x === k ? on : o.includes(x))));
+  const restart = () => api('POST', '/api/v1/system/reboot')
+    .then(() => { msg.ok(t('mt.restarting')); return waitForDevice(msg); })
+    .catch(e => { setBusy(false); msg.err(e); });
+  const submit = async e => {
+    e.preventDefault();
+    if (!d.length) return msg.err(t('sv.ch.none'));
+    if (!(await ask(t('sv.ch.ask'), { ok: t('sv.ch.ok') }))) return;
+    setBusy(true);
+    eapi('POST', '/api/v1/hw/channels?' + qs({ pumps: d.join(',') })).then(restart)
+      .catch(x => { setBusy(false); msg.err(x); });
+  };
+  return html`<form class="card w6" novalidate onSubmit=${submit}>
+    <h2>${t('sv.ch')}</h2>
+    <p class="small mut">${t('sv.ch.h')}</p>
+    <div class="eng-toggles cols">${kAll.map(k => html`<${Toggle} checked=${d.includes(k)} onChange=${v => toggle(k, v)}>
+      <span class="row nowrap"><span class="badge" style=${{ '--pc': pumpColor(k) }}>${k}</span>${pumps && pumps[k - 1] ? pumpName(pumps[k - 1]) : ''}</span><//>`)}</div>
+    ${pending && html`<p class="small warn">${t('sv.ch.pending')}</p>`}
+    <div class="row savebar"><button type="submit" disabled=${busy || d.join(',') === key}>${t('sv.ch.ok')}</button>
+      ${pending && html`<button type="button" class="sec" disabled=${busy} onClick=${() => { setBusy(true); restart(); }}>${t('mt.restart')}</button>`}</div>
+    ${msg.node}
+  </form>`;
+}
+
+// fit: numbers of the fitted pumps (the others are hidden)
+function PumpPick({ n, set, pumps, fit }) {
+  return html`<${Seg} value=${n} onChange=${set} options=${fit.map(k =>
     [k, pumps && pumps[k - 1] ? k + ' ' + pumpName(pumps[k - 1]) : String(k)])}/>`;
 }
 
@@ -434,7 +477,7 @@ function TubeCard({ eng, pumps, reload }) {
     <h2>${t('sv.tube')}</h2>
     <div class="scroll"><table class="eng-table">
       <thead><tr><th></th><th>${t('sv.tube.run')}</th><th>${t('sv.tube.wear')}</th><th>${t('sv.tube.count')}</th><th></th></tr></thead>
-      <tbody>${(pumps || []).map((p, i) => html`<tr>
+      <tbody>${(pumps || []).map((p, i) => p.fitted !== false && html`<tr>
         <td><span class="row nowrap"><span class="badge" style=${{ '--pc': pumpColor(p.pump) }}>${p.pump}</span>${pumpName(p)}</span></td>
         <td class="num">${num(p.tube.hours, 1)} h</td>
         <td class="num">${num(p.tube.percent, 0)} %</td>
@@ -522,8 +565,8 @@ function HistCard({ tel }) {
 // ---------------------------------------------------------------------------
 // D: raw stepper test
 
-function RawCard({ hw, pumps, nominal, reload }) {
-  const [n, setN] = useState(1);
+function RawCard({ hw, pumps, fit, nominal, reload }) {
+  const [n, setN] = useState(fit[0]);
   const [d, setD] = useState({ steps: '3200', sps: '1600', dir: 1, force: false });
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
@@ -546,7 +589,7 @@ function RawCard({ hw, pumps, nominal, reload }) {
   return html`<form class="card w3" novalidate onSubmit=${start}>
     <h2>${t('sv.raw')}</h2>
     <p class="small warn">${t('sv.raw.h')}</p>
-    <${PumpPick} n=${n} set=${setN} pumps=${pumps}/>
+    <${PumpPick} n=${n} set=${setN} pumps=${pumps} fit=${fit}/>
     <div class="field"><span class="lbl">${t('sv.raw.dir')}</span>
       <${Seg} value=${d.dir} onChange=${v => set({ dir: v })} options=${[[1, t('sv.fwd')], [-1, t('sv.rev')]]}/></div>
     <div class="ipgrid">${fields.map(f => html`<${Num} f=${f} d=${d} set=${set} bad=${bad === f}/>`)}</div>
@@ -571,8 +614,8 @@ function RawCard({ hw, pumps, nominal, reload }) {
 const kFlags = ['short', 'overtemp', 'overtemp_warn', 'temp_over_120', 'open_load_a', 'open_load_b', 'standstill', 'stealth'];
 const kBad = ['short', 'overtemp', 'overtemp_warn', 'temp_over_120', 'open_load_a', 'open_load_b'];
 
-function DiagCard({ hw, pumps }) {
-  const [n, setN] = useState(1);
+function DiagCard({ hw, pumps, fit }) {
+  const [n, setN] = useState(fit[0]);
   const [regs, setRegs] = useState(null);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
@@ -587,7 +630,7 @@ function DiagCard({ hw, pumps }) {
   return html`<section class="card w3">
     <h2>${t('sv.diag')}</h2>
     <p class="small mut">${t('sv.diag.h')}</p>
-    <${PumpPick} n=${n} set=${pick} pumps=${pumps}/>
+    <${PumpPick} n=${n} set=${pick} pumps=${pumps} fit=${fit}/>
     <dl class="stats">
       ${kFlags.map(k => html`<dt>${t('sv.fl.' + k)}</dt>
         <dd class=${kBad.includes(k) && f[k] ? 'err' : ''}>${t(f[k] ? 'sv.yes' : 'sv.no')}</dd>`)}
@@ -739,6 +782,7 @@ export function ServiceView() {
   if (!eng || !sch || !hw) return html`${head}${err ? html`<p class="msg err">${errText(err)}</p>` : html`<p class="mut">${t('sv.loading')}</p>`}`;
 
   const pumps = st.pumps;
+  const fit = hw.fitted && hw.fitted.length ? hw.fitted : [1, 2, 3, 4, 5];
   const reloadEng = () => loadEng().catch(() => {});
   const reloadHw = () => loadHw().catch(() => {});
   return html`${head}
@@ -746,7 +790,8 @@ export function ServiceView() {
     <h2 class="eng-sec">${t('sv.a')}</h2>
     <div class="eng-grid">
       <${PhysCard} eng=${eng} spr=${hw.pumps[0].config.steps_per_rev} reload=${reloadEng}/>
-      <${DriverCard} hw=${hw} pumps=${pumps} reload=${reloadHw}/>
+      <${ChannelCard} hw=${hw} pumps=${pumps}/>
+      <${DriverCard} hw=${hw} pumps=${pumps} fit=${fit} reload=${reloadHw}/>
     </div>
     <h2 class="eng-sec">${t('sv.b')}</h2>
     <div class="eng-grid">
@@ -761,8 +806,8 @@ export function ServiceView() {
     </div>
     <h2 class="eng-sec">${t('sv.d')}</h2>
     <div class="eng-grid">
-      <${RawCard} hw=${hw} pumps=${pumps} nominal=${eng.nominal_ml_per_rev} reload=${reloadHw}/>
-      <${DiagCard} hw=${hw} pumps=${pumps}/>
+      <${RawCard} hw=${hw} pumps=${pumps} fit=${fit} nominal=${eng.nominal_ml_per_rev} reload=${reloadHw}/>
+      <${DiagCard} hw=${hw} pumps=${pumps} fit=${fit}/>
       <${TelemetryCard} tel=${tel} hw=${hw} paused=${paused}/>
       <${DangerCard}/>
     </div>
