@@ -181,6 +181,27 @@ select.small { padding: 5px 8px; font-size: 13px; }
 .links a { display: block; padding: 10px 0; text-decoration: none; }
 .links a::after { content: "›"; float: right; color: var(--mut); }
 
+/* on/off switch (Toggle in lib/ui.js) */
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; min-width: 0; }
+.switch.off { cursor: default; }
+.sw-l { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.switch input {
+  appearance: none; -webkit-appearance: none; flex: none; position: relative; margin: 0; cursor: inherit;
+  width: 40px; height: 22px; border-radius: 11px; background: var(--card-2); border: 1px solid var(--line);
+  transition: background .15s ease, border-color .15s ease;
+}
+.switch input::before {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--mut); transition: transform .15s ease, background .15s ease;
+}
+.switch input:checked { background: var(--acc); border-color: var(--acc); }
+.switch input:checked::before { transform: translateX(18px); background: var(--bg); }
+.switch input:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.switch input:disabled { opacity: .5; }
+@media (prefers-reduced-motion: reduce) { .switch input, .switch input::before { transition: none; } }
+.card .switch { margin-top: 14px; font-size: 14px; }
+.field .switch, td .switch { margin-top: 0; }
+
 /* ---- dashboard ---- */
 /* Wide screens: three cards in the first row, the rest share the last row
    in full (5 = 3 + 2, 4 = 2 + 2), so the grid never has a hole. Columns have

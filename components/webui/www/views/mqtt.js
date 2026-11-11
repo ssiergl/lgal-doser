@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, t } from '../lib/i18n.js';
-import { SaveBar, useMsg } from '../lib/ui.js';
+import { SaveBar, Toggle, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -162,7 +162,7 @@ export function MqttCard({ pro }) {
 
   return html`<form class="card mqtt" novalidate onSubmit=${submit}>
     ${head}<${Status} doc=${doc}/>
-    <label class="check"><input type="checkbox" checked=${d.enabled} onChange=${e => set({ enabled: e.target.checked })}/>${t('mq.enabled')}</label>
+    <${Toggle} checked=${d.enabled} onChange=${v => set({ enabled: v })}>${t('mq.enabled')}<//>
     <div class="mq-hp">
       <label class="field">${t('mq.host')}
         <input id="mq-host" class=${cls('host')} maxlength="64" autocomplete="off" spellcheck="false" value=${d.host}
@@ -191,13 +191,13 @@ export function MqttCard({ pro }) {
       <input id="mq-base_topic" class=${cls('base_topic')} maxlength="64" autocomplete="off" spellcheck="false"
         placeholder=${doc.base_topic} value=${d.base_topic} onInput=${e => set({ base_topic: e.target.value })}/></label>
     <p class="small mut">${t('mq.base.h')}</p>
-    <label class="check"><input type="checkbox" checked=${d.discovery} onChange=${e => set({ discovery: e.target.checked })}/>
-      <span>${t('mq.discovery')}<br/><span class="small mut">${t('mq.discovery.h')}</span></span></label>
+    <${Toggle} checked=${d.discovery} onChange=${v => set({ discovery: v })}>
+      <span>${t('mq.discovery')}<br/><span class="small mut">${t('mq.discovery.h')}</span></span><//>
     ${d.discovery && html`<label class="field">${t('mq.prefix')}
       <input id="mq-discovery_prefix" class=${cls('discovery_prefix')} maxlength="32" autocomplete="off" spellcheck="false"
         value=${d.discovery_prefix} onInput=${e => set({ discovery_prefix: e.target.value })}/></label>`}
-    <label class="check"><input type="checkbox" checked=${d.control} onChange=${e => set({ control: e.target.checked })}/>
-      <span>${t('mq.control')}<br/><span class=${'small ' + (d.control ? 'warn' : 'mut')}>${t('mq.control.h')}</span></span></label>
+    <${Toggle} checked=${d.control} onChange=${v => set({ control: v })}>
+      <span>${t('mq.control')}<br/><span class=${'small ' + (d.control ? 'warn' : 'mut')}>${t('mq.control.h')}</span></span><//>
     <details class="mq-topics"><summary>${t('mq.topics')}</summary>
       <ul class="small mono">
         <li>${base}/status</li><li>${base}/state</li><li>${base}/pump/1…5/state</li><li>${base}/event</li>

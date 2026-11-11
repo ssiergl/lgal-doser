@@ -33,6 +33,12 @@ export function Seg({ value, options, onChange, disabled }) {
       disabled=${disabled} onClick=${() => onChange(v)}>${label}</button>`)}</div>`;
 }
 
+// On/off switch with its label on the left (a checkbox with role=switch)
+export function Toggle({ checked, onChange, disabled, children }) {
+  return html`<label class=${'switch' + (disabled ? ' off' : '')}><span class="sw-l">${children}</span>
+    <input type="checkbox" role="switch" checked=${checked} disabled=${disabled} onChange=${e => onChange(e.target.checked)}/></label>`;
+}
+
 // Decimal input with unit; value is the text
 export function Amount({ value, onInput, unit = 'ml', id, placeholder }) {
   return html`<div class="amount"><input id=${id} type="text" inputmode="decimal" autocomplete="off"
