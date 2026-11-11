@@ -101,7 +101,7 @@ let clipSeq = 0;
 const wavePath = (y, bottom) => `M-70 ${y} q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V${bottom} H-70 Z`;
 
 // sp: schedule status of the pump (range in days for the outline colour)
-export function Container({ p, sp, size = 'm' }) {
+export function Container({ p, sp, size = 'm', style }) {
   const c = p.container;
   const id = 'ct' + (++clipSeq);
   const pct = c.tracked ? Math.max(0, Math.min(100, c.percent || 0)) : 0;
@@ -109,7 +109,7 @@ export function Container({ p, sp, size = 'm' }) {
   const y = bottom - (h * pct) / 100;
   const color = pumpColor(p.pump);
   const level = !c.tracked ? 'none' : daysCls(daysLeft(sp), c);
-  return html`<svg class=${'canister ' + size} viewBox="0 0 120 160" role="img"
+  return html`<svg class=${'canister ' + size} style=${style} viewBox="0 0 120 160" role="img"
       aria-label=${c.tracked ? num(pct, 0) + ' %' : t('ct.untracked')}>
     <defs><clipPath id=${id}><rect x="14" y="24" width="92" height="130" rx="16"/></clipPath></defs>
     <rect x="44" y="3" width="32" height="12" rx="3" class="cap"/>

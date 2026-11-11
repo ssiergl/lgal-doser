@@ -1,6 +1,6 @@
 // Detail view of one pump: container, schedule, boost, manual dose,
 // priming, calibration, consumption and settings (fine-tuning only in the pro view).
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { api, liveCall, liveOpen, qs } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, getLang, num, t } from '../lib/i18n.js';
@@ -130,6 +130,23 @@ function ContainerCard({ p, sp, nowLocal }) {
   const [cap, setCap] = useState('');
   const [rem, setRem] = useState('');
   const msg = useMsg();
+  // the canister from the title down to the last figure beside it (buttons
+  // below), as long as both fit side by side
+  const text = useRef(null);
+  const [tall, setTall] = useState(0);
+  useEffect(() => {
+    const el = text.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const row = el.closest('.hero-in');
+    const fit = () => {
+      const h = Math.min(360, Math.round(el.offsetHeight));
+      setTall(row.clientWidth >= h * 0.75 + 20 + 200 ? h : 0);
+    };
+    const ro = new ResizeObserver(fit);
+    ro.observe(row);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const open = () => {
     setCap(c.tracked ? String(Math.round(c.capacity_ml * 10) / 10) : '');
     setRem(c.tracked ? String(Math.round(c.remaining_ml * 10) / 10) : '');
@@ -148,14 +165,16 @@ function ContainerCard({ p, sp, nowLocal }) {
   };
   return html`<section class="card hero" style=${{ '--pc': pumpColor(p.pump) }}>
     <div class="hero-in">
-      <${Container} p=${p} sp=${sp} size="l"/>
+      <${Container} p=${p} sp=${sp} size="l" style=${tall ? { height: tall + 'px', width: Math.round(tall * 0.75) + 'px' } : null}/>
       <div class="hero-text">
-        <h2>${t('ct.title')}</h2>
-        ${c.tracked ? html`
-          <div class="big num">${num(c.remaining_ml, 0)} ml</div>
-          <div class="mut">${t('ct.of', { cap: num(c.capacity_ml, 0) })}</div>`
-        : html`<div class="mut">${t('ct.off')}</div><p class="mut small">${t('ct.off.hint')}</p>`}
-        <div class="pc-stats hero-stats"><${PumpStats} p=${p} sp=${sp} nowLocal=${nowLocal} boostNote/></div>
+        <div class="hero-info" ref=${text}>
+          <h2>${t('ct.title')}</h2>
+          ${c.tracked ? html`
+            <div class="big num">${num(c.remaining_ml, 0)} ml</div>
+            <div class="mut">${t('ct.of', { cap: num(c.capacity_ml, 0) })}</div>`
+          : html`<div class="mut">${t('ct.off')}</div><p class="mut small">${t('ct.off.hint')}</p>`}
+          <div class="pc-stats hero-stats"><${PumpStats} p=${p} sp=${sp} nowLocal=${nowLocal} boostNote/></div>
+        </div>
         <div class="row">
           ${c.tracked && html`<button onClick=${refill}>${t('ct.refill')}</button>`}
           <button class="sec" onClick=${open}>${t('ct.edit')}</button>
