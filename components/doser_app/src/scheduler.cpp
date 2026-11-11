@@ -258,7 +258,7 @@ void adopt(int pump, const sched::PumpSchedule& s, const lgal::timesync::Status&
         start_from_now(rt, ts.utc);
         save(pump);
     }
-    ESP_LOGI(TAG, "Pump %d: schedule saved (%s%s)", pump + 1, sched::kind_str(s.kind), s.enabled ? "" : ", paused");
+    ESP_LOGI(TAG, "Pump %d: schedule saved (%s)", pump + 1, sched::kind_str(s.kind));
 }
 
 // Context from the dosing engine (call without s_mx: takes the dosing mutex)

@@ -172,8 +172,6 @@ static void test_day_plan() {
     PumpSchedule ps = spread(480, 1200, 3, 9000);  // 08:00, 14:00, 20:00
     CHECK(day_slots(ps, mon, 5, s, kMaxSlotsPerDay) == 3 && s[1].minute == 840 && s[1].ul == 3000);
     CHECK(day_total(ps, mon) == 9000);
-    ps.enabled = 0;  // paused
-    CHECK(day_slots(ps, mon, 5, s, kMaxSlotsPerDay) == 0 && day_total(ps, mon) == 0 && !runs_on(ps, mon));
 
     ps = times({{600, 2000}, {840, 3000}}, weekdays(kMon));
     CHECK(runs_on(ps, mon) && !runs_on(ps, mon + 1));
@@ -225,8 +223,6 @@ static void test_validate() {
         all[0] = spread(480, 490, 3, 1500000);  // 500 ml every 5 min
         v = run_validate(all, none, c, 8);
         CHECK(is(v.error, "conflict") && v.conflicts == 3);  // 1st with 2nd and 3rd, 2nd with 3rd
-        all[0].enabled = 0;  // paused plans are not checked
-        CHECK(run_validate(all, none, c, 8).error == nullptr);
     }
     {
         // across midnight, only if the following day really has the slot
@@ -262,9 +258,6 @@ static void test_validate() {
         CHECK(run_validate(all, l, c, 8).error == nullptr);
         all[1] = at(480, 1000);
         all[0].days = weekdays(0x7F);
-        all[1].enabled = 0;  // paused: no conflict
-        CHECK(run_validate(all, l, c, 8).error == nullptr);
-        all[1].enabled = 1;
         // no rule for pump 3: no conflict
         l.rules[0] = LockRule{2, 0, 5};
         CHECK(run_validate(all, l, c, 8).error == nullptr);
@@ -322,10 +315,7 @@ static void test_due() {
     // spread plans the same way
     const PumpSchedule sp = spread(480, 1200, 3, 9000);
     CHECK(count_due(sp, z, 5, Cursor{utc_of(2026, 11, 6, 0, 0), 0}, utc_of(2026, 11, 8, 0, 0)) == 6);
-    // paused or without plan: nothing due
-    PumpSchedule paused = ps;
-    paused.enabled = 0;
-    CHECK(!next_due(paused, z, 5, cur, utc_of(2026, 11, 8, 0, 0), &d));
+    // without plan: nothing due
     CHECK(!next_due(PumpSchedule{}, z, 5, cur, utc_of(2026, 11, 8, 0, 0), &d));
 
     // spring forward: 02:30 does not exist and runs at 03:30, together with

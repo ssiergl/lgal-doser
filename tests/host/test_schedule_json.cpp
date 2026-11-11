@@ -42,7 +42,7 @@ static Parsed parse_sched(const std::string& text, int32_t today = kToday) {
 }
 
 static bool same(const sched::PumpSchedule& a, const sched::PumpSchedule& b) {
-    bool eq = a.kind == b.kind && a.enabled == b.enabled && a.power_loss == b.power_loss &&
+    bool eq = a.kind == b.kind && a.power_loss == b.power_loss &&
               a.catch_up_min == b.catch_up_min && a.days.mode == b.days.mode && a.days.weekdays == b.days.weekdays &&
               a.days.interval == b.days.interval &&
               (a.days.mode == sched::DayMode::Weekdays || a.days.anchor_day == b.days.anchor_day);
@@ -102,10 +102,9 @@ static void test_time_and_date() {
 }
 
 static void test_schedule_round_trip() {
-    // spread on three weekdays, paused
+    // spread on three weekdays
     sched::PumpSchedule s;
     s.kind = sched::Kind::Spread;
-    s.enabled = 0;
     s.power_loss = sched::PowerLoss::CatchUpWindow;
     s.catch_up_min = 45;
     s.count = 12;
@@ -114,7 +113,7 @@ static void test_schedule_round_trip() {
     s.amount_ul = 24125;
     s.days.weekdays = 0x15;  // mon, wed, fri
     std::string text = written(s);
-    CHECK(text.find("\"kind\":\"spread\",\"enabled\":false") != std::string::npos);
+    CHECK(text.find("\"kind\":\"spread\",\"start\"") != std::string::npos && text.find("enabled") == std::string::npos);
     CHECK(text.find("\"weekdays\":[\"mon\",\"wed\",\"fri\"]") != std::string::npos);
     CHECK(text.find("\"end\":\"19:05\"") != std::string::npos);
     CHECK(text.find("\"ml\":24.125") != std::string::npos);
@@ -148,7 +147,10 @@ static void test_schedule_round_trip() {
 static void test_schedule_defaults() {
     // empty object: no schedule
     Parsed p = parse_sched("{}");
-    CHECK(p.ok && p.s.kind == sched::Kind::None && p.s.enabled == 1);
+    CHECK(p.ok && p.s.kind == sched::Kind::None);
+    // the former pause flag of old files is ignored
+    p = parse_sched("{\"enabled\":false}");
+    CHECK(p.ok && p.s.kind == sched::Kind::None);
 
     // single dose: "end" is not needed and follows the start
     p = parse_sched("{\"kind\":\"spread\",\"start\":\"07:15\",\"count\":1,\"ml\":1}");
@@ -200,7 +202,6 @@ static void test_schedule_errors() {
         {"[]", "invalid_param", -1, "body", kToday},
         {"{\"kind\":\"single\"}", "invalid_param", -1, "kind", kToday},
         {"{\"kind\":1}", "invalid_param", -1, "kind", kToday},
-        {"{\"enabled\":1}", "invalid_param", -1, "enabled", kToday},
         {"{\"power_loss\":\"later\"}", "invalid_param", -1, "power_loss", kToday},
         {"{\"catch_up_min\":-1}", "invalid_param", -1, "catch_up_min", kToday},
         {"{\"catch_up_min\":\"60\"}", "invalid_param", -1, "catch_up_min", kToday},

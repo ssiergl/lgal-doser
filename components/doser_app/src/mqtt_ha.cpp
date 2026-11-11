@@ -97,14 +97,16 @@ void execute(const ha::Command& c) {
             portEXIT_CRITICAL(&s_mux);
             break;
         case ha::Cmd::Schedule: {
-            sched::PumpSchedule s = scheduler::schedule(c.pump);
-            if (s.kind == sched::Kind::None) {
-                ESP_LOGW(TAG, "Pump %d: no schedule to %s", c.pump + 1, c.on ? "resume" : "pause");
+            // The switch is the mode: ON = auto (schedule runs), OFF = manual
+            // only. A disabled pump stays disabled.
+            auto s = dosing::settings(c.pump);
+            if (s.mode == dose::Mode::Disabled) {
+                ESP_LOGW(TAG, "Pump %d: disabled, mode not changed", c.pump + 1);
                 break;
             }
-            s.enabled = c.on ? 1 : 0;
-            if (const char* e = scheduler::set_schedule(c.pump, s))
-                ESP_LOGW(TAG, "Pump %d: schedule not changed (%s)", c.pump + 1, e);
+            s.mode = c.on ? dose::Mode::Auto : dose::Mode::ManualOnly;
+            if (const char* e = dosing::set_settings(c.pump, s))
+                ESP_LOGW(TAG, "Pump %d: mode not changed (%s)", c.pump + 1, e);
             break;
         }
         case ha::Cmd::Stop:
@@ -151,7 +153,6 @@ ha::DeviceInfo device_info(const lgal::mqttcfg::Config& c) {
 ha::PumpState pump_state(int p) {
     const auto d = dosing::status(p);
     const auto s = scheduler::status(p);
-    const auto plan = scheduler::schedule(p);
     ha::PumpState st;
     st.activity = dosing::activity_str(d.activity);
     st.total_ul = d.state.total_ul;
@@ -161,8 +162,7 @@ ha::PumpState pump_state(int p) {
     st.days = s.remaining_days;
     st.has_next = s.clock_valid && s.has_next;
     st.next_utc = s.next_utc;
-    st.has_schedule = plan.kind != sched::Kind::None;
-    st.schedule_on = plan.enabled != 0;
+    st.automatic = d.settings.mode == dose::Mode::Auto;
     st.amount_ul = amount(p);
     st.tube_h = static_cast<float>(d.state.tube_ms) / 3600000.0f;
     st.last = d.last_result;
