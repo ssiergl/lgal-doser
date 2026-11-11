@@ -274,14 +274,19 @@ void write_status(Json& j, int p) {
     else j.null("remaining_days");
     if (s.boost.remaining_ul > 0) {
         char d[11];
-        sj::fmt_date(s.boost.start_day, d);
+        sj::fmt_date(sched::day_of(scheduler::to_local(s.boost.start_utc)), d);
         j.obj("boost")
             .kv("active", s.boost_active)
             .kv("total_ml", ml(s.boost.total_ul), 3)
             .kv("remaining_ml", ml(s.boost.remaining_ul), 3)
             .kv("days", s.boost.days)
             .kv("start", d)
-            .end();
+            .kv("doses_left", s.boost.slots_left)
+            .kv("per_dose_ml", ml(sched::boost_share(s.boost)), 3)
+            .kv("today_ml", ml(s.boost_today_ul), 3);
+        write_instant(j, "start_utc", "start_local", s.boost.start_utc);
+        write_instant(j, "end_utc", "end_local", sched::boost_end(s.boost));
+        j.end();
     } else {
         j.null("boost");
     }

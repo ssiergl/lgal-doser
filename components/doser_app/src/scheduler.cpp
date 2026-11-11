@@ -92,6 +92,7 @@ void log_skip(int p, const char* reason, uint32_t ul, int count, int64_t now) {
 void skip(int p, const char* reason, const sched::Due& d, int64_t now) {
     PumpRt& r = s_rt[p];
     r.run.cursor = sched::cursor_of(d);
+    sched::boost_pass(r.run.boost, d.utc, 1);
     ++r.run.skipped;
     r.last_skip_reason = reason;
     r.last_skip_at = now;
@@ -107,6 +108,36 @@ void start_from_now(PumpRt& r, int64_t now) {
     if (r.run.cursor.utc < c.utc) r.run.cursor = c;
 }
 
+// Boost of today's plan: the even share for each slot of today inside the
+// boost window (those already dosed got about the same)
+uint32_t boost_today(const PumpRt& r, int32_t day) {
+    const sched::Boost& b = r.run.boost;
+    const uint32_t share = sched::boost_share(b);
+    if (!share) return 0;
+    static sched::Slot sl[sched::kMaxSlotsPerDay];  // with s_mx held
+    const int n = sched::day_slots(r.sch, day, s_cfg.grid_min, sl, sched::kMaxSlotsPerDay);
+    const int64_t from = tz::to_local(s_zone, b.start_utc), to = tz::to_local(s_zone, sched::boost_end(b));
+    uint32_t k = 0;
+    for (int i = 0; i < n; ++i) {
+        const int64_t at = int64_t(day) * 86400 + sl[i].minute * 60;
+        if (at > from && at <= to) ++k;
+    }
+    return share * k;
+}
+
+// First slot not processed yet: the pending one, otherwise from now on
+sched::Cursor open_from(const PumpRt& r, int64_t now) {
+    sched::Cursor from = r.pending ? r.run.cursor : sched::Cursor{now, UINT32_MAX};
+    if (from.utc < r.run.cursor.utc || (from.utc == r.run.cursor.utc && from.tag < r.run.cursor.tag))
+        from = r.run.cursor;
+    return from;
+}
+
+// Slots of the plan from `from` up to the end of `until`
+int slots_until(const PumpRt& r, const sched::Cursor& from, int64_t until) {
+    return sched::count_due(r.sch, s_zone, s_cfg.grid_min, from, until);
+}
+
 void init_cursors(int64_t now) {
     for (int p = 0; p < kN; ++p) {
         PumpRt& r = s_rt[p];
@@ -116,6 +147,7 @@ void init_cursors(int64_t now) {
             // cursor far in the future: the clock was wrong when it was written
             ESP_LOGW(TAG, "Pump %d: schedule cursor in the future, restarting from now", p + 1);
             r.run.cursor = sched::Cursor{now, UINT32_MAX};
+            sched::boost_recount(r.run.boost, slots_until(r, r.run.cursor, sched::boost_end(r.run.boost)));
         }
         save(p);
     }
@@ -130,6 +162,7 @@ void try_start(int p, int64_t now) {
     const char* e = dosing::dose(p, ul, r.share ? dosing::Trigger::Boost : dosing::Trigger::Schedule, -1, &retry);
     if (!e) {
         r.run.cursor = sched::cursor_of(r.due);
+        sched::boost_pass(r.run.boost, r.due.utc, 1);
         r.pending = false;
         r.delay_reason = nullptr;
         r.last_run_at = now;
@@ -140,7 +173,7 @@ void try_start(int p, int64_t now) {
     }
     if (is_wait(e)) {
         if (now - r.pending_since > int64_t(s_cfg.max_delay_min) * 60) {
-            sched::boost_refund(r.run.boost, r.due.day, r.share);
+            sched::boost_refund(r.run.boost, r.share);
             r.pending = false;
             r.delay_reason = nullptr;
             skip(p, "delay_timeout", r.due, now);
@@ -151,12 +184,13 @@ void try_start(int p, int64_t now) {
         r.retry_at = is(e, "collision_lock") ? retry : 0;
         return;
     }
-    sched::boost_refund(r.run.boost, r.due.day, r.share);
+    sched::boost_refund(r.run.boost, r.share);
     r.pending = false;
     r.delay_reason = nullptr;
     if (is(e, "pump_manual_only") || is(e, "pump_disabled")) {
         // deliberate mode, not a fault: no statistics, no warning
         r.run.cursor = sched::cursor_of(r.due);
+        sched::boost_pass(r.run.boost, r.due.utc, 1);
         save(p);
         return;
     }
@@ -196,6 +230,7 @@ void process(int p, int64_t now) {
         }
         if (n) {
             r.run.cursor = c;
+            sched::boost_pass(r.run.boost, c.utc, n);
             r.run.skipped += n;
             r.last_skip_reason = "missed";
             r.last_skip_at = now;
@@ -210,7 +245,7 @@ void process(int p, int64_t now) {
         return;
     }
     r.due = d;
-    r.share = sched::boost_take(r.run.boost, d.day, d.remaining_today);
+    r.share = sched::boost_take(r.run.boost, d.utc);
     r.pending = true;
     r.pending_since = now;
     r.delay_reason = nullptr;
@@ -251,11 +286,12 @@ void adopt(int pump, const sched::PumpSchedule& s, const lgal::timesync::Status&
     PumpRt& rt = s_rt[pump];
     rt.sch = s;
     if (rt.pending) {
-        sched::boost_refund(rt.run.boost, rt.due.day, rt.share);
+        sched::boost_refund(rt.run.boost, rt.share);
         rt.pending = false;
     }
     if (ts.valid) {
         start_from_now(rt, ts.utc);
+        sched::boost_recount(rt.run.boost, slots_until(rt, rt.run.cursor, sched::boost_end(rt.run.boost)));
         save(pump);
     }
     ESP_LOGI(TAG, "Pump %d: schedule saved (%s)", pump + 1, sched::kind_str(s.kind));
@@ -384,11 +420,12 @@ const char* boost_start(int pump, uint32_t total_ul, uint16_t days) {
     if (!ts.valid) return "time_invalid";
     Guard g;
     PumpRt& r = s_rt[pump];
-    const int32_t day = local_day(ts.utc);
-    bool slots = false;
-    for (int32_t d = day; d < day + days && !slots; ++d) slots = sched::day_total(r.sch, d) > 0;
-    if (!slots) return "no_slots";
-    sched::boost_start(r.run.boost, total_ul, days, day);
+    refresh_zone();
+    // manual-only and disabled pumps never run the plan
+    const int n = dosing::settings(pump).mode == dose::Mode::Auto
+                      ? slots_until(r, open_from(r, ts.utc), ts.utc + int64_t(days) * 86400) : 0;
+    if (n <= 0) return "no_slots";
+    sched::boost_start(r.run.boost, total_ul, days, ts.utc, n);
     save(pump);
     ESP_LOGI(TAG, "Pump %d: boost %" PRIu32 " ul over %u days", pump + 1, total_ul, days);
     return nullptr;
@@ -466,21 +503,20 @@ Status status(int pump) {
     if (!ts.valid) return s;
     refresh_zone();
     const int32_t day = local_day(ts.utc);
-    s.boost_active = sched::boost_active(r.run.boost, day);
+    s.boost_active = sched::boost_active(r.run.boost, ts.utc);
     sched::Due d;
-    // pending slot first (cursor not advanced yet), otherwise from now on
-    sched::Cursor from = r.pending ? r.run.cursor : sched::Cursor{ts.utc, UINT32_MAX};
-    if (from.utc < r.run.cursor.utc || (from.utc == r.run.cursor.utc && from.tag < r.run.cursor.tag)) from = r.run.cursor;
+    const sched::Cursor from = open_from(r, ts.utc);
     // manual-only and disabled pumps never run the plan: no next dose
     if (set.mode == dose::Mode::Auto && sched::next_due(r.sch, s_zone, s_cfg.grid_min, from, ts.utc + 8 * 86400, &d)) {
         s.has_next = true;
         s.next_utc = d.utc;
         s.next_ul = d.ul;
-        s.next_boost_ul = sched::boost_preview(r.run.boost, d.day, d.remaining_today);
+        s.next_boost_ul = d.utc <= sched::boost_end(r.run.boost) ? sched::boost_share(r.run.boost) : 0;
     }
     if (set.mode == dose::Mode::Auto) {
         s.planned_today_ul = sched::day_total(r.sch, day);
-        if (set.capacity_ul) s.remaining_days = sched::remaining_days(r.sch, r.run.boost, day, remaining_ul);
+        s.boost_today_ul = boost_today(r, day);
+        if (set.capacity_ul) s.remaining_days = sched::remaining_days(r.sch, r.run.boost, day, ts.utc, remaining_ul);
     }
     return s;
 }

@@ -355,70 +355,80 @@ static void test_due() {
 }
 
 static void test_boost() {
-    const int32_t day = day_num(2026, 11, 6);
+    // 10 ml over 3 days, started 18:01 with 12 doses a day: 36 doses get the same share
+    const int64_t t0 = utc_of(2026, 11, 6, 17, 1);
     Boost b;
-    boost_start(b, 30000, 3, day);
-    CHECK(boost_active(b, day));
-    // started at noon: only 2 slots left today
-    CHECK(boost_preview(b, day, 2) == 5000 && b.remaining_ul == 30000);  // preview takes nothing
-    CHECK(boost_take(b, day, 2) == 5000);
-    CHECK(boost_take(b, day, 1) == 5000);
-    // day 2: 20 ml for 2 days -> 10 ml, 4 slots
-    uint32_t sum = 0;
-    for (int k = 4; k >= 1; --k) sum += boost_take(b, day + 1, k);
-    CHECK(sum == 10000);
-    // day 3: first slot fails and is refunded, the rest catches up
-    uint32_t s1 = boost_take(b, day + 2, 4);
-    CHECK(s1 == 2500);
-    boost_refund(b, day + 2, s1);
-    sum = 0;
-    for (int k = 3; k >= 1; --k) sum += boost_take(b, day + 2, k);
-    CHECK(sum == 10000 && b.remaining_ul == 0 && !boost_active(b, day + 2));
-    CHECK(boost_take(b, day + 3, 4) == 0);
+    boost_start(b, 10000, 3, t0, 36);
+    CHECK(boost_active(b, t0) && b.slots_left == 36 && boost_end(b) == t0 + 3 * 86400);
+    CHECK(boost_share(b) == 277);
+    uint32_t sum = 0, first = 0;
+    for (int i = 0; i < 36; ++i) {
+        const int64_t at = t0 + 60 + i * 7200;
+        const uint32_t s = boost_take(b, at);
+        if (!i) first = s;
+        sum += s;
+        boost_pass(b, at, 1);
+    }
+    CHECK(first == 277 && sum == 10000 && b.remaining_ul == 0 && !boost_active(b, t0));
 
-    // uneven amounts add up exactly
-    boost_start(b, 10000, 3, day);
-    sum = 0;
-    for (int dd = 0; dd < 3; ++dd)
-        for (int k = 3; k >= 1; --k) sum += boost_take(b, day + dd, k);
-    CHECK(sum == 10000 && b.remaining_ul == 0);
-
-    // a day without slots moves its share to the following days
-    boost_start(b, 9000, 3, day);
-    sum = 0;
-    for (int k = 2; k >= 1; --k) sum += boost_take(b, day + 1, k);
-    CHECK(sum == 4500);
-    sum = boost_take(b, day + 2, 1);
-    CHECK(sum == 4500 && b.remaining_ul == 0);
-    // expired with a rest: discarded
-    boost_start(b, 9000, 1, day);
-    CHECK(boost_take(b, day + 1, 1) == 0 && b.remaining_ul == 0);
+    // failed dose: refunded, its share goes to the later slots; so does a missed one
+    boost_start(b, 9000, 1, t0, 3);
+    const uint32_t s1 = boost_take(b, t0 + 100);
+    CHECK(s1 == 3000);
+    boost_refund(b, s1);
+    boost_pass(b, t0 + 100, 1);
+    CHECK(boost_share(b) == 4500 && b.remaining_ul == 9000);
+    boost_pass(b, t0 + 200, 1);
+    CHECK(boost_share(b) == 9000 && b.slots_left == 1);
+    CHECK(boost_take(b, t0 + 300) == 9000);
+    boost_pass(b, t0 + 300, 1);
+    CHECK(b.remaining_ul == 0 && b.total_ul == 0);
+    // after the window: the rest is dropped
+    boost_start(b, 9000, 1, t0, 2);
+    CHECK(boost_take(b, t0 + 86401) == 0 && b.remaining_ul == 0);
+    // the last slot of the window passed with a rest (skipped): over
+    boost_start(b, 6000, 2, t0, 2);
+    boost_pass(b, t0 + 10, 2);
+    CHECK(b.remaining_ul == 0 && !boost_active(b, t0));
+    // schedule changed: new number of slots
+    boost_start(b, 6000, 2, t0, 4);
+    boost_recount(b, 6);
+    CHECK(boost_share(b) == 1000);
+    boost_recount(b, 0);
+    CHECK(b.remaining_ul == 0);
+    // no slots in the window: nothing starts
+    boost_start(b, 6000, 2, t0, 0);
+    CHECK(!boost_active(b, t0) && b.remaining_ul == 0);
 }
 
 
 static void test_forecast() {
     const int32_t day = day_num(2026, 11, 6);
     PumpSchedule ps;
+    const int64_t now = utc_of(2026, 11, 6, 6, 0);
     Boost none;
-    CHECK(remaining_days(ps, none, day, 500000) < 0);
+    CHECK(remaining_days(ps, none, day, now, 500000) < 0);
     ps = spread(480, 1200, 4, 10000);
-    CHECK(remaining_days(ps, none, day, 500000) == 50.0f);
-    CHECK(remaining_days(ps, none, day, 0) == 0.0f);
+    CHECK(remaining_days(ps, none, day, now, 500000) == 50.0f);
+    CHECK(remaining_days(ps, none, day, now, 0) == 0.0f);
     Boost b;
-    boost_start(b, 30000, 3, day);
-    const float with_boost = remaining_days(ps, b, day, 500000);  // 100 ml in 7 days
+    boost_start(b, 30000, 3, now, 12);
+    const float with_boost = remaining_days(ps, b, day, now, 500000);  // 100 ml in 7 days
     CHECK(with_boost > 34.9f && with_boost < 35.1f);
+    boost_start(b, 140000, 14, now, 56);  // half of it falls into the next 7 days
+    const float long_boost = remaining_days(ps, b, day, now, 500000);  // 140 ml in 7 days
+    CHECK(long_boost > 24.9f && long_boost < 25.1f);
     ps.days = weekdays(0x1F);  // Monday to Friday
-    const float weekdays_only = remaining_days(ps, none, day, 500000);
+    const float weekdays_only = remaining_days(ps, none, day, now, 500000);
     CHECK(weekdays_only > 69.9f && weekdays_only < 70.1f);
     ps = times({{480, 4000}, {1200, 6000}});
-    CHECK(remaining_days(ps, none, day, 500000) == 50.0f);
+    CHECK(remaining_days(ps, none, day, now, 500000) == 50.0f);
 }
 
 static void test_run_records() {
     RunState st;
     st.cursor = Cursor{1793968215, 7713};
-    boost_start(st.boost, 30000, 3, 20763);
+    boost_start(st.boost, 30000, 3, 1793968215, 12);
     st.skipped = 4;
     RunRecord a, b;
     seal(a, 7, st);

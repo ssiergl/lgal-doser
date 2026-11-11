@@ -73,6 +73,7 @@ struct Status {
     int64_t last_run_at;
     // plan
     uint32_t planned_today_ul;
+    uint32_t boost_today_ul;  // boost on top of planned_today_ul
     float remaining_days;  // < 0: not tracked or nothing planned
     sched::Boost boost;
     bool boost_active;

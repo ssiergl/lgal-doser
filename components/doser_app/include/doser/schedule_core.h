@@ -207,28 +207,34 @@ Action on_due(const PumpSchedule& s, const Due& d, int64_t now);
 Cursor resume_point(const PumpSchedule& s, const Cursor& c, int64_t now);
 
 // ---------------------------------------------------------------------------
-// Boost: extra amount spread over `days` days on top of the existing slots.
-// Each day gets (remaining / remaining days), split evenly over the slots
-// still to come that day; amounts that cannot be dosed move to later days.
+// Boost: extra amount on top of the existing slots for `days` x 24 h from
+// its start, spread evenly over the slots in that window. Every slot gets
+// remaining / slots_left; the share of a skipped or failed slot goes to
+// the slots after it.
 struct Boost {
     uint32_t remaining_ul = 0;  // 0 = no boost active
-    uint16_t days = 0;
-    uint16_t reserved = 0;
-    int32_t start_day = 0;
-    int32_t budget_day = 0;     // day the budget below belongs to
-    uint32_t budget_ul = 0;     // still to dose on budget_day
     uint32_t total_ul = 0;      // as started (display)
+    uint16_t days = 0;
+    uint16_t slots_left = 0;    // slots of the window not processed yet
+    uint32_t reserved = 0;
+    int64_t start_utc = 0;
 };
 static_assert(sizeof(Boost) == 24);
-void boost_start(Boost& b, uint32_t total_ul, uint16_t days, int32_t today);
-bool boost_active(const Boost& b, int32_t today);
-// Share for the slot due now; reduces the boost. remaining_slots: slots of
-// today from this one on (Due::remaining_today).
-uint32_t boost_take(Boost& b, int32_t today, int remaining_slots);
-// Share the slot due on `day` would get, without taking it (display)
-inline uint32_t boost_preview(Boost b, int32_t day, int remaining_slots) { return boost_take(b, day, remaining_slots); }
-// Dose failed or was aborted: give the share back
-void boost_refund(Boost& b, int32_t today, uint32_t ul);
+inline int64_t boost_end(const Boost& b) { return b.start_utc + int64_t(b.days) * 86400; }
+// slots: slots in (now, now + days x 24 h], counted by the caller
+void boost_start(Boost& b, uint32_t total_ul, uint16_t days, int64_t now, int slots);
+bool boost_active(const Boost& b, int64_t now);
+// Share of the next slot of the window (display)
+uint32_t boost_share(const Boost& b);
+// Share for the slot due at slot_utc; reduces the boost. 0 after the window.
+uint32_t boost_take(Boost& b, int64_t slot_utc);
+// Dose failed or was aborted: give the share back (it goes to later slots)
+void boost_refund(Boost& b, uint32_t ul);
+// n slots up to slot_utc were processed (run or skipped). The boost ends
+// with the last slot of its window.
+void boost_pass(Boost& b, int64_t slot_utc, int n);
+// Schedule changed: slots still to come in the window
+void boost_recount(Boost& b, int slots);
 
 // ---------------------------------------------------------------------------
 // Run state per pump (written after every processed slot -> EEPROM A/B,
@@ -253,7 +259,7 @@ struct RunRecord {
 };
 static_assert(sizeof(RunRecord) == 72);
 constexpr uint32_t kRunMagic = 0x4C475343;  // "LGSC"
-constexpr uint16_t kRunVersion = 1;
+constexpr uint16_t kRunVersion = 2;  // 2: boost spread over slots
 
 void seal(RunRecord& r, uint32_t seq, const RunState& s);
 bool valid(const RunRecord& r);
@@ -263,6 +269,6 @@ int newest(const RunRecord& a, const RunRecord& b);
 // ---------------------------------------------------------------------------
 // Forecast: days until the container is empty, based on the plan of the
 // next 7 days incl. boost. < 0 = no consumption planned.
-float remaining_days(const PumpSchedule& s, const Boost& b, int32_t today, int64_t remaining_ul);
+float remaining_days(const PumpSchedule& s, const Boost& b, int32_t today, int64_t now, int64_t remaining_ul);
 
 }  // namespace doser::sched
