@@ -20,6 +20,7 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "lgal/device.h"
+#include "lgal/entropy.h"
 #include "mdns.h"
 #include "nvs.h"
 #include "sdkconfig.h"
@@ -299,16 +300,19 @@ void apply_mode(wifi_mode_t m) {
     if (m == WIFI_MODE_NULL) {
         esp_wifi_stop();
         s_wifi_started = false;
+        entropy::radio(false);
         ESP_LOGI(TAG, "Wi-Fi radio off");
     } else {
         esp_err_t err = esp_wifi_set_mode(m);
         if (err == ESP_OK && has_ap && (!had_ap || !s_wifi_started)) set_ap_config();
         if (err == ESP_OK && !s_wifi_started) {
+            entropy::radio(true);
             err = esp_wifi_start();
             if (err == ESP_OK) s_wifi_started = true;
         }
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Wi-Fi mode %d failed: %s", int(m), esp_err_to_name(err));
+            if (!s_wifi_started) entropy::radio(false);
             return;
         }
     }
@@ -742,8 +746,10 @@ esp_err_t init(const EthConfig& eth) {
         ESP_LOGE(TAG, "Ethernet unavailable: %s", esp_err_to_name(err));
     }
 
+    entropy::radio(true);  // the noise source must be off while Wi-Fi sets up the radio
     err = init_wifi();
     if (err != ESP_OK) ESP_LOGE(TAG, "Wi-Fi unavailable: %s", esp_err_to_name(err));
+    entropy::radio(false);  // until reconcile() starts the radio
 
     init_mdns();
     {

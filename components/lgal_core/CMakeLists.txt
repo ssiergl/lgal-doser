@@ -14,6 +14,7 @@ idf_component_register(
         "src/json.cpp"
         "src/json_reader.cpp"
         "src/sha256.cpp"
+        "src/entropy.cpp"
         "src/auth_core.cpp"
         "src/auth.cpp"
         "src/net_config.cpp"
@@ -29,6 +30,7 @@ idf_component_register(
     INCLUDE_DIRS "include"
     EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/login.html" "www/network.html" "www/setup.html"
     REQUIRES
+        bootloader_support
         esp_driver_gpio
         esp_driver_ledc
         esp_driver_spi

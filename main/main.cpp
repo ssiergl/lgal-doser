@@ -34,6 +34,7 @@
 #include "lgal/button.h"
 #include "lgal/captive.h"
 #include "lgal/device.h"
+#include "lgal/entropy.h"
 #include "lgal/http.h"
 #include "lgal/led.h"
 #include "lgal/logbuf.h"
@@ -192,6 +193,7 @@ void init_time() {
 extern "C" void app_main(void) {
     // 1. Safe hardware state: drivers OFF, STEP LOW
     doser::safe_init();
+    lgal::entropy::init();  // true random numbers also with the radio off
 
     // 2. Status LED (boot = fade in white). GPIO45 only now, after boot.
     lgal::led::Config led_cfg{};
