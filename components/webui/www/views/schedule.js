@@ -47,7 +47,7 @@ add({
     'sc.cf.overlap': 'Pump {p1} {t1} overlaps with pump {p2} {t2}{d}',
     'sc.cf.collision_lock': 'Pump {p1} {t1} and pump {p2} {t2}{d}: lock time {g} min',
     'sc.cf.next': ' (next day)', 'sc.err.entry': '{time}: {e}',
-    'err.invalid_time': 'Invalid time', 'err.off_grid': 'Times must be on the {g}-minute grid',
+    'err.invalid_time': 'Invalid time', 'err.invalid_amount': 'The amount must be more than 0 ml', 'err.off_grid': 'Times must be on the {g}-minute grid',
     'err.invalid_range': 'End time must be after the start time', 'err.invalid_count': 'Invalid number of doses',
     'err.slots_too_dense': 'Too many doses for this time window', 'err.invalid_days': 'Choose at least one day',
     'err.invalid_catch_up': 'Catch-up window: 1 to 1440 minutes', 'err.too_many_slots': 'Too many doses per day',
@@ -85,7 +85,7 @@ add({
     'sc.cf.overlap': 'Pumpe {p1} {t1} überschneidet sich mit Pumpe {p2} {t2}{d}',
     'sc.cf.collision_lock': 'Pumpe {p1} {t1} und Pumpe {p2} {t2}{d}: Sperrzeit {g} Min.',
     'sc.cf.next': ' (Folgetag)', 'sc.err.entry': '{time}: {e}',
-    'err.invalid_time': 'Ungültige Uhrzeit', 'err.off_grid': 'Uhrzeiten müssen im {g}-Minuten-Raster liegen',
+    'err.invalid_time': 'Ungültige Uhrzeit', 'err.invalid_amount': 'Die Menge muss größer als 0 ml sein', 'err.off_grid': 'Uhrzeiten müssen im {g}-Minuten-Raster liegen',
     'err.invalid_range': 'Ende muss nach dem Start liegen', 'err.invalid_count': 'Ungültige Anzahl Dosen',
     'err.slots_too_dense': 'Zu viele Dosen für dieses Zeitfenster', 'err.invalid_days': 'Mindestens einen Tag wählen',
     'err.invalid_catch_up': 'Nachholfenster: 1 bis 1440 Minuten', 'err.too_many_slots': 'Zu viele Dosen pro Tag',
@@ -132,7 +132,7 @@ function expand(d, grid) {
       if (Number.isNaN(x.min)) return fail('invalid_time', x.time || '–');
       if (x.min % grid) return fail('off_grid', x.time);
       if (i > 0 && x.min === list[i - 1].min) return fail('duplicate_time', x.time);
-      if (!(x.ml > 0)) return fail('invalid_param', x.time);
+      if (!(x.ml > 0)) return fail('invalid_amount', x.time);
       slots.push({ min: x.min, ul: ul(x.ml) });
     }
     return { slots };
@@ -140,7 +140,7 @@ function expand(d, grid) {
   const start = toMin(d.start), end = toMin(d.end), n = parseInt(d.count, 10), total = ul(parseNum(d.ml));
   if (Number.isNaN(start)) return fail('invalid_time');
   if (start % grid) return fail('off_grid');
-  if (!(total > 0)) return fail('invalid_param');
+  if (!(total > 0)) return fail('invalid_amount');
   if (!(n >= 1 && n <= 96)) return fail('invalid_count');
   if (n > 1) {
     if (Number.isNaN(end)) return fail('invalid_time');
@@ -315,7 +315,9 @@ function SimpleEditor({ pump, s, onSaved, limit }) {
   const count = parseInt(f.count, 10);
   const submit = e => {
     e.preventDefault();
-    if (ex.err || !ex.slots.length) { msg.err(t('err.' + (ex.err || 'invalid_param'), { g: grid })); return; }
+    // An error the preview already shows is not repeated below the button
+    const chk = ex.err ? ex : expand(draft, grid);
+    if (chk.err) { if (ex.err) msg.clear(); else msg.err(t('err.' + chk.err, { g: grid })); return; }
     save(bodyOf(draft), t('sc.saved'), grid);
   };
   const empty = s.kind === 'none';
@@ -384,9 +386,11 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
   const switchDays = mode => setDays({ mode, anchor: d.days.anchor || today || '', weekdays: d.days.weekdays.length ? d.days.weekdays : [...WD] });
   const toggleWd = w => setDays({ weekdays: d.days.weekdays.includes(w) ? d.days.weekdays.filter(x => x !== w) : [...d.days.weekdays, w] });
   const typing = d.kind === 'spread' && Number.isNaN(parseNum(d.ml));
+  // the form shows the error already: preview (spread) or the line above the buttons (times)
+  const errShown = !!ex.err && (d.kind === 'spread' ? !typing : ex.err !== 'invalid_amount' && d.times.length > 0);
   const submit = e => {
     e.preventDefault();
-    if (ex.err) { msg.err(localError(ex, grid)); return; }
+    if (ex.err) { if (errShown) msg.clear(); else msg.err(localError(ex, grid)); return; }
     save(bodyOf(d), t('sc.saved'), grid);
   };
   return html`<form class="plan" novalidate onSubmit=${submit}>
@@ -425,7 +429,7 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
           ${d.power_loss === 'catch_up_window' && html`<${Amount} value=${d.catch_up} onInput=${v => set({ catch_up: v })} unit="min"/>`}
         </div>
       </div>
-      ${d.kind === 'times' && ex.err && ex.err !== 'invalid_param' && d.times.length > 0 && html`<p class="msg err">${localError(ex, grid)}</p>`}
+      ${d.kind === 'times' && errShown && html`<p class="msg err">${localError(ex, grid)}</p>`}
       ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 2), p: num(planned, 2) })}</p>`}
     <div class="row savebar">
       <button type="submit" disabled=${busy || !dirty}>${t('sc.save')}</button>
