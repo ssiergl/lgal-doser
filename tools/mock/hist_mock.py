@@ -80,6 +80,7 @@ def _backup(secrets):
         pumps.append({"pump": i + 1, "name": ["KH", "Calcium", "Magnesium", "", "Spurenelemente"][i], "mode": "auto" if i != 3 else "disabled",
                       "tier": 1, "daily_limit_ml": [80, 0, 20, 0, 5][i], "retract_mrev": -1 if i == 0 else 0,
                       "capacity_ml": [2000, 2000, 1000, 0, 500][i], "ul_per_rev": 370.0, "calibrated_at": int(_t.time()) - 86400 * 20,
+                      "warn_days": 0, "low_days": 0,
                       "schedule": {"kind": "none", "power_loss": "skip_missed", "catch_up_min": 60}})
     doc = {"format": "lgal-doser-backup", "version": 1, "firmware": "0.5.0-dev", "device": "lgal-doser-e4f5", "exported_utc": int(_t.time()),
            "system": {"language": "de", "timezone": "CET-1CEST,M3.5.0,M10.5.0/3", "ntp_server": "pool.ntp.org",
@@ -88,7 +89,8 @@ def _backup(secrets):
                        "wlan": {"ssid": "HomeNet", "password_set": True, "dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""}},
            "pumps": pumps, "locks": {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]},
            "engineering": {"dosing": {"retract_mrev": 250, "calib_ml": 10.0, "tier_rpm": [100, 200, 300], "prime_max_s": 60,
-                                      "prime_heartbeat_ms": 500, "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day"},
+                                      "prime_heartbeat_ms": 500, "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day",
+                                      "warn_days": 7, "low_days": 4},
                            "scheduler": {"grid_min": 5, "max_delay_min": 30},
                            "hardware": {"pumps": [{"run_ma": 600, "hold_ma": 0, "microsteps": 16, "invert": False, "full_steps": 200, "accel": 0, "v_start": 0}] * 5},
                            "history": {"keep_days": SET["keep"]}}}

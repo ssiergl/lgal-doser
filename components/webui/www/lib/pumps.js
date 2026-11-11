@@ -41,6 +41,10 @@ export function status(p) {
 // Days the container lasts with the schedule (null = unknown)
 export const daysLeft = sp => (sp && sp.remaining_days !== null && sp.remaining_days !== undefined ? sp.remaining_days : null);
 
+// Colour class of a supply in days against the container thresholds in
+// effect (device values, 0 = off; defaults for older firmware)
+export const daysCls = (d, c) => d === null ? '' : d < (c.low_days ?? 4) ? 'err' : d < (c.warn_days ?? 7) ? 'warn' : '';
+
 // Warnings of a pump, most important first: [{cls: 'err'|'warn', text}]
 export function alerts(p, sp) {
   const out = [];
@@ -48,8 +52,9 @@ export function alerts(p, sp) {
   const d = daysLeft(sp);
   if (p.last && p.last.result === 'fault') out.push({ cls: 'err', text: t('al.fault') });
   if (p.calibration.pending) out.push({ cls: 'warn', text: t('al.calib') });
-  if (c.tracked && (c.percent <= 10 || (d !== null && d < 3))) out.push({ cls: 'err', text: t('al.low') });
-  else if (d !== null && d < 7) out.push({ cls: 'warn', text: t('al.days', { d: num(d, 0) }) });
+  const dc = c.tracked ? daysCls(d, c) : '';
+  if (dc === 'err') out.push({ cls: 'err', text: t('al.low') });
+  else if (dc === 'warn') out.push({ cls: 'warn', text: t('al.days', { d: num(d, 0) }) });
   if (sp && sp.delayed) out.push({ cls: 'warn', text: t('al.delayed') });
   if (p.daily.limit_ml && p.daily.used_ml >= p.daily.limit_ml) out.push({ cls: 'warn', text: t('al.limit') });
   if (sp && sp.skipped) out.push({ cls: 'warn', text: t('al.skipped', { n: sp.skipped }) });
@@ -91,14 +96,15 @@ let clipSeq = 0;
 // full period (CSS .wave) without a gap at either side of the canister
 const wavePath = (y, bottom) => `M-70 ${y} q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V${bottom} H-70 Z`;
 
-export function Container({ p, size = 'm' }) {
+// sp: schedule status of the pump (range in days for the outline colour)
+export function Container({ p, sp, size = 'm' }) {
   const c = p.container;
   const id = 'ct' + (++clipSeq);
   const pct = c.tracked ? Math.max(0, Math.min(100, c.percent || 0)) : 0;
   const top = 24, bottom = 154, h = bottom - top;
   const y = bottom - (h * pct) / 100;
   const color = pumpColor(p.pump);
-  const level = !c.tracked ? 'none' : pct <= 10 ? 'err' : pct <= 25 ? 'warn' : '';
+  const level = !c.tracked ? 'none' : daysCls(daysLeft(sp), c);
   return html`<svg class=${'canister ' + size} viewBox="0 0 120 160" role="img"
       aria-label=${c.tracked ? num(pct, 0) + ' %' : t('ct.untracked')}>
     <defs><clipPath id=${id}><rect x="14" y="24" width="92" height="130" rx="16"/></clipPath></defs>

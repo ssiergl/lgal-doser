@@ -37,6 +37,9 @@ add({
     'sv.grid': 'Schedule grid', 'sv.delay': 'Max. delay of a scheduled dose',
     'sv.tube': 'Tubes', 'sv.tube_life': 'Tube lifetime (maintenance warning)', 'sv.tube.set': 'Set', 'sv.tube.reset': 'Reset',
     'sv.tube.done': 'Pump {n}: counter set to {h} h.',
+    'sv.thr': 'Container thresholds', 'sv.thr.h': 'Days of supply from the schedule; defaults for all pumps, a pump can set its own in its settings (pro mode). 0 = off.',
+    'sv.thr.warn': 'Warning when it lasts fewer than', 'sv.thr.low': 'Alarm "almost empty" when it lasts fewer than',
+    'sv.thr.order': 'The alarm threshold must not be above the warning threshold.',
     'sv.hist': 'History', 'sv.hist.keep': 'Keep events for', 'sv.hist.h': 'A shorter time deletes older days within a minute.',
     'sv.rtc': 'Clock module (DS3231)', 'sv.rtc.none': 'Clock module not found.', 'sv.rtc.temp': 'Temperature', 'sv.rtc.aging': 'Aging offset',
     'sv.rtc.h': 'About 0.1 ppm per step; positive values slow the clock down, negative speed it up. Range −128 … 127.',
@@ -90,6 +93,9 @@ add({
     'sv.grid': 'Zeitplan-Raster', 'sv.delay': 'Max. Verzögerung einer geplanten Dosis',
     'sv.tube': 'Schläuche', 'sv.tube_life': 'Schlauch-Lebensdauer (Wartungswarnung)', 'sv.tube.set': 'Setzen', 'sv.tube.reset': 'Zurücksetzen',
     'sv.tube.done': 'Pumpe {n}: Zähler auf {h} h gesetzt.',
+    'sv.thr': 'Behälter-Schwellen', 'sv.thr.h': 'Reichweite laut Zeitplan; Standardwerte für alle Pumpen, jede Pumpe kann in ihren Einstellungen eigene haben (Profi-Modus). 0 = aus.',
+    'sv.thr.warn': 'Warnung, wenn er weniger reicht als', 'sv.thr.low': 'Alarm „fast leer“, wenn er weniger reicht als',
+    'sv.thr.order': 'Die Alarmschwelle darf nicht über der Warnschwelle liegen.',
     'sv.hist': 'Verlauf', 'sv.hist.keep': 'Ereignisse aufbewahren für', 'sv.hist.h': 'Eine kürzere Zeit löscht ältere Tage innerhalb einer Minute.',
     'sv.rtc': 'Uhrenmodul (DS3231)', 'sv.rtc.none': 'Uhrenmodul nicht gefunden.', 'sv.rtc.temp': 'Temperatur', 'sv.rtc.aging': 'Aging-Offset',
     'sv.rtc.h': 'Etwa 0,1 ppm pro Schritt; positive Werte bremsen die Uhr, negative beschleunigen sie. Bereich −128 … 127.',
@@ -342,6 +348,38 @@ function LimitsCard({ eng, sch, reload }) {
       <${Seg} value=${d.limit_mode} onChange=${v => set({ limit_mode: v })}
         options=${['calendar_day', 'rolling_24h'].map(v => [v, t('sv.limit.' + v)])}/></div>
     <${Save} busy=${busy} dirty=${Object.keys(qd).length + Object.keys(qs2).length > 0}/>
+    ${msg.node}
+  </form>`;
+}
+
+// Container thresholds (defaults of all pumps)
+const kThr = [
+  { k: 'warn_days', l: 'sv.thr.warn', min: 0, max: 60, u: 'u.days' },
+  { k: 'low_days', l: 'sv.thr.low', min: 0, max: 60, u: 'u.days' },
+];
+const thrOf = e => ({ warn_days: str(e.warn_days), low_days: str(e.low_days) });
+
+function ThresholdCard({ eng, reload }) {
+  const [d, setD] = useState(thrOf(eng));
+  const [busy, setBusy] = useState(false);
+  const msg = useMsg();
+  useEffect(() => setD(thrOf(eng)), [eng]);
+  const q = changed(kThr, d, thrOf(eng));
+  const bad = invalid(kThr, d);
+  const submit = e => {
+    e.preventDefault();
+    if (bad) return msg.err(checkText(bad));
+    if (parse(d.low_days) > parse(d.warn_days)) return msg.err(t('sv.thr.order'));
+    setBusy(true);
+    eapi('POST', '/api/v1/engineering/dosing?' + qs(q))
+      .then(() => { msg.ok(t('sv.saved')); reload(); reloadPumps(); })
+      .catch(e => msg.err(e)).finally(() => setBusy(false));
+  };
+  return html`<form class="card" novalidate onSubmit=${submit}>
+    <h2>${t('sv.thr')}</h2>
+    <p class="small mut">${t('sv.thr.h')}</p>
+    ${kThr.map(f => html`<${Num} f=${f} d=${d} set=${x => setD(o => ({ ...o, ...x }))} bad=${bad === f}/>`)}
+    <${Save} busy=${busy} dirty=${Object.keys(q).length > 0}/>
     ${msg.node}
   </form>`;
 }
@@ -675,7 +713,10 @@ export function ServiceView() {
       <${DriverCard} hw=${hw} pumps=${pumps} reload=${reloadHw}/>
     </div>
     <h2 class="eng-sec">${t('sv.b')}</h2>
-    <div class="grid settings"><${LimitsCard} eng=${eng} sch=${sch} reload=${reloadEng}/></div>
+    <div class="grid settings">
+      <${LimitsCard} eng=${eng} sch=${sch} reload=${reloadEng}/>
+      <${ThresholdCard} eng=${eng} reload=${reloadEng}/>
+    </div>
     <h2 class="eng-sec">${t('sv.c')}</h2>
     <div class="grid settings">
       <${TubeCard} eng=${eng} pumps=${pumps} reload=${reloadEng}/>

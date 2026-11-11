@@ -1,7 +1,7 @@
 // Overview of all pumps: container, today's amount, range, next dose, warnings.
 import { html } from '../lib/html.js';
 import { add, num, t } from '../lib/i18n.js';
-import { Container, alerts, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
+import { Container, alerts, daysCls, daysLeft, pumpColor, pumpName, status, whenLocal } from '../lib/pumps.js';
 import { useStore } from '../lib/store.js';
 
 add({
@@ -19,10 +19,9 @@ add({
   },
 });
 
-function Range({ d }) {
+function Range({ d, c }) {
   if (d === null) return html`<span class="mut">${t('dash.none')}</span>`;
-  const cls = d < 3 ? 'err' : d < 7 ? 'warn' : '';
-  return html`<span class=${cls}>${d < 1 ? t('dash.day1') : t('dash.days', { d: num(d, 0) })}</span>`;
+  return html`<span class=${daysCls(d, c)}>${d < 1 ? t('dash.day1') : t('dash.days', { d: num(d, 0) })}</span>`;
 }
 
 function Today({ p, sp }) {
@@ -59,10 +58,10 @@ function PumpCard({ p, sp, nowLocal }) {
       <span class=${'chip ' + st.cls}>${t(st.key)}</span>
     </div>
     <div class="pc-body">
-      <${Container} p=${p}/>
+      <${Container} p=${p} sp=${sp}/>
       <div class="pc-stats">
         <${Today} p=${p} sp=${sp}/>
-        <div class="kv"><span class="mut">${t('dash.range')}</span><b class="num"><${Range} d=${daysLeft(sp)}/></b></div>
+        <div class="kv"><span class="mut">${t('dash.range')}</span><b class="num"><${Range} d=${daysLeft(sp)} c=${p.container}/></b></div>
         <div class="kv"><span class="mut">${t('dash.next')}</span>
           <b class="num">${sp && sp.next ? html`${whenLocal(sp.next.local, nowLocal)} <span class=${sp.next.boost_ml ? 'acc' : 'mut'}
             title=${sp.next.boost_ml ? t('dash.next.boost', { ml: num(sp.next.boost_ml, 1) }) : null}>· ${num(sp.next.ml, 1)} ml</span>` : html`<span class="mut">${t('dash.none')}</span>`}</b></div>

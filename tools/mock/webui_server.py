@@ -16,7 +16,7 @@ ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.abspath(os.path.join(os.pat
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8767
 LANG = {"v": "de"}
 ENG = {"retract_rev": 0.25, "calib_ml": 10.0, "tier_rpm": [100, 200, 300], "prime_max_s": 60, "prime_heartbeat_ms": 4000,
-       "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day", "nominal_ml_per_rev": 0.37, "max_rpm": 600}
+       "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day", "warn_days": 7, "low_days": 4, "nominal_ml_per_rev": 0.37, "max_rpm": 600}
 LOCK = threading.Lock()
 NAMES = ["KH", "Calcium", "Magnesium", "", "Spurenelemente"]
 CAP = [2000.0, 2000.0, 1000.0, 0.0, 500.0]
@@ -28,7 +28,7 @@ P[1]["last"] = {"result": "fault", "activity": "dosing", "target_ml": 2.5, "done
 P[2]["last"] = {"result": "success", "activity": "dosing", "target_ml": 2.0, "done_ml": 2.0, "at": int(time.time()) - 1800}
 for i, p in enumerate(P):
     p.update(mode="auto" if i != 3 else "disabled", tier=1, rset="global" if i == 0 else "off", rrev=0.25, limit=[80.0, 0, 20.0, 0, 5.0][i],
-             mlrev=0.37 if i != 3 else 0.0, calat=int(time.time()) - 86400 * 20 if i != 3 else 0,
+             warn=0, low=0, mlrev=0.37 if i != 3 else 0.0, calat=int(time.time()) - 86400 * 20 if i != 3 else 0,
              pending=False, ptarget=0.0, target=0.0, tube=12.4, total=345.678, kind="")
 GRID = 5
 WDN = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
@@ -230,7 +230,9 @@ def full(i):
          "retract": (lambda r: {"setting": p["rset"], "global_rev": 0.25, "rev": r, "ml": round(r * 0.37, 3), "steps": int(r * 3200), "pending_rev": r})(0.0 if p["rset"] == "off" else 0.25 if p["rset"] == "global" else p["rrev"]),
          "daily": {"limit_ml": p["limit"], "used_ml": USED[i], "mode": "calendar_day", "time_valid": True},
          "container": {"tracked": CAP[i] > 0, "capacity_ml": CAP[i], "remaining_ml": p["remaining"],
-                       "percent": 100 * p["remaining"] / CAP[i] if CAP[i] else 0},
+                       "percent": 100 * p["remaining"] / CAP[i] if CAP[i] else 0,
+                       "warn_days": p["warn"] or ENG["warn_days"], "low_days": p["low"] or ENG["low_days"],
+                       "own_warn_days": p["warn"], "own_low_days": p["low"]},
          "tube": {"hours": p["tube"], "limit_h": ENG["tube_life_h"], "percent": round(100 * p["tube"] / ENG["tube_life_h"], 1)}, "total_ml": p["total"]}
     if p["activity"] == "priming":
         d.update(trigger="api", target_ml=0, done_ml=p["done"], rpm=200.0, prime_s=time.time() - p["start"])
@@ -299,6 +301,15 @@ def pumps_post(h, path, q):
                 if v in ("global", "off"): p["rset"] = v
                 elif float(v) == 0: p["rset"] = "off"
                 else: p.update(rset="own", rrev=num("retract_rev"))
+            w, l = p["warn"], p["low"]
+            for k in ("warn_days", "low_days"):
+                if k in q:
+                    v = int(num(k))
+                    if not 0 <= v <= 60: return err(h, "invalid_param", k + "=0..60")
+                    if k == "warn_days": w = v
+                    else: l = v
+            if (l or ENG["low_days"]) > (w or ENG["warn_days"]): return err(h, "invalid_param", "low_days")
+            p["warn"], p["low"] = w, l
             if "direction" in q:
                 if q["direction"] not in ("cw", "ccw"): return err(h, "invalid_param", "direction=cw|ccw")
                 eng_mock.CFG[i]["invert"] = q["direction"] == "ccw"
