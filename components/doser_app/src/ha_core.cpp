@@ -126,7 +126,7 @@ void write_pump(Writer& w, const DeviceInfo& d, const Names& n, int p) {
     if (w.open(key + "amount", "number", d.control)) {
         w.name(label, n.amount);
         j.kv("state_topic", state).kv("value_template", "{{ value_json.amount_ml }}");
-        j.kv("command_topic", t + "amount/set").kv("min", 0.1, 1).kv("max", 500.0, 1).kv("step", 0.1, 1);
+        j.kv("command_topic", t + "amount/set").kv("min", 0.01, 2).kv("max", 500.0, 1).kv("step", 0.01, 2);
         j.kv("mode", "box").kv("unit_of_measurement", "mL").end();
     }
     if (w.open(key + "dose", "button", d.control)) {

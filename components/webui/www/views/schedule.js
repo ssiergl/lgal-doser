@@ -205,7 +205,7 @@ function daysText(days) {
 function planLines(s) {
   const tail = daysText(s.days);
   if (s.kind === 'spread') {
-    return [`${t('sc.each', { n: s.count, ml: num(s.ml / s.count, 2) })} · ${s.count > 1 ? s.start + '–' + s.end : s.start} (${num(s.ml, 1)} ml)`, tail];
+    return [`${t('sc.each', { n: s.count, ml: num(s.ml / s.count, 2) })} · ${s.count > 1 ? s.start + '–' + s.end : s.start} (${num(s.ml, 2)} ml)`, tail];
   }
   return [s.times.map(x => `${x.time} · ${num(x.ml, 2)} ml`).join(', '), tail];
 }
@@ -332,7 +332,7 @@ function SimpleEditor({ pump, s, onSaved, limit }) {
         ${count > 1 && html`<label>${t('sc.to')}<${TimeInput} value=${f.end} grid=${grid} onInput=${v => set({ end: v })}/></label>`}
       </div>
       <${Preview} slots=${ex.slots} err=${ex.err} grid=${grid}/>
-      ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}
+      ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 2), p: num(planned, 2) })}</p>`}
       <div class="row">
         <button type="submit" disabled=${busy}>${empty ? t('sc.create') : t('sc.save')}</button>
         ${replace && html`<button type="button" class="sec" onClick=${() => setReplace(false)}>${t('sc.discard')}</button>`}
@@ -426,7 +426,7 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
         </div>
       </div>
       ${d.kind === 'times' && ex.err && ex.err !== 'invalid_param' && d.times.length > 0 && html`<p class="msg err">${localError(ex, grid)}</p>`}
-      ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}
+      ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 2), p: num(planned, 2) })}</p>`}
     <div class="row savebar">
       <button type="submit" disabled=${busy || !dirty}>${t('sc.save')}</button>
       <button type="button" class="sec" disabled=${busy || !dirty} onClick=${() => { setDraft(draftOf(s)); msg.clear(); }}>${t('sc.discard')}</button>

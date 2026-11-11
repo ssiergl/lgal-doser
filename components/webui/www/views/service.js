@@ -202,7 +202,7 @@ function fmtUptime(s) {
 
 const kPhys = [
   { k: 'retract_rev', l: 'sv.retract', min: 0, max: 2, d: 3, u: 'u.rev' },
-  { k: 'calib_ml', l: 'sv.calib', min: 1, max: 200, d: 1, u: 'ml' },
+  { k: 'calib_ml', l: 'sv.calib', min: 1, max: 200, d: 2, u: 'ml' },
   { k: 'tier1_rpm', l: 'sv.tier', min: 10, max: 600, u: 'u.rpm', n: 0 },
   { k: 'tier2_rpm', l: 'sv.tier', min: 10, max: 600, u: 'u.rpm', n: 1 },
   { k: 'tier3_rpm', l: 'sv.tier', min: 10, max: 600, u: 'u.rpm', n: 2 },
@@ -235,7 +235,7 @@ function PhysCard({ eng, spr, reload }) {
       ${kPhys.map(f => {
         const v = parse(d[f.k]);
         let hint = null;
-        if (f.k === 'retract_rev') hint = t('sv.retract.h', { ml: num(v * nom, 3) });
+        if (f.k === 'retract_rev') hint = t('sv.retract.h', { ml: num(v * nom, 2) });
         else if (f.n !== undefined) hint = t('sv.tier.h', { ml: num(v * nom, 0), sps: spr ? num(v * spr / 60, 0) : '–' });
         return html`<${Num} f=${f} label=${label(f)} d=${d} set=${set} hint=${hint} bad=${bad === f}/>`;
       })}
@@ -320,7 +320,7 @@ function PumpPick({ n, set, pumps }) {
 const kLim = [
   { k: 'prime_max_s', l: 'sv.prime_max', min: 5, max: 600, u: 's' },
   { k: 'prime_heartbeat_ms', l: 'sv.prime_hb', min: 200, max: 5000, u: 'ms' },
-  { k: 'min_dose_ml', l: 'sv.min_dose', min: 0.001, max: 10, d: 3, u: 'ml' },
+  { k: 'min_dose_ml', l: 'sv.min_dose', min: 0.01, max: 10, d: 2, u: 'ml' },
 ];
 const kSch = [{ k: 'max_delay_min', l: 'sv.delay', min: 1, max: 720, u: 'min' }];
 const kGrids = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 30, 32, 36, 40, 45, 48, 60];

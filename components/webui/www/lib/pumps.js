@@ -150,14 +150,14 @@ export function PumpStats({ p, sp, nowLocal, boostNote }) {
   const none = html`<span class="mut">${t('ov.none')}</span>`;
   return html`<div class="today">
       <div class="kv"><span class="mut">${t('ov.today')}</span>
-        <b class="num">${num(used, 1)}<span class=${bt > 0 ? 'acc' : 'mut'}
-          title=${bt > 0 ? t('ov.next.boost', { ml: num(bt, 1) }) : null}> / ${num(plan, 1)}</span> ml</b></div>
+        <b class="num">${num(used, 2)}<span class=${bt > 0 ? 'acc' : 'mut'}
+          title=${bt > 0 ? t('ov.next.boost', { ml: num(bt, 2) }) : null}> / ${num(plan, 2)}</span> ml</b></div>
       <div class="bar"><i style=${{ width: pct + '%', background: pumpColor(p.pump) }}></i></div>
     </div>
     <div class="kv"><span class="mut">${t('ov.range')}</span><b class="num">${d === null ? none
       : html`<span class=${daysCls(d, p.container)}>${d < 1 ? t('ov.day1') : t('ov.days', { d: num(d, 0) })}</span>`}</b></div>
     <div class="kv"><span class="mut">${t('ov.next')}</span>
       <b class="num">${nx ? html`${whenLocal(nx.local, nowLocal)} <span class=${nx.boost_ml ? 'acc' : 'mut'}
-        title=${nx.boost_ml ? t('ov.next.boost', { ml: num(nx.boost_ml, 1) }) : null}>· ${num(nx.ml, 1)} ml</span>` : none}</b></div>
+        title=${nx.boost_ml ? t('ov.next.boost', { ml: num(nx.boost_ml, 2) }) : null}>· ${num(nx.ml, 2)} ml</span>` : none}</b></div>
     ${boostNote && b && html`<div class="small acc num nx-boost">${t('ov.boost.note', { ml: num(b.per_dose_ml, 2) })}</div>`}`;
 }
