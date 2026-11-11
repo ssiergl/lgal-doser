@@ -121,20 +121,23 @@ function DayChart({ n, name, days, today, kind }) {
   const readout = sel ? dayText(sel) : t('hi.sum', { s: num(total, 1), a: num(total / days.length, 2) });
 
   const W = Math.max(width, 160), pw = W - kM.l - kM.r, base = kM.t + kPlotH;
-  const slot = pw / days.length;
-  const xc = k => kM.l + slot * (k + 0.5);
+  // Bars sit in one slot per day; the line runs from axis to axis, its
+  // first day on the y axis and today at the right edge.
+  const bars = kind === 'bar', last = days.length - 1;
+  const slot = pw / days.length, step = last > 0 ? pw / last : 0;
+  const xc = k => (bars ? kM.l + slot * (k + 0.5) : last > 0 ? kM.l + step * k : kM.l + pw / 2);
   const yv = v => base - (kPlotH * v) / max;
   const dec = max < 1 ? 2 : max < 10 ? 1 : 0;  // halves of 1/2/5 × 10^k stay exact
   const pick = e => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const k = Math.floor((e.clientX - r.left - kM.l) / slot);
-    setHover(k >= 0 && k < days.length ? k : -1);
+    const x = e.clientX - e.currentTarget.getBoundingClientRect().left - kM.l;
+    const k = bars ? Math.floor(x / slot) : last > 0 ? Math.round(x / step) : 0;
+    setHover(x >= (bars ? 0 : -step / 2) && k >= 0 && k <= last ? k : -1);
   };
   const xLabel = k => days[k].date === today ? t('hi.today')
     : days.length <= 7 ? dayLabel(days[k].date, { weekday: 'short' }) : dayLabel(days[k].date, { day: '2-digit', month: '2-digit' });
 
   let marks;
-  if (kind === 'bar') {
+  if (bars) {
     const gap = slot >= 8 ? 2 : 1, bw = Math.max(1, slot - gap);
     marks = days.map((d, k) => {
       const v = d.ml[i];
@@ -155,12 +158,12 @@ function DayChart({ n, name, days, today, kind }) {
     <div class="hc-plot" ref=${ref}>
       ${width > 0 && html`<svg width=${W} height=${base + kM.b} role="img" aria-label=${name + ': ' + readout}
           onPointerMove=${pick} onPointerDown=${pick} onPointerLeave=${() => setHover(-1)}>
-        ${hover >= 0 && html`<rect class="hc-hl" x=${kM.l + slot * hover} y=${kM.t} width=${slot} height=${kPlotH}/>`}
+        ${hover >= 0 && bars && html`<rect class="hc-hl" x=${kM.l + slot * hover} y=${kM.t} width=${slot} height=${kPlotH}/>`}
         ${[0, 0.5, 1].map(f => html`<line class=${f ? 'hc-grid-l' : 'hc-base'} x1=${kM.l} x2=${W - kM.r} y1=${yv(max * f)} y2=${yv(max * f)}/>
           <text class="hc-y" x=${kM.l - 6} y=${yv(max * f)}>${num(max * f, dec)}</text>`)}
         <text class="hc-unit" x=${kM.l - 6} y="7">ml</text>
         ${marks}
-        ${hover >= 0 && kind !== 'bar' && html`<line class="hc-cross" x1=${xc(hover)} x2=${xc(hover)} y1=${kM.t} y2=${base}/>
+        ${hover >= 0 && !bars && html`<line class="hc-cross" x1=${xc(hover)} x2=${xc(hover)} y1=${kM.t} y2=${base}/>
           <circle class="hc-dot" cx=${xc(hover)} cy=${yv(days[hover].ml[i])} r="4.5"/>`}
         ${days.map((d, k) => d.skipped[i] > 0 && html`<circle class="hc-skip" cx=${xc(k)} cy=${base + 6} r="3"/>`)}
         ${xTicks(days.length, slot).map(k => html`<line class="hc-tick" x1=${xc(k)} x2=${xc(k)} y1=${base} y2=${base + 3}/>
