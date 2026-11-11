@@ -41,22 +41,23 @@ static void test_alarms() {
     o = eval_one(alarms::Pump{}, false);
     CHECK(o.critical && !o.warning);
 
-    // warning: container low by percent or days, only when tracked
+    // warning: container lasts fewer days than the alarm threshold, only when tracked
     p = {};
     p.tracked = true;
-    p.percent = 10.0f;
+    p.remaining_days = 3.9f;
     o = eval_one(p);
     CHECK(o.warning && !o.critical);
-    p.percent = 10.1f;
+    p.remaining_days = 4.0f;
     CHECK(!eval_one(p).warning);
-    p.remaining_days = 2.9f;
+    p.low_days = 5.0f;  // own threshold
     CHECK(eval_one(p).warning);
-    p.remaining_days = 3.0f;
+    p.low_days = 0.0f;  // off
+    p.remaining_days = 0.1f;
     CHECK(!eval_one(p).warning);
-    p.remaining_days = -1.0f;  // unknown
+    p.low_days = 4.0f;
+    p.remaining_days = -1.0f;  // unknown (no schedule)
     CHECK(!eval_one(p).warning);
-    p = {};
-    p.percent = 0.0f;  // not tracked: no warning
+    p = {};  // not tracked: no warning
     p.remaining_days = 0.5f;
     CHECK(!eval_one(p).warning);
 
@@ -74,7 +75,7 @@ static void test_alarms() {
     p.active = false;
     p.fault = p.limit_hit_today = true;
     p.tracked = true;
-    p.percent = 0.0f;
+    p.remaining_days = 0.0f;
     p.tube_percent = 200.0f;
     o = eval_one(p);
     CHECK(!o.critical && !o.warning);
@@ -131,9 +132,9 @@ static void test_conditions() {
     CHECK(alarms::conditions(in) == 0);
     in.rtc_ok = false;
     in.pumps[0].tracked = true;
-    in.pumps[0].percent = 5.0f;
+    in.pumps[0].remaining_days = 1.0f;
     in.pumps[2].tracked = true;
-    in.pumps[2].percent = 8.0f;
+    in.pumps[2].remaining_days = 2.0f;
     in.pumps[4].tube_percent = 120.0f;
     in.pumps[3].fault = true;  // logged as dose result, no condition
     const uint16_t m = alarms::conditions(in);

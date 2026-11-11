@@ -4,7 +4,7 @@ namespace doser::alarms {
 
 namespace {
 bool low(const Pump& p) {
-    return p.tracked && (p.percent <= kLowPercent || (p.remaining_days >= 0.0f && p.remaining_days < kLowDays));
+    return p.tracked && p.remaining_days >= 0.0f && p.remaining_days < p.low_days;
 }
 bool worn(const Pump& p) { return p.tube_percent >= 100.0f; }
 }  // namespace

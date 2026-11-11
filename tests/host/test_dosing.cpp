@@ -271,6 +271,29 @@ static void test_engineering() {
     CHECK(sim::motor[3].sps == 250u * kSpr / 60);  // tier "normal" = 250 rpm
     e.tier_rpm[2] = 700;
     CHECK_STR(dosing::set_engineering(e), "invalid_param");
+    // container thresholds: defaults, own values, alarm not above warning
+    e = dosing::engineering();
+    CHECK(e.warn_days == 7 && e.low_days == 4);
+    CHECK(dose::warn_days(s, e) == 7 && dose::low_days(s, e) == 4);
+    s.warn_days = 14;
+    s.low_days = 5;
+    CHECK(dosing::set_settings(2, s) == nullptr);
+    CHECK(dose::warn_days(dosing::settings(2), e) == 14 && dose::low_days(dosing::settings(2), e) == 5);
+    s.warn_days = 0;  // default 7 below own alarm 10
+    s.low_days = 10;
+    CHECK_STR(dosing::set_settings(2, s), "invalid_param");
+    s.warn_days = 61;
+    s.low_days = 0;
+    CHECK_STR(dosing::set_settings(2, s), "invalid_param");
+    auto bad = e;
+    bad.low_days = 8;
+    CHECK_STR(dose::validate(bad, 600), "low_days");
+    bad = e;
+    bad.warn_days = 61;
+    CHECK_STR(dose::validate(bad, 600), "warn_days");
+    bad = e;
+    bad.warn_days = bad.low_days = 0;  // both off
+    CHECK(dose::validate(bad, 600) == nullptr);
 }
 
 // Retraction switched off (factory default): a pending retraction is

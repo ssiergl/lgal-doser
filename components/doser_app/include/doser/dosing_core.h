@@ -34,6 +34,9 @@ struct Engineering {
     uint32_t min_dose_ul = 20;              // smallest single dose
     uint16_t tube_life_h = 1000;            // tube lifetime (BPT)
     LimitMode limit_mode = LimitMode::CalendarDay;
+    // container thresholds in days of supply (defaults; a pump may set its own)
+    uint8_t warn_days = 7;                  // warning (yellow) when it lasts fewer days, 0 = off
+    uint8_t low_days = 4;                   // almost empty (alarm) below, 0 = off, <= warn_days
 };
 // nullptr = valid, otherwise name of the invalid field
 const char* validate(const Engineering& e, uint16_t max_rpm);
@@ -48,11 +51,16 @@ struct PumpSettings {
     int16_t retract_mrev = 0;      // 0 = off (factory default), -1 = global value, >0 = own value
     uint32_t daily_limit_ul = 0;   // hard daily limit, 0 = none
     uint32_t capacity_ul = 0;      // container size, 0 = not tracked
+    uint8_t warn_days = 0;         // own container thresholds in days, 0 = engineering default
+    uint8_t low_days = 0;          //   (in the padding before calibrated_at: stored layout unchanged)
     int64_t calibrated_at = 0;     // UTC of the last calibration
 };
 
 float ul_per_rev(const PumpSettings& p);  // calibrated or nominal value
 uint16_t retract_mrev(const PumpSettings& p, const Engineering& e);
+// Container thresholds of a pump (days of supply): own value or the engineering default
+uint8_t warn_days(const PumpSettings& p, const Engineering& e);
+uint8_t low_days(const PumpSettings& p, const Engineering& e);
 
 // ---------------------------------------------------------------------------
 // Conversion (rounded; 64 bit against overflow)

@@ -41,6 +41,15 @@ bool get_int(const JsonValue& v, int64_t lo, int64_t hi, int64_t* out) {
     return v.get(out) && *out >= lo && *out <= hi;
 }
 
+// Optional small number: missing keeps *out, otherwise 0..hi
+bool opt_u8(const JsonValue& v, int64_t hi, uint8_t* out) {
+    if (!v.valid()) return true;
+    int64_t x = 0;
+    if (!get_int(v, 0, hi, &x)) return false;
+    *out = static_cast<uint8_t>(x);
+    return true;
+}
+
 // amount in ml with up to three decimals -> µl
 bool get_ul(const JsonValue& v, int64_t hi_ul, uint32_t* out) {
     int64_t x = 0;
@@ -80,6 +89,7 @@ void write_pumps(Json& j, const Data& d) {
         j.obj().kv("pump", i + 1).kv("name", p.name).kv("mode", dose::mode_str(p.mode)).kv("tier", static_cast<int>(p.speed_tier));
         j.kv("daily_limit_ml", ml(p.daily_limit_ul), 3).kv("retract_mrev", static_cast<int>(p.retract_mrev));
         j.kv("capacity_ml", ml(p.capacity_ul), 3);
+        j.kv("warn_days", p.warn_days).kv("low_days", p.low_days);
         j.kv("ul_per_rev", static_cast<double>(p.ul_per_rev), 3).kv("calibrated_at", p.calibrated_at);
         j.obj("schedule");
         sched_json::write_schedule(j, d.schedules[i]);
@@ -100,7 +110,8 @@ void write_engineering(Json& j, const Data& d) {
     j.end();
     j.kv("prime_max_s", static_cast<int>(e.prime_max_s)).kv("prime_heartbeat_ms", static_cast<int>(e.prime_heartbeat_ms));
     j.kv("min_dose_ml", ml(e.min_dose_ul), 3).kv("tube_life_h", static_cast<int>(e.tube_life_h));
-    j.kv("limit_mode", dose::limit_mode_str(e.limit_mode)).end();
+    j.kv("limit_mode", dose::limit_mode_str(e.limit_mode));
+    j.kv("warn_days", e.warn_days).kv("low_days", e.low_days).end();
     j.obj("scheduler").kv("grid_min", static_cast<int>(d.scheduler.grid_min));
     j.kv("max_delay_min", static_cast<int>(d.scheduler.max_delay_min)).end();
     j.obj("hardware").arr("pumps");
@@ -203,6 +214,9 @@ bool parse_pump(const JsonValue& v, int i, int32_t today, Data* d, Error* err) {
     if (!get_ul(v["daily_limit_ml"], 10000000, &p.daily_limit_ul)) return failf(err, "pumps[%d].%s", i, "daily_limit_ml");
     if (!get_int(v["retract_mrev"], -1, 2000, &x)) return failf(err, "pumps[%d].%s", i, "retract_mrev");
     p.retract_mrev = static_cast<int16_t>(x);
+    // thresholds: optional (older backups have none)
+    if (!opt_u8(v["warn_days"], 60, &p.warn_days)) return failf(err, "pumps[%d].%s", i, "warn_days");
+    if (!opt_u8(v["low_days"], 60, &p.low_days)) return failf(err, "pumps[%d].%s", i, "low_days");
     if (!get_ul(v["capacity_ml"], 100000000, &p.capacity_ul)) return failf(err, "pumps[%d].%s", i, "capacity_ml");
     int64_t milli = 0;
     if (!v["ul_per_rev"].get_decimal(1000, &milli) || milli < 0 || milli > 100000000)
@@ -257,6 +271,8 @@ bool parse_engineering(const JsonValue& v, Data* d, Error* err) {
     e.tube_life_h = static_cast<uint16_t>(x);
     if (!g["limit_mode"].get(buf, sizeof(buf)) || !dose::parse_limit_mode(buf, &e.limit_mode))
         return fail(err, "invalid_param", "engineering.dosing.limit_mode");
+    if (!opt_u8(g["warn_days"], 99, &e.warn_days) || !opt_u8(g["low_days"], 99, &e.low_days))
+        return fail(err, "invalid_param", "engineering.dosing.thresholds");
     if (const char* f = dose::validate(e, kMaxRpm)) {
         if (err) {
             err->code = "invalid_param";

@@ -42,6 +42,8 @@ const char* validate(const Engineering& e, uint16_t max_rpm) {
     if (e.min_dose_ul < 1 || e.min_dose_ul > 10000) return "min_dose";
     if (e.tube_life_h < 10) return "tube_life";
     if (e.limit_mode != LimitMode::CalendarDay && e.limit_mode != LimitMode::Rolling24h) return "limit_mode";
+    if (e.warn_days > 60) return "warn_days";
+    if (e.low_days > e.warn_days) return "low_days";
     return nullptr;
 }
 
@@ -50,6 +52,9 @@ float ul_per_rev(const PumpSettings& p) { return p.ul_per_rev > 0.0f ? p.ul_per_
 uint16_t retract_mrev(const PumpSettings& p, const Engineering& e) {
     return p.retract_mrev >= 0 ? static_cast<uint16_t>(p.retract_mrev) : e.retract_mrev;
 }
+
+uint8_t warn_days(const PumpSettings& p, const Engineering& e) { return p.warn_days ? p.warn_days : e.warn_days; }
+uint8_t low_days(const PumpSettings& p, const Engineering& e) { return p.low_days ? p.low_days : e.low_days; }
 
 uint32_t ul_to_steps(uint32_t ul, float upr, uint32_t spr) {
     if (upr <= 0.0f) return 0;
