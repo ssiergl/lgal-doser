@@ -267,9 +267,10 @@ static void test_boost_and_forecast() {
     auto st = scheduler::status(3);
     CHECK(st.planned_today_ul == 4000 && st.remaining_days > 24.9f && st.remaining_days < 25.1f);
     CHECK_STR(scheduler::boost_start(4, 3000, 3), "no_slots");
-    CHECK(scheduler::boost_start(3, 3000, 3) == nullptr);  // +1 ml per day
+    CHECK(scheduler::boost_start(3, 3000, 3) == nullptr);  // 12 doses until 22 Nov 07:00: +0.25 ml each
     st = scheduler::status(3);
     CHECK(st.boost_active && st.remaining_days < 24.0f);
+    CHECK(st.boost.slots_left == 12 && st.next_boost_ul == 250 && st.boost_today_ul == 1000);
     const uint64_t b = total(3);
     sim::run_until(local(11, 19, 8, 0, 30));
     CHECK(total(3) == b + 1250);
@@ -279,6 +280,19 @@ static void test_boost_and_forecast() {
     st = scheduler::status(3);
     CHECK(!st.boost_active && st.boost.remaining_ul == 0);
     CHECK(dosing::status(3).state.remaining_ul == 100000 - 15000);
+
+    // started in the evening: the share is the same for every dose (not the
+    // day's part on the last dose of the day)
+    sim::run_until(local(11, 22, 18, 0));
+    CHECK(scheduler::boost_start(3, 3000, 3) == nullptr);  // 20 h + 4 + 4 + 08, 12, 16 h = 12 doses
+    st = scheduler::status(3);
+    CHECK(st.boost.slots_left == 12 && st.next_boost_ul == 250 && st.boost_today_ul == 250);
+    const uint64_t c = total(3);
+    sim::run_until(local(11, 22, 20, 0, 30));
+    CHECK(total(3) == c + 1250);
+    sim::run_until(local(11, 25, 19, 0));
+    CHECK(total(3) == c + 12 * 1000 + 3000);
+    CHECK(scheduler::status(3).boost.remaining_ul == 0);
 }
 
 static void test_queue_and_clock_jump() {

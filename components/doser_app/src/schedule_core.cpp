@@ -384,41 +384,57 @@ Action on_due(const PumpSchedule& s, const Due& d, int64_t now) {
 }
 
 // ---------------------------------------------------------------------------
-void boost_start(Boost& b, uint32_t total_ul, uint16_t days, int32_t today) {
+namespace {
+uint16_t slot_count(int n) { return static_cast<uint16_t>(n < 0 ? 0 : n > 0xFFFF ? 0xFFFF : n); }
+}  // namespace
+
+void boost_start(Boost& b, uint32_t total_ul, uint16_t days, int64_t now, int slots) {
     b = Boost{};
-    if (!total_ul || !days) return;
+    if (!total_ul || !days || slots <= 0) return;
     b.remaining_ul = total_ul;
     b.total_ul = total_ul;
     b.days = days;
-    b.start_day = today;
-    b.budget_day = today - 1;
+    b.slots_left = slot_count(slots);
+    b.start_utc = now;
 }
 
-bool boost_active(const Boost& b, int32_t today) {
-    return b.remaining_ul > 0 && today >= b.start_day && today < b.start_day + b.days;
+bool boost_active(const Boost& b, int64_t now) {
+    return b.remaining_ul > 0 && b.slots_left > 0 && now <= boost_end(b);
 }
 
-uint32_t boost_take(Boost& b, int32_t today, int remaining_slots) {
-    if (!boost_active(b, today)) {
-        if (today >= b.start_day + b.days) b.remaining_ul = 0;  // expired
+uint32_t boost_share(const Boost& b) {
+    if (!b.remaining_ul || !b.slots_left) return 0;
+    return b.slots_left == 1 ? b.remaining_ul : b.remaining_ul / b.slots_left;
+}
+
+uint32_t boost_take(Boost& b, int64_t slot_utc) {
+    if (!b.remaining_ul) return 0;
+    if (slot_utc > boost_end(b) || !b.slots_left) {  // window over
+        b = Boost{};
         return 0;
     }
-    if (b.budget_day != today) {
-        const int32_t days_left = b.start_day + b.days - today;
-        b.budget_day = today;
-        b.budget_ul = days_left <= 1 ? b.remaining_ul : b.remaining_ul / days_left;
-    }
-    uint32_t share = remaining_slots <= 1 ? b.budget_ul : b.budget_ul / remaining_slots;
-    if (share > b.remaining_ul) share = b.remaining_ul;
-    b.budget_ul -= share;
+    const uint32_t share = boost_share(b);
     b.remaining_ul -= share;
     return share;
 }
 
-void boost_refund(Boost& b, int32_t today, uint32_t ul) {
-    if (!ul) return;
-    b.remaining_ul += ul;
-    if (b.budget_day == today) b.budget_ul += ul;
+void boost_refund(Boost& b, uint32_t ul) {
+    if (ul && b.total_ul) b.remaining_ul += ul;
+}
+
+void boost_pass(Boost& b, int64_t slot_utc, int n) {
+    if (!b.total_ul || n <= 0) return;
+    if (slot_utc > boost_end(b) || n >= b.slots_left) {
+        b = Boost{};  // last slot of the window processed: what is left cannot be dosed
+        return;
+    }
+    b.slots_left = static_cast<uint16_t>(b.slots_left - n);
+}
+
+void boost_recount(Boost& b, int slots) {
+    if (!b.remaining_ul) return;
+    if (slots <= 0) b = Boost{};
+    else b.slots_left = slot_count(slots);
 }
 
 // ---------------------------------------------------------------------------
@@ -444,12 +460,12 @@ int newest(const RunRecord& a, const RunRecord& b) {
 }
 
 // ---------------------------------------------------------------------------
-float remaining_days(const PumpSchedule& s, const Boost& b, int32_t today, int64_t remaining_ul) {
+float remaining_days(const PumpSchedule& s, const Boost& b, int32_t today, int64_t now, int64_t remaining_ul) {
     double planned = 0;
     for (int32_t d = today; d < today + 7; ++d) planned += day_total(s, d);
-    if (boost_active(b, today)) {
-        const int32_t days_left = b.start_day + b.days - today;
-        planned += double(b.remaining_ul) * (days_left < 7 ? days_left : 7) / days_left;
+    if (boost_active(b, now)) {  // the part of the rest that falls into the next 7 days
+        const double left = double(boost_end(b) - now), week = 7.0 * 86400;
+        planned += left <= week ? b.remaining_ul : b.remaining_ul * week / left;
     }
     const double per_day = planned / 7;
     if (per_day <= 0) return -1.0f;

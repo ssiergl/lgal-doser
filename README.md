@@ -365,7 +365,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / POST | `/api/v1/engineering/dosing?…` | Super-Admin: `retract_rev`, `calib_ml`, `tier1_rpm`…`tier3_rpm`, `prime_max_s`, `prime_heartbeat_ms`, `min_dose_ml`, `tube_life_h`, `limit_mode=calendar_day\|rolling_24h`, `warn_days` (Warnung, wenn der Behälter weniger Tage reicht, Standard 7), `low_days` (Alarm „fast leer“, Standard 4; je 0 = aus, Alarm höchstens gleich Warnung) |
 | GET / PUT | `/api/v1/pumps/schedule?pump=1` | Zeitplan einer Pumpe (JSON, siehe unten) + Zeitraster `grid_min` + heutige Dosen |
 | POST | `/api/v1/pumps/boost?pump=1&ml=30&days=3` | Boost starten; `action=stop` beendet ihn |
-| GET | `/api/v1/schedule/status` | nächste Dosis (`ml` inkl. erwartetem Boost-Anteil, dieser als `boost_ml`), Verzögerung, Warteschlange, Übersprungene, Boost, Reichweite aller Pumpen |
+| GET | `/api/v1/schedule/status` | nächste Dosis (`ml` inkl. erwartetem Boost-Anteil, dieser als `boost_ml`), Verzögerung, Warteschlange, Übersprungene, Boost (Rest, `doses_left`, `per_dose_ml`, `today_ml` = Boost-Anteil der heutigen Dosen, Start und Ende), Reichweite aller Pumpen |
 | GET / PUT | `/api/v1/schedule/locks` | Sperrzeiten zwischen Pumpen + Regel für manuelle Dosen (JSON) |
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
@@ -439,7 +439,7 @@ Die Weboberfläche bedient das pro Pumpe; die Engineering-Parameter liegen im
 | Laufzeit-Schutz | Jede Dosierung (auch manuell und Boost) prüft die Sperrzeiten gegen das tatsächliche Ende der letzten Dosis der anderen Pumpe. Eine geplante Dosis wartet dann und wird nach `max_delay_min` (Standard 120 min) verworfen. Entlüften und Kalibrieren sind ausgenommen. |
 | Manuelle Dosis in Sperrzeit | Regel `reject` (Standard): 409 mit Zeitpunkt, ab dem es geht. Regel `queue`: vorgemerkt (eine pro Pumpe), startet nach Ende der Sperrzeit. |
 | Stromausfall | Bis 2 min Verspätung gilt eine Dosis als pünktlich. Danach wird sie übersprungen (Standard) oder innerhalb eines einstellbaren Fensters nachgeholt. Übersprungene Dosen werden gezählt und mit Grund angezeigt; nach langen Ausfällen wird alles Ältere in einem Schritt übersprungen. |
-| Boost | Zusatzmenge über 1–30 Tage, gleichmäßig auf die geplanten Dosen des Tages verteilt; was nicht dosiert werden kann, wandert auf die Folgetage. Endet von selbst. |
+| Boost | Zusatzmenge über 1–30 Tage ab dem Start (Tage × 24 h), gleichmäßig auf alle geplanten Dosen in diesem Zeitraum verteilt: jede Dosis bekommt Rest ÷ noch ausstehende Dosen. Der Anteil einer ausgelassenen oder fehlgeschlagenen Dosis geht auf die folgenden; ein Rest nach der letzten Dosis des Zeitraums entfällt. Ein geänderter Zeitplan zählt die Dosen neu. Endet von selbst. |
 | Reichweite | Behälter-Restmenge geteilt durch den Durchschnitt der nächsten 7 Tage (inkl. Boost). |
 | Ohne gültige Uhrzeit | Es wird nichts geplant; manuelle Dosen bleiben möglich (außer bei Pumpen mit Tageslimit). |
 | Speicher | Pläne, Sperrzeiten, Parameter in NVS (`sched`). Fortschritt je Pumpe (zuletzt bearbeitete Dosis, Boost, Zähler) im EEPROM als A/B-Datensätze ab 0x640, Rückfall auf NVS. Geschrieben wird nur, wenn eine Dosis bearbeitet wurde. |
