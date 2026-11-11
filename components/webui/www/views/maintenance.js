@@ -13,7 +13,7 @@ import { ask, Toggle, useMsg } from '../lib/ui.js';
 
 add({
   en: {
-    'mt.title': 'Maintenance', 'mt.device': 'Device', 'mt.fw': 'Firmware', 'mt.slot': 'Slot', 'mt.built': 'Built',
+    'mt.title': 'Maintenance', 'mt.device': 'Device', 'mt.license': 'License', 'mt.license.v': 'GPLv3 or later', 'mt.third': 'third-party software', 'mt.fw': 'Firmware', 'mt.slot': 'Slot', 'mt.built': 'Built',
     'mt.host': 'Address', 'mt.mac': 'MAC', 'mt.uptime': 'Running for', 'mt.reset': 'Last restart', 'mt.mem': 'Memory free / lowest',
     'mt.psram': 'PSRAM free', 'mt.rolledback': 'The last update did not start – the device went back to the previous firmware ({p} is marked invalid).',
     'mt.uptime.v': '{d} d {h} h {m} min', 'mt.uptime.h': '{h} h {m} min',
@@ -68,7 +68,7 @@ add({
     'err.too_many_redirects': 'Too many redirects',
   },
   de: {
-    'mt.title': 'Wartung', 'mt.device': 'Gerät', 'mt.fw': 'Firmware', 'mt.slot': 'Speicherplatz', 'mt.built': 'Erstellt',
+    'mt.title': 'Wartung', 'mt.device': 'Gerät', 'mt.license': 'Lizenz', 'mt.license.v': 'GPLv3 oder neuer', 'mt.third': 'Fremdsoftware', 'mt.fw': 'Firmware', 'mt.slot': 'Speicherplatz', 'mt.built': 'Erstellt',
     'mt.host': 'Adresse', 'mt.mac': 'MAC', 'mt.uptime': 'Läuft seit', 'mt.reset': 'Letzter Neustart', 'mt.mem': 'Speicher frei / tiefster Wert',
     'mt.psram': 'PSRAM frei', 'mt.rolledback': 'Das letzte Update ist nicht gestartet – das Gerät ist zur vorherigen Firmware zurückgekehrt ({p} ist als ungültig markiert).',
     'mt.uptime.v': '{d} d {h} h {m} min', 'mt.uptime.h': '{h} h {m} min',
@@ -186,6 +186,8 @@ function InfoCard({ info, pro }) {
       ${pro && html`<dt>${t('mt.reset')}</dt><dd>${s.reset_reason}</dd>
         <dt>${t('mt.mem')}</dt><dd>${num(s.heap_free / 1024)} / ${num(s.heap_min_free / 1024)} KiB</dd>
         <dt>${t('mt.psram')}</dt><dd>${num(s.psram_free / 1048576, 1)} MiB</dd>`}
+      <dt>${t('mt.license')}</dt><dd><a href="/ui/licenses/gpl-3.0.txt" target="_blank" rel="noopener">${t('mt.license.v')}</a><br/>
+        <a href="/ui/licenses/third-party.txt" target="_blank" rel="noopener">${t('mt.third')}</a></dd>
     </dl>
   </section>`;
 }

@@ -429,6 +429,8 @@ class H(BaseHTTPRequestHandler):
         if sysr(self, "GET"): return
         if p in ("/login", "/setup", "/recovery"): return self.send(200, open(ROOT + "/components/lgal_core/www" + p + ".html", "rb").read(), "text/html; charset=utf-8")
         if p == "/": return self.send(200, open(ROOT + "/components/webui/www/index.html", "rb").read(), "text/html; charset=utf-8")
+        if p in ("/ui/licenses/gpl-3.0.txt", "/ui/licenses/third-party.txt"):
+            return self.send(200, open(ROOT + ("/LICENSE" if "gpl" in p else "/THIRD-PARTY-NOTICES.txt"), "rb").read(), "text/plain; charset=utf-8")
         if p.startswith("/ui/"):
             ext = p.rsplit(".", 1)[-1]
             ct = {"js": "text/javascript", "mjs": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "html": "text/html"}.get(ext, "application/octet-stream")

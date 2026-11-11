@@ -13,7 +13,7 @@ components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte
 components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitplan (Scheduler), Engineering und ihre REST-APIs
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  ap_password.py, ota_upload.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  ap_password.py, ota_upload.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
@@ -677,3 +677,25 @@ Ab Werk aus.
 - [x] **M4** WLAN-Client, Captive Portal, Ersteinrichtung, Auth, REST, WebSocket
 - [ ] **M5** WebUI (SPA, eingebettet ins Firmware-Image)
 - [ ] **M6** MQTT + Home-Assistant-Discovery, Historie, Backup, Engineering-Modus
+
+## Lizenz
+
+- **Firmware und übrige Software:** GNU General Public License Version 3 oder neuer
+  (GPL-3.0-or-later), Volltext in [LICENSE](LICENSE). Copyright © 2026 Lars Greiss / LG Aquatic Life.
+  Zusatzerlaubnis nach GPLv3 Abschnitt 7: Die Firmware darf zusammen mit den nur als Binärdatei
+  veröffentlichten Espressif-Bibliotheken (WLAN, PHY, Koexistenz, ROM) weitergegeben werden –
+  sonst wäre ein GPL-Image mit ESP-IDF-WLAN streng genommen nicht verteilbar. Der Wortlaut steht
+  am Anfang von [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+- **Hardware** (Gehäuse/STL/STEP/3MF, Schaltplan, Platinenlayout, Gerber, Stückliste):
+  Creative Commons BY-NC-SA 4.0, siehe [LICENSE-hardware.md](LICENSE-hardware.md). Nicht-kommerzielle
+  Nutzung und Weitergabe unter gleichen Bedingungen mit Namensnennung; kommerzielle Nutzung nur mit
+  schriftlicher Erlaubnis.
+- **Fremdsoftware:** ESP-IDF, Espressif-Komponenten (mdns, mqtt, w5500), Mbed TLS und htm unter
+  Apache 2.0; FreeRTOS, Preact, esp_littlefs, HTTP-Parser unter MIT; lwIP, littlefs, wpa_supplicant,
+  TLSF, Picolibc unter BSD. Alle sind mit der GPLv3 vereinbar. Liste und Volltexte stehen in
+  [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt); `tools/third_party_notices.py` erzeugt die
+  Datei aus den Lizenzdateien von ESP-IDF und den Komponenten neu (nach jedem ESP-IDF- oder
+  Komponenten-Update ausführen und committen).
+- **Im Gerät:** Die Firmware enthält beide Texte; die Wartungsseite verlinkt sie
+  (`/ui/licenses/gpl-3.0.txt`, `/ui/licenses/third-party.txt`). So liegen die Hinweise auch bei
+  einer Weitergabe nur der .bin-Datei bei, wie es MIT, BSD und Apache verlangen.
