@@ -38,7 +38,7 @@ struct Job {
     // booking (dosing only)
     int64_t booked_at = 0;
     uint32_t booked_ul = 0;
-    bool booked_container = false;
+    int32_t ctr_before = -1;        // container before the booking, -1 = not tracked
     bool booked_ledger = false;     // only with valid time
     // sequence
     int64_t phase_start_us = 0;
@@ -165,14 +165,21 @@ const char* begin(int i, Activity act, uint32_t main_steps, int tier, uint16_t u
     return nullptr;
 }
 
+// Container after taking ul: never below 0 (a forgotten refill must not
+// count on into the negative)
+int32_t drained(int32_t remaining, uint32_t ul) {
+    const int64_t r = int64_t(remaining) - int64_t(ul);
+    return r > 0 ? static_cast<int32_t>(r) : 0;
+}
+
 void refund(Pump& p, uint32_t ul) {
     Job& j = p.job;
     if (!ul || !j.booked_ul) return;
     if (ul > j.booked_ul) ul = j.booked_ul;
     if (j.booked_ledger) p.st.ledger.subtract(j.booked_at, ul);
-    if (j.booked_container) p.st.remaining_ul += static_cast<int32_t>(ul);
     p.st.total_ul -= ul;
     j.booked_ul -= ul;
+    if (j.ctr_before >= 0) p.st.remaining_ul = drained(j.ctr_before, j.booked_ul);
 }
 
 void finish(int i, bool fault) {
@@ -395,7 +402,8 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retr
     const int64_t now = now_utc();
     const bool ledger = time_valid();  // without a time no assignment to a day is possible
     if (ledger) p.st.ledger.add(now, ul);
-    if (p.set.capacity_ul) p.st.remaining_ul -= static_cast<int32_t>(ul);
+    const int32_t ctr_before = p.set.capacity_ul ? (p.st.remaining_ul > 0 ? p.st.remaining_ul : 0) : -1;
+    if (ctr_before >= 0) p.st.remaining_ul = drained(ctr_before, ul);
     p.st.total_ul += ul;
     p.st.retracted_mrev = 0;  // will be compensated right away
     dosing_store::save_state(pump, p.st);
@@ -411,7 +419,7 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retr
     j.target_ul = ul;
     j.booked_at = now;
     j.booked_ul = ul;
-    j.booked_container = p.set.capacity_ul != 0;
+    j.ctr_before = ctr_before;
     j.booked_ledger = ledger;
     ESP_LOGI(TAG, "Pump %d: dose %" PRIu32 " ul (%s) = %" PRIu32 " steps at %" PRIu32 " steps/s", pump + 1, ul,
              trigger_str(trigger), steps, j.sps);
@@ -491,7 +499,7 @@ const char* calibrate_apply(int pump, uint32_t measured_ul) {
     if (dosing_store::save_settings(pump, p.set) != ESP_OK) return "storage_error";
     // The collected amount is missing from the container
     if (p.set.capacity_ul) {
-        p.st.remaining_ul -= static_cast<int32_t>(measured_ul);
+        p.st.remaining_ul = drained(p.st.remaining_ul, measured_ul);
         dosing_store::save_state(pump, p.st);
     }
     log_setting(history::Kind::Calibration, pump, "set", p.calib_target, measured_ul,

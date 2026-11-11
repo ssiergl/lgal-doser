@@ -411,7 +411,7 @@ Oszilloskop/Logikanalysator).
 |---|---|
 | Menge → Schritte | Kalibrierung in µl pro Motorumdrehung (unabhängig von den Mikroschritten). Ohne Kalibrierung Nennwert 0,37 ml/U (≈ 111 ml/min bei 300 U/min). |
 | Ablauf | Rückzug ausgleichen → Hauptfahrt → Anti-Tropf-Rückzug. Der ausgeführte Rückzug wird spannungsausfallsicher gespeichert. Der Rückzug ist pro Pumpe **ab Werk aus** und lässt sich auf „Standard“ (globaler Wert) oder einen eigenen Wert stellen; beim Ausschalten wird ein offener Rückzug bei der nächsten Dosis noch ausgeglichen. |
-| Verbuchung | Beim Start wird die volle Menge auf Tageslimit, Behälter und Gesamtzähler gebucht und gesichert; ein Abbruch schreibt die nicht geförderte Menge gut. Stromausfall während der Fahrt → Menge bleibt gebucht (sichere Seite). |
+| Verbuchung | Beim Start wird die volle Menge auf Tageslimit, Behälter und Gesamtzähler gebucht und gesichert; ein Abbruch schreibt die nicht geförderte Menge gut. Der Behälter zählt nie unter 0 ml (vergessenes Nachfüllen); die Dosis läuft trotzdem. Stromausfall während der Fahrt → Menge bleibt gebucht (sichere Seite). |
 | Tageslimit | hart pro Pumpe; Fenster Kalendertag oder rollierend 24 h (Engineering). Stunden-Töpfe über 26 h, angebrochene Stunden zählen voll. Ohne gültige Uhrzeit werden Pumpen mit Limit gesperrt. |
 | Kalibrierung | Lauf mit Zielmenge (Standard 10 ml), dann gemessene Menge eintragen. Plausibel: 0,25- bis 4-facher Nennwert. Die aufgefangene Menge wird vom Behälter abgezogen. |
 | Entlüften | läuft, solange der Button gehalten wird (Heartbeat alle 150 ms, Stopp nach 500 ms ohne Heartbeat oder sofort bei Abbruch der WebSocket-Verbindung, max. 60 s). Zählt nicht für Behälter/Limit, aber für die Schlauch-Laufzeit. |
