@@ -27,8 +27,11 @@ add({
     'prime.btn': 'Hold to fill', 'prime.held': 'Filling … release to stop', 'prime.run': '{s} s · {ml} ml',
     'prime.rest': 'No live connection – stops 0.5 s after releasing.',
     'cal.title': 'Calibration', 'cal.ok': 'Calibrated: {v} ml per revolution', 'cal.none': 'Not calibrated yet – amounts use the nominal value.',
-    'cal.when': 'on {d}', 'cal.s1': 'Put the tube end into a measuring cup.', 'cal.s2': 'Start: the pump delivers about {ml} ml.',
-    'cal.ask.start': 'Is the tube end of pump {n} in the measuring cup? The pump now delivers about {ml} ml.', 'cal.target': 'Target amount',
+    'cal.when': 'on {d}', 'cal.s0': 'Fill the tube up to its end (also possible after Start).', 'cal.s1': 'Put the tube end into a measuring cup.', 'cal.s2': 'Start: the pump delivers about {ml} ml.',
+    'cal.dlg.title': 'Calibrate pump {n}', 'cal.dlg.q1': '1 · Is the tube filled?',
+    'cal.dlg.fill': 'The tube must be filled with liquid up to its end, air falsifies the measurement. If not: hold the button until liquid comes out (into a glass or back into the container).',
+    'cal.dlg.q2': '2 · Tube end into the measuring cup', 'cal.dlg.cup': 'Empty the measuring cup and hold the tube end into it. The pump then delivers about {ml} ml.',
+    'cal.dlg.ok': 'Filled – start', 'cal.target': 'Target amount',
     'cal.start': 'Start calibration', 'cal.running': 'Calibration running … {done} ml',
     'cal.measured': 'Measured amount', 'cal.ask': 'The pump should have delivered {ml} ml. How much is in the cup?',
     'cal.apply': 'Apply', 'cal.discard': 'Discard', 'cal.done': 'New calibration saved',
@@ -81,8 +84,11 @@ add({
     'prime.btn': 'Halten zum Füllen', 'prime.held': 'Füllt … loslassen zum Stoppen', 'prime.run': '{s} s · {ml} ml',
     'prime.rest': 'Keine Live-Verbindung – stoppt 0,5 s nach dem Loslassen.',
     'cal.title': 'Kalibrierung', 'cal.ok': 'Kalibriert: {v} ml pro Umdrehung', 'cal.none': 'Noch nicht kalibriert – Mengen nutzen den Nennwert.',
-    'cal.when': 'am {d}', 'cal.s1': 'Schlauchende in einen Messbecher halten.', 'cal.s2': 'Starten: Die Pumpe fördert etwa {ml} ml.',
-    'cal.ask.start': 'Steckt das Schlauchende von Pumpe {n} im Messbecher? Die Pumpe fördert jetzt etwa {ml} ml.', 'cal.target': 'Zielmenge',
+    'cal.when': 'am {d}', 'cal.s0': 'Schlauch bis zum Ende füllen (geht auch nach „Starten“).', 'cal.s1': 'Schlauchende in einen Messbecher halten.', 'cal.s2': 'Starten: Die Pumpe fördert etwa {ml} ml.',
+    'cal.dlg.title': 'Pumpe {n} kalibrieren', 'cal.dlg.q1': '1 · Ist der Schlauch gefüllt?',
+    'cal.dlg.fill': 'Der Schlauch muss bis zum Ende mit Flüssigkeit gefüllt sein, Luft verfälscht die Messung. Falls nicht: Knopf halten, bis Flüssigkeit austritt (in ein Glas oder zurück in den Behälter).',
+    'cal.dlg.q2': '2 · Schlauchende in den Messbecher', 'cal.dlg.cup': 'Messbecher leeren und das Schlauchende hineinhalten. Die Pumpe fördert dann etwa {ml} ml.',
+    'cal.dlg.ok': 'Gefüllt – starten', 'cal.target': 'Zielmenge',
     'cal.start': 'Kalibrierung starten', 'cal.running': 'Kalibrierung läuft … {done} ml',
     'cal.measured': 'Gemessene Menge', 'cal.ask': 'Die Pumpe sollte {ml} ml fördern. Wie viel ist im Becher?',
     'cal.apply': 'Übernehmen', 'cal.discard': 'Verwerfen', 'cal.done': 'Neue Kalibrierung gespeichert',
@@ -246,8 +252,9 @@ function DoseCard({ p, pro, nowLocal }) {
   </section>`;
 }
 
-function PrimeCard({ p }) {
-  const msg = useMsg();
+// Fill button (hold) with progress: over the live connection with a dead
+// man's beat, otherwise REST
+function PrimeHold({ p, msg }) {
   const ws = liveOpen();
   const call = action => (ws
     ? liveCall({ type: 'prime', pump: p.pump, action })
@@ -256,27 +263,67 @@ function PrimeCard({ p }) {
   const beat = () => call('beat').catch(e => { msg.err(e); throw e; });
   const stop = () => call('stop').catch(() => {});
   const other = p.activity !== 'idle' && p.activity !== 'priming';
-  return html`<section class="card"><h2>${t('prime.title')}</h2>
-    <p class="mut small">${t('prime.hint')}</p>
-    <${HoldButton} cls="svc" label=${t('prime.btn')} activeLabel=${t('prime.held')}
+  return html`<${HoldButton} cls="svc" label=${t('prime.btn')} activeLabel=${t('prime.held')}
       disabled=${other || p.mode === 'disabled'} onStart=${start} onBeat=${beat} onStop=${stop}/>
     ${p.activity === 'priming' && html`<${Progress} p=${p}/>`}
-    ${!ws && html`<p class="mut small">${t('prime.rest')}</p>`}
+    ${!ws && html`<p class="mut small">${t('prime.rest')}</p>`}`;
+}
+
+function PrimeCard({ p }) {
+  const msg = useMsg();
+  return html`<section class="card"><h2>${t('prime.title')}</h2>
+    <p class="mut small">${t('prime.hint')}</p>
+    <${PrimeHold} p=${p} msg=${msg}/>
     ${msg.node}
   </section>`;
+}
+
+// Start of a calibration: is the tube filled (fill it right here), then the
+// measuring cup
+function CalibDialog({ p, ml, onStart, onClose }) {
+  const msg = useMsg();
+  const ok = useRef(null);
+  useEffect(() => {
+    const back = document.activeElement;
+    if (ok.current) ok.current.focus();
+    const esc = e => { if (e.key === 'Escape') onClose(); };
+    addEventListener('keydown', esc);
+    return () => { removeEventListener('keydown', esc); if (back && back.focus) back.focus(); };
+  }, []);
+  const priming = p.activity === 'priming';
+  return html`<div class="overlay" onClick=${e => { if (e.target === e.currentTarget && !priming) onClose(); }}>
+    <section class="card dialog" role="dialog" aria-modal="true" aria-labelledby="cal-dlg">
+      <div class="row"><h2 id="cal-dlg">${t('cal.dlg.title', { n: p.pump })}</h2></div>
+      <h3>${t('cal.dlg.q1')}</h3>
+      <p class="mut small">${t('cal.dlg.fill')}</p>
+      <${PrimeHold} p=${p} msg=${msg}/>
+      <h3>${t('cal.dlg.q2')}</h3>
+      <p class="mut small">${t('cal.dlg.cup', { ml: num(ml, 1) })}</p>
+      ${msg.node}
+      <div class="row end">
+        <button type="button" class="sec" onClick=${onClose}>${t('ui.cancel')}</button>
+        <button type="button" ref=${ok} disabled=${p.activity !== 'idle'} onClick=${onStart}>${t('cal.dlg.ok')}</button>
+      </div>
+    </section>
+  </div>`;
 }
 
 function CalibCard({ p, pro }) {
   const cal = p.calibration;
   const [target, setTarget] = useState('');
   const [measured, setMeasured] = useState('');
+  const [dlg, setDlg] = useState(null);  // target amount while the start dialog is open
   const msg = useMsg();
   const running = p.activity === 'calibrating';
-  const start = async () => {
+  const open = () => {
     const v = target.trim() === '' ? undefined : parseNum(target);
     if (Number.isNaN(v) || v === 0) { msg.err({ code: 'invalid_param' }); return; }
     msg.clear();
-    if (!(await ask(t('cal.ask.start', { n: p.pump, ml: num(v ?? cal.target_ml, 1) }), { ok: t('cal.start') }))) return;
+    setDlg({ v });
+  };
+  const start = () => {
+    const { v } = dlg;
+    setDlg(null);
     api('POST', '/api/v1/pumps/calibrate?' + qs({ pump: p.pump, action: 'start', ml: v === undefined ? undefined : dec(v) }))
       .then(refresh).catch(msg.err);
   };
@@ -303,17 +350,19 @@ function CalibCard({ p, pro }) {
     </form>`;
   } else {
     body = html`<ol class="steps small">
+        <li>${t('cal.s0')}</li>
         <li>${t('cal.s1')}</li>
         <li>${t('cal.s2', { ml: target.trim() || num(cal.target_ml, 1) })}</li>
       </ol>
       ${pro && html`<div class="form-row"><label>${t('cal.target')}<${Amount} value=${target} onInput=${setTarget} placeholder=${num(cal.target_ml, 1)}/></label></div>`}
-      <button class="sec" onClick=${start} disabled=${p.activity !== 'idle' || p.mode === 'disabled'}>${t('cal.start')}</button>`;
+      <button class="sec" onClick=${open} disabled=${p.activity !== 'idle' || p.mode === 'disabled'}>${t('cal.start')}</button>`;
   }
   return html`<section class="card"><h2>${t('cal.title')}</h2>
     <p class=${cal.calibrated ? 'small' : 'small warn'}>${cal.calibrated
       ? t('cal.ok', { v: num(cal.ml_per_rev, 3) }) + (when ? ' ' + t('cal.when', { d: when }) : '') : t('cal.none')}</p>
     ${body}
     ${msg.node}
+    ${dlg && html`<${CalibDialog} p=${p} ml=${dlg.v ?? cal.target_ml} onStart=${start} onClose=${() => setDlg(null)}/>`}
   </section>`;
 }
 
