@@ -437,7 +437,7 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
 }
 
 // ---------------------------------------------------------------------------
-// Export / import of this pump's schedule as a JSON file (all users)
+// Export / import of this pump's schedule as a JSON file (pro view)
 
 const kFormat = 'lgal-doser-schedule';
 const kKeys = ['kind', 'start', 'end', 'count', 'ml', 'times', 'days', 'power_loss', 'catch_up_min'];
@@ -508,6 +508,6 @@ export function ScheduleCard({ p, pro, nowLocal }) {
           ${pro ? draft && html`<${ProEditor} pump=${pump} s=${s} draft=${draft} setDraft=${setDraft} onSaved=${setS}
               today=${today} limit=${p.daily.limit_ml}/>`
             : html`<${SimpleEditor} pump=${pump} s=${s} onSaved=${setS} limit=${p.daily.limit_ml}/>`}
-          <${ScheduleIO} p=${p} s=${s} onSaved=${setS} grid=${grid}/>`}
+          ${pro && html`<${ScheduleIO} p=${p} s=${s} onSaved=${setS} grid=${grid}/>`}`}
   </section>`;
 }
