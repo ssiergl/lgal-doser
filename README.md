@@ -122,6 +122,11 @@ Anmeldung auf `/login` (Seite „Account“):
 Browser-Seiten ohne Anmeldung leiten auf `/login?next=…` um, API-Aufrufe antworten
 mit 401 `unauthorized` bzw. 403 `engineering_locked`.
 
+Ändernde Anfragen (alles außer GET) aus dem Browser nimmt das Gerät nur von seinen eigenen
+Seiten an (Origin = Host, sonst 403 `forbidden_origin`). Das schützt zusätzlich zum
+`SameSite=Strict`-Cookie vor anderen Geräten unter derselben Heim-Domain. Clients ohne
+Origin-Header (Home Assistant, Apps, Skripte) sind nicht betroffen.
+
 Im Werkszustand (`setup_completed = false`) ist das Setup-WLAN immer an und `/` führt
 zur [Ersteinrichtung](#ersteinrichtung-m4).
 

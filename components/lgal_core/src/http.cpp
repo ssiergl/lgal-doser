@@ -10,6 +10,7 @@
 #include "lgal/auth.h"
 #include "lgal/json.h"
 #include "lgal/ws.h"
+#include "lgal/ws_core.h"
 #include "lwip/sockets.h"
 
 namespace lgal::http {
@@ -85,15 +86,40 @@ esp_err_t start() {
 
 httpd_handle_t handle() { return s_server; }
 
-bool authorize(httpd_req_t* req) {
-    const auth::Result r = auth::check(req, false);
-    return r == auth::Result::Ok || deny(req, r);
+namespace {
+// Cross-site request forgery: SameSite=Strict keeps the session cookie away
+// from foreign sites, but not from other hosts of the same site (another
+// device under the same home domain). Browsers send Origin with every
+// request that is not GET/HEAD, so such a request is only accepted from the
+// device's own pages. Clients without Origin (apps, Home Assistant, tools)
+// are no browsers and pass.
+bool own_origin(httpd_req_t* req) {
+    if (req->method == HTTP_GET || req->method == HTTP_HEAD) return true;
+    const size_t on = httpd_req_get_hdr_value_len(req, "Origin");
+    if (on == 0) return true;
+    const size_t hn = httpd_req_get_hdr_value_len(req, "Host");
+    char origin[128], host[96];
+    if (on >= sizeof(origin) || hn == 0 || hn >= sizeof(host) ||
+        httpd_req_get_hdr_value_str(req, "Origin", origin, sizeof(origin)) != ESP_OK ||
+        httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
+        return false;
+    return ws::origin_allowed(origin, host);
 }
 
-bool authorize_engineering(httpd_req_t* req) {
-    const auth::Result r = auth::check(req, true);
+bool check(httpd_req_t* req, bool engineering) {
+    if (!own_origin(req)) {
+        ESP_LOGW(TAG, "%s from a foreign origin rejected", req->uri);
+        send_error(req, "403 Forbidden", "forbidden_origin", "Changes only from the device's own pages");
+        return false;
+    }
+    const auth::Result r = auth::check(req, engineering);
     return r == auth::Result::Ok || deny(req, r);
 }
+}  // namespace
+
+bool authorize(httpd_req_t* req) { return check(req, false); }
+
+bool authorize_engineering(httpd_req_t* req) { return check(req, true); }
 
 uint32_t client_ipv4(httpd_req_t* req) {
     const int fd = httpd_req_to_sockfd(req);
