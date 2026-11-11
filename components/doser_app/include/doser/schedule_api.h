@@ -14,7 +14,7 @@
 //   GET  /api/v1/schedule/locks
 //   PUT  /api/v1/schedule/locks                 JSON body, see below
 //   GET  /api/v1/engineering/scheduler          super-admin parameters (engineering area)
-//   POST /api/v1/engineering/scheduler ?grid_min=5&max_delay_min=30
+//   POST /api/v1/engineering/scheduler ?grid_min=5&max_delay_min=120
 //
 // Schedule body: exactly one plan per pump (unknown members are ignored, so
 // a GET result can be sent back after editing):

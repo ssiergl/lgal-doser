@@ -164,6 +164,10 @@ static void test_runtime_guard() {
 
 static void test_delay_timeout() {
     // OTA lock from 07:59 on Monday: both slots wait and are dropped after 30 min
+    auto c = scheduler::config();
+    CHECK(c.max_delay_min == 120);  // factory default
+    c.max_delay_min = 30;
+    CHECK(scheduler::set_config(c) == nullptr);
     sim::run_until(local(11, 9, 7, 59));
     sim::locked = true;
     const uint64_t b0 = total(0), b1 = total(1);
@@ -179,6 +183,8 @@ static void test_delay_timeout() {
     CHECK(e && e->source == history::Source::Schedule && e->value == 1 && e->target_ul > 0);
     CHECK(e && e->utc == uint32_t(local(11, 9, 8, 30, 1)) && std::strcmp(history::code_str(e->code), "delay_timeout") == 0);
     sim::locked = false;
+    c.max_delay_min = 120;
+    CHECK(scheduler::set_config(c) == nullptr);
 }
 
 static void test_power_loss() {

@@ -28,7 +28,7 @@ constexpr int64_t kOnTimeTolerance = 120;  // a slot started this late is not "m
 // Scheduler parameters (super admin, functional spec 11.2)
 struct Config {
     uint16_t grid_min = 5;        // smallest scheduling grid
-    uint16_t max_delay_min = 30;  // a delayed slot (lock time, pump busy) is dropped after this
+    uint16_t max_delay_min = 120;  // a delayed slot (lock time, pump busy) is dropped after this
 };
 // nullptr = valid, otherwise name of the invalid field
 const char* validate(const Config& c);
