@@ -11,7 +11,7 @@
 //   POST /api/v1/ota/release/install  install the newer release of the source -> 202
 //   POST /api/v1/ota/url        {"url":"https://…/firmware.bin"} -> 202 {"status":"started"};
 //                               the device downloads the image itself (engineering)
-//   GET  /api/v1/ota/status     {"state":"idle|running|failed|rebooting","source":"api",
+//   GET  /api/v1/ota/status     {"state":"idle|running|failed|rebooting","source":"api|mqtt",
 //                               "http","received","total" (null = unknown),"error"?,"detail"?}
 //   GET  /api/v1/ota/settings   {"source","auto_check","allow_http"}
 //   PUT  /api/v1/ota/settings   {"auto_check"?}; "source"? and "allow_http"? need engineering
@@ -86,6 +86,13 @@ const char* start_release_install(const char* source, std::string* reason = null
 
 enum class State : uint8_t { Idle, Running, Failed, Rebooting };
 const char* state_name(State s);
+// Download progress (as GET /api/v1/ota/status)
+struct Status {
+    State state = State::Idle;
+    uint32_t received = 0;
+    int32_t total = -1;  // -1 = unknown
+};
+Status status();
 
 // Starts an update from url in the background (source e.g. "api").
 // nullptr = started; otherwise "invalid_url", "http_not_allowed",

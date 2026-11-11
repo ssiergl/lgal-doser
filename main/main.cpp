@@ -266,6 +266,7 @@ extern "C" void app_main(void) {
     lgal::ota::set_lock_hook([](bool locked) {
         doser::motion::lock(locked);
     });
+    lgal::ota::set_change_hook(doser::mqtt_ha::update_changed);
     lgal::ota::register_handlers(lgal::http::handle());
 
     // A new image only counts as valid once the device is reachable.

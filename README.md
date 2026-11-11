@@ -342,7 +342,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST | `/api/v1/ota/release/check` | Quelle jetzt prüfen → 202 `started` (Ergebnis bei `GET /api/v1/ota/release`); 400 `no_source` |
 | POST | `/api/v1/ota/release/install` | neuere Version der Quelle installieren → 202 `started`, Fortschritt bei `GET /api/v1/ota/status`; Fehler dort u. a. `no_update`, `sha256_mismatch`, `manifest_invalid`, `no_build`; 409 `pump_running` / `ota_in_progress` |
 | POST | `/api/v1/ota/url` | Engineering. `{"url":"https://…"}` → 202 `started`, das Gerät lädt selbst; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |
-| GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api","http","received","total","error"?,"detail"?}` |
+| GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api\|mqtt","http","received","total","error"?,"detail"?}` |
 | GET / PUT | `/api/v1/ota/settings` | `{"source","auto_check","allow_http"}`; `auto_check` ab Werk `true`, `allow_http` ab Werk `false`. `source` und `allow_http` ändern nur mit Engineering (`source` gesetzt → sofortige Prüfung) |
 | GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
@@ -520,14 +520,18 @@ Topics unter dem Basis-Topic (Standard: `lg-aquatic-life/<gerätetyp>/<hostname>
 | `<basis>/pump/<n>/amount/set` | Menge für `PRESS` in ml (im RAM, Start 1 ml) – nur mit Steuerung |
 | `<basis>/pump/<n>/schedule/set` | `ON` / `OFF` – Betrieb automatisch / nur manuell (eine ausgeschaltete Pumpe bleibt aus) – nur mit Steuerung |
 | `<basis>/stop/set` | beliebig – alle Pumpen stoppen – nur mit Steuerung |
+| `<basis>/update` | `{"installed_version","latest_version","release_url"?,"in_progress","update_percentage"}` für die Update-Entität; `latest_version` = installierte, solange keine neuere bekannt ist |
+| `<basis>/update/set` | `install` – neuere Version der [Update-Quelle](#ota-update) installieren (nie eine freie Adresse) – nur mit Steuerung |
 | `<basis>/ota/state` | Fortschritt wie `GET /api/v1/ota/status` (beim Start, alle 5 s, am Ende) |
 
 **Home-Assistant-Erkennung** (Standard an): ein Gerät „LGAL Doser XXXX“ per Device-Discovery
 (`homeassistant/device/lgal_doser_xxxx/config`) mit je Pumpe Status, dosiert gesamt
 (`total_increasing`, Tageswerte bildet Home Assistant), geplant heute, Vorrat, Reichweite in
 Tagen, nächste Dosierung und Schlauch-Betriebsstunden (Diagnose); dazu Alarm und
-Warnung des Geräts. Namen folgen der Gerätesprache und den Pumpennamen. Mit **Steuerung**
-kommen je Pumpe Zeitplan-Schalter, Dosiermenge und „Dosieren“ sowie „Alle stoppen“ hinzu; ohne
+Warnung des Geräts sowie – mit Update-Quelle – die Update-Entität „Firmware“ (installierte und
+neuere Version, Link zum Release, Fortschritt). Namen folgen der Gerätesprache und den Pumpennamen. Mit **Steuerung**
+kommen je Pumpe Zeitplan-Schalter, Dosiermenge und „Dosieren“, „Alle stoppen“ sowie
+„Installieren“ an der Update-Entität hinzu (auch dann gesperrt, solange eine Pumpe läuft); ohne
 Steuerung entfernt das Gerät diese Entitäten wieder und ignoriert Befehle. Startet Home
 Assistant neu (`homeassistant/status` = `online`), sendet das Gerät Discovery und Zustände erneut.
 Dosen über MQTT laufen wie manuelle Dosen (Tageslimit, Sperrzeiten, Behälter) und stehen

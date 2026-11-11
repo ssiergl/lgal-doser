@@ -15,4 +15,7 @@ void init();
 // Alarm state for "<base>/state" (main.cpp, from the status LED evaluation)
 void set_alarms(bool critical, bool warning, uint16_t conditions);
 
+// Update check or progress changed: "<base>/update" is sent soon (any task)
+void update_changed();
+
 }  // namespace doser::mqtt_ha

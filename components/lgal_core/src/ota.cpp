@@ -810,6 +810,13 @@ Settings settings() {
     return s;
 }
 
+Status status() {
+    portENTER_CRITICAL(&s_mux);
+    const Status st{s_prog.state, s_prog.received, s_prog.total};
+    portEXIT_CRITICAL(&s_mux);
+    return st;
+}
+
 ReleaseInfo release_info() {
     std::lock_guard<std::mutex> l(s_rel_mux);
     return s_rel;

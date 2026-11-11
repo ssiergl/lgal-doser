@@ -19,6 +19,7 @@
 #include "freertos/task.h"
 #include "lgal/device.h"
 #include "lgal/mqtt.h"
+#include "lgal/ota.h"
 #include "lgal/settings.h"
 #include "lgal/timesync.h"
 #include "nvs.h"
@@ -76,6 +77,7 @@ void on_connect(lgal::mqtt::Session& s) {
     if (c.control) {
         s.subscribe(s_base + "/pump/+/+/set");
         s.subscribe(s_base + "/stop/set");
+        s.subscribe(s_base + "/update/set");
     }
     wake(true, false);
 }
@@ -113,6 +115,14 @@ void execute(const ha::Command& c) {
             ESP_LOGW(TAG, "Stop all pumps (MQTT)");
             dosing::stop_all();
             break;
+        case ha::Cmd::Install: {
+            // only the newer release of the fixed update source; the task reports on "<base>/ota/state"
+            std::string reason;
+            const char* e = lgal::ota::start_release_install("mqtt", &reason);
+            if (e) ESP_LOGW(TAG, "Firmware update rejected (%s)", std::strcmp(e, "guard") ? e : reason.c_str());
+            else ESP_LOGW(TAG, "Firmware update from the update source started (MQTT)");
+            break;
+        }
         case ha::Cmd::None: break;
     }
 }
@@ -144,6 +154,7 @@ ha::DeviceInfo device_info(const lgal::mqttcfg::Config& c) {
     d.base = lgal::mqtt::base_topic();
     d.german = std::strcmp(lgal::settings::language(), "de") == 0;
     d.control = c.control;
+    d.update_source = !lgal::ota::settings().source.empty();
     for (int p = 0; p < ha::kPumps; ++p) {
         d.pump_names[p] = dosing::settings(p).name;
     }
@@ -169,11 +180,26 @@ ha::PumpState pump_state(int p) {
     return st;
 }
 
+ha::UpdateState update_state() {
+    const lgal::ota::ReleaseInfo r = lgal::ota::release_info();
+    const lgal::ota::Status st = lgal::ota::status();
+    ha::UpdateState u;
+    u.installed = lgal::ota::running_version();
+    u.latest = r.latest;
+    u.available = r.available;
+    u.notes = r.notes;
+    u.in_progress = lgal::ota::in_progress();
+    if (st.state == lgal::ota::State::Running && st.total > 0)
+        u.percent = static_cast<int>(uint64_t(st.received) * 100 / uint32_t(st.total));
+    return u;
+}
+
 struct Published {
     std::string discovery_topic;
     std::string discovery;
     std::string pump[ha::kPumps];
     std::string device;
+    std::string update;
     int64_t at_ms = 0;
 };
 
@@ -312,6 +338,9 @@ void task(void*) {
         lgal::Json j;
         ha::write_device_state(j, alarms);
         send(lgal::mqtt::topic("state"), j.c_str(), &pub.device, refresh);
+        lgal::Json ju;
+        ha::write_update_state(ju, update_state());
+        send(lgal::mqtt::topic("update"), ju.c_str(), &pub.update, refresh);
     }
 }
 
@@ -322,6 +351,8 @@ void init() {
     lgal::mqtt::set_handlers(on_connect, on_data);
     if (xTaskCreate(task, "mqtt_ha", 6144, nullptr, 3, &s_task) != pdPASS) ESP_LOGE(TAG, "Task not started");
 }
+
+void update_changed() { wake(false, true); }
 
 void set_alarms(bool critical, bool warning, uint16_t conditions) {
     portENTER_CRITICAL(&s_mux);

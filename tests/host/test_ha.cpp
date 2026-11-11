@@ -64,7 +64,7 @@ static void test_discovery() {
     CHECK(str(root["availability_topic"]) == "lgal-doser-eeff/status");
     const auto c = root["components"];
     CHECK(c.type() == lgal::JsonType::Object);
-    CHECK(c.size() == 5 * 10 + 3);
+    CHECK(c.size() == 5 * 10 + 4);
     // every full component has a unique id equal to its key
     int full = 0;
     for (int i = 0; i < c.size(); ++i) {
@@ -79,7 +79,8 @@ static void test_discovery() {
             CHECK(v.size() == 1 && str(v["platform"]) != "<none>");  // removal stub
         }
     }
-    // control off: schedule/amount/dose per pump and stop are stubs
+    // control off: schedule/amount/dose per pump and stop are stubs; level only on pump 3;
+    // no update source: the firmware entity is a stub
     CHECK(full == 5 * 7 + 2);
     const auto total = c["lgal_doser_eeff_p1_total"];
     CHECK(str(total["platform"]) == "sensor");
@@ -92,6 +93,21 @@ static void test_discovery() {
     CHECK(str(c["lgal_doser_eeff_p4_tube"]["name"]) == "Pump 4 Tube hours");
     CHECK(c["lgal_doser_eeff_p1_dose"].size() == 1 && str(c["lgal_doser_eeff_p1_dose"]["platform"]) == "button");
     CHECK(str(c["lgal_doser_eeff_critical"]["json_attributes_topic"]) == "lgal-doser-eeff/state");
+    CHECK(c["lgal_doser_eeff_firmware"].size() == 1 && str(c["lgal_doser_eeff_firmware"]["platform"]) == "update");
+
+    // update source without control: the entity reports, but cannot install
+    d.update_source = true;
+    Doc up;
+    {
+        lgal::Json j;
+        write_discovery(j, d);
+        up.text = j.c_str();
+    }
+    CHECK(up.parse());
+    const auto fw = up.r.root()["components"]["lgal_doser_eeff_firmware"];
+    CHECK(str(fw["platform"]) == "update" && str(fw["device_class"]) == "firmware");
+    CHECK(str(fw["state_topic"]) == "lgal-doser-eeff/update" && str(fw["name"]) == "Firmware");
+    CHECK(!fw["command_topic"].valid());
 
     // control on, German
     d.control = true;
@@ -114,6 +130,8 @@ static void test_discovery() {
     CHECK(str(c2["lgal_doser_eeff_stop"]["command_topic"]) == "lgal-doser-eeff/stop/set");
     CHECK(str(c2["lgal_doser_eeff_p1_next"]["name"]) == "Pumpe 1 Nächste Dosierung");
     CHECK(str(c2["lgal_doser_eeff_stop"]["name"]) == "Alle stoppen");
+    CHECK(str(c2["lgal_doser_eeff_firmware"]["command_topic"]) == "lgal-doser-eeff/update/set");
+    CHECK(str(c2["lgal_doser_eeff_firmware"]["payload_install"]) == "install");
     int stubs = 0;
     for (int i = 0; i < c2.size(); ++i) stubs += c2.value_at(i).size() == 1;
     CHECK(stubs == 0);
@@ -160,6 +178,23 @@ static void test_states() {
     write_device_state(j3, ds);
     CHECK(std::string(j3.c_str()) ==
           R"({"critical":true,"warning":false,"conditions":["rtc_fault","pump1_container_low","pump5_tube_worn"]})");
+
+    UpdateState u;
+    u.installed = "0.1.0";
+    u.latest = "0.0.9";  // older release: not offered
+    lgal::Json j4;
+    write_update_state(j4, u);
+    CHECK(std::string(j4.c_str()) ==
+          R"({"installed_version":"0.1.0","latest_version":"0.1.0","in_progress":false,"update_percentage":null})");
+    u.latest = "0.2.0";
+    u.available = true;
+    u.notes = "https://example.com/v0.2.0";
+    u.in_progress = true;
+    u.percent = 42;
+    lgal::Json j5;
+    write_update_state(j5, u);
+    CHECK(std::string(j5.c_str()) == R"({"installed_version":"0.1.0","latest_version":"0.2.0",)"
+                                     R"("release_url":"https://example.com/v0.2.0","in_progress":true,"update_percentage":42})");
 }
 
 static bool cmd(const char* topic, const char* payload, Command* c) {
@@ -190,6 +225,9 @@ static void test_commands() {
     CHECK(cmd("aq/doser/pump/3/schedule/set", "OFF", &c) && c.cmd == Cmd::Schedule && !c.on);
     CHECK(cmd("aq/doser/stop/set", "", &c) && c.cmd == Cmd::Stop);
     CHECK(cmd("aq/doser/stop/set", "PRESS", &c) && c.cmd == Cmd::Stop);
+    CHECK(cmd("aq/doser/update/set", "install", &c) && c.cmd == Cmd::Install);
+    CHECK(!cmd("aq/doser/update/set", "https://example.com/x.bin", &c));
+    CHECK(!cmd("aq/doser/update/set", "", &c));
     const char* bad_topics[] = {"aq/doser",
                                 "aq/doser/",
                                 "aq/doserx/stop/set",
