@@ -39,6 +39,7 @@ add({
     'sv.min_dose': 'Smallest single dose', 'sv.limit': 'Daily limit window', 'sv.limit.calendar_day': 'Calendar day', 'sv.limit.rolling_24h': 'Rolling 24 h',
     'sv.grid': 'Schedule grid', 'sv.delay': 'Max. delay of a scheduled dose',
     'sv.tube': 'Tubes', 'sv.tube_life': 'Tube lifetime (maintenance warning)', 'sv.tube.set': 'Set', 'sv.tube.reset': 'Reset',
+    'sv.tube.run': 'Run time', 'sv.tube.wear': 'Wear', 'sv.tube.count': 'Set counter',
     'sv.tube.done': 'Pump {n}: counter set to {h} h.',
     'sv.thr': 'Container thresholds', 'sv.thr.h': 'Days of supply from the schedule; defaults for all pumps, a pump can set its own in its settings (pro mode). 0 = off.',
     'sv.thr.warn': 'Warning when it lasts fewer than', 'sv.thr.low': 'Alarm "almost empty" when it lasts fewer than',
@@ -68,7 +69,7 @@ add({
     'err.eeprom_test_failed': 'EEPROM self test failed',
     'sv.tel': 'System telemetry', 'sv.up': 'Uptime', 'sv.reset': 'Last reset', 'sv.chip': 'Chip temperature',
     'sv.heap': 'RAM free (min.)', 'sv.frag': 'Largest block · fragmentation', 'sv.psram': 'PSRAM free', 'sv.nvs': 'NVS entries',
-    'sv.fs': 'Flash file system', 'sv.hist': 'History', 'sv.hist.v': '{d} days · {b}', 'sv.dropped': 'Events lost since start',
+    'sv.fs': 'Flash file system', 'sv.hist.size': 'Recorded', 'sv.hist.v': '{d} days · {b}', 'sv.dropped': 'Events lost since start',
     'sv.tasks': 'Tasks', 'sv.uart': 'UART bus {b}', 'sv.uart.v': '{n} transfers · {e} errors',
     'sv.paused': 'Live values paused – move the mouse or press a key.',
     'sv.danger': 'Danger zone',
@@ -101,6 +102,7 @@ add({
     'sv.min_dose': 'Kleinste Einzeldosis', 'sv.limit': 'Fenster des Tageslimits', 'sv.limit.calendar_day': 'Kalendertag', 'sv.limit.rolling_24h': 'Rollierend 24 h',
     'sv.grid': 'Zeitplan-Raster', 'sv.delay': 'Max. Verzögerung einer geplanten Dosis',
     'sv.tube': 'Schläuche', 'sv.tube_life': 'Schlauch-Lebensdauer (Wartungswarnung)', 'sv.tube.set': 'Setzen', 'sv.tube.reset': 'Zurücksetzen',
+    'sv.tube.run': 'Laufzeit', 'sv.tube.wear': 'Verschleiß', 'sv.tube.count': 'Zähler setzen',
     'sv.tube.done': 'Pumpe {n}: Zähler auf {h} h gesetzt.',
     'sv.thr': 'Behälter-Schwellen', 'sv.thr.h': 'Reichweite laut Zeitplan; Standardwerte für alle Pumpen, jede Pumpe kann in ihren Einstellungen eigene haben (Profi-Modus). 0 = aus.',
     'sv.thr.warn': 'Warnung, wenn er weniger reicht als', 'sv.thr.low': 'Alarm „fast leer“, wenn er weniger reicht als',
@@ -130,7 +132,7 @@ add({
     'err.eeprom_test_failed': 'EEPROM-Selbsttest fehlgeschlagen',
     'sv.tel': 'Systemtelemetrie', 'sv.up': 'Laufzeit', 'sv.reset': 'Letzter Neustart', 'sv.chip': 'Chip-Temperatur',
     'sv.heap': 'RAM frei (min.)', 'sv.frag': 'Größter Block · Fragmentierung', 'sv.psram': 'PSRAM frei', 'sv.nvs': 'NVS-Einträge',
-    'sv.fs': 'Flash-Dateisystem', 'sv.hist': 'Verlauf', 'sv.hist.v': '{d} Tage · {b}', 'sv.dropped': 'Verlorene Ereignisse seit Start',
+    'sv.fs': 'Flash-Dateisystem', 'sv.hist.size': 'Aufgezeichnet', 'sv.hist.v': '{d} Tage · {b}', 'sv.dropped': 'Verlorene Ereignisse seit Start',
     'sv.tasks': 'Tasks', 'sv.uart': 'UART-Bus {b}', 'sv.uart.v': '{n} Transfers · {e} Fehler',
     'sv.paused': 'Live-Werte pausiert – Maus bewegen oder Taste drücken.',
     'sv.danger': 'Gefahrenzone',
@@ -231,9 +233,9 @@ function PhysCard({ eng, spr, reload }) {
       .then(() => { msg.ok(t('sv.saved')); reload(); reloadPumps(); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  return html`<form class="card w6" novalidate onSubmit=${submit}>
     <h2>${t('sv.phys')}</h2>
-    <div class="ipgrid">
+    <div class="ipgrid fit">
       ${kPhys.map(f => {
         const v = parse(d[f.k]);
         let hint = null;
@@ -287,11 +289,10 @@ function DriverCard({ hw, pumps, reload }) {
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
   const spr = parse(d.full_steps) * d.microsteps;
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  return html`<form class="card w6" novalidate onSubmit=${submit}>
     <h2>${t('sv.drv')}</h2>
     <p class="small mut">${t('sv.drv.h')}</p>
-    <${PumpPick} n=${n} set=${setN} pumps=${pumps}/>
-    <div class="row">
+    <div class="row eng-pick"><${PumpPick} n=${n} set=${setN} pumps=${pumps}/>
       <span class=${'chip ' + (p.present ? 'ok' : 'err')}>${t(p.present ? 'sv.present' : 'sv.absent')}</span>
       ${p.fault && html`<span class="chip err">${tr('sv.f.' + p.fault, p.fault)}</span>`}
       <span class="small mut">${p.stepgen} · ${t('sv.run_ma')} ${p.run_ma} mA · ${t('sv.hold_ma')} ${p.hold_ma} mA</span>
@@ -304,8 +305,10 @@ function DriverCard({ hw, pumps, reload }) {
           ${kMicro.map(m => html`<option value=${m}>${m}</option>`)}</select></label>
     </div>
     <p class="small mut">${t('sv.spr', { spr: num(spr), sps: num(p.config.max_sps) })}</p>
-    <${Toggle} checked=${d.invert} onChange=${v => set({ invert: v })}>${t('sv.invert')}<//>
-    <label class="check"><input type="checkbox" checked=${all} onChange=${e => setAll(e.target.checked)}/>${t('sv.all')}</label>
+    <div class="eng-toggles">
+      <${Toggle} checked=${d.invert} onChange=${v => set({ invert: v })}>${t('sv.invert')}<//>
+      <${Toggle} checked=${all} onChange=${setAll}>${t('sv.all')}<//>
+    </div>
     <${Save} busy=${busy} dirty=${Object.keys(q).length > 0}/>
     ${msg.node}
   </form>`;
@@ -350,7 +353,7 @@ function LimitsCard({ eng, sch, reload }) {
       .then(() => { msg.ok(t('sv.saved')); reload(); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  return html`<form class="card w4" novalidate onSubmit=${submit}>
     <h2>${t('sv.lim')}</h2>
     <div class="ipgrid">
       ${kLim.map(f => html`<${Num} f=${f} d=${d} set=${set} bad=${bad === f}/>`)}
@@ -390,10 +393,10 @@ function ThresholdCard({ eng, reload }) {
       .then(() => { msg.ok(t('sv.saved')); reload(); reloadPumps(); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  return html`<form class="card w2" novalidate onSubmit=${submit}>
     <h2>${t('sv.thr')}</h2>
     <p class="small mut">${t('sv.thr.h')}</p>
-    ${kThr.map(f => html`<${Num} f=${f} d=${d} set=${x => setD(o => ({ ...o, ...x }))} bad=${bad === f}/>`)}
+    <div class="ipgrid">${kThr.map(f => html`<${Num} f=${f} d=${d} set=${x => setD(o => ({ ...o, ...x }))} bad=${bad === f}/>`)}</div>
     <${Save} busy=${busy} dirty=${Object.keys(q).length > 0}/>
     ${msg.node}
   </form>`;
@@ -427,18 +430,23 @@ function TubeCard({ eng, pumps, reload }) {
       .then(() => { msg.ok(t('sv.tube.done', { n, h })); setHours(o => o.map((x, k) => (k === n - 1 ? '' : x))); reloadPumps(); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  return html`<form class="card w4" novalidate onSubmit=${submit}>
     <h2>${t('sv.tube')}</h2>
-    <${Num} f=${kTube} d=${d} set=${x => setD(o => ({ ...o, ...x }))} bad=${!!bad}/>
+    <div class="scroll"><table class="eng-table">
+      <thead><tr><th></th><th>${t('sv.tube.run')}</th><th>${t('sv.tube.wear')}</th><th>${t('sv.tube.count')}</th><th></th></tr></thead>
+      <tbody>${(pumps || []).map((p, i) => html`<tr>
+        <td><span class="row nowrap"><span class="badge" style=${{ '--pc': pumpColor(p.pump) }}>${p.pump}</span>${pumpName(p)}</span></td>
+        <td class="num">${num(p.tube.hours, 1)} h</td>
+        <td class="num">${num(p.tube.percent, 0)} %</td>
+        <td><span class="amount"><input type="text" inputmode="numeric" aria-label=${t('sv.tube.count')} placeholder=${num(Math.floor(p.tube.hours))}
+          value=${hours[i]} onInput=${e => { const v = e.target.value; setHours(o => o.map((x, k) => (k === i ? v : x))); }}/><span>h</span></span></td>
+        <td><div class="row nowrap">
+          <button type="button" class="sec" disabled=${busy || hours[i] === ''} onClick=${() => setTube(p.pump, parse(hours[i]))}>${t('sv.tube.set')}</button>
+          <button type="button" class="sec" disabled=${busy} onClick=${() => setTube(p.pump, 0)}>${t('sv.tube.reset')}</button></div></td>
+      </tr>`)}</tbody>
+    </table></div>
+    <div class="ipgrid"><${Num} f=${kTube} d=${d} set=${x => setD(o => ({ ...o, ...x }))} bad=${!!bad}/></div>
     <${Save} busy=${busy} dirty=${Object.keys(q).length > 0}/>
-    <ul class="eng-list">${(pumps || []).map((p, i) => html`<li>
-      <span class="badge" style=${{ '--pc': pumpColor(p.pump) }}>${p.pump}</span>
-      <span class="grow">${pumpName(p)}<br/><span class="small mut num">${num(p.tube.hours, 1)} h · ${num(p.tube.percent, 0)} %</span></span>
-      <span class="amount"><input type="text" inputmode="numeric" aria-label=${t('sv.tube')} placeholder=${num(Math.floor(p.tube.hours))}
-        value=${hours[i]} onInput=${e => { const v = e.target.value; setHours(o => o.map((x, k) => (k === i ? v : x))); }}/><span>h</span></span>
-      <button type="button" class="sec" disabled=${busy || hours[i] === ''} onClick=${() => setTube(p.pump, parse(hours[i]))}>${t('sv.tube.set')}</button>
-      <button type="button" class="sec" disabled=${busy} onClick=${() => setTube(p.pump, 0)}>${t('sv.tube.reset')}</button>
-    </li>`)}</ul>
     ${msg.node}
   </form>`;
 }
@@ -462,7 +470,7 @@ function RtcCard({ hw, reload }) {
   };
   const tr = rtc.trim || {};
   const day = utc => new Date(utc * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short', ...hourCycle() });
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  return html`<form class="card w2" novalidate onSubmit=${submit}>
     <h2>${t('sv.rtc')}</h2>
     ${!rtc.present ? html`<p class="warn">${t('sv.rtc.none')}</p>` : html`
       ${rtc.battery_warning && html`<p class="small warn">${t('sv.rtc.lost')}</p>`}
@@ -481,14 +489,14 @@ function RtcCard({ hw, reload }) {
   </form>`;
 }
 
-function HistCard() {
+function HistCard({ tel }) {
   const [cur, setCur] = useState(null);  // GET /api/v1/history/settings
   const [d, setD] = useState({ keep_days: '' });
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
   const take = j => { setCur(j); setD({ keep_days: str(j.keep_days) }); };
   useEffect(() => { api('GET', '/api/v1/history/settings').then(take).catch(e => msg.err(e)); }, []);
-  if (!cur) return html`<section class="card"><h2>${t('sv.hist')}</h2>${msg.node}</section>`;
+  if (!cur) return html`<section class="card w2"><h2>${t('sv.hist')}</h2>${msg.node}</section>`;
   const f = { k: 'keep_days', l: 'sv.hist.keep', min: cur.min_days, max: cur.max_days, u: 'u.days' };
   const bad = invalid([f], d);
   const submit = e => {
@@ -499,8 +507,12 @@ function HistCard() {
       .then(j => { take(j); msg.ok(t('sv.saved')); })
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  return html`<form class="card" novalidate onSubmit=${submit}>
+  const st = tel && tel.storage;
+  return html`<form class="card w2" novalidate onSubmit=${submit}>
     <h2>${t('sv.hist')}</h2>
+    ${st && html`<dl class="stats">
+      <dt>${t('sv.hist.size')}</dt><dd class="num">${t('sv.hist.v', { d: st.history_days, b: fmtBytes(st.history_bytes) })}</dd>
+      <dt>${t('sv.dropped')}</dt><dd class="num">${num(st.history_dropped)}</dd></dl>`}
     <${Num} f=${f} d=${d} set=${x => setD(x)} bad=${!!bad} hint=${t('sv.hist.h')}/>
     <${Save} busy=${busy} dirty=${parse(d.keep_days) !== cur.keep_days}/>
     ${msg.node}
@@ -531,7 +543,7 @@ function RawCard({ hw, pumps, nominal, reload }) {
       .catch(e => msg.err(e && e.code === 'speed_out_of_range' ? t('sv.sps.range') : e)).finally(() => setBusy(false));
   };
   const stop = mode => eapi('POST', '/api/v1/hw/pump/stop?' + qs({ pump: n, mode })).then(reload).catch(e => msg.err(e));
-  return html`<form class="card" novalidate onSubmit=${start}>
+  return html`<form class="card w3" novalidate onSubmit=${start}>
     <h2>${t('sv.raw')}</h2>
     <p class="small warn">${t('sv.raw.h')}</p>
     <${PumpPick} n=${n} set=${setN} pumps=${pumps}/>
@@ -540,7 +552,7 @@ function RawCard({ hw, pumps, nominal, reload }) {
     <div class="ipgrid">${fields.map(f => html`<${Num} f=${f} d=${d} set=${set} bad=${bad === f}/>`)}</div>
     ${!bad && c.steps_per_rev > 0 && html`<p class="small mut">${t('sv.raw.calc', {
       rev: num(steps / c.steps_per_rev, 2), ml: num(steps / c.steps_per_rev * nominal, 2), s: num(steps / sps, 1) })}</p>`}
-    <label class="check"><input type="checkbox" checked=${d.force} onChange=${e => set({ force: e.target.checked })}/>${t('sv.force')}</label>
+    <${Toggle} checked=${d.force} onChange=${v => set({ force: v })}>${t('sv.force')}<//>
     <p class="small num">${p.running
       ? t('sv.raw.run', { pos: num(p.position), tgt: num(p.target), rpm: num(p.rpm, 0), sg: p.sg_result })
       : t('sv.raw.idle', { pos: num(p.position), sg: p.sg_min })}</p>
@@ -572,7 +584,7 @@ function DiagCard({ hw, pumps }) {
     eapi('GET', '/api/v1/hw/tmc?pump=' + n).then(j => setRegs(j.registers))
       .catch(e => msg.err(e)).finally(() => setBusy(false));
   };
-  return html`<section class="card">
+  return html`<section class="card w3">
     <h2>${t('sv.diag')}</h2>
     <p class="small mut">${t('sv.diag.h')}</p>
     <${PumpPick} n=${n} set=${pick} pumps=${pumps}/>
@@ -610,12 +622,11 @@ function TelemetryCard({ tel, hw, paused }) {
       ['sv.psram', fmtBytes(tel.psram.free) + ' / ' + fmtBytes(tel.psram.total)],
       ['sv.nvs', n.total_entries ? num(n.used_entries) + ' / ' + num(n.total_entries) + ' (' + num(100 * n.used_entries / n.total_entries, 0) + ' %)' : '–'],
       ['sv.fs', s.total ? fmtBytes(s.used) + ' / ' + fmtBytes(s.total) : '–'],
-      ['sv.hist', t('sv.hist.v', { d: s.history_days, b: fmtBytes(s.history_bytes) })],
-      ['sv.dropped', num(s.history_dropped)], ['sv.tasks', num(tel.tasks)]);
+      ['sv.tasks', num(tel.tasks)]);
   }
-  return html`<section class="card">
+  return html`<section class="card w4">
     <h2>${t('sv.tel')}</h2>
-    ${!tel ? html`<p class="mut">${t('sv.loading')}</p>` : html`<dl class="stats">
+    ${!tel ? html`<p class="mut">${t('sv.loading')}</p>` : html`<dl class="stats two">
       ${rows.map(([k, v]) => html`<dt>${t(k)}</dt><dd class="num">${v}</dd>`)}
       ${hw.uart.map((u, b) => html`<dt>${t('sv.uart', { b: b ? 'B' : 'A' })}</dt>
         <dd class="num">${t('sv.uart.v', { n: num(u.transfers), e: num(u.timeouts + u.crc_errors + u.echo_errors) })}</dd>`)}
@@ -656,10 +667,12 @@ function Danger({ id, run }) {
 }
 
 function DangerCard() {
-  return html`<section class="card danger-zone">
+  return html`<section class="card w2 danger-zone">
     <h2>${t('sv.danger')}</h2>
-    <${Danger} id="sv.dz.hist" run=${() => eapi('DELETE', '/api/v1/history')}/>
-    <${Danger} id="sv.dz.net" run=${() => eapi('POST', '/api/v1/engineering/reset?what=network')}/>
+    <div class="dz-grid">
+      <${Danger} id="sv.dz.hist" run=${() => eapi('DELETE', '/api/v1/history')}/>
+      <${Danger} id="sv.dz.net" run=${() => eapi('POST', '/api/v1/engineering/reset?what=network')}/>
+    </div>
   </section>`;
 }
 
@@ -731,33 +744,33 @@ export function ServiceView() {
   return html`${head}
     ${err && html`<p class="msg err">${errText(err)}</p>`}
     <h2 class="eng-sec">${t('sv.a')}</h2>
-    <div class="grid settings">
+    <div class="eng-grid">
       <${PhysCard} eng=${eng} spr=${hw.pumps[0].config.steps_per_rev} reload=${reloadEng}/>
       <${DriverCard} hw=${hw} pumps=${pumps} reload=${reloadHw}/>
     </div>
     <h2 class="eng-sec">${t('sv.b')}</h2>
-    <div class="grid settings">
+    <div class="eng-grid">
       <${LimitsCard} eng=${eng} sch=${sch} reload=${reloadEng}/>
       <${ThresholdCard} eng=${eng} reload=${reloadEng}/>
     </div>
     <h2 class="eng-sec">${t('sv.c')}</h2>
-    <div class="grid settings">
-      <${TubeCard} eng=${eng} pumps=${pumps} reload=${reloadEng}/>
+    <div class="eng-grid">
       <${RtcCard} hw=${hw} reload=${reloadHw}/>
-      <${HistCard}/>
+      <${TubeCard} eng=${eng} pumps=${pumps} reload=${reloadEng}/>
+      <${HistCard} tel=${tel}/>
     </div>
     <h2 class="eng-sec">${t('sv.d')}</h2>
-    <div class="grid settings">
+    <div class="eng-grid">
       <${RawCard} hw=${hw} pumps=${pumps} nominal=${eng.nominal_ml_per_rev} reload=${reloadHw}/>
       <${DiagCard} hw=${hw} pumps=${pumps}/>
       <${TelemetryCard} tel=${tel} hw=${hw} paused=${paused}/>
       <${DangerCard}/>
     </div>
     <h2 class="eng-sec">${t('sv.e')}</h2>
-    <div class="grid settings">
+    <div class="eng-grid halves">
       ${ota && html`<${UpdateSourceCard} opts=${ota} setOpts=${setOta} call=${eapi}/>
         <${UrlUpdateCard} busyPumps=${pumps.some(p => p.activity !== 'idle')} opts=${ota} call=${eapi}/>`}
     </div>
     <h2 class="eng-sec">${t('sv.f')}</h2>
-    <div class="grid settings"><${BackupSection}/></div>`;
+    <div class="eng-grid"><${BackupSection}/></div>`;
 }

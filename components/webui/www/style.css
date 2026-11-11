@@ -504,14 +504,44 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .eng-table th, .eng-table td { padding: 6px 8px 6px 0; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
 .eng-table th { color: var(--mut); font-weight: 600; font-size: 13px; }
 .eng-table .amount input { width: 6ch; }
-.eng-list { list-style: none; padding: 0; margin: 14px 0 0; }
-.eng-list li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--line); }
-.eng-list .grow { flex: 1; min-width: 120px; }
-.eng-list .amount input { width: 6ch; }
 .danger-zone { border-color: color-mix(in srgb, var(--err) 45%, var(--line)); }
 .danger-zone h2 { color: var(--err); }
 .eng-locked { max-width: 440px; }
-@media (min-width: 760px) { .eng-wide { grid-column: span 2; } }
+/* Fixed grid of six tracks: cards take a third (w2), two thirds (w4), half
+   (.halves) or the full width (w6) and a row stretches to its tallest card;
+   the save bar sits at the bottom so buttons line up */
+.eng-grid { display: grid; gap: var(--gap); grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.eng-grid > * { grid-column: span 6; margin: 0; min-width: 0; }
+@media (min-width: 1000px) {
+  .eng-grid > .w2 { grid-column: span 2; }
+  .eng-grid > .w3 { grid-column: span 3; }
+  .eng-grid > .w4 { grid-column: span 4; }
+  .eng-grid .stats.two { grid-template-columns: auto 1fr auto 1fr; column-gap: 16px; }
+  .eng-grid .stats dt { white-space: nowrap; }
+  .eng-grid .stats.two dd:nth-of-type(odd) { padding-right: 16px; border-right: 1px solid var(--line); }
+  .eng-grid.halves > * { grid-column: span 3; }
+}
+.eng-grid > .card { display: flex; flex-direction: column; }
+.eng-grid > .card > * { margin-block: 0; }
+.eng-grid > .card > * + * { margin-top: 12px; }
+.eng-grid > .card > .seg, .eng-grid > .card > button { align-self: flex-start; }
+.eng-grid > .card > .savebar { margin-top: auto; padding-top: 16px; }
+.eng-grid > .card > .savebar ~ * { margin-top: 10px; }
+.eng-grid .ipgrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px 12px; }
+/* label, input and hint each in one row across the grid, so inputs line up
+   even when a label wraps */
+.eng-grid .ipgrid > .field { grid-row: span 3; grid-template-rows: subgrid; row-gap: 6px; margin: 0; }
+.eng-grid .ipgrid > .field .small { font-weight: 400; }
+.eng-grid .ipgrid.fit { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+@media (min-width: 1000px) { .eng-grid .ipgrid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); } .eng-grid .ipgrid.fit { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
+.eng-grid .stats { margin: 0; }
+.eng-grid .stats.two dd { white-space: nowrap; }
+.eng-table td .row { gap: 8px; }
+.eng-pick { gap: 8px 14px; }
+.eng-toggles { display: grid; gap: 4px; }
+.eng-toggles .switch { margin-top: 0; padding: 4px 0; }
+.dz-grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.dz-grid > .sub { margin-top: 0; border-top: 0; padding-top: 0; }
 .ipgrid label.field { align-content: start; }
 .ipgrid label.field .amount { justify-self: stretch; }
 .ipgrid label.field select { width: 100%; }
