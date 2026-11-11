@@ -27,7 +27,7 @@ add({
     'mt.fac': 'Factory reset', 'mt.fac.h': 'Deletes everything: settings, schedules, calibration, counters, history, passwords and API keys. Afterwards the device starts the first-time setup again (setup Wi-Fi and the password on the label). Tip: export the schedules on the pump pages first.',
     'mt.fac.go': 'Reset to factory settings', 'mt.fac.no': 'Cancel', 'mt.fac.pw': 'Admin password to confirm', 'mt.fac.yes': 'Delete everything now',
     'mt.fac.ask': 'Really delete everything? This cannot be undone.', 'mt.fac.done': 'The device deletes everything and restarts in setup mode. This page will no longer work – continue with the setup Wi-Fi "LG-Aquatic-Life-Setup-…" or, with the LAN cable plugged in, at the device address with the password on the label.',
-    'mt.diag': 'Diagnostics', 'mt.log': 'Show log', 'mt.log.hide': 'Hide log', 'mt.log.reload': 'Reload',
+    'mt.diag': 'Diagnostics', 'mt.core.t': 'Crash report', 'mt.log.t': 'Device log', 'mt.log.h': 'The latest messages of the firmware.', 'mt.log': 'Show log', 'mt.log.hide': 'Hide log', 'mt.log.reload': 'Reload',
     'mt.core': 'A crash report (coredump) is stored.', 'mt.core.dl': 'Download', 'mt.core.del': 'Delete', 'mt.core.deleted': 'Crash report deleted.',
     'mt.core.none': 'No crash report stored.',
     'err.ota_in_progress': 'An update is already in progress', 'err.pump_running': 'A pump is running – try again when it has finished',
@@ -69,7 +69,7 @@ add({
     'mt.fac': 'Werkseinstellungen', 'mt.fac.h': 'Löscht alles: Einstellungen, Zeitpläne, Kalibrierung, Zähler, Verlauf, Passwörter und API-Schlüssel. Danach beginnt die Ersteinrichtung von vorn (Setup-WLAN und Passwort vom Etikett). Tipp: vorher die Zeitpläne auf den Pumpenseiten exportieren.',
     'mt.fac.go': 'Auf Werkseinstellungen zurücksetzen', 'mt.fac.no': 'Abbrechen', 'mt.fac.pw': 'Admin-Passwort zur Bestätigung', 'mt.fac.yes': 'Jetzt alles löschen',
     'mt.fac.ask': 'Wirklich alles löschen? Das lässt sich nicht rückgängig machen.', 'mt.fac.done': 'Das Gerät löscht alles und startet im Einrichtungsmodus. Diese Seite funktioniert danach nicht mehr – weiter über das Setup-WLAN „LG-Aquatic-Life-Setup-…“ oder, mit LAN-Kabel, unter der Geräteadresse mit dem Passwort vom Etikett.',
-    'mt.diag': 'Diagnose', 'mt.log': 'Log anzeigen', 'mt.log.hide': 'Log ausblenden', 'mt.log.reload': 'Neu laden',
+    'mt.diag': 'Diagnose', 'mt.core.t': 'Absturzbericht', 'mt.log.t': 'Geräte-Log', 'mt.log.h': 'Die letzten Meldungen der Firmware.', 'mt.log': 'Log anzeigen', 'mt.log.hide': 'Log ausblenden', 'mt.log.reload': 'Neu laden',
     'mt.core': 'Ein Absturzbericht (Coredump) ist gespeichert.', 'mt.core.dl': 'Herunterladen', 'mt.core.del': 'Löschen', 'mt.core.deleted': 'Absturzbericht gelöscht.',
     'mt.core.none': 'Kein Absturzbericht gespeichert.',
     'err.ota_in_progress': 'Es läuft bereits ein Update', 'err.pump_running': 'Eine Pumpe läuft – nach dem Ende erneut versuchen',
@@ -312,19 +312,24 @@ function DiagCard({ info }) {
     .then(txt => { setLog(txt); setTimeout(() => { if (pre.current) pre.current.scrollTop = pre.current.scrollHeight; }, 0); })
     .catch(e => msg.err(e));
   const delCore = () => api('DELETE', '/api/v1/system/coredump').then(() => { msg.ok(t('mt.core.deleted')); reloadInfo(); }).catch(e => msg.err(e));
+  const core = info.system.coredump;
+  // two equal blocks: title and buttons in one row, the state below
   return html`<section class="card"><h2>${t('mt.diag')}</h2>
-    ${info.system.coredump
-      ? html`<p class="small warn">${t('mt.core')}</p>
-        <div class="row"><a class="btn sec" href="/api/v1/system/coredump" download="coredump.elf">${t('mt.core.dl')}</a>
-          <button type="button" class="sec" onClick=${delCore}>${t('mt.core.del')}</button></div>`
-      : html`<p class="small mut">${t('mt.core.none')}</p>`}
-    <div class="row savebar">
-      ${log === null
-        ? html`<button type="button" class="sec" onClick=${loadLog}>${t('mt.log')}</button>`
-        : html`<button type="button" class="sec" onClick=${loadLog}>${t('mt.log.reload')}</button>
-          <button type="button" class="sec" onClick=${() => setLog(null)}>${t('mt.log.hide')}</button>`}
+    <div class="diag-item">
+      <div class="row between"><b>${t('mt.core.t')}</b>
+        ${core && html`<div class="row"><a class="btn sec" href="/api/v1/system/coredump" download="coredump.elf">${t('mt.core.dl')}</a>
+          <button type="button" class="sec" onClick=${delCore}>${t('mt.core.del')}</button></div>`}</div>
+      <p class=${'small ' + (core ? 'warn' : 'mut')}>${t(core ? 'mt.core' : 'mt.core.none')}</p>
     </div>
-    ${log !== null && html`<pre class="log" ref=${pre}>${log}</pre>`}
+    <div class="diag-item sub">
+      <div class="row between"><b>${t('mt.log.t')}</b>
+        <div class="row">${log === null
+          ? html`<button type="button" class="sec" onClick=${loadLog}>${t('mt.log')}</button>`
+          : html`<button type="button" class="sec" onClick=${loadLog}>${t('mt.log.reload')}</button>
+            <button type="button" class="sec" onClick=${() => setLog(null)}>${t('mt.log.hide')}</button>`}</div></div>
+      <p class="small mut">${t('mt.log.h')}</p>
+      ${log !== null && html`<pre class="log" ref=${pre}>${log}</pre>`}
+    </div>
     ${msg.node}
   </section>`;
 }
