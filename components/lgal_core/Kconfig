@@ -27,6 +27,14 @@ menu "LG Aquatic Life Core"
         default 60
         range 10 600
 
+    config LGAL_OTA_SOURCE
+        string "Release manifest of the update source (factory setting)"
+        default ""
+        help
+            Address of manifest.json of the published releases, e.g.
+            https://github.com/<owner>/<repo>/releases/latest/download/manifest.json.
+            Empty = no update source; it can be changed in the engineering menu.
+
     config LGAL_ETH_SPI_CLOCK_MHZ
         int "W5500 SPI clock (MHz)"
         default 20
