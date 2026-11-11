@@ -13,7 +13,7 @@ import { html } from '../lib/html.js';
 import { add, errText, num, t } from '../lib/i18n.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
 import { reloadPumps, useStore } from '../lib/store.js';
-import { Seg, useMsg } from '../lib/ui.js';
+import { Seg, Toggle, useMsg } from '../lib/ui.js';
 import { BackupSection } from './backup.js';
 import { EngUnlock, lockEngineering } from './engineering.js';
 
@@ -283,7 +283,7 @@ function DriverCard({ hw, pumps, reload }) {
           ${kMicro.map(m => html`<option value=${m}>${m}</option>`)}</select></label>
     </div>
     <p class="small mut">${t('sv.spr', { spr: num(spr), sps: num(p.config.max_sps) })}</p>
-    <label class="check"><input type="checkbox" checked=${d.invert} onChange=${e => set({ invert: e.target.checked })}/>${t('sv.invert')}</label>
+    <${Toggle} checked=${d.invert} onChange=${v => set({ invert: v })}>${t('sv.invert')}<//>
     <label class="check"><input type="checkbox" checked=${all} onChange=${e => setAll(e.target.checked)}/>${t('sv.all')}</label>
     <${Save} busy=${busy} dirty=${Object.keys(q).length > 0}/>
     ${msg.node}

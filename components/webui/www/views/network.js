@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, t } from '../lib/i18n.js';
-import { SaveBar, useMsg } from '../lib/ui.js';
+import { SaveBar, Toggle, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -100,7 +100,7 @@ function IpFields({ p, v, bad, onChange, cur }) {
     if (!dhcp) for (const k of F) if (!v[k]) patch[k] = (cur && cur[k]) || (k === 'netmask' ? '255.255.255.0' : '');
     onChange(patch);
   };
-  return html`<label class="check"><input type="checkbox" checked=${v.dhcp} onChange=${e => toggle(e.target.checked)}/>${t('nw.dhcp')}</label>
+  return html`<${Toggle} checked=${v.dhcp} onChange=${toggle}>${t('nw.dhcp')}<//>
     ${!v.dhcp && html`<div class="ipgrid">${F.map(k => html`<label class="field">${t('nw.' + k)}
       <input id=${p + '-' + k} class=${bad === p + '.' + k ? 'bad' : ''} inputmode="decimal" autocomplete="off" spellcheck="false"
         value=${v[k]} onInput=${e => onChange({ [k]: e.target.value })}/></label>`)}</div>`}`;
