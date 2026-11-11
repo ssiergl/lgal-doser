@@ -147,6 +147,14 @@ $CXX \
 echo
 $CXX \
     -I components/doser_app/include \
+    tests/host/test_rtc_trim.cpp \
+    components/doser_app/src/rtc_trim_core.cpp \
+    -o "$OUT/rtc_trim"
+"$OUT/rtc_trim"
+
+echo
+$CXX \
+    -I components/doser_app/include \
     tests/host/test_history.cpp \
     components/doser_app/src/history_core.cpp \
     -o "$OUT/history"

@@ -8,7 +8,7 @@
 //   POST /api/v1/hw/pump/config        ?pump=&run_ma=&hold_ma=&microsteps=&full_steps=&invert=&accel=&vstart=
 //   GET  /api/v1/hw/tmc                ?pump=1..5  raw registers
 //   POST /api/v1/hw/time               ?utc=<unix seconds>  (manual time -> system + RTC)
-//   POST /api/v1/hw/rtc/aging          ?offset=-128..127
+//   POST /api/v1/hw/rtc/aging          ?offset=-128..127 and/or auto=0|1 (NTP trim, rtc_trim.h)
 //   POST /api/v1/hw/eeprom/test
 //
 // Raw stepper test: bypasses container, schedule and log completely.

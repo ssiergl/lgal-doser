@@ -22,6 +22,8 @@ idf_component_register(
         "src/scheduler.cpp"
         "src/schedule_json.cpp"
         "src/schedule_api.cpp"
+        "src/rtc_trim_core.cpp"
+        "src/rtc_trim.cpp"
     INCLUDE_DIRS "include"
     REQUIRES doser_hal lgal_core esp_http_server nvs_flash esp_timer esp_app_format
     PRIV_REQUIRES littlefs esp_driver_tsens
