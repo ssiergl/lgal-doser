@@ -35,7 +35,7 @@ add({
     'use.title': 'Consumption', 'use.today': 'Today', 'use.plan': 'Planned today', 'use.limit': 'Daily limit',
     'use.last': 'Last run', 'use.total': 'Total dosed', 'use.tube': 'Tube', 'use.tube.v': '{h} of {lim} h',
     'use.tube.reset': 'Tube replaced', 'use.tube.ask': 'Reset the tube counter of pump {n}?', 'use.tube.ok': 'Tube counter reset',
-    'use.next': 'Next dose', 'use.none': '–', 'use.off': 'off', 'use.history': 'History',
+    'use.next': 'Next dose', 'use.next.boost': '(incl. {ml} ml boost)', 'use.none': '–', 'use.off': 'off', 'use.history': 'History',
     'res.success': 'done', 'res.aborted': 'stopped', 'res.heartbeat_lost': 'stopped (connection)',
     'res.max_duration': 'stopped (max. time)', 'res.fault': 'driver fault', 'res.locked': 'locked (update)',
     'act.dosing': 'Dose', 'act.priming': 'Filling', 'act.calibrating': 'Calibration',
@@ -85,7 +85,7 @@ add({
     'use.title': 'Verbrauch', 'use.today': 'Heute', 'use.plan': 'Heute geplant', 'use.limit': 'Tageslimit',
     'use.last': 'Letzter Lauf', 'use.total': 'Insgesamt dosiert', 'use.tube': 'Schlauch', 'use.tube.v': '{h} von {lim} h',
     'use.tube.reset': 'Schlauch getauscht', 'use.tube.ask': 'Schlauchzähler von Pumpe {n} zurücksetzen?', 'use.tube.ok': 'Schlauchzähler zurückgesetzt',
-    'use.next': 'Nächste Dosis', 'use.none': '–', 'use.off': 'aus', 'use.history': 'Verlauf',
+    'use.next': 'Nächste Dosis', 'use.next.boost': '(inkl. {ml} ml Boost)', 'use.none': '–', 'use.off': 'aus', 'use.history': 'Verlauf',
     'res.success': 'fertig', 'res.aborted': 'gestoppt', 'res.heartbeat_lost': 'gestoppt (Verbindung)',
     'res.max_duration': 'gestoppt (max. Dauer)', 'res.fault': 'Treiberfehler', 'res.locked': 'gesperrt (Update)',
     'act.dosing': 'Dosis', 'act.priming': 'Füllen', 'act.calibrating': 'Kalibrierung',
@@ -305,7 +305,8 @@ function UsageCard({ p, sp, nowLocal }) {
     <dl class="stats">
       <dt>${t('use.today')}</dt><dd class="num">${num(d.used_ml, 2)} ml</dd>
       <dt>${t('use.plan')}</dt><dd class="num">${sp ? num(sp.planned_today_ml, 2) + ' ml' : none}</dd>
-      <dt>${t('use.next')}</dt><dd class="num">${sp && sp.next ? `${whenLocal(sp.next.local, nowLocal)} · ${num(sp.next.ml, 2)} ml` : none}</dd>
+      <dt>${t('use.next')}</dt><dd class="num">${sp && sp.next ? html`${whenLocal(sp.next.local, nowLocal)} · ${num(sp.next.ml, 2)} ml${sp.next.boost_ml
+        ? html` <span class="acc small">${t('use.next.boost', { ml: num(sp.next.boost_ml, 2) })}</span>` : ''}` : none}</dd>
       <dt>${t('use.limit')}</dt><dd class="num">${d.limit_ml ? num(d.limit_ml, 1) + ' ml' : t('use.off')}</dd>
       <dt>${t('use.last')}</dt><dd>${lastText}</dd>
       <dt>${t('use.total')}</dt><dd class="num">${num(p.total_ml, 1)} ml</dd>
