@@ -7,7 +7,8 @@ START = time.time()
 SCH = {"grid_min": 5, "max_delay_min": 120}
 CFG = [{"run_ma": 650, "hold_ma": 0, "microsteps": 16, "full_steps": 200, "invert": False, "accel": 64000, "v_start": 1066} for _ in range(5)]
 RAW = [{"running": False, "start": 0.0, "steps": 0, "sps": 1, "pos": 0, "sg_min": 0} for _ in range(5)]
-RTC = {"aging": 0, "auto": True}
+RTC = {"aging": 0}
+ntp_on = lambda: bool(__import__("sys_mock").TIME["ntp_server"])
 UART = [{"transfers": 18234, "timeouts": 2, "crc_errors": 0, "echo_errors": 0}, {"transfers": 4521, "timeouts": 0, "crc_errors": 0, "echo_errors": 0}]
 
 def _err(h, code="invalid_param", msg="x", status=400):
@@ -39,8 +40,8 @@ def _pump(i):
 def _status():
     return {"drivers_enabled": any(r["running"] for r in RAW), "locked": False, "pumps": [_pump(i) for i in range(5)],
             "rtc": {"present": True, "utc": int(time.time()), "time_lost": False, "temp_c": 24.75, "aging": RTC["aging"],
-                    "battery_warning": False, "trim": {"automatic": RTC["auto"], "measuring": RTC["auto"], **({"since": int(time.time()) - 15 * 3600,
-                    "start_offset_ms": 4, "offset_ms": 9, "measured_at": int(time.time()) - 600} if RTC["auto"] else {}),
+                    "battery_warning": False, "trim": {"automatic": ntp_on(), "measuring": ntp_on(), **({"since": int(time.time()) - 15 * 3600,
+                    "start_offset_ms": 4, "offset_ms": 9, "measured_at": int(time.time()) - 600} if ntp_on() else {}),
                     "last": {"at": int(time.time()) - 39 * 3600, "ppm": 1.84, "from": 0, "to": 18}}},
             "eeprom": {"present": True}, "time": {"valid": True, "utc": int(time.time()), "source": "ntp", "timezone": "CET-1CEST,M3.5.0,M10.5.0/3"},
             "uart": [{"bus": "A (GPIO38, pumps 1-4)" if b == 0 else "B (GPIO39, pump 5)", **u} for b, u in enumerate(UART)]}
@@ -143,11 +144,10 @@ def route(h, method, path, q, eng_ok):
             if r["running"]: r.update(running=False, steps=r["pos"] if r["steps"] > 0 else -r["pos"])
         h.send(200, {"status": "stopped" if q.get("mode") == "hard" else "stopping"}); return True
     if path == "/api/v1/hw/rtc/aging" and method == "POST":
-        if "auto" in q: RTC["auto"] = q["auto"] != "0"
-        if "offset" in q:
-            v = _num(q, "offset")
-            if v is None or not -128 <= v <= 127 or v != int(v): _err(h, "invalid_param", "offset=-128..127"); return True
-            RTC["aging"] = int(v)
+        v = _num(q, "offset")
+        if v is None or not -128 <= v <= 127 or v != int(v): _err(h, "invalid_param", "offset=-128..127"); return True
+        if ntp_on(): _err(h, "ntp_active", "Trimmed automatically from the time server", status=409); return True
+        RTC["aging"] = int(v)
         h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/hw/tmc" and method == "GET":
         n = _num(q, "pump")

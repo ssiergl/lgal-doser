@@ -11,7 +11,6 @@ Decision decide(const State& s, int64_t now, int32_t offset_ms, int8_t aging) {
     d.aging = aging;
     const bool far = std::abs(offset_ms) >= kSetOffsetMs;
     d.set_rtc = far || !s.ever_set;
-    if (!s.automatic) return d;
     // no anchor yet, aging changed by hand or the RTC was set meanwhile: start over
     if (!s.anchored || s.aging != aging || std::abs(offset_ms - s.anchor_ms) > kJumpMs || now < s.anchor_utc) {
         d.anchor = true;

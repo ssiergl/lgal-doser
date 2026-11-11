@@ -77,22 +77,10 @@ static void test_restart_cases() {
     CHECK(d.anchor && !d.trim);
 }
 
-static void test_manual_mode() {
-    std::printf("Automatic off\n");
-    State s;
-    s.automatic = 0;
-    s.ever_set = 1;
-    auto d = decide(s, T0, 200, 0);
-    CHECK(!d.set_rtc && !d.anchor && !d.trim);
-    d = decide(s, T0, -600, 0);
-    CHECK(d.set_rtc && !d.anchor);
-}
-
 int main() {
     test_first_sync();
     test_trim();
     test_restart_cases();
-    test_manual_mode();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

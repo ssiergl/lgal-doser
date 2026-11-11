@@ -1,6 +1,7 @@
 #pragma once
 // RTC upkeep on the device: keeps the DS3231 in phase with NTP and trims its
-// aging register automatically (logic in rtc_trim_core.h, state in NVS "hw").
+// aging register automatically whenever a time server is set (logic in
+// rtc_trim_core.h, state in NVS "hw").
 // Every RTC write of the time synchronization goes through here.
 
 #include <cstdint>
@@ -25,6 +26,5 @@ struct Status {
     int64_t measured_at;   // 0 = not measured since start
 };
 Status status();
-esp_err_t set_automatic(bool on);
 
 }  // namespace doser::rtc_trim
