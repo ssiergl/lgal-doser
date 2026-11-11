@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include "doser/event_source.h"
 #include "doser/history.h"
 #include "doser/history_json.h"
 #include "doser/schedule_core.h"
@@ -161,6 +162,7 @@ esp_err_t delete_history(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     if (history::clear() != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", "History not available");
+    note_system(req, "cleared");  // the first entry of the new history
     return http::send_json(req, "{\"status\":\"ok\"}");
 }
 void write_settings(Json& j) {
@@ -185,6 +187,7 @@ esp_err_t post_settings(httpd_req_t* req) {
         return http::send_error(req, "400 Bad Request", "invalid_param", "keep_days=1..60");
     if (history::set_keep_days(static_cast<uint16_t>(v)) != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", "Could not save");
+    note_system(req, "engineering");
     Json j;
     write_settings(j);
     return http::send_json(req, j.c_str());

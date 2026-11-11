@@ -15,6 +15,7 @@ idf_component_register(
         "src/json_reader.cpp"
         "src/sha256.cpp"
         "src/entropy.cpp"
+        "src/events.cpp"
         "src/auth_core.cpp"
         "src/auth.cpp"
         "src/net_config.cpp"

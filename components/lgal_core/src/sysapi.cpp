@@ -21,6 +21,7 @@
 #include "esp_timer.h"
 #include "lgal/device.h"
 #include "lgal/device_name.h"
+#include "lgal/events.h"
 #include "lgal/http.h"
 #include "lgal/led.h"
 #include "lgal/logbuf.h"
@@ -250,6 +251,7 @@ esp_err_t post_language(httpd_req_t* req) {
         return http::send_error(req, "400 Bad Request", "invalid_param", "lang: unsupported language");
     if (settings::set_language(lang) != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", "Could not save setting");
+    events::note("settings", req);
     return get_language(req);
 }
 
@@ -322,12 +324,14 @@ esp_err_t put_time(httpd_req_t* req) {
     if (vtz.valid()) err = timesync::set_timezone(tz);
     if (err == ESP_OK && vntp.valid()) err = timesync::set_ntp_server(ntp);
     if (err != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", esp_err_to_name(err));
+    if (vtz.valid() || vntp.valid()) events::note("settings", req);
     if (vlocal.valid()) {
         const time_t t = mktime(&local);  // after set_timezone: uses the zone just saved
         if (t == static_cast<time_t>(-1) || !timesync::set_manual(static_cast<int64_t>(t)))
             return param_error(req, "local");
+        events::note("time_set", req);
     } else if (vutc.valid()) {
-        timesync::set_manual(utc);
+        if (timesync::set_manual(utc)) events::note("time_set", req);
     }
     return get_time(req);
 }
@@ -409,6 +413,7 @@ esp_err_t put_led(httpd_req_t* req) {
     if (const esp_err_t err = settings::set_led_night(n); err != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", esp_err_to_name(err));
     led::set_idle_brightness(led::idle_brightness(n, local_minute()));
+    events::note("settings", req);
     return send_led(req);
 }
 
@@ -457,6 +462,7 @@ esp_err_t put_device(httpd_req_t* req) {
     if (const esp_err_t err = device::set_names(name, host); err != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", esp_err_to_name(err));
     net::apply_hostname();
+    events::note("settings", req);
     return send_device(req);
 }
 

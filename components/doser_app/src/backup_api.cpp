@@ -7,6 +7,7 @@
 
 #include "doser/backup_json.h"
 #include "doser/dosing.h"
+#include "doser/event_source.h"
 #include "doser/history.h"
 #include "doser/hwconfig.h"
 #include "doser/motion.h"
@@ -197,6 +198,7 @@ esp_err_t post_backup(httpd_req_t* req) {
         signed_out = true;
     }
     ESP_LOGW(TAG, "Backup restored (parts 0x%02x)", applied);
+    note_system(req, "restored", applied);
     Json j;
     j.obj().kv("status", "ok");
     write_applied(j, applied);

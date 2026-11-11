@@ -384,6 +384,77 @@ static void test_not_fitted() {
     CHECK(scheduler::status(4).has_next);
 }
 
+static size_t count_events(history::Kind k) {
+    size_t n = 0;
+    for (const auto& e : sim::events) n += e.kind == k;
+    return n;
+}
+
+static bool is_code(const history::Event* e, const char* code) { return e && e->code == history::code_of(code); }
+
+static void test_events() {
+    using history::Kind;
+    using history::Source;
+    // pump 4 (08, 12, 16, 20 h): a boost over 2 doses runs out by itself
+    CHECK(scheduler::set_schedule(3, spread(480, 1200, 4, 4000)) == nullptr);
+    CHECK(scheduler::boost_start(3, 2000, 0, 2, Source::Api) == nullptr);
+    auto* e = sim::last_event(Kind::Boost, 4);
+    CHECK(is_code(e, "started") && e->source == Source::Api && e->target_ul == 2000 && e->value == -2);
+    sim::run_until(sim::utc() + 2 * 86400);
+    e = sim::last_event(Kind::Boost, 4);
+    CHECK(is_code(e, "finished") && e->source == Source::Schedule && e->done_ul == 2000 && e->value == -2);
+
+    // cancelled before its first dose
+    CHECK(scheduler::boost_start(3, 2000, 1, 0, Source::Manual) == nullptr);
+    CHECK(sim::last_event(Kind::Boost, 4)->value == 1);
+    scheduler::boost_stop(3, Source::Mqtt);
+    e = sim::last_event(Kind::Boost, 4);
+    CHECK(is_code(e, "cancelled") && e->source == Source::Mqtt && e->done_ul == 0 && e->target_ul == 2000);
+    const size_t boosts = count_events(Kind::Boost);
+    scheduler::boost_stop(3, Source::Mqtt);  // nothing running: no event
+    CHECK(count_events(Kind::Boost) == boosts);
+
+    // the plan removed: the boost has no slots left and ends, the plan change is recorded
+    CHECK(scheduler::boost_start(3, 3000, 0, 3) == nullptr);
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}, nullptr, Source::Manual) == nullptr);
+    e = sim::last_event(Kind::Boost, 4);
+    CHECK(is_code(e, "finished") && e->done_ul == 0);
+    CHECK(is_code(sim::last_event(Kind::Schedule, 4), "cleared"));
+    CHECK(scheduler::set_schedule(3, spread(480, 1200, 4, 4000), nullptr, Source::Api) == nullptr);
+    e = sim::last_event(Kind::Schedule, 4);
+    CHECK(is_code(e, "set") && e->source == Source::Api && e->target_ul == 4000 && e->value == 4);
+    CHECK(scheduler::set_schedule(3, plan({single(540, 1000), single(600, 1500)}), nullptr, Source::Manual) == nullptr);
+    e = sim::last_event(Kind::Schedule, 4);
+    CHECK(e->target_ul == 2500 && e->value == 2);
+    const size_t plans = count_events(Kind::Schedule);
+    CHECK(scheduler::set_schedule(3, spread(480, 1200, 4, 4000)) == nullptr);  // without source (restore)
+    CHECK(count_events(Kind::Schedule) == plans);
+
+    // lock rules (device)
+    CHECK(scheduler::set_locks(scheduler::locks(), nullptr, Source::Api) == nullptr);
+    e = sim::last_event(Kind::Locks, 0);
+    CHECK(is_code(e, "set") && e->value == scheduler::locks().count);
+
+    // mode and other settings
+    auto set = dosing::settings(3);
+    set.mode = dose::Mode::ManualOnly;
+    const size_t others = count_events(Kind::Settings);
+    CHECK(dosing::set_settings(3, set, Source::Mqtt) == nullptr);
+    e = sim::last_event(Kind::Mode, 4);
+    CHECK(e && e->source == Source::Mqtt && e->value == static_cast<int32_t>(dose::Mode::ManualOnly));
+    CHECK(count_events(Kind::Settings) == others);  // only the mode changed
+    std::strcpy(set.name, "Kalium");
+    CHECK(dosing::set_settings(3, set, Source::Manual) == nullptr);
+    CHECK(count_events(Kind::Settings) == others + 1);
+    CHECK(dosing::set_settings(3, set, Source::Manual, true) == nullptr);  // direction changed
+    CHECK(count_events(Kind::Settings) == others + 2);
+    const size_t modes = count_events(Kind::Mode);
+    set.mode = dose::Mode::Auto;
+    set.name[0] = 0;
+    CHECK(dosing::set_settings(3, set) == nullptr);  // without source (restore)
+    CHECK(count_events(Kind::Mode) == modes && count_events(Kind::Settings) == others + 2);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -414,6 +485,8 @@ int main(int argc, char**) {
     test_set_all();
     std::printf("Scheduler: pump not fitted\n");
     test_not_fitted();
+    std::printf("Scheduler: history events\n");
+    test_events();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

@@ -10,6 +10,7 @@
 #include "freertos/semphr.h"
 #include "lgal/auth_core.h"
 #include "lgal/device.h"
+#include "lgal/events.h"
 #include "lgal/http.h"
 #include "lgal/json.h"
 #include "lgal/json_reader.h"
@@ -247,6 +248,7 @@ esp_err_t post_password(httpd_req_t* req) {
     std::memset(cur, 0, sizeof(cur));
     if (e) return fail(req, e);
     login_session(req, now);  // stay signed in on this browser
+    events::note("password", events::By::Browser);
     return ok(req);
 }
 
@@ -274,6 +276,7 @@ esp_err_t post_recover(httpd_req_t* req) {
     if (e) return fail(req, e);
     ESP_LOGW(TAG, "Admin password reset via the setup Wi-Fi");
     login_session(req, now);
+    events::note("password", events::By::Browser);
     return ok(req);
 }
 
@@ -322,6 +325,7 @@ esp_err_t post_keys(httpd_req_t* req) {
         j.obj().kv("slot", slot + 1).kv("name", name).kv("key", key).end();
     }
     std::memset(key, 0, sizeof(key));
+    events::note("key_added", events::By::Browser);
     return http::send_json(req, j.c_str());
 }
 
@@ -329,13 +333,17 @@ esp_err_t delete_keys(httpd_req_t* req) {
     int64_t slot = 0;
     if (!http::query_int(req, "slot", &slot) || slot < 1 || slot > kMaxKeys)
         return http::send_error(req, "400 Bad Request", "invalid_param", "slot=1..4");
-    Guard g;
-    if (session_of(req, now_s()) < 0) return http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
-    KeyStore next = s_keys;
-    if (!remove_key(next, static_cast<int>(slot - 1))) return http::send_error(req, "404 Not Found", "not_found", "No such key");
-    if (save("keys", next) != ESP_OK) return fail(req, "storage_error");
-    s_keys = next;
-    ESP_LOGI(TAG, "API key %d deleted", static_cast<int>(slot));
+    {
+        Guard g;
+        if (session_of(req, now_s()) < 0) return http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+        KeyStore next = s_keys;
+        if (!remove_key(next, static_cast<int>(slot - 1)))
+            return http::send_error(req, "404 Not Found", "not_found", "No such key");
+        if (save("keys", next) != ESP_OK) return fail(req, "storage_error");
+        s_keys = next;
+        ESP_LOGI(TAG, "API key %d deleted", static_cast<int>(slot));
+    }
+    events::note("key_removed", events::By::Browser);
     return ok(req);
 }
 

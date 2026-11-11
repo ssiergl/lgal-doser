@@ -80,6 +80,31 @@ int32_t local_day(int64_t utc) { return sched::day_of(tz::to_local(s_zone, utc))
 
 void save(int p) { schedule_store::save_run(p, s_rt[p].run); }
 
+// Boost window for the history: days, or the number of doses as negative value
+int32_t boost_value(const sched::Boost& b) { return b.days ? b.days : -int32_t(b.doses); }
+
+void note_boost(int p, const char* code, const sched::Boost& b, history::Source source) {
+    history::note(history::Kind::Boost, p, source, code, b.total_ul, b.total_ul - b.remaining_ul, boost_value(b));
+}
+
+// A boost that ended by itself: all its slots used or its window over
+void boost_ended(int p, const sched::Boost& before) {
+    if (before.total_ul && !s_rt[p].run.boost.total_ul) note_boost(p, "finished", before, history::Source::Schedule);
+}
+
+void pass_boost(int p, int64_t slot_utc, int n) {
+    const sched::Boost before = s_rt[p].run.boost;
+    sched::boost_pass(s_rt[p].run.boost, slot_utc, n);
+    boost_ended(p, before);
+}
+
+uint32_t take_boost(int p, int64_t slot_utc) {
+    const sched::Boost before = s_rt[p].run.boost;
+    const uint32_t share = sched::boost_take(s_rt[p].run.boost, slot_utc);
+    boost_ended(p, before);
+    return share;
+}
+
 void log_skip(int p, const char* reason, uint32_t ul, int count, int64_t now) {
     history::Event e;
     e.utc = static_cast<uint32_t>(now);
@@ -95,7 +120,7 @@ void log_skip(int p, const char* reason, uint32_t ul, int count, int64_t now) {
 void skip(int p, const char* reason, const sched::Due& d, int64_t now) {
     PumpRt& r = s_rt[p];
     r.run.cursor = sched::cursor_of(d);
-    sched::boost_pass(r.run.boost, d.utc, 1);
+    pass_boost(p, d.utc, 1);
     ++r.run.skipped;
     r.last_skip_reason = reason;
     r.last_skip_at = now;
@@ -134,7 +159,9 @@ bool has_slot(const PumpRt& r, const sched::Cursor& from) {
 void recount_boost(PumpRt& r) {
     sched::Boost& b = r.run.boost;
     if (!b.remaining_ul) return;
+    const sched::Boost before = b;
     sched::boost_recount(b, b.days ? slots_until(r, r.run.cursor, sched::boost_end(b)) : has_slot(r, r.run.cursor));
+    boost_ended(static_cast<int>(&r - s_rt), before);
 }
 
 // End of the boost window: for a window in doses the time of its last slot
@@ -194,7 +221,7 @@ void try_start(int p, int64_t now) {
     const char* e = dosing::dose(p, ul, r.share ? dosing::Trigger::Boost : dosing::Trigger::Schedule, -1, &retry);
     if (!e) {
         r.run.cursor = sched::cursor_of(r.due);
-        sched::boost_pass(r.run.boost, r.due.utc, 1);
+        pass_boost(p, r.due.utc, 1);
         r.pending = false;
         r.delay_reason = nullptr;
         r.last_run_at = now;
@@ -222,7 +249,7 @@ void try_start(int p, int64_t now) {
     if (is(e, "pump_manual_only") || is(e, "pump_disabled")) {
         // deliberate mode, not a fault: no statistics, no warning
         r.run.cursor = sched::cursor_of(r.due);
-        sched::boost_pass(r.run.boost, r.due.utc, 1);
+        pass_boost(p, r.due.utc, 1);
         save(p);
         return;
     }
@@ -262,7 +289,7 @@ void process(int p, int64_t now) {
         }
         if (n) {
             r.run.cursor = c;
-            sched::boost_pass(r.run.boost, c.utc, n);
+            pass_boost(p, c.utc, n);
             r.run.skipped += n;
             r.last_skip_reason = "missed";
             r.last_skip_at = now;
@@ -277,7 +304,7 @@ void process(int p, int64_t now) {
         return;
     }
     r.due = d;
-    r.share = sched::boost_take(r.run.boost, d.utc);
+    r.share = take_boost(p, d.utc);
     r.pending = true;
     r.pending_since = now;
     r.delay_reason = nullptr;
@@ -362,7 +389,7 @@ esp_err_t init() {
     return ESP_OK;
 }
 
-const char* set_schedule(int pump, const sched::PumpSchedule& s, SaveResult* r) {
+const char* set_schedule(int pump, const sched::PumpSchedule& s, SaveResult* r, history::Source source) {
     if (!valid_pump(pump)) return "invalid_param";
     sched::Context ctx = make_context();
     const auto ts = lgal::timesync::status();
@@ -373,6 +400,19 @@ const char* set_schedule(int pump, const sched::PumpSchedule& s, SaveResult* r) 
     if (const char* e = check_all(s_locks, s_cfg, ctx, r)) return e;
     if (schedule_store::save_schedule(pump, s) != ESP_OK) return "storage_error";
     adopt(pump, s, ts);
+    if (source != history::Source::None) {
+        if (s.kind == sched::Kind::None) {
+            history::note(history::Kind::Schedule, pump, source, "cleared");
+        } else {
+            const int n = s.kind == sched::Kind::Spread ? s.count : s.time_count;
+            uint32_t ul = s.amount_ul;
+            if (s.kind == sched::Kind::Times) {
+                ul = 0;
+                for (int i = 0; i < s.time_count; ++i) ul += s.times[i].ul;
+            }
+            history::note(history::Kind::Schedule, pump, source, "set", ul, 0, n);
+        }
+    }
     return nullptr;
 }
 
@@ -382,7 +422,7 @@ sched::PumpSchedule schedule(int pump) {
     return s_rt[pump].sch;
 }
 
-const char* set_locks(const sched::Locks& l, SaveResult* r) {
+const char* set_locks(const sched::Locks& l, SaveResult* r, history::Source source) {
     if (!s_mx) return "invalid_param";
     if (l.manual > sched::ManualDuringLock::Queue) return "invalid_param";
     sched::Context ctx = make_context();
@@ -396,6 +436,7 @@ const char* set_locks(const sched::Locks& l, SaveResult* r) {
     dosing::set_locks(l);
     ESP_LOGI(TAG, "Lock rules saved (%u), manual doses during a lock: %s", l.count,
              sched::manual_during_lock_str(l.manual));
+    if (source != history::Source::None) history::note(history::Kind::Locks, -1, source, "set", 0, 0, l.count);
     return nullptr;
 }
 
@@ -445,7 +486,7 @@ sched::Config config() {
     return s_cfg;
 }
 
-const char* boost_start(int pump, uint32_t total_ul, uint16_t days, uint16_t doses) {
+const char* boost_start(int pump, uint32_t total_ul, uint16_t days, uint16_t doses, history::Source source) {
     if (!valid_pump(pump) || (days > 0) == (doses > 0) || days > sched::kMaxInterval || doses > sched::kMaxBoostDoses)
         return "invalid_param";
     const auto eng = dosing::engineering();
@@ -460,17 +501,21 @@ const char* boost_start(int pump, uint32_t total_ul, uint16_t days, uint16_t dos
     const sched::Cursor from = open_from(r, ts.utc);
     const int n = !aut ? 0 : days ? slots_until(r, from, ts.utc + int64_t(days) * 86400) : has_slot(r, from) ? doses : 0;
     if (n <= 0) return "no_slots";
+    if (r.run.boost.total_ul) note_boost(pump, "cancelled", r.run.boost, source);  // replaced
     sched::boost_start(r.run.boost, total_ul, days, ts.utc, n);
     save(pump);
+    note_boost(pump, "started", r.run.boost, source);
     if (days) ESP_LOGI(TAG, "Pump %d: boost %" PRIu32 " ul over %u days", pump + 1, total_ul, days);
     else ESP_LOGI(TAG, "Pump %d: boost %" PRIu32 " ul over %u doses", pump + 1, total_ul, doses);
     return nullptr;
 }
 
-void boost_stop(int pump) {
+void boost_stop(int pump, history::Source source) {
     if (!valid_pump(pump)) return;
     Guard g;
-    s_rt[pump].run.boost = sched::Boost{};
+    sched::Boost& b = s_rt[pump].run.boost;
+    if (b.total_ul) note_boost(pump, "cancelled", b, source);
+    b = sched::Boost{};
     save(pump);
 }
 

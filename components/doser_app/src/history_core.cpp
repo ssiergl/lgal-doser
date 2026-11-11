@@ -13,14 +13,20 @@ namespace doser::history {
 namespace {
 // Stored as index on flash: only ever append, never reorder.
 constexpr const char* kCodes[] = {
-    "other",          "success",          "aborted",            "fault",         "locked",
-    "heartbeat_lost", "max_duration",     "missed",             "daily_limit",   "delay_timeout",
-    "pump_disabled",  "pump_manual_only", "driver_unavailable", "time_invalid",  "dose_too_small",
-    "dose_too_large", "pump_busy",        "collision_lock",     "container_low", "tube_worn",
-    "rtc_fault",      "set",              "refilled",
+    "other",           "success",          "aborted",            "fault",          "locked",
+    "heartbeat_lost",  "max_duration",     "missed",             "daily_limit",    "delay_timeout",
+    "pump_disabled",   "pump_manual_only", "driver_unavailable", "time_invalid",   "dose_too_small",
+    "dose_too_large",  "pump_busy",        "collision_lock",     "container_low",  "tube_worn",
+    "rtc_fault",       "set",              "refilled",           "started",        "cancelled",
+    "finished",        "cleared",          "boot",               "updated",        "restored",
+    "time_set",        "settings",         "channels",           "engineering",    "network",
+    "mqtt",            "password",         "key_added",          "key_removed",
 };
 constexpr uint8_t kCodeCount = sizeof(kCodes) / sizeof(kCodes[0]);
-constexpr const char* kKinds[] = {"", "dose", "prime", "calib_run", "skip", "container", "calibration", "tube", "alarm"};
+constexpr const char* kKinds[] = {"",         "dose",     "prime",  "calib_run", "skip",      "container",
+                                  "calibration", "tube",  "alarm",  "boost",     "mode",      "schedule",
+                                  "settings",  "locks",    "alarm_end", "system"};
+static_assert(sizeof(kKinds) / sizeof(kKinds[0]) == kKindMax + 1);
 constexpr const char* kSources[] = {"", "manual", "api", "schedule", "boost", "mqtt"};
 constexpr int kMaxDays = 400;
 

@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "doser/dosing_core.h"
 #include "doser/schedule_core.h"
 #include "doser/schedule_json.h"
 
@@ -13,6 +14,35 @@ using history::Kind;
 
 namespace {
 double ml(int64_t ul) { return static_cast<double>(ul) / 1000.0; }
+
+// major*10000 + minor*100 + patch -> "1.2.3"
+void fmt_version(int64_t v, char (&out)[16]) {
+    if (v <= 0) {
+        out[0] = '\0';
+        return;
+    }
+    std::snprintf(out, sizeof(out), "%d.%d.%d", int(v / 10000 % 10000), int(v / 100 % 100), int(v % 100));
+}
+
+// esp_reset_reason_t (stored as number) in words
+const char* reset_str(int32_t r) {
+    switch (r) {
+        case 1: return "power_on";
+        case 2: return "external";
+        case 3: return "restart";
+        case 4: return "crash";
+        case 5:
+        case 6:
+        case 7: return "watchdog";
+        case 9:
+        case 14: return "brownout";
+        default: return "other";
+    }
+}
+
+bool is_code(const Event& e, const char* c) { return std::strcmp(history::code_str(e.code), c) == 0; }
+
+const char* mode_name(int32_t m) { return dose::mode_str(static_cast<dose::Mode>(m)); }
 }  // namespace
 
 void fmt_local_s(int64_t local, char (&out)[20]) {
@@ -53,7 +83,40 @@ void write_event(lgal::Json& j, const Event& e, int64_t local, bool leave_open) 
         case Kind::Tube:
             j.kv("hours", static_cast<int64_t>(e.value));
             break;
+        case Kind::Boost:
+            j.kv("total_ml", ml(e.target_ul), 3);
+            if (e.value > 0) j.kv("days", static_cast<int64_t>(e.value));
+            if (e.value < 0) j.kv("doses", static_cast<int64_t>(-e.value));
+            if (!is_code(e, "started")) j.kv("done_ml", ml(e.done_ul), 3);
+            break;
+        case Kind::Mode:
+            j.kv("mode", mode_name(e.value));
+            break;
+        case Kind::Schedule:
+            if (is_code(e, "set")) j.kv("daily_ml", ml(e.target_ul), 3).kv("doses", static_cast<int64_t>(e.value));
+            break;
+        case Kind::Locks:
+            j.kv("rules", static_cast<int64_t>(e.value));
+            break;
+        case Kind::System:
+            if (is_code(e, "boot")) {
+                j.kv("reason", reset_str(e.value));
+            } else if (is_code(e, "updated")) {
+                char v[16], from[16];
+                fmt_version(e.value, v);
+                fmt_version(e.done_ul, from);
+                j.kv("version", v);
+                if (from[0]) j.kv("from", from);
+            } else if (is_code(e, "channels")) {
+                j.arr("pumps");
+                for (int p = 0; p < 5; ++p)
+                    if (e.value & (1 << p)) j.v(p + 1);
+                j.end();
+            }
+            break;
         case Kind::Alarm:
+        case Kind::Settings:
+        case Kind::AlarmEnd:
             break;
     }
     if (!leave_open) j.end();
@@ -88,7 +151,19 @@ size_t csv_line(const Event& e, int64_t local, char* out, size_t len) {
         case Kind::Container: std::snprintf(value, sizeof(value), "%.3f", ml(e.value)); break;
         case Kind::Calibration: std::snprintf(value, sizeof(value), "%.2f", e.value / 1000.0); break;
         case Kind::Tube:
-        case Kind::Skip: std::snprintf(value, sizeof(value), "%ld", long(e.value)); break;
+        case Kind::Skip:
+        case Kind::Boost:
+        case Kind::Schedule:
+        case Kind::Locks: std::snprintf(value, sizeof(value), "%ld", long(e.value)); break;
+        case Kind::Mode: std::snprintf(value, sizeof(value), "%s", mode_name(e.value)); break;
+        case Kind::System:
+            if (is_code(e, "boot")) std::snprintf(value, sizeof(value), "%s", reset_str(e.value));
+            else if (is_code(e, "updated")) {
+                char v[16];
+                fmt_version(e.value, v);
+                std::snprintf(value, sizeof(value), "%s", v);
+            } else if (e.value) std::snprintf(value, sizeof(value), "%ld", long(e.value));
+            break;
         default: break;
     }
     const int n = std::snprintf(out, len, "%lu,%s,%s,%u,%s,%s,%.3f,%.3f,%s\r\n", static_cast<unsigned long>(e.utc), loc,

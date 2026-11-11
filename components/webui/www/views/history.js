@@ -34,6 +34,17 @@ add({
     'hc.dose_too_large': 'dose too large', 'hc.pump_busy': 'pump busy', 'hc.collision_lock': 'lock time',
     'hc.container_low': 'container almost empty', 'hc.tube_worn': 'replace the tube',
     'hc.rtc_fault': 'clock module does not answer', 'hc.set': 'changed', 'hc.refilled': 'refilled', 'hc.other': 'other',
+    'hk.boost': 'Boost', 'hk.mode': 'Mode', 'hk.schedule': 'Schedule', 'hk.settings': 'Settings', 'hk.locks': 'Lock rules',
+    'hk.alarm_end': 'Alarm over', 'hk.system': 'System',
+    'hc.started': 'started', 'hc.cancelled': 'cancelled', 'hc.finished': 'finished', 'hc.cleared': 'deleted',
+    'hc.boot': 'started', 'hc.updated': 'firmware updated', 'hc.restored': 'backup restored', 'hc.time_set': 'time set',
+    'hc.settings': 'settings changed', 'hc.channels': 'fitted pumps changed', 'hc.engineering': 'engineering changed',
+    'hc.network': 'network changed', 'hc.mqtt': 'MQTT changed', 'hc.password': 'password changed',
+    'hc.key_added': 'API key added', 'hc.key_removed': 'API key deleted',
+    'hd.bo.days': '{t} ml over {n} days', 'hd.bo.doses': '{t} ml over {n} doses', 'hd.plan': '{d} ml/day · {n} doses',
+    'hd.rules': '{n} rules', 'hd.pumps': 'pumps {p}', 'hd.ver': '{from} → {to}',
+    'hd.rs.power_on': 'power on', 'hd.rs.external': 'reset', 'hd.rs.restart': 'restart', 'hd.rs.crash': 'after a crash',
+    'hd.rs.watchdog': 'watchdog', 'hd.rs.brownout': 'voltage dip', 'hd.rs.other': '',
   },
   de: {
     'hi.title': 'Verlauf', 'hi.daily': 'Dosiert pro Tag', 'hi.days': '{n} Tage',
@@ -58,11 +69,23 @@ add({
     'hc.dose_too_large': 'Dosis zu groß', 'hc.pump_busy': 'Pumpe belegt', 'hc.collision_lock': 'Sperrzeit',
     'hc.container_low': 'Behälter fast leer', 'hc.tube_worn': 'Schlauch tauschen',
     'hc.rtc_fault': 'Uhrenmodul antwortet nicht', 'hc.set': 'geändert', 'hc.refilled': 'nachgefüllt', 'hc.other': 'sonstiges',
+    'hk.boost': 'Boost', 'hk.mode': 'Modus', 'hk.schedule': 'Zeitplan', 'hk.settings': 'Einstellungen', 'hk.locks': 'Sperrregeln',
+    'hk.alarm_end': 'Alarm vorbei', 'hk.system': 'System',
+    'hc.started': 'gestartet', 'hc.cancelled': 'abgebrochen', 'hc.finished': 'beendet', 'hc.cleared': 'gelöscht',
+    'hc.boot': 'gestartet', 'hc.updated': 'Firmware aktualisiert', 'hc.restored': 'Sicherung eingespielt', 'hc.time_set': 'Uhrzeit gestellt',
+    'hc.settings': 'Einstellungen geändert', 'hc.channels': 'Bestückung geändert', 'hc.engineering': 'Engineering geändert',
+    'hc.network': 'Netzwerk geändert', 'hc.mqtt': 'MQTT geändert', 'hc.password': 'Passwort geändert',
+    'hc.key_added': 'API-Key angelegt', 'hc.key_removed': 'API-Key gelöscht',
+    'hd.bo.days': '{t} ml über {n} Tage', 'hd.bo.doses': '{t} ml über {n} Dosen', 'hd.plan': '{d} ml/Tag · {n} Dosen',
+    'hd.rules': '{n} Regeln', 'hd.pumps': 'Pumpen {p}', 'hd.ver': '{from} → {to}',
+    'hd.rs.power_on': 'Strom an', 'hd.rs.external': 'Reset', 'hd.rs.restart': 'Neustart', 'hd.rs.crash': 'nach Absturz',
+    'hd.rs.watchdog': 'Watchdog', 'hd.rs.brownout': 'Spannungseinbruch', 'hd.rs.other': '',
   },
 });
 
 const kRanges = [7, 14, 30, 60];
-const kKinds = ['dose', 'skip', 'prime', 'calib_run', 'container', 'calibration', 'tube', 'alarm'];
+const kKinds = ['dose', 'skip', 'boost', 'prime', 'calib_run', 'container', 'calibration', 'tube', 'mode', 'schedule',
+  'settings', 'locks', 'alarm', 'alarm_end', 'system'];
 const kPage = 50;
 const kBad = ['aborted', 'fault', 'locked', 'heartbeat_lost', 'max_duration', 'rtc_fault', 'daily_limit'];
 
@@ -221,12 +244,26 @@ function detail(e) {
     case 'container': return t('hd.ct', { r: num(e.remaining_ml, 0), c: num(e.capacity_ml, 0) });
     case 'calibration': return t('hd.cal', { v: num(e.ul_per_rev / 1000, 3), m: num(e.measured_ml, 2), t: num(e.target_ml, 2) });
     case 'tube': return t('hd.tube', { h: e.hours });
+    case 'boost': {
+      if (e.code !== 'started') return t('hd.part', { d: num(e.done_ml, 2), t: num(e.total_ml, 2) });
+      return e.days ? t('hd.bo.days', { t: num(e.total_ml, 2), n: e.days }) : t('hd.bo.doses', { t: num(e.total_ml, 2), n: e.doses });
+    }
+    case 'mode': return t('mode.' + e.mode);
+    case 'schedule': return e.code === 'set' ? t('hd.plan', { d: num(e.daily_ml, 2), n: e.doses }) : '';
+    case 'locks': return t('hd.rules', { n: e.rules });
+    case 'system':
+      if (e.code === 'boot') return t('hd.rs.' + e.reason);
+      if (e.code === 'updated') return e.from ? t('hd.ver', { from: e.from, to: e.version }) : e.version || '';
+      if (e.code === 'channels') return t('hd.pumps', { p: e.pumps.join(', ') });
+      return '';
     default: return '';
   }
 }
 
 function codeCls(e) {
   if (e.kind === 'alarm') return e.code === 'container_low' || e.code === 'tube_worn' ? 'warn' : 'err';
+  if (e.kind === 'alarm_end') return 'ok';
+  if (e.kind === 'system' && e.code === 'boot') return e.reason === 'crash' || e.reason === 'watchdog' || e.reason === 'brownout' ? 'warn' : 'mut';
   if (e.kind === 'skip') return 'warn';
   return kBad.includes(e.code) ? 'err' : 'mut';
 }
