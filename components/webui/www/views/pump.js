@@ -118,8 +118,10 @@ const dec = v => String(v).replace(',', '.');
 
 // ---------------------------------------------------------------------------
 
+// Container with the pump's notices below (as on the overview card)
 function ContainerCard({ p, sp }) {
   const c = p.container;
+  const al = alerts(p, sp);
   const [edit, setEdit] = useState(false);
   const [cap, setCap] = useState('');
   const [rem, setRem] = useState('');
@@ -157,6 +159,7 @@ function ContainerCard({ p, sp }) {
         </div>
       </div>
     </div>
+    ${al.length > 0 && html`<ul class="alerts">${al.map(a => html`<li class=${a.cls}>${a.text}</li>`)}</ul>`}
     ${edit && html`<form class="sub" onSubmit=${save}>
       <div class="form-row">
         <label>${t('ct.cap')}<${Amount} value=${cap} onInput=${setCap}/></label>
@@ -449,14 +452,12 @@ export function PumpView({ pump }) {
   const nowLocal = s.sched && s.sched.now_local;
   const pro = prefs.mode === 'pro';
   const st = status(p);
-  const al = alerts(p, sp);
   return html`<${PumpTabs} current=${pump} pumps=${s.pumps}/>
     <div class="page-head" style=${{ '--pc': pumpColor(p.pump) }}>
       <span class="badge big-badge">${p.pump}</span><h1>${pumpName(p)}</h1><span class="spacer"></span>
       <span class=${'chip ' + st.cls}>${t(st.key)}</span>
       ${sp && sp.boost && html`<span class="chip acc">${t('chip.boost')} +${num(sp.boost.remaining_ml, 1)} ml</span>`}
     </div>
-    ${al.length > 0 && html`<ul class="alerts page-alerts">${al.map(a => html`<li class=${a.cls}>${a.text}</li>`)}</ul>`}
     <div class="detail" key=${pump} style=${{ '--pc': pumpColor(p.pump) }}>
       <div class="col">
         <${ContainerCard} p=${p} sp=${sp}/>
