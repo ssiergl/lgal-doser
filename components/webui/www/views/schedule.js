@@ -25,17 +25,17 @@ add({
     'sc.none': 'No schedule', 'sc.none.hint': 'This pump only doses when you start it by hand.',
     'sc.daily': 'Daily amount', 'sc.count': 'Doses per day', 'sc.from': 'From', 'sc.to': 'To', 'sc.at': 'Time',
     'sc.doses': 'doses', 'sc.every': 'every {m} min', 'sc.everyh': 'every {h} h', 'sc.each': '{n} × {ml} ml',
-    'sc.save': 'Save', 'sc.discard': 'Discard', 'sc.saved': 'Schedule saved', 'sc.remove': 'Remove schedule',
-    'sc.remove.ask': 'Remove the schedule of pump {n}?', 'sc.removed': 'Schedule removed', 'sc.create': 'Create schedule',
+    'sc.save': 'Save', 'sc.discard': 'Discard', 'sc.saved': 'Schedule saved',
+    'sc.create': 'Create schedule',
     'sc.pro.made': 'This schedule was set up in the pro view and stays active as it is.',
     'sc.pro.edit': 'Edit in pro view', 'sc.replace': 'Replace with a simple schedule',
     'sc.mode.manual_only': 'The pump is set to “manual only” – the schedule is paused.',
     'sc.mode.disabled': 'The pump is off – the schedule is paused.',
     'sc.limit': 'Daily limit {l} ml – planned {p} ml', 'sc.unsaved': 'Unsaved changes',
-    'sc.kind': 'Plan', 'sc.kind.none': 'None', 'sc.kind.spread': 'Spread', 'sc.kind.times': 'Single times',
+    'sc.kind': 'Plan', 'sc.kind.spread': 'Spread', 'sc.kind.times': 'Single times',
     'sc.kind.hint.spread': 'A daily amount, split evenly over several doses.',
     'sc.kind.hint.times': 'Fixed times, each with its own amount.',
-    'sc.on': 'Active', 'sc.on.hint': 'Off pauses the schedule; it stays saved.',
+
     'sc.ml.total': 'Amount per day', 'sc.t.add': 'Add time', 'sc.t.del': 'Remove time', 'sc.t.sum': '{n} times · {ml} ml per day',
     'sc.days': 'Days', 'sc.d.daily': 'Daily', 'sc.d.weekdays': 'Weekdays', 'sc.d.interval': 'Every N days',
     'sc.d.every': 'Every', 'sc.d.days': 'days', 'sc.d.anchor': 'starting', 'sc.d.everyN': 'every {n} days',
@@ -43,7 +43,7 @@ add({
     'sc.power': 'After a power loss', 'sc.pl.skip_missed': 'Skip missed doses', 'sc.pl.catch_up_window': 'Catch up',
     'sc.pl.hint.skip_missed': 'Doses missed while the device was off are left out.',
     'sc.pl.hint.catch_up_window': 'Missed doses are made up if they are at most this old:',
-    'sc.total': 'Planned today: {ml} ml', 'sc.off': 'paused',
+    'sc.total': 'Planned today: {ml} ml',
     'sc.cf.overlap': 'Pump {p1} {t1} overlaps with pump {p2} {t2}{d}',
     'sc.cf.collision_lock': 'Pump {p1} {t1} and pump {p2} {t2}{d}: lock time {g} min',
     'sc.cf.next': ' (next day)', 'sc.err.entry': '{time}: {e}',
@@ -63,17 +63,17 @@ add({
     'sc.none': 'Kein Zeitplan', 'sc.none.hint': 'Diese Pumpe dosiert nur, wenn du sie von Hand startest.',
     'sc.daily': 'Tagesmenge', 'sc.count': 'Dosen pro Tag', 'sc.from': 'Von', 'sc.to': 'Bis', 'sc.at': 'Uhrzeit',
     'sc.doses': 'Dosen', 'sc.every': 'alle {m} Min.', 'sc.everyh': 'alle {h} Std.', 'sc.each': '{n} × {ml} ml',
-    'sc.save': 'Speichern', 'sc.discard': 'Verwerfen', 'sc.saved': 'Zeitplan gespeichert', 'sc.remove': 'Zeitplan entfernen',
-    'sc.remove.ask': 'Zeitplan von Pumpe {n} entfernen?', 'sc.removed': 'Zeitplan entfernt', 'sc.create': 'Zeitplan anlegen',
+    'sc.save': 'Speichern', 'sc.discard': 'Verwerfen', 'sc.saved': 'Zeitplan gespeichert',
+    'sc.create': 'Zeitplan anlegen',
     'sc.pro.made': 'Dieser Zeitplan wurde in der Profi-Ansicht eingerichtet und bleibt so aktiv.',
     'sc.pro.edit': 'In der Profi-Ansicht bearbeiten', 'sc.replace': 'Durch einfachen Zeitplan ersetzen',
     'sc.mode.manual_only': 'Die Pumpe steht auf „Nur manuell“ – der Zeitplan ruht.',
     'sc.mode.disabled': 'Die Pumpe ist aus – der Zeitplan ruht.',
     'sc.limit': 'Tageslimit {l} ml – geplant {p} ml', 'sc.unsaved': 'Ungespeicherte Änderungen',
-    'sc.kind': 'Plan', 'sc.kind.none': 'Keiner', 'sc.kind.spread': 'Verteilt', 'sc.kind.times': 'Einzelzeiten',
+    'sc.kind': 'Plan', 'sc.kind.spread': 'Verteilt', 'sc.kind.times': 'Einzelzeiten',
     'sc.kind.hint.spread': 'Eine Tagesmenge, gleichmäßig auf mehrere Dosen verteilt.',
     'sc.kind.hint.times': 'Feste Uhrzeiten, jede mit eigener Menge.',
-    'sc.on': 'Aktiv', 'sc.on.hint': 'Aus pausiert den Zeitplan; er bleibt gespeichert.',
+
     'sc.ml.total': 'Menge pro Tag', 'sc.t.add': 'Uhrzeit hinzufügen', 'sc.t.del': 'Uhrzeit entfernen', 'sc.t.sum': '{n} Uhrzeiten · {ml} ml pro Tag',
     'sc.days': 'Tage', 'sc.d.daily': 'Täglich', 'sc.d.weekdays': 'Wochentage', 'sc.d.interval': 'Alle N Tage',
     'sc.d.every': 'Alle', 'sc.d.days': 'Tage', 'sc.d.anchor': 'ab', 'sc.d.everyN': 'alle {n} Tage',
@@ -81,7 +81,7 @@ add({
     'sc.power': 'Nach einem Stromausfall', 'sc.pl.skip_missed': 'Verpasste auslassen', 'sc.pl.catch_up_window': 'Nachholen',
     'sc.pl.hint.skip_missed': 'Dosen, die während des Ausfalls fällig waren, entfallen.',
     'sc.pl.hint.catch_up_window': 'Verpasste Dosen werden nachgeholt, wenn sie höchstens so alt sind:',
-    'sc.total': 'Heute geplant: {ml} ml', 'sc.off': 'pausiert',
+    'sc.total': 'Heute geplant: {ml} ml',
     'sc.cf.overlap': 'Pumpe {p1} {t1} überschneidet sich mit Pumpe {p2} {t2}{d}',
     'sc.cf.collision_lock': 'Pumpe {p1} {t1} und Pumpe {p2} {t2}{d}: Sperrzeit {g} Min.',
     'sc.cf.next': ' (Folgetag)', 'sc.err.entry': '{time}: {e}',
@@ -120,7 +120,6 @@ const sortedTimes = d => d.times.map(x => ({ time: x.time, min: toMin(x.time), m
 // Draft -> {slots: [{min, ul}], err, entry (time text of the faulty entry)}
 function expand(d, grid) {
   const fail = (err, entry) => ({ slots: [], err, entry });
-  if (d.kind === 'none') return { slots: [] };
   const days = d.days;
   if (days.mode === 'weekdays' && !days.weekdays.length) return fail('invalid_days');
   if (days.mode === 'interval' && !(+days.every >= 1 && +days.every <= 30 && days.anchor)) return fail('invalid_days');
@@ -159,7 +158,7 @@ function expand(d, grid) {
 }
 
 // Slots of a draft on a day
-const daySlots = (d, day, grid) => (d.kind !== 'none' && d.enabled && activeOn(d.days, day) ? expand(d, grid).slots : []);
+const daySlots = (d, day, grid) => (activeOn(d.days, day) ? expand(d, grid).slots : []);
 
 // ---------------------------------------------------------------------------
 // Draft (form values as text) <-> device JSON
@@ -169,7 +168,7 @@ const newRow = (time = '08:00') => ({ time, ml: '' });
 function draftOf(s) {
   const d = s.days || { mode: 'daily' };
   return {
-    kind: s.kind || 'none', enabled: s.enabled !== false,
+    kind: s.kind === 'times' ? 'times' : 'spread',  // without a plan the form starts as spread
     start: s.start || '08:00', end: s.end || '20:00', count: String(s.count || 4), ml: text(s.ml),
     times: (s.times || []).map(x => ({ time: x.time, ml: text(x.ml) })),
     days: { mode: d.mode, weekdays: d.weekdays || [...WD], every: String(d.every || 2), anchor: d.anchor || '' },
@@ -179,11 +178,10 @@ function draftOf(s) {
 
 function bodyOf(d) {
   const common = { power_loss: d.power_loss, catch_up_min: parseInt(d.catch_up, 10) || 0 };
-  if (d.kind === 'none') return { kind: 'none', ...common };
   const days = d.days.mode === 'weekdays' ? { mode: 'weekdays', weekdays: WD.filter(w => d.days.weekdays.includes(w)) }
     : d.days.mode === 'interval' ? { mode: 'interval', every: parseInt(d.days.every, 10), anchor: d.days.anchor }
       : { mode: 'daily' };
-  const head = { kind: d.kind, enabled: d.enabled };
+  const head = { kind: d.kind };
   if (d.kind === 'times') return { ...head, times: sortedTimes(d).map(x => ({ time: x.time, ml: x.ml })), days, ...common };
   const count = parseInt(d.count, 10);
   return { ...head, start: d.start, ...(count > 1 ? { end: d.end } : {}), count, ml: parseNum(d.ml), days, ...common };
@@ -192,7 +190,7 @@ function bodyOf(d) {
 // Simple form of a schedule: {ml, count, start, end}, {} without a plan, null if not representable
 function simpleOf(s) {
   if (s.kind === 'none') return {};
-  if (!s.enabled || s.days.mode !== 'daily') return null;
+  if (s.days.mode !== 'daily') return null;
   if (s.kind === 'spread') return { ml: s.ml, count: s.count, start: s.start, end: s.end };
   return s.times.length === 1 ? { ml: s.times[0].ml, count: 1, start: s.times[0].time, end: '20:00' } : null;
 }
@@ -205,7 +203,7 @@ function daysText(days) {
 
 // One-line summary lines of a saved plan
 function planLines(s) {
-  const tail = `${daysText(s.days)}${s.enabled ? '' : ' · ' + t('sc.off')}`;
+  const tail = daysText(s.days);
   if (s.kind === 'spread') {
     return [`${t('sc.each', { n: s.count, ml: num(s.ml / s.count, 2) })} · ${s.count > 1 ? s.start + '–' + s.end : s.start} (${num(s.ml, 1)} ml)`, tail];
   }
@@ -308,7 +306,7 @@ function SimpleEditor({ pump, s, onSaved, limit }) {
     </div>`;
   }
   const draft = {
-    kind: 'spread', enabled: true, start: f.start, end: f.end, count: f.count, ml: f.ml, times: [],
+    kind: 'spread', start: f.start, end: f.end, count: f.count, ml: f.ml, times: [],
     days: { mode: 'daily', weekdays: [...WD], every: '2', anchor: '' },
     power_loss: s.power_loss, catch_up: String(s.catch_up_min),
   };
@@ -319,10 +317,6 @@ function SimpleEditor({ pump, s, onSaved, limit }) {
     e.preventDefault();
     if (ex.err || !ex.slots.length) { msg.err(t('err.' + (ex.err || 'invalid_param'), { g: grid })); return; }
     save(bodyOf(draft), t('sc.saved'), grid);
-  };
-  const remove = () => {
-    ask(t('sc.remove.ask', { n: pump }), { ok: t('sc.remove'), danger: true })
-      .then(yes => yes && save(bodyOf({ ...draft, kind: 'none' }), t('sc.removed'), grid));
   };
   const empty = s.kind === 'none';
   const planned = ex.slots.reduce((a, x) => a + x.ul, 0) / 1000;
@@ -341,7 +335,6 @@ function SimpleEditor({ pump, s, onSaved, limit }) {
       ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}
       <div class="row">
         <button type="submit" disabled=${busy}>${empty ? t('sc.create') : t('sc.save')}</button>
-        ${!empty && simple && html`<button type="button" class="sec" onClick=${remove} disabled=${busy}>${t('sc.remove')}</button>`}
         ${replace && html`<button type="button" class="sec" onClick=${() => setReplace(false)}>${t('sc.discard')}</button>`}
       </div>
     </form>
@@ -389,18 +382,15 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
   const submit = e => {
     e.preventDefault();
     if (ex.err) { msg.err(localError(ex, grid)); return; }
-    save(bodyOf(d), d.kind === 'none' ? t('sc.removed') : t('sc.saved'), grid);
+    save(bodyOf(d), t('sc.saved'), grid);
   };
   return html`<form class="plan" novalidate onSubmit=${submit}>
     <div class="field"><span class="lbl">${t('sc.kind')}</span>
       <${Seg} value=${d.kind} onChange=${switchKind}
-        options=${[['none', t('sc.kind.none')], ['spread', t('sc.kind.spread')], ['times', t('sc.kind.times')]]}/>
-      <span class="mut small">${d.kind === 'none' ? t('sc.none.hint') : t('sc.kind.hint.' + d.kind)}</span>
+        options=${[['spread', t('sc.kind.spread')], ['times', t('sc.kind.times')]]}/>
+      <span class="mut small">${t('sc.kind.hint.' + d.kind)}</span>
     </div>
-    ${d.kind !== 'none' && html`
-      <label class="check"><input type="checkbox" checked=${d.enabled} onChange=${e => set({ enabled: e.target.checked })}/>
-        <span>${t('sc.on')}<br/><span class="mut small">${t('sc.on.hint')}</span></span></label>
-      <div class=${'plan-body' + (d.enabled ? '' : ' off')}>
+      <div class="plan-body">
         ${d.kind === 'spread' ? html`
           <div class="form-row">
             <label>${t('sc.ml.total')}<${Amount} value=${d.ml} onInput=${v => set({ ml: v })}/></label>
@@ -431,7 +421,7 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
         </div>
       </div>
       ${d.kind === 'times' && ex.err && ex.err !== 'invalid_param' && d.times.length > 0 && html`<p class="msg err">${localError(ex, grid)}</p>`}
-      ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}`}
+      ${limit > 0 && planned > limit && html`<p class="msg err">${t('sc.limit', { l: num(limit, 1), p: num(planned, 1) })}</p>`}
     <div class="row savebar">
       <button type="submit" disabled=${busy || !dirty}>${t('sc.save')}</button>
       <button type="button" class="sec" disabled=${busy || !dirty} onClick=${() => { setDraft(draftOf(s)); msg.clear(); }}>${t('sc.discard')}</button>
@@ -445,7 +435,7 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
 // Export / import of this pump's schedule as a JSON file (all users)
 
 const kFormat = 'lgal-doser-schedule';
-const kKeys = ['kind', 'enabled', 'start', 'end', 'count', 'ml', 'times', 'days', 'power_loss', 'catch_up_min'];
+const kKeys = ['kind', 'start', 'end', 'count', 'ml', 'times', 'days', 'power_loss', 'catch_up_min'];
 
 function exportFile(p, s) {
   const schedule = Object.fromEntries(kKeys.filter(k => s[k] !== undefined).map(k => [k, s[k]]));

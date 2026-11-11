@@ -352,7 +352,6 @@ label.check input { margin-top: 3px; flex: none; }
 .times .chip { font-variant-numeric: tabular-nums; }
 .plist { margin: 8px 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
 .plan-body { display: grid; gap: 4px; }
-.plan-body.off { opacity: .6; }
 .plan label.check { margin: 10px 0 6px; }
 .tlist { display: grid; gap: 6px; margin: 8px 0 4px; }
 .trow { display: grid; grid-template-columns: 120px minmax(0, 160px) auto; justify-content: start; gap: 8px; align-items: center; }
