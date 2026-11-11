@@ -219,7 +219,7 @@ function detail(e) {
         : t('hd.part', { d: num(e.done_ml, 2), t: num(e.target_ml, 2) });
     case 'skip': return e.count > 1 ? t('hd.slots', { n: e.count }) : e.target_ml ? t('hd.done', { d: num(e.target_ml, 2) }) : '';
     case 'container': return t('hd.ct', { r: num(e.remaining_ml, 0), c: num(e.capacity_ml, 0) });
-    case 'calibration': return t('hd.cal', { v: num(e.ul_per_rev / 1000, 3), m: num(e.measured_ml, 1), t: num(e.target_ml, 1) });
+    case 'calibration': return t('hd.cal', { v: num(e.ul_per_rev / 1000, 3), m: num(e.measured_ml, 2), t: num(e.target_ml, 2) });
     case 'tube': return t('hd.tube', { h: e.hours });
     default: return '';
   }

@@ -22,7 +22,7 @@ add({
 function Running({ p }) {
   if (p.activity === 'idle') return null;
   const text = p.activity === 'priming'
-    ? t('dash.prime', { s: num(p.prime_s, 0), ml: num(p.done_ml, 1) })
+    ? t('dash.prime', { s: num(p.prime_s, 0), ml: num(p.done_ml, 2) })
     : t('dash.run', { done: num(p.done_ml, 2), target: num(p.target_ml, 2) });
   const pct = p.target_ml ? Math.min(100, (p.done_ml / p.target_ml) * 100) : null;
   return html`<div class="running">

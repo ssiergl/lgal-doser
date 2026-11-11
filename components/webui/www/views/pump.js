@@ -152,8 +152,8 @@ function ContainerCard({ p, sp, nowLocal }) {
   const [rem, setRem] = useState('');
   const msg = useMsg();
   const open = () => {
-    setCap(c.tracked ? String(Math.round(c.capacity_ml * 10) / 10) : '');
-    setRem(c.tracked ? String(Math.round(c.remaining_ml * 10) / 10) : '');
+    setCap(c.tracked ? String(Math.round(c.capacity_ml)) : '');
+    setRem(c.tracked ? String(Math.round(c.remaining_ml)) : '');
     msg.clear();
     setEdit(true);
   };
@@ -200,7 +200,7 @@ function ContainerCard({ p, sp, nowLocal }) {
 function Progress({ p }) {
   const pct = p.target_ml ? Math.min(100, (p.done_ml / p.target_ml) * 100) : null;
   const text = p.activity === 'priming'
-    ? t('prime.run', { s: num(p.prime_s, 0), ml: num(p.done_ml, 1) })
+    ? t('prime.run', { s: num(p.prime_s, 0), ml: num(p.done_ml, 2) })
     : t('dose.run', { done: num(p.done_ml, 2), target: num(p.target_ml, 2) });
   return html`<div class="running">
     <div class="row small"><b>${t('act.' + p.activity)}</b><span class="num">${text}</span>
@@ -291,7 +291,7 @@ function CalibDialog({ p, ml, onStart, onClose }) {
       <p class="mut small">${t('cal.dlg.fill')}</p>
       <${PrimeHold} p=${p} msg=${msg}/>
       <h3>${t('cal.dlg.q2')}</h3>
-      <p class="mut small">${t('cal.dlg.cup', { ml: num(ml, 1) })}</p>
+      <p class="mut small">${t('cal.dlg.cup', { ml: num(ml, 2) })}</p>
       ${msg.node}
       <div class="row end">
         <button type="button" class="sec" onClick=${onClose}>${t('ui.cancel')}</button>
@@ -332,11 +332,11 @@ function CalibCard({ p, pro }) {
   const when = cal.calibrated_at > 0 ? new Date(cal.calibrated_at * 1000).toLocaleDateString(getLang()) : '';
   let body;
   if (running) {
-    body = html`<div class="running"><div class="small">${t('cal.running', { done: num(p.done_ml, 1) })}</div>
+    body = html`<div class="running"><div class="small">${t('cal.running', { done: num(p.done_ml, 2) })}</div>
       <div class="bar"><i style=${{ width: Math.min(100, (p.done_ml / (p.target_ml || 1)) * 100) + '%' }}></i></div></div>`;
   } else if (cal.pending) {
     body = html`<form onSubmit=${apply}>
-      <p>${t('cal.ask', { ml: num(cal.pending_target_ml, 1) })}</p>
+      <p>${t('cal.ask', { ml: num(cal.pending_target_ml, 2) })}</p>
       <div class="form-row"><label>${t('cal.measured')}<${Amount} value=${measured} onInput=${setMeasured}/></label></div>
       <div class="row"><button type="submit">${t('cal.apply')}</button>
         <button type="button" class="sec" onClick=${discard}>${t('cal.discard')}</button></div>
@@ -345,9 +345,9 @@ function CalibCard({ p, pro }) {
     body = html`<ol class="steps small">
         <li>${t('cal.s0')}</li>
         <li>${t('cal.s1')}</li>
-        <li>${t('cal.s2', { ml: target.trim() || num(cal.target_ml, 1) })}</li>
+        <li>${t('cal.s2', { ml: target.trim() || num(cal.target_ml, 2) })}</li>
       </ol>
-      ${pro && html`<div class="form-row"><label>${t('cal.target')}<${Amount} value=${target} onInput=${setTarget} placeholder=${num(cal.target_ml, 1)}/></label></div>`}
+      ${pro && html`<div class="form-row"><label>${t('cal.target')}<${Amount} value=${target} onInput=${setTarget} placeholder=${num(cal.target_ml, 2)}/></label></div>`}
       <button class="sec" onClick=${open} disabled=${p.activity !== 'idle' || p.mode === 'disabled'}>${t('cal.start')}</button>`;
   }
   return html`<section class="card"><h2>${t('cal.title')}</h2>
@@ -371,9 +371,9 @@ function UsageCard({ p }) {
     ? `${t('act.' + last.activity)} · ${num(last.done_ml, 2)} ml · ${t('res.' + last.result)}` : none;
   return html`<section class="card usage"><h2>${t('use.title')}</h2>
     <dl class="stats">
-      <dt>${t('use.limit')}</dt><dd class="num">${d.limit_ml ? num(d.limit_ml, 1) + ' ml' : t('use.off')}</dd>
+      <dt>${t('use.limit')}</dt><dd class="num">${d.limit_ml ? num(d.limit_ml, 2) + ' ml' : t('use.off')}</dd>
       <dt>${t('use.last')}</dt><dd>${lastText}</dd>
-      <dt>${t('use.total')}</dt><dd class="num">${num(p.total_ml, 1)} ml</dd>
+      <dt>${t('use.total')}</dt><dd class="num">${num(p.total_ml, 2)} ml</dd>
       <dt>${t('use.tube')}</dt><dd class="num">${t('use.tube.v', { h: num(tb.hours, 1), lim: tb.limit_h })}
         <div class="bar"><i style=${{ width: Math.min(100, tb.percent) + '%', background: tb.percent >= 100 ? 'var(--err)' : undefined }}></i></div></dd>
     </dl>
@@ -405,9 +405,9 @@ function BoostCard({ p, sp, nowLocal }) {
   let body;
   if (b) {
     const done = Math.max(0, b.total_ml - b.remaining_ml);
-    const stop = () => ask(t('bo.stop.ask', { n: p.pump, ml: num(b.remaining_ml, 1) }), { ok: t('bo.stop') })
+    const stop = () => ask(t('bo.stop.ask', { n: p.pump, ml: num(b.remaining_ml, 2) }), { ok: t('bo.stop') })
       .then(yes => yes && run({ action: 'stop' }, t('bo.stopped')));
-    body = html`<p><b class="num">${t('bo.active', { rest: num(b.remaining_ml, 1), total: num(b.total_ml, 1) })}</b></p>
+    body = html`<p><b class="num">${t('bo.active', { rest: num(b.remaining_ml, 2), total: num(b.total_ml, 2) })}</b></p>
       <div class="bar"><i style=${{ width: Math.min(100, (done / (b.total_ml || 1)) * 100) + '%' }}></i></div>
       <p class="small mut">${t('bo.until', { end: whenLocal(b.end_local, nowLocal), n: b.doses_left, ml: num(b.per_dose_ml, 2) })}</p>
       ${!b.active && html`<p class="small mut">${t('bo.wait')}</p>`}
@@ -430,7 +430,7 @@ function BoostCard({ p, sp, nowLocal }) {
           <label>${t('bo.days')}<${Amount} value=${days} onInput=${setDays} unit=${t('bo.dunit')}/></label>
         </div>
         ${ok && today && html`<p class="small">${t('bo.per', { ml: num(v / n, 2), end: dayText(today, n) + ' ' + hm(nowLocal.slice(11, 16)) })}</p>`}
-        ${ok && lim > 0 && planned + v / n > lim && html`<p class="small warn">${t('bo.limit', { p: num(planned + v / n, 1), l: num(lim, 1) })}</p>`}
+        ${ok && lim > 0 && planned + v / n > lim && html`<p class="small warn">${t('bo.limit', { p: num(planned + v / n, 2), l: num(lim, 2) })}</p>`}
         ${noPlan && html`<p class="small warn">${t('bo.noplan')}</p>`}
         <div class="row"><button type="submit" disabled=${busy || !ok}>${t('bo.start')}</button></div>
       </form>`;
@@ -447,7 +447,7 @@ function proActive(p) {
   const out = [];
   if (p.speed.tier !== 1) out.push(t('pset.tier') + ': ' + t('tier.' + p.speed.tier));
   if (p.retract.setting !== 'off') out.push(t('pset.retract') + ': ' + num(p.retract.rev, 2) + ' ' + t('pset.rev'));
-  if (p.daily.limit_ml) out.push(t('pset.limit') + ': ' + num(p.daily.limit_ml, 1) + ' ml');
+  if (p.daily.limit_ml) out.push(t('pset.limit') + ': ' + num(p.daily.limit_ml, 2) + ' ml');
   const c = p.container;
   if (c.own_warn_days || c.own_low_days) out.push(t('pset.thr') + ': ' + c.warn_days + ' / ' + c.low_days + ' ' + t('pset.days'));
   if (p.direction === 'ccw') out.push(t('pset.dir') + ': ' + t('pset.dir.ccw'));
@@ -547,7 +547,7 @@ export function PumpView({ pump }) {
     <div class="page-head" style=${{ '--pc': pumpColor(p.pump) }}>
       <span class="badge big-badge">${p.pump}</span><h1>${pumpName(p)}</h1><span class="spacer"></span>
       <span class=${'chip ' + st.cls}>${t(st.key)}</span>
-      ${sp && sp.boost && html`<span class="chip acc">${t('chip.boost')} +${num(sp.boost.remaining_ml, 1)} ml</span>`}
+      ${sp && sp.boost && html`<span class="chip acc">${t('chip.boost')} +${num(sp.boost.remaining_ml, 2)} ml</span>`}
     </div>
     <div class="detail" key=${pump} style=${{ '--pc': pumpColor(p.pump) }}>
       <div class="col">
