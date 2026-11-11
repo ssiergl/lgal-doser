@@ -293,6 +293,20 @@ static void test_boost_and_forecast() {
     sim::run_until(local(11, 25, 19, 0));
     CHECK(total(3) == c + 12 * 1000 + 3000);
     CHECK(scheduler::status(3).boost.remaining_ul == 0);
+
+    // over the next 6 doses (pro): from 19:00 that is 20 h, then 08 .. 20 h, 08 h
+    CHECK_STR(scheduler::boost_start(3, 3000, 0, 0), "invalid_param");
+    CHECK_STR(scheduler::boost_start(3, 3000, 3, 6), "invalid_param");
+    CHECK_STR(scheduler::boost_start(3, 3000, 0, sched::kMaxBoostDoses + 1), "invalid_param");
+    CHECK_STR(scheduler::boost_start(4, 3000, 0, 6), "no_slots");
+    CHECK(scheduler::boost_start(3, 3000, 0, 6) == nullptr);
+    st = scheduler::status(3);
+    CHECK(st.boost_active && st.boost.doses == 6 && st.boost.slots_left == 6 && st.next_boost_ul == 500);
+    CHECK(st.boost_until == local(11, 27, 8, 0) && st.boost_today_ul == 500);
+    const uint64_t e = total(3);
+    sim::run_until(local(11, 27, 9, 0));
+    CHECK(total(3) == e + 6 * 1000 + 3000);
+    CHECK(scheduler::status(3).boost.remaining_ul == 0);
 }
 
 static void test_queue_and_clock_jump() {

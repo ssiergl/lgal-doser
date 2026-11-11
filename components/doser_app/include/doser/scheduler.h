@@ -41,8 +41,9 @@ const char* set_all(const sched::PumpSchedule (&all)[5], const sched::Locks& l, 
 const char* set_config(const sched::Config& c);
 sched::Config config();
 
-// Boost: extra amount spread over `days` days on top of the existing slots
-const char* boost_start(int pump, uint32_t total_ul, uint16_t days);
+// Boost: extra amount on top of the existing slots, spread over `days` days
+// or over the next `doses` slots (exactly one of them > 0)
+const char* boost_start(int pump, uint32_t total_ul, uint16_t days, uint16_t doses = 0);
 void boost_stop(int pump);
 
 // Manual dose with the lock-time policy: Reject -> "collision_lock" with
@@ -77,6 +78,7 @@ struct Status {
     float remaining_days;  // < 0: not tracked or nothing planned
     sched::Boost boost;
     bool boost_active;
+    int64_t boost_until;  // end of the boost window (last slot for a window in doses), 0 = unknown
 };
 Status status(int pump);
 // Local day number of now (for API/UI), -1 without valid clock

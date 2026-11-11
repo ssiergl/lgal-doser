@@ -41,7 +41,7 @@ SCHED = [
     {"kind": "none", "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
     {"kind": "times", "times": [{"time": "12:00", "ml": 2.0}], "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
 ]
-BOOST = [None] * 5  # {"total_ml", "remaining_ml", "days", "start_utc"}
+BOOST = [None] * 5  # {"total_ml", "remaining_ml", "days", "doses", "start_utc"}
 LOCKS = {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]}
 
 def hm(x):
@@ -108,7 +108,11 @@ def slots_between(i, a, b):
         out += [midnight + k * 86400 + m * 60 for m, _ in slots_on(i, day0 + k) if a < midnight + k * 86400 + m * 60 <= b]
     return out
 
-def boost_end(b): return b["start_utc"] + b["days"] * 86400
+def boost_end(b):
+    """Days: start + days x 24 h; doses: time of the last of the next `doses` slots (like scheduler boost_until)"""
+    if b["days"]: return b["start_utc"] + b["days"] * 86400
+    i = BOOST.index(b); sl = slots_between(i, b["start_utc"], b["start_utc"] + 31 * 86400)
+    return sl[min(b["doses"], len(sl)) - 1] if sl else b["start_utc"]
 
 def boost_share(i, at=None):
     """Like sched::boost_share: remaining / doses left in the window (the same for every dose)"""
@@ -124,7 +128,7 @@ def boost_json(i):
     lt = time.localtime(now); midnight = now - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec)
     today = [x for x in slots_between(i, midnight - 1, midnight + 86399) if b["start_utc"] < x <= end]
     loc = lambda u: time.strftime("%Y-%m-%d %H:%M", time.localtime(u))
-    return {"active": now <= end and share > 0, "total_ml": b["total_ml"], "remaining_ml": b["remaining_ml"], "days": b["days"],
+    return {"active": now <= end and share > 0, "total_ml": b["total_ml"], "remaining_ml": b["remaining_ml"], "days": b["days"], "doses": b["doses"],
             "start": time.strftime("%Y-%m-%d", time.localtime(b["start_utc"])), "doses_left": len(slots_between(i, now, end)),
             "per_dose_ml": round(share / 1000, 3), "today_ml": round(share * len(today) / 1000, 3),
             "start_utc": b["start_utc"], "start_local": loc(b["start_utc"]), "end_utc": end, "end_local": loc(end)}
@@ -284,12 +288,13 @@ def pumps_post(h, path, q):
     i = n - 1; p = P[i]
     if path == "/api/v1/pumps/boost":
         if q.get("action") == "stop": BOOST[i] = None; return h.send(200, {"status": "ok"})
-        try: ml, days = float(q["ml"]), int(q["days"])
-        except (KeyError, ValueError): return err(h, "invalid_param", "ml/days")
-        if not (0.02 <= ml <= 10000 and 1 <= days <= 30): return err(h, "invalid_param", "ml/days")
+        try: ml, days, doses = float(q["ml"]), int(q.get("days", 0)), int(q.get("doses", 0))
+        except (KeyError, ValueError): return err(h, "invalid_param", "ml/days/doses")
+        if not (0.02 <= ml <= 10000) or bool(days) == bool(doses) or not (0 <= days <= 30 and 0 <= doses <= 100):
+            return err(h, "invalid_param", "ml with days= or doses=")
         now = int(time.time())
-        if p["mode"] != "auto" or not slots_between(i, now, now + days * 86400): return err(h, "no_slots", "No scheduled doses")
-        BOOST[i] = {"total_ml": ml, "remaining_ml": round(ml * 0.8, 3) if ml > 20 else ml, "days": days, "start_utc": now}
+        if p["mode"] != "auto" or not slots_between(i, now, now + (days or 31) * 86400): return err(h, "no_slots", "No scheduled doses")
+        BOOST[i] = {"total_ml": ml, "remaining_ml": round(ml * 0.8, 3) if ml > 20 else ml, "days": days, "doses": doses, "start_utc": now}
         return h.send(200, {"status": "ok"})
     num = lambda k: float(q[k])
     if path == "/api/v1/pumps/prime":  # prime() takes the lock itself
