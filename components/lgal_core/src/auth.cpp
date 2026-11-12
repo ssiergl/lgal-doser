@@ -188,6 +188,7 @@ esp_err_t get_status(httpd_req_t* req) {
 }
 
 esp_err_t post_login(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     Body b;
     if (!read_body(req, &b)) return ESP_OK;
     char pw[kMaxPassword + 2];
@@ -214,6 +215,7 @@ esp_err_t post_login(httpd_req_t* req) {
 }
 
 esp_err_t post_logout(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     char cookies[256], token[kTokenChars + 2];
     if (header(req, "Cookie", cookies, sizeof(cookies)) && cookie_value(cookies, kCookie, token, sizeof(token))) {
         Guard g;
@@ -224,6 +226,7 @@ esp_err_t post_logout(httpd_req_t* req) {
 }
 
 esp_err_t post_password(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     const int64_t now = now_s();
     {
         Guard g;
@@ -253,6 +256,7 @@ esp_err_t post_password(httpd_req_t* req) {
 }
 
 esp_err_t post_recover(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     const uint32_t ip = http::client_ipv4(req);
     if (!net::is_setup_ap_client(ip))
         return http::send_error(req, "403 Forbidden", "recovery_unavailable",
@@ -297,6 +301,7 @@ esp_err_t get_keys(httpd_req_t* req) {
 }
 
 esp_err_t post_keys(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     {
         Guard g;
         if (session_of(req, now_s()) < 0) return http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
@@ -330,6 +335,7 @@ esp_err_t post_keys(httpd_req_t* req) {
 }
 
 esp_err_t delete_keys(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     int64_t slot = 0;
     if (!http::query_int(req, "slot", &slot) || slot < 1 || slot > kMaxKeys)
         return http::send_error(req, "400 Bad Request", "invalid_param", "slot=1..4");
@@ -348,6 +354,7 @@ esp_err_t delete_keys(httpd_req_t* req) {
 }
 
 esp_err_t post_engineering(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     const int64_t now = now_s();
     {
         Guard g;
@@ -375,6 +382,7 @@ esp_err_t post_engineering(httpd_req_t* req) {
 }
 
 esp_err_t delete_engineering(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
     Guard g;
     const int64_t now = now_s();
     const int s = session_of(req, now);

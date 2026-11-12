@@ -107,15 +107,18 @@ bool own_origin(httpd_req_t* req) {
 }
 
 bool check(httpd_req_t* req, bool engineering) {
-    if (!own_origin(req)) {
-        ESP_LOGW(TAG, "%s from a foreign origin rejected", req->uri);
-        send_error(req, "403 Forbidden", "forbidden_origin", "Changes only from the device's own pages");
-        return false;
-    }
+    if (!same_origin(req)) return false;
     const auth::Result r = auth::check(req, engineering);
     return r == auth::Result::Ok || deny(req, r);
 }
 }  // namespace
+
+bool same_origin(httpd_req_t* req) {
+    if (own_origin(req)) return true;
+    ESP_LOGW(TAG, "%s from a foreign origin rejected", req->uri);
+    send_error(req, "403 Forbidden", "forbidden_origin", "Changes only from the device's own pages");
+    return false;
+}
 
 bool authorize(httpd_req_t* req) { return check(req, false); }
 

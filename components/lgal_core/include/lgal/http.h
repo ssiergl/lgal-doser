@@ -17,7 +17,15 @@ namespace lgal::http {
 esp_err_t start();
 httpd_handle_t handle();
 
-// Checks the login. On failure 401 (or a redirect to /login for pages) is
+// Cross-site request forgery: a changing request (not GET/HEAD) that a
+// browser sends from a page outside this device (Origin header of another
+// host) gets 403 "forbidden_origin" and false; the handler must then return
+// ESP_OK immediately. Clients without Origin (apps, tools) pass. authorize()
+// includes it; the login endpoints, which check the session themselves,
+// call it directly.
+bool same_origin(httpd_req_t* req);
+
+// Checks the login (and same_origin). On failure 401 (or a redirect to /login for pages) is
 // sent and false is returned; the handler must then return ESP_OK immediately.
 bool authorize(httpd_req_t* req);
 // Same for the engineering area (spec 11.1): 403 "engineering_locked" if the
