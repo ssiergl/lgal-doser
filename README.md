@@ -78,6 +78,7 @@ main/         firmware start-up
 tools/        provisioning, update upload, release build, device mock
 tests/        host tests and fuzzers
 docs/         documentation, German versions in docs/de/
+hardware/     enclosure (STL …) and circuit board (schematic, Gerber …)
 ```
 
 ## Safety and liability
