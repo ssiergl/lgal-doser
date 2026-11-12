@@ -323,9 +323,11 @@ function DriverCard({ hw, pumps, fit, reload }) {
 // ---------------------------------------------------------------------------
 // A: channel population (which pumps are fitted); takes effect after a restart
 
-const kAll = [1, 2, 3, 4, 5];
+// pumps of the board: [1, 2, ..., n]
+const boardPumps = hw => Array.from({ length: (hw.board && hw.board.pumps) || 5 }, (_, i) => i + 1);
 
 function ChannelCard({ hw, pumps }) {
+  const kAll = boardPumps(hw);
   const saved = hw.fitted_next || kAll, key = saved.join(',');
   const [d, setD] = useState(saved);
   const [busy, setBusy] = useState(false);
@@ -671,7 +673,7 @@ function TelemetryCard({ tel, hw, paused }) {
     <h2>${t('sv.tel')}</h2>
     ${!tel ? html`<p class="mut">${t('sv.loading')}</p>` : html`<dl class="stats two">
       ${rows.map(([k, v]) => html`<dt>${t(k)}</dt><dd class="num">${v}</dd>`)}
-      ${hw.uart.map((u, b) => html`<dt>${t('sv.uart', { b: b ? 'B' : 'A' })}</dt>
+      ${hw.uart.map((u, b) => html`<dt>${t('sv.uart', { b: String.fromCharCode(65 + b) })}</dt>
         <dd class="num">${t('sv.uart.v', { n: num(u.transfers), e: num(u.timeouts + u.crc_errors + u.echo_errors) })}</dd>`)}
     </dl>`}
     ${paused && html`<p class="small mut">${t('sv.paused')}</p>`}
@@ -782,7 +784,7 @@ export function ServiceView() {
   if (!eng || !sch || !hw) return html`${head}${err ? html`<p class="msg err">${errText(err)}</p>` : html`<p class="mut">${t('sv.loading')}</p>`}`;
 
   const pumps = st.pumps;
-  const fit = hw.fitted && hw.fitted.length ? hw.fitted : [1, 2, 3, 4, 5];
+  const fit = hw.fitted && hw.fitted.length ? hw.fitted : boardPumps(hw);
   const reloadEng = () => loadEng().catch(() => {});
   const reloadHw = () => loadHw().catch(() => {});
   return html`${head}

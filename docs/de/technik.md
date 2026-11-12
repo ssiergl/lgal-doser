@@ -21,6 +21,7 @@ tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitz
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
 partitions*.csv         endgültige Partitionstabellen je Flash-Größe (nur per USB änderbar!)
+boards/                 Board-Definitionen (Modellname je Board; Pins in components/doser_hal/include/doser/boards/)
 variants/               Konfiguration je Modulvariante (N8R8, N16R8, N32R8)
 .github/workflows/      CI (Tests, Fuzzer, alle Varianten) und Release-Build per Git-Tag
 docs/                   Dokumentation (englisch), deutsche Fassungen in docs/de/
@@ -78,6 +79,32 @@ Nach Änderungen an `sdkconfig.defaults` muss `sdkconfig` neu erzeugt werden
 beim Bauen geprüft.
 
 Beide Test-Skripte nehmen mit `HOST_CXX=clang++` einen anderen Compiler (die CI nutzt das).
+
+### Boards
+
+Ein Board ist eine Platine mit ihrer Pinbelegung und Pumpenzahl. Die Firmware wird für
+genau ein Board gebaut; Board und Modulvariante (unten) lassen sich frei kombinieren.
+
+| Board | Modell | Pumpen | Platine |
+|---|---|---|---|
+| `d5v1` | LGAL-Doser 5 | 5 | v1.0 (11/2026) |
+
+Ohne Angabe baut `idf.py build` das Board `d5v1`; ein anderes Board:
+`idf.py -DBOARD=<id> build`. Die ID liest sich d = Doser, Pumpenzahl, v = Platinenversion.
+
+Ein Board besteht aus zwei Dateien:
+
+- `boards/<id>.cmake` setzt `LGAL_BOARD_MODEL` (Modellname in Weboberfläche,
+  Systeminfo und Home Assistant).
+- `components/doser_hal/include/doser/boards/<id>.h` legt die Pins in `doser::pins` fest:
+  Pumpenzahl (1–5), STEP-Pin, TMC2209-Bus und -Adresse je Pumpe, 1 oder
+  2 UART-Busse, EN, Ethernet, I²C, LED und Taster. `doser/pins.h` nennt die nötigen Namen
+  und prüft sie beim Übersetzen.
+
+Datensätze, Datensicherung, API und Weboberfläche sind auf jedem Board für fünf Pumpen
+ausgelegt (`doser::kMaxPumps`); Pumpen, die ein Board nicht hat, sind nie bestückt. Die
+Schritt-Takte kommen für Pumpe 1–4 aus dem RMT und für Pumpe 5 aus dem MCPWM. Ein Board mit
+weniger Pumpen nutzt nur, was es braucht.
 
 ### Modulvarianten
 
@@ -464,7 +491,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
 | POST | `/api/v1/engineering/reset?what=network` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s); den Werksreset gibt es nur in der Wartung mit Admin-Passwort |
-| GET | `/api/v1/hw/status` | Treiber, Pumpen, RTC, EEPROM, UART-Statistik; Bestückung `fitted` (jetzt) und `fitted_next` (nach dem nächsten Neustart) |
+| GET | `/api/v1/hw/status` | Board (`id`, `model`, `pumps`), Treiber und Pumpen des Boards, RTC, EEPROM, UART-Statistik; Bestückung `fitted` (jetzt) und `fitted_next` (nach dem nächsten Neustart) |
 | POST | `/api/v1/hw/channels?pumps=1,2,3,4` | Bestückung speichern (mindestens eine Pumpe), wirkt nach einem Neustart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |

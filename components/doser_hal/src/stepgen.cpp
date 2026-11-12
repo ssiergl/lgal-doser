@@ -353,20 +353,29 @@ private:
     volatile bool busy_ = false;
 };
 
-RmtChannel s_rmt[4];
+// Pumps 1-4 on the four RMT TX channels, pump 5 (if the board has it) on
+// MCPWM with PCNT as step counter.
+constexpr int kRmt = pins::kPumpCount < 4 ? pins::kPumpCount : 4;
+RmtChannel s_rmt[kRmt];
 McpwmChannel s_mcpwm;
-Channel* s_channels[pins::kPumpCount] = {&s_rmt[0], &s_rmt[1], &s_rmt[2], &s_rmt[3], &s_mcpwm};
+Channel* s_channels[pins::kPumpCount] = {};
 bool s_ready = false;
 }  // namespace
 
 esp_err_t init() {
     if (s_ready) return ESP_OK;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < kRmt; ++i) {
         ESP_RETURN_ON_ERROR(s_rmt[i].init(pins::kStep[i]), TAG, "pump %d (RMT)", i + 1);
+        s_channels[i] = &s_rmt[i];
     }
-    ESP_RETURN_ON_ERROR(s_mcpwm.init(pins::kStep[4]), TAG, "pump 5 (MCPWM/PCNT)");
+    if constexpr (pins::kPumpCount > 4) {
+        ESP_RETURN_ON_ERROR(s_mcpwm.init(pins::kStep[4]), TAG, "pump 5 (MCPWM/PCNT)");
+        s_channels[4] = &s_mcpwm;
+        ESP_LOGI(TAG, "Step generators ready: pumps 1-4 RMT, pump 5 MCPWM+PCNT");
+    } else {
+        ESP_LOGI(TAG, "Step generators ready: pumps 1-%d RMT", kRmt);
+    }
     s_ready = true;
-    ESP_LOGI(TAG, "Step generators ready: pumps 1-4 RMT, pump 5 MCPWM+PCNT");
     return ESP_OK;
 }
 

@@ -7,6 +7,7 @@
 #include "doser/hwconfig.h"
 #include "doser/i2c_devices.h"
 #include "doser/motion.h"
+#include "doser/pins.h"
 #include "doser/rtc_trim.h"
 #include "doser/tmc2209_proto.h"
 #include "esp_log.h"
@@ -25,11 +26,29 @@ namespace http = lgal::http;
 // Invalid/missing parameter: code "invalid_param", message names the parameter
 esp_err_t bad(httpd_req_t* req, const char* msg) { return http::send_error(req, "400 Bad Request", "invalid_param", msg); }
 
-// Read pump number 1..5 from ?key= -> index 0..4, otherwise -1
+// Pumps of the board (doser/pins.h); the API covers only those
+constexpr int kN = pins::kPumpCount;
+
+// Read pump number 1..kN from ?key= -> index 0..kN-1, otherwise -1
 int pump_arg(httpd_req_t* req, const char* key = "pump") {
     int64_t p = 0;
-    if (!http::query_int(req, key, &p) || p < 1 || p > kMaxPumps) return -1;
+    if (!http::query_int(req, key, &p) || p < 1 || p > kN) return -1;
     return static_cast<int>(p - 1);
+}
+
+// "A (GPIO38, pumps 1-4)", "B (GPIO39, pump 5)": from the board definition
+void bus_label(int bus, char* out, size_t len) {
+    int first = 0, last = 0, count = 0;
+    for (int i = 0; i < kN; ++i) {
+        if (pins::kTmc[i].bus != bus) continue;
+        if (!count++) first = i + 1;
+        last = i + 1;
+    }
+    const int gpio = static_cast<int>(pins::kUartBus[bus]);
+    const char letter = static_cast<char>('A' + bus);
+    if (count == 1) std::snprintf(out, len, "%c (GPIO%d, pump %d)", letter, gpio, first);
+    else if (count == last - first + 1) std::snprintf(out, len, "%c (GPIO%d, pumps %d-%d)", letter, gpio, first, last);
+    else std::snprintf(out, len, "%c (GPIO%d, %d pumps)", letter, gpio, count);
 }
 
 void write_pump(Json& j, int i) {
@@ -93,8 +112,8 @@ esp_err_t post_channels(httpd_req_t* req) {
     if (!http::query_str(req, "pumps", list, sizeof(list))) return bad(req, "pumps=1,2,... required");
     uint8_t mask = 0;
     for (const char* c = list; *c; ++c) {
-        if (*c >= '1' && *c < '1' + kMaxPumps) mask |= uint8_t(1u << (*c - '1'));
-        else if (*c != ',') return bad(req, "pumps: numbers 1..5, separated by commas");
+        if (*c >= '1' && *c < '1' + kN) mask |= uint8_t(1u << (*c - '1'));
+        else if (*c != ',') return bad(req, kN == 1 ? "pumps: 1" : "pumps: numbers 1..N of the board, separated by commas");
     }
     if (!mask) return bad(req, "pumps: at least one pump");
     const esp_err_t err = hwconfig::save_fitted(mask);
@@ -108,17 +127,18 @@ esp_err_t get_status(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     Json j;
     j.obj();
+    j.obj("board").kv("id", LGAL_BOARD_ID).kv("model", LGAL_BOARD_MODEL).kv("pumps", kN).end();
     j.kv("drivers_enabled", motion::drivers_enabled()).kv("locked", motion::locked());
     // channel population: in effect now and after the next restart
     j.arr("fitted");
-    for (int i = 0; i < kMaxPumps; ++i)
+    for (int i = 0; i < kN; ++i)
         if (hwconfig::fitted_mask() >> i & 1) j.v(i + 1);
     j.end().arr("fitted_next");
-    for (int i = 0; i < kMaxPumps; ++i)
+    for (int i = 0; i < kN; ++i)
         if (hwconfig::stored_fitted_mask() >> i & 1) j.v(i + 1);
     j.end();
     j.arr("pumps");
-    for (int i = 0; i < kMaxPumps; ++i) write_pump(j, i);
+    for (int i = 0; i < kN; ++i) write_pump(j, i);
     j.end();
 
     j.obj("rtc").kv("present", rtc::present());
@@ -153,10 +173,12 @@ esp_err_t get_status(httpd_req_t* req) {
         .end();
 
     j.arr("uart");
-    for (int b = 0; b < 2; ++b) {
+    for (int b = 0; b < motion::bus_count(); ++b) {
         const auto st = motion::bus_stats(b);
+        char label[48];
+        bus_label(b, label, sizeof(label));
         j.obj()
-            .kv("bus", b == 0 ? "A (GPIO38, pumps 1-4)" : "B (GPIO39, pump 5)")
+            .kv("bus", label)
             .kv("transfers", static_cast<int64_t>(st.transfers))
             .kv("timeouts", static_cast<int64_t>(st.timeouts))
             .kv("crc_errors", static_cast<int64_t>(st.crc_errors))
@@ -207,8 +229,8 @@ esp_err_t post_stop(httpd_req_t* req) {
     http::query_str(req, "mode", mode, sizeof(mode));
     const bool hard = std::strcmp(mode, "hard") == 0;
     if (p == 0) motion::stop_all(hard);
-    else if (p >= 1 && p <= kMaxPumps) motion::stop(static_cast<int>(p - 1), hard);
-    else return bad(req, "pump=0..5");
+    else if (p >= 1 && p <= kN) motion::stop(static_cast<int>(p - 1), hard);
+    else return bad(req, "pump=0..N of the board");
     return http::send_json(req, hard ? "{\"status\":\"stopped\"}" : "{\"status\":\"stopping\"}");
 }
 

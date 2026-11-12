@@ -47,7 +47,8 @@ struct Pump {
     int64_t start_us = 0;
 };
 
-TmcBus s_bus[2];
+constexpr int kBuses = static_cast<int>(pins::kUartBus.size());
+TmcBus s_bus[kBuses];
 Pump s_pump[kN];
 SemaphoreHandle_t s_mutex = nullptr;
 SemaphoreHandle_t s_ready = nullptr;
@@ -172,13 +173,14 @@ void sample_running(int i, int64_t now) {
 void task(void*) {
     // Allocate all interrupts (UART, RMT, PCNT, GPTimer) on core 1,
     // separate from the network on core 0.
-    s_init_err = s_bus[0].init(UART_NUM_1, pins::kUartBusA, pins::kTmcBaud);
-    if (s_init_err == ESP_OK) s_init_err = s_bus[1].init(UART_NUM_2, pins::kUartBusB, pins::kTmcBaud);
+    // UART0 is the console: bus i runs on UART1 + i
+    for (int b = 0; b < kBuses && s_init_err == ESP_OK; ++b)
+        s_init_err = s_bus[b].init(static_cast<uart_port_t>(UART_NUM_1 + b), pins::kUartBus[b], pins::kTmcBaud);
     if (s_init_err == ESP_OK) s_init_err = step::init();
     if (s_init_err == ESP_OK) {
         Lock l;
         for (int i = 0; i < kN; ++i) {
-            s_pump[i].drv.bind(pins::kTmc[i].bus == pins::kUartBusA ? &s_bus[0] : &s_bus[1], pins::kTmc[i].addr);
+            s_pump[i].drv.bind(&s_bus[pins::kTmc[i].bus], pins::kTmc[i].addr);
             if (!s_pump[i].fitted) continue;
             probe_and_configure(i);
             if (!s_pump[i].present) ESP_LOGW(TAG, "Pump %d: no driver (24 V on? module inserted?)", i + 1);
@@ -380,9 +382,11 @@ esp_err_t read_register(int pump, uint8_t reg, uint32_t* value) {
 }
 
 BusStats bus_stats(int bus) {
-    if (bus < 0 || bus > 1) return {};
+    if (bus < 0 || bus >= kBuses) return {};
     const auto st = s_bus[bus].stats();
     return {st.transfers, st.timeouts, st.crc_errors, st.echo_errors};
 }
+
+int bus_count() { return kBuses; }
 
 }  // namespace doser::motion
