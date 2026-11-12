@@ -317,7 +317,6 @@ extern "C" void app_main(void) {
     lgal::sysapi::add_link("app", "Web interface", "/");
     lgal::sysapi::add_link("network", "Network", "/network");
     lgal::sysapi::add_link("setup", "Setup wizard", "/setup");
-    lgal::sysapi::add_link("account", "Account", "/login");
 
     lgal::ota::set_guard([](std::string& reason) {
         if (doser::motion::any_running() || doser::dosing::busy()) {

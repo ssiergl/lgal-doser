@@ -9,15 +9,14 @@ NET = {"mode": "auto",
        "wlan": {"ssid": "HomeNet", "password_set": True, "dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""}}
 SCAN = {"state": "idle", "t": 0}
 TEST = {"state": "idle", "t": 0, "ok": True}
-AUTH = {"password": "test-admin-pw", "password_set": True}
+AUTH = {"password": "test-admin-pw", "password_set": True, "session": True}  # only /login looks at "session"
 KEYS = [{"slot": 1, "name": "Home Assistant", "created": int(time.time()) - 86400 * 12}]
 MAX_KEYS = 4
 ENGKEY = "test-eng-key"
 ENG = {"until": 0}
 SYS = {"coredump": True, "boot": time.time(), "down_until": 0, "version": "0.5.0-dev", "partition": "ota_0", "invalid": None}
 LINKS = [{"id": "app", "name": "Web interface", "path": "/"},
-         {"id": "network", "name": "Network", "path": "/network"}, {"id": "setup", "name": "Setup wizard", "path": "/setup"},
-         {"id": "account", "name": "Account", "path": "/login"}]
+         {"id": "network", "name": "Network", "path": "/network"}, {"id": "setup", "name": "Setup wizard", "path": "/setup"}]
 
 LED = {"enabled": False, "start": "22:00", "end": "07:00", "brightness": 0}
 HM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -314,7 +313,7 @@ def route(h, method, path, q, body):
     if path == "/api/v1/system/language" and method == "GET" and down():
         return True
     if path == "/api/v1/auth/status" and method == "GET":
-        h.send(200, {"logged_in": True, "via": "session", "password_set": AUTH["password_set"], "setup_completed": True,
+        h.send(200, {"logged_in": AUTH["session"], "via": "session" if AUTH["session"] else "none", "password_set": AUTH["password_set"], "setup_completed": True,
                      "engineering": ENG["until"] > time.time(), "engineering_left_s": int(max(0, ENG["until"] - time.time())), "recovery": False, "device": hostname()}); return True
     if path == "/api/v1/auth/password" and method == "POST":
         if AUTH["password_set"] and body.get("current") != AUTH["password"]: err(h, 403, "wrong_password", "Current password is wrong"); return True
@@ -322,7 +321,10 @@ def route(h, method, path, q, body):
         if len(n) < 8: err(h, 400, "password_too_short", "Password too short"); return True
         if len(n) > 64: err(h, 400, "password_too_long", "Password too long"); return True
         AUTH.update(password=n, password_set=True); h.send(200, {"status": "ok"}); return True
-    if path == "/api/v1/auth/logout" and method == "POST": h.send(200, {"status": "ok"}); return True
+    if path == "/api/v1/auth/logout" and method == "POST": AUTH["session"] = False; h.send(200, {"status": "ok"}); return True
+    if path == "/api/v1/auth/login" and method == "POST":
+        if body.get("password") != AUTH["password"]: err(h, 403, "wrong_password", "Wrong password"); return True
+        AUTH["session"] = True; h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}); return True
     if path == "/api/v1/auth/keys":
         if method == "GET": h.send(200, {"max": MAX_KEYS, "keys": KEYS}); return True
         if method == "POST":

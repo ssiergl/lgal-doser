@@ -7,128 +7,93 @@
 <link rel="icon" href="/ui/icon.svg" type="image/svg+xml">
 <style>
 :root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
-*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
-main{max-width:520px;margin:0 auto;padding:16px}
-h1{font-size:20px;margin:8px 0 12px}h2{font-size:16px;margin:0 0 10px}
-.card{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:14px}
-button,input{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600}
-button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button.x{background:transparent;color:var(--err);border:1px solid var(--err);padding:4px 9px}
-input{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:7px 9px;width:100%}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);
+ background:radial-gradient(circle at 50% 150px,#173a52 0,#11283a 170px,var(--bg) 420px) no-repeat,var(--bg)}
+main{position:relative;max-width:420px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:0}h2{font-size:16px;margin:0 0 10px}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin:34px 0 22px}
+.hero .logo{display:block;width:min(220px,56vw);height:auto;aspect-ratio:1;margin-bottom:18px;filter:drop-shadow(0 12px 36px rgba(0,0,0,.45))}
+.hero .dev{color:var(--mut);font-size:13px;margin-top:2px;min-height:1.3em}
+#lang{position:absolute;top:14px;right:16px}
+.card{background:var(--card);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:600}
+input{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:8px 10px;width:100%}
+input[readonly]{color:var(--mut);background:transparent}
+select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:5px 7px}
 label{display:block;font-size:13px;color:var(--mut);margin-top:8px}
 [hidden]{display:none!important}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:10px}.row>*{flex:1 1 120px}.row>button{flex:0 0 auto}
-.msg{min-height:1.3em;font-size:13px;margin-top:8px}.err{color:var(--err)}.ok{color:var(--ok)}.mut{color:var(--mut)}
-.hint{font-size:13px;color:var(--mut);margin:0 0 6px}.warn{color:var(--warn)}
-code{background:#0a161e;border:1px solid #2c4757;border-radius:6px;padding:6px 8px;display:block;word-break:break-all;margin-top:6px}
-table{width:100%;border-collapse:collapse;font-size:14px}td{padding:4px 6px 4px 0}
-.top{display:flex;align-items:center;gap:10px}.logo{flex:0 0 auto;display:block}.top h1{flex:1}select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:5px 7px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.msg{min-height:1.3em;font-size:13px;margin-top:8px}.err{color:var(--err)}.ok{color:var(--ok)}
+.hint{font-size:13px;color:var(--mut);margin:0 0 6px}
 </style>
 <script src="/i18n.js"></script>
 </head>
 <body>
 <main>
-<div class="top"><img class="logo" src="/ui/logo.svg" alt="" width="52" height="52" onerror="this.remove()"><h1 data-i18n="title"></h1><select id="lang" data-i18n-title="lang.label"></select></div>
+<select id="lang" data-i18n-title="lang.label"></select>
+<div class="hero"><img class="logo" src="/ui/logo.svg" alt="LG Aquatic Life" width="220" height="220" onerror="this.remove()">
+<h1 data-i18n="title"></h1><div class="dev" id="dev"></div></div>
 
 <section class="card" id="c_login" hidden>
-<h2 data-i18n="login.title"></h2>
 <p class="hint" id="l_hint"></p>
-<form id="f_login"><label data-i18n="pw"></label><input id="l_pw" type="password" autocomplete="current-password" required>
-<div class="row"><span></span><button data-i18n="login.btn"></button></div></form>
+<form id="f_login"><label data-i18n="user"></label><input value="admin" readonly tabindex="-1" autocomplete="username">
+<label data-i18n="pw"></label><input id="l_pw" type="password" autocomplete="current-password" required>
+<div class="row"><button data-i18n="login.btn"></button></div></form>
 <div class="msg" id="l_msg"></div>
 </section>
 
 <section class="card" id="c_recover" hidden>
 <h2 data-i18n="rec.title"></h2>
 <p class="hint" data-i18n="rec.hint"></p>
-<form id="f_rec"><label data-i18n="rec.device"></label><input id="r_dev" autocomplete="off" required>
+<form id="f_rec"><input value="admin" autocomplete="username" hidden>
+<label data-i18n="rec.device"></label><input id="r_dev" autocomplete="off" required>
 <label data-i18n="pw.new"></label><input id="r_pw" type="password" autocomplete="new-password" required>
 <label data-i18n="pw.repeat"></label><input id="r_pw2" type="password" autocomplete="new-password" required>
-<div class="row"><span></span><button data-i18n="rec.btn"></button></div></form>
+<div class="row"><button data-i18n="rec.btn"></button></div></form>
 <div class="msg" id="r_msg"></div>
 </section>
 
 <section class="card" id="c_setpw" hidden>
-<h2 id="p_title"></h2>
-<p class="hint" id="p_hint"></p>
-<form id="f_pw"><div id="p_cur_box"><label data-i18n="pw.current"></label><input id="p_cur" type="password" autocomplete="current-password"></div>
+<h2 data-i18n="pw.title"></h2>
+<p class="hint" data-i18n="pw.hint"></p>
+<form id="f_pw"><input value="admin" autocomplete="username" hidden>
 <label data-i18n="pw.new"></label><input id="p_pw" type="password" autocomplete="new-password" required>
 <label data-i18n="pw.repeat"></label><input id="p_pw2" type="password" autocomplete="new-password" required>
-<div class="row"><span></span><button data-i18n="btn.save"></button></div></form>
+<div class="row"><button data-i18n="btn.save"></button></div></form>
 <div class="msg" id="p_msg"></div>
-</section>
-
-<section class="card" id="c_keys" hidden>
-<h2 data-i18n="keys.title"></h2>
-<p class="hint" data-i18n="keys.hint"></p>
-<table id="k_list"></table>
-<form id="f_key" class="row"><div><label data-i18n="keys.name"></label><input id="k_name" maxlength="23" required></div><button class="sec" data-i18n="keys.add"></button></form>
-<div id="k_new" hidden><p class="hint warn" data-i18n="keys.once"></p><code id="k_val"></code></div>
-<div class="msg" id="k_msg"></div>
-</section>
-
-<section class="card" id="c_eng" hidden>
-<h2 data-i18n="eng.title"></h2>
-<p class="hint" id="e_state"></p>
-<form id="f_eng" class="row"><div><label data-i18n="eng.key"></label><input id="e_key" type="password" autocomplete="off"></div><button data-i18n="eng.unlock"></button></form>
-<div class="row" id="e_lockrow"><span></span><button class="sec" id="e_lock" data-i18n="eng.lock"></button></div>
-<div class="msg" id="e_msg"></div>
-</section>
-
-<section class="card" id="c_session" hidden>
-<div class="row" style="margin:0;align-items:center"><span class="mut" id="s_info"></span><a id="s_next" href="/"><button class="sec" data-i18n="btn.continue"></button></a><button class="sec" id="s_logout" data-i18n="btn.logout"></button></div>
 </section>
 </main>
 <script>
 i18n.add({
 en:{
- 'page.title':'LG Aquatic Life – Login','title':'LG Aquatic Life · Login',
- 'login.title':'Sign in','login.btn':'Sign in','pw':'Password',
+ 'page.title':'LG Aquatic Life – Sign in','title':'Sign in','user':'User','pw':'Password','login.btn':'Sign in',
  'login.first':'First sign-in: use the device password from the label on the device.',
  'login.wait':'Too many attempts – please wait {s} s.',
  'rec.title':'Forgot password','rec.hint':'You are connected through the setup Wi-Fi. With the device password from the label you can set a new admin password. Schedules and calibration are kept.',
- 'rec.device':'Device password (label)','rec.btn':'Set new password','rec.ok':'New password set – you are signed in.',
- 'pw.title.set':'Choose your admin password','pw.hint.set':'You signed in with the device password. Please choose your own password (at least 8 characters).',
- 'pw.title.change':'Change password','pw.hint.change':'All other browsers are signed out afterwards. API keys stay valid.',
- 'pw.current':'Current password','pw.new':'New password','pw.repeat':'Repeat new password','pw.mismatch':'The passwords do not match.',
- 'pw.ok':'Password saved.','btn.save':'Save','btn.continue':'Continue','btn.logout':'Sign out',
- 'keys.title':'API keys','keys.hint':'For the app, Home Assistant or scripts. Header "X-API-Key: …" or "Authorization: Bearer …".',
- 'keys.name':'Name','keys.add':'Create key','keys.none':'No API keys yet.','keys.created':'created {d}',
- 'keys.once':'Copy the key now – it is shown only once:','keys.del':'Delete key "{n}"?','keys.full':'All {n} key slots are in use.',
- 'eng.title':'Engineering','eng.key':'Engineering key','eng.unlock':'Unlock','eng.lock':'Lock now',
- 'eng.on':'Unlocked – locks after {m} min without engineering use.','eng.off':'Locked.','eng.ok':'Engineering area unlocked.',
- 'eng.needed':'This page needs the engineering area.',
- 's.info':'Signed in at {d}','s.out':'Signed out.',
- 'err.wrong_password':'Wrong password','err.wrong_key':'Wrong engineering key','err.too_many_attempts':'Too many attempts – please wait',
- 'err.password_too_short':'At least 8 characters','err.password_too_long':'At most 64 characters','err.too_many_keys':'All key slots are in use',
+ 'rec.device':'Device password (label)','rec.btn':'Set new password',
+ 'pw.title':'Choose your admin password','pw.hint':'You signed in with the device password. Please choose your own password (at least 8 characters).',
+ 'pw.new':'New password','pw.repeat':'Repeat new password','pw.mismatch':'The passwords do not match.','btn.save':'Save',
+ 'err.wrong_password':'Wrong password','err.too_many_attempts':'Too many attempts – please wait',
+ 'err.password_too_short':'At least 8 characters','err.password_too_long':'At most 64 characters',
  'err.recovery_unavailable':'Only possible through the setup Wi-Fi (hold the button for 3 s)','err.unauthorized':'Please sign in'},
 de:{
- 'page.title':'LG Aquatic Life – Anmeldung','title':'LG Aquatic Life · Anmeldung',
- 'login.title':'Anmelden','login.btn':'Anmelden','pw':'Passwort',
+ 'page.title':'LG Aquatic Life – Anmeldung','title':'Anmelden','user':'Benutzer','pw':'Passwort','login.btn':'Anmelden',
  'login.first':'Erste Anmeldung: Geräte-Passwort vom Typenschild verwenden.',
  'login.wait':'Zu viele Versuche – bitte {s} s warten.',
  'rec.title':'Passwort vergessen','rec.hint':'Du bist über das Setup-WLAN verbunden. Mit dem Geräte-Passwort vom Typenschild kannst du ein neues Admin-Passwort setzen. Zeitpläne und Kalibrierung bleiben erhalten.',
- 'rec.device':'Geräte-Passwort (Typenschild)','rec.btn':'Neues Passwort setzen','rec.ok':'Neues Passwort gesetzt – du bist angemeldet.',
- 'pw.title.set':'Eigenes Admin-Passwort festlegen','pw.hint.set':'Du bist mit dem Geräte-Passwort angemeldet. Bitte wähle ein eigenes Passwort (mindestens 8 Zeichen).',
- 'pw.title.change':'Passwort ändern','pw.hint.change':'Alle anderen Browser werden danach abgemeldet. API-Schlüssel bleiben gültig.',
- 'pw.current':'Aktuelles Passwort','pw.new':'Neues Passwort','pw.repeat':'Neues Passwort wiederholen','pw.mismatch':'Die Passwörter stimmen nicht überein.',
- 'pw.ok':'Passwort gespeichert.','btn.save':'Speichern','btn.continue':'Weiter','btn.logout':'Abmelden',
- 'keys.title':'API-Schlüssel','keys.hint':'Für App, Home Assistant oder Skripte. Header „X-API-Key: …“ oder „Authorization: Bearer …“.',
- 'keys.name':'Name','keys.add':'Schlüssel erzeugen','keys.none':'Noch keine API-Schlüssel.','keys.created':'erstellt {d}',
- 'keys.once':'Schlüssel jetzt kopieren – er wird nur einmal angezeigt:','keys.del':'Schlüssel „{n}“ löschen?','keys.full':'Alle {n} Schlüsselplätze sind belegt.',
- 'eng.title':'Engineering','eng.key':'Engineering-Schlüssel','eng.unlock':'Freischalten','eng.lock':'Jetzt sperren',
- 'eng.on':'Freigeschaltet – sperrt nach {m} min ohne Engineering-Nutzung.','eng.off':'Gesperrt.','eng.ok':'Engineering-Bereich freigeschaltet.',
- 'eng.needed':'Diese Seite braucht den Engineering-Bereich.',
- 's.info':'Angemeldet bei {d}','s.out':'Abgemeldet.',
- 'err.wrong_password':'Falsches Passwort','err.wrong_key':'Falscher Engineering-Schlüssel','err.too_many_attempts':'Zu viele Versuche – bitte warten',
- 'err.password_too_short':'Mindestens 8 Zeichen','err.password_too_long':'Höchstens 64 Zeichen','err.too_many_keys':'Alle Schlüsselplätze sind belegt',
+ 'rec.device':'Geräte-Passwort (Typenschild)','rec.btn':'Neues Passwort setzen',
+ 'pw.title':'Eigenes Admin-Passwort festlegen','pw.hint':'Du bist mit dem Geräte-Passwort angemeldet. Bitte wähle ein eigenes Passwort (mindestens 8 Zeichen).',
+ 'pw.new':'Neues Passwort','pw.repeat':'Neues Passwort wiederholen','pw.mismatch':'Die Passwörter stimmen nicht überein.','btn.save':'Speichern',
+ 'err.wrong_password':'Falsches Passwort','err.too_many_attempts':'Zu viele Versuche – bitte warten',
+ 'err.password_too_short':'Mindestens 8 Zeichen','err.password_too_long':'Höchstens 64 Zeichen',
  'err.recovery_unavailable':'Nur über das Setup-WLAN möglich (Taster 3 s halten)','err.unauthorized':'Bitte anmelden'}
 });
+// Sign-in only: password, API keys and the engineering unlock live in the web interface
 const $=id=>document.getElementById(id);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const P=new URLSearchParams(location.search);
 // only local paths as target (no open redirect)
 const next=(n=>{try{const u=new URL(n,location.origin);if(n.startsWith('/')&&u.origin===location.origin&&!u.pathname.startsWith('/login'))return u.pathname+u.search+u.hash}catch(e){}return'/'})(P.get('next')||'/');
-const showEng=P.get('eng')==='1';
 let S=null;
 async function api(method,path,body){
   const o={method,cache:'no-store'};if(body!==undefined){o.body=JSON.stringify(body);o.headers={'Content-Type':'application/json'}}
@@ -138,43 +103,23 @@ async function api(method,path,body){
 function msg(id,txt,ok){const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=txt}
 function errMsg(id,e){const j=e.body&&e.body.error;msg(id,j&&j.retry_after_s?t('login.wait',{s:j.retry_after_s}):e.message)}
 function same(a,b,id){if($(a).value!==$(b).value){msg(id,t('pw.mismatch'));return false}return true}
+const go=()=>location.replace(next);
 
 async function load(){
   S=await api('GET','/api/v1/auth/status');
   const li=S.logged_in&&S.via==='session';
-  $('c_login').hidden=li;$('c_recover').hidden=li||!S.recovery;
-  $('l_hint').textContent=S.password_set?'':t('login.first');
-  $('c_setpw').hidden=!li;$('c_keys').hidden=!li||!S.password_set;$('c_session').hidden=!li;
-  $('c_eng').hidden=!li||!(showEng||S.engineering);
-  $('p_cur_box').hidden=!S.password_set;
-  $('p_title').textContent=t(S.password_set?'pw.title.change':'pw.title.set');$('p_hint').textContent=t(S.password_set?'pw.hint.change':'pw.hint.set');
-  $('s_info').textContent=t('s.info',{d:S.device});$('s_next').href=next;
-  $('e_state').textContent=S.engineering?t('eng.on',{m:Math.ceil(S.engineering_left_s/60)}):(showEng&&P.get('next')?t('eng.needed')+' ':'')+t('eng.off');
-  $('f_eng').hidden=S.engineering;$('e_lockrow').hidden=!S.engineering;
-  if(li&&S.password_set)loadKeys();
+  // the setup wizard asks for the admin password itself
+  if(li&&(S.password_set||next.startsWith('/setup')))return go();
+  $('dev').textContent=S.device||'';
+  $('c_login').hidden=li;$('c_recover').hidden=li||!S.recovery;$('c_setpw').hidden=!li;
+  $('l_hint').textContent=S.password_set?'':t('login.first');$('l_hint').hidden=S.password_set;
   if(!li)$('l_pw').focus();
 }
-async function loadKeys(){
-  try{const j=await api('GET','/api/v1/auth/keys');
-    $('k_list').innerHTML=j.keys.length?j.keys.map(k=>`<tr><td>${esc(k.name)}</td><td class="mut">${k.created?t('keys.created',{d:new Date(k.created*1000).toLocaleDateString(i18n.lang)}):''}</td><td style="text-align:right"><button class="x" data-slot="${k.slot}" data-name="${esc(k.name)}">✕</button></td></tr>`).join(''):`<tr><td class="mut">${t('keys.none')}</td></tr>`;
-    $('k_list').querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{if(confirm(t('keys.del',{n:b.dataset.name})))api('DELETE','/api/v1/auth/keys?slot='+b.dataset.slot).then(loadKeys).catch(e=>msg('k_msg',e.message))});
-    $('f_key').querySelector('button').disabled=j.keys.length>=j.max;if(j.keys.length>=j.max)msg('k_msg',t('keys.full',{n:j.max}));
-  }catch(e){msg('k_msg',e.message)}
-}
-$('f_login').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/login',{password:$('l_pw').value}).then(j=>{$('l_pw').value='';
-  // the setup wizard asks for the admin password itself
-  if((j.password_set||next.startsWith('/setup'))&&!showEng)location.href=next;else load()}).catch(e=>errMsg('l_msg',e))};
+$('f_login').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/login',{password:$('l_pw').value}).then(()=>{$('l_pw').value='';load()}).catch(e=>errMsg('l_msg',e))};
 $('f_rec').onsubmit=e=>{e.preventDefault();if(!same('r_pw','r_pw2','r_msg'))return;
-  api('POST','/api/v1/auth/recover',{device_password:$('r_dev').value.trim(),new:$('r_pw').value}).then(()=>{msg('r_msg',t('rec.ok'),true);load()}).catch(e=>errMsg('r_msg',e))};
+  api('POST','/api/v1/auth/recover',{device_password:$('r_dev').value.trim(),new:$('r_pw').value}).then(load).catch(e=>errMsg('r_msg',e))};
 $('f_pw').onsubmit=e=>{e.preventDefault();if(!same('p_pw','p_pw2','p_msg'))return;
-  api('POST','/api/v1/auth/password',{current:$('p_cur').value,new:$('p_pw').value}).then(()=>{['p_cur','p_pw','p_pw2'].forEach(i=>$(i).value='');msg('p_msg',t('pw.ok'),true);load()}).catch(e=>errMsg('p_msg',e))};
-$('f_key').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/keys',{name:$('k_name').value.trim()}).then(j=>{$('k_name').value='';$('k_val').textContent=j.key;$('k_new').hidden=false;$('k_msg').textContent='';loadKeys()}).catch(e=>msg('k_msg',e.message))};
-// The web UI locks an unlock its browser tab did not make (sessionStorage = per tab)
-function tabEng(on){try{on?sessionStorage.setItem('lgal.eng','1'):sessionStorage.removeItem('lgal.eng')}catch(e){}}
-$('f_eng').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/engineering',{key:$('e_key').value.trim()}).then(()=>{$('e_key').value='';tabEng(1);msg('e_msg',t('eng.ok'),true);
-  if(P.get('next'))location.href=next;else load()}).catch(e=>errMsg('e_msg',e))};
-$('e_lock').onclick=()=>{tabEng(0);api('DELETE','/api/v1/auth/engineering').then(load)};
-$('s_logout').onclick=()=>api('POST','/api/v1/auth/logout').then(()=>{load();msg('l_msg',t('s.out'),true)});
+  api('POST','/api/v1/auth/password',{current:'',new:$('p_pw').value}).then(load).catch(e=>errMsg('p_msg',e))};
 i18n.onChange(()=>{if(S)load()});
 i18n.init('lang').then(load);
 </script>
