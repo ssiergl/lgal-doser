@@ -52,6 +52,8 @@ Pin assignment and circuit: [CLAUDE.md](CLAUDE.md).
 | [User guide](docs/user-guide.md) | owners: setup, calibrating pumps, schedules, daily use, troubleshooting |
 | [Build guide](docs/build-guide.md) | makers: parts list, electrical safety, flashing the firmware, assembly and test |
 | [Technical documentation](docs/technical.md) | developers: building the firmware, first USB flash, API, MQTT, internals |
+| [Changelog](CHANGELOG.md) | what changed from version to version |
+| [Security](SECURITY.md) | security model, known limits, reporting vulnerabilities privately |
 
 German versions of the README and the guides are in [README.de.md](README.de.md) and
 [docs/de/](docs/de/).
@@ -81,6 +83,12 @@ tests/        host tests and fuzzers
 docs/         documentation, German versions in docs/de/
 hardware/     enclosure (STL …) and circuit board (schematic, Gerber …)
 ```
+
+## Reporting bugs
+
+Please open an issue with the "Bug report" template, in English or German. Include the firmware
+version and, if possible, the log from the maintenance page – without passwords or keys.
+Security vulnerabilities must not be reported publicly; see [SECURITY.md](SECURITY.md).
 
 ## Safety and liability
 

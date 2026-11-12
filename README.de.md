@@ -55,6 +55,8 @@ Pinbelegung und Schaltung: [CLAUDE.md](CLAUDE.md).
 | [Bedienungsanleitung](docs/de/benutzer.md) | Anwender: Einrichtung, Pumpen kalibrieren, Zeitpläne, Alltag, Fehlersuche |
 | [Nachbau-Anleitung](docs/de/nachbau.md) | Bastler: Teileliste, elektrische Sicherheit, Firmware aufspielen, Aufbau und Test |
 | [Technische Dokumentation](docs/de/technik.md) | Entwickler: Firmware bauen, Erstinbetriebnahme per USB, API, MQTT, Interna |
+| [Changelog](CHANGELOG.md) (englisch) | was sich von Version zu Version geändert hat |
+| [Security](SECURITY.md) (englisch) | Sicherheitsmodell, bekannte Grenzen, Lücken vertraulich melden |
 
 ## Projektstand
 
@@ -82,6 +84,13 @@ tests/        Host-Tests und Fuzzer
 docs/         Dokumentation (englisch), docs/de/ deutsche Fassungen
 hardware/     Gehäuse (STL …) und Platine (Schaltplan, Gerber …)
 ```
+
+## Fehler melden
+
+Fehler bitte als Issue mit der Vorlage „Bug report“ eröffnen, gern auch auf Deutsch.
+Firmware-Version und, wenn möglich, das Log aus der Wartung angeben – ohne Passwörter oder
+Schlüssel.
+Sicherheitslücken nicht öffentlich, sondern wie in [SECURITY.md](SECURITY.md) beschrieben.
 
 ## Sicherheit und Haftung
 
