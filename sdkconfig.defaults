@@ -23,9 +23,11 @@ CONFIG_SPIRAM_SPEED_80M=y
 # OTA: rollback on failed boot (bootloader feature!)
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
-# Update source (factory setting): releases of this repository. A build
-# from a fork sets its own address here (or "" for none).
+# Update source (factory setting): releases of this repository, and the
+# beta channel the admin can choose instead (newest release candidate). A
+# build from a fork sets its own addresses here (or "" for none).
 CONFIG_LGAL_OTA_SOURCE="https://github.com/ssiergl/lgal-doser/releases/latest/download/manifest.json"
+CONFIG_LGAL_OTA_SOURCE_BETA="https://github.com/ssiergl/lgal-doser/releases/download/channel-beta/manifest.json"
 
 # Crash analysis without USB: core dump into its own flash partition
 CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y

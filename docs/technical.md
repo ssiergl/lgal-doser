@@ -18,7 +18,7 @@ components/doser_app/   device logic: hardware diagnostics, dosing engine, sched
 components/webui/       web UI (M5): www/ (Preact + htm, no build), pack.py embeds it gzip-compressed
 brand/                  brand repository as Git submodule: the logo (not GPL, see TRADEMARKS.md)
 main/                   wiring of the components (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, third_party_notices.py, mock/ (device mock for the web UI)
+tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, third_party_notices.py, mock/ (device mock for the web UI)
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest)
                         and simulation of dosing engine and scheduler (`tests/host/run.sh`)
 tests/fuzz/             fuzzers for all parsers of external input (`tests/fuzz/run.sh`)
@@ -158,6 +158,13 @@ publishes everything as a release. The images contain no secret (see
 repository secrets. Tags with a pre-release part (`v1.0.0-rc.1`) become pre-releases, which
 `releases/latest` skips. The devices then use
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json` as update source.
+
+For the [beta channel](#ota-update) every release also updates the pre-release `channel-beta`
+(created on the first release): it holds only a `manifest.json` that names the newest version,
+release candidate or release, with absolute addresses into the release of that version
+(`tools/channel_manifest.py`). An older release, e.g. a hotfix while a newer release candidate
+is out, leaves it as it is. Devices on the beta channel read
+`https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json`.
 
 `.github/workflows/ci.yml` runs the host tests under both sanitizers, a short fuzz run and the
 build of all three variants on every push to `main` and every pull request (in the
@@ -355,7 +362,7 @@ checksums in the README there); there is no Node build, `idf.py build` is enough
 | Network | In the settings: status (active interface, LAN and Wi-Fi address, signal, setup Wi-Fi, countdown to the Wi-Fi fallback) for everyone. Pro only: interface (automatic / LAN only / Wi-Fi only), DHCP or static addresses per interface (prefilled with the current ones), Wi-Fi scan, password, connection test and save; if the static LAN address changes, the page names the new one. |
 | MQTT | In the settings: connection status with the last error (host name, unreachable, TLS, sign-in) for everyone. Pro only: broker and port, encryption (none / TLS with public certificate / TLS with own CA certificate incl. upload, replace, remove), user and password, base topic, Home Assistant discovery with prefix, "Allow control via MQTT" with a warning and the list of topics. See [MQTT / Home Assistant](#mqtt--home-assistant-m6). |
 | Sign-in | In the settings: change the password (or set it for the first time) and sign out for everyone; API keys (list, create with one-time display and copy, delete) only in pro. `/login` stays for sign-in and the forgotten password. |
-| Maintenance | Firmware version, build date, address, uptime and a hint after a rollback for everyone; only with an [update source](#ota-update) the card "Updates": installed and available version (badge "Up to date" / "New: x.y.z"), time of the last check, link "What's new", "Check for updates", "Install x.y.z" with confirmation and progress, switch "Check daily"; firmware update by `.bin` upload with progress (locked while a pump runs), afterwards the page waits for the restart and reloads; restart with confirmation; factory reset with the admin password entered again; licenses (GPLv3 and third-party software). Pro only: warning while http is allowed for updates, storage and OTA state, MAC, last reset reason, memory, log and crash report (download, delete). |
+| Maintenance | Firmware version, build date, address, uptime and a hint after a rollback for everyone; only with an [update source](#ota-update) the card "Updates": installed and available version (badge "Up to date" / "New: x.y.z"), time of the last check, link "What's new", "Check for updates", "Install x.y.z" with confirmation and progress, switch "Check daily", pro only: update channel stable/beta (beta with a warning, then a "Beta" badge and notice in every view); firmware update by `.bin` upload with progress (locked while a pump runs), afterwards the page waits for the restart and reloads; restart with confirmation; factory reset with the admin password entered again; licenses (GPLv3 and third-party software). Pro only: warning while http is allowed for updates, storage and OTA state, MAC, last reset reason, memory, log and crash report (download, delete). |
 | View | **Simple** / **Pro**, stored per browser. Only in pro: detailed schedules, pump fine-tuning (speed, retract, daily limit), rules between pumps (lock times, queueing, power cut) plus network and MQTT settings, time server and API keys. What is set in pro stays active in simple. |
 | Live values | Over WebSocket; without a connection the page polls every second. |
 | Device | In the settings: device name (up to 32 bytes, e.g. "Reef tank") for header, Home Assistant and mDNS service. The host name follows from it (lower case, umlauts as ae/oe/ue/ss, otherwise "-", e.g. `reef-tank.local`); pro only: own host name (a–z, 0–9, "-", up to 32 characters). Without a name it stays `lgal-doser-xxxx`. mDNS takes the name at once, the router at the next address assignment. MQTT topics and Home Assistant IDs stay until "Move topics to the device name" is pressed in the MQTT card. |
@@ -426,6 +433,14 @@ SHA-256 and optionally size:
   or size do not match, the image is discarded before it becomes active. Otherwise as with an
   upload (locked while a pump runs; rollback protection).
 - Source and file follow the https and http rules of the update from a URL.
+- **Channel:** while the source is the factory one, the admin chooses in the pro view under
+  Maintenance → Updates between **Stable** (factory setting) and **Beta**: the manifest of the
+  beta channel (`CONFIG_LGAL_OTA_SOURCE_BETA`, see [Release](#release)) also offers release
+  candidates. Switching to beta needs a confirmation with a warning; while beta is on, the card
+  shows a "Beta" badge and a warning in every view. Back to stable never installs an older
+  version: the device keeps the release candidate until a newer release is out (or the
+  release file is uploaded). An own source from the engineering menu has no channel; setting
+  one switches the channel back to stable.
 
 **Update from a URL:** the device downloads the `.bin` itself, e.g. from a release page – in the
 [engineering menu](#engineering-menu-m6) or over REST with engineering unlock:
@@ -491,12 +506,12 @@ on every page.
 | GET / DELETE | `/api/v1/system/coredump` | last crash dump (ELF) / delete |
 | POST | `/api/v1/system/factory_reset` | `{"password":"…"}` – factory reset with restart; only with a browser session (no API key) and the admin password, failed attempts count as for sign-in (403 `wrong_password`, 429 `too_many_attempts`) |
 | POST | `/api/v1/ota/firmware` | firmware upload (raw `.bin`), rejected while a pump runs |
-| GET | `/api/v1/ota/release` | last check of the update source: `{"source","board","variant","current","auto_check","checking","checked_at"(null = not yet / clock unknown),"latest"(null = unknown),"available","notes"?,"error"?,"detail"?}` |
+| GET | `/api/v1/ota/release` | last check of the update source: `{"source","channel"(null = no choice),"board","variant","current","auto_check","checking","checked_at"(null = not yet / clock unknown),"latest"(null = unknown),"available","notes"?,"error"?,"detail"?}` |
 | POST | `/api/v1/ota/release/check` | check the source now → 202 `started` (result at `GET /api/v1/ota/release`); 400 `no_source` |
 | POST | `/api/v1/ota/release/install` | install a newer version of the source → 202 `started`, progress at `GET /api/v1/ota/status`; errors there e.g. `no_update`, `sha256_mismatch`, `manifest_invalid`, `no_build`; 409 `pump_running` / `ota_in_progress` |
 | POST | `/api/v1/ota/url` | engineering. `{"url":"https://…"}` → 202 `started`, the device downloads itself; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |
 | GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api\|mqtt","http","received","total","error"?,"detail"?}` |
-| GET / PUT | `/api/v1/ota/settings` | `{"source","auto_check","allow_http"}`; `auto_check` `true` by default, `allow_http` `false` by default. `source` and `allow_http` only change with engineering (`source` set → immediate check) |
+| GET / PUT | `/api/v1/ota/settings` | `{"source","channel","auto_check","allow_http"}`; `auto_check` `true` by default, `allow_http` `false` by default. `channel` `"stable"` (factory setting) or `"beta"`, `null` while there is no choice; 409 `no_channel` then. `source` and `allow_http` only change with engineering (`source` or `channel` changed → immediate check) |
 | GET | `/api/v1/pumps` | status, calibration, retract, limit, container, tube of all pumps; `fitted` = fitted |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | dose (optional `tier=0..2`). During a lock time: 409 `collision_lock` with `retry_at`/`retry_local`, or 202 `queued` (lock rule "queue") |
 | POST | `/api/v1/pumps/stop?pump=0..5` | soft stop, the retract still runs (0 = all); discards a queued dose |

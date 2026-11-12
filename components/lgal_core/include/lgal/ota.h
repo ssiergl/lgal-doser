@@ -4,7 +4,7 @@
 //
 //   POST /api/v1/ota/firmware   body = raw .bin (application/octet-stream)
 //   GET  /api/v1/ota/release    last check of the update source:
-//                               {"source","board","variant","current","auto_check","checking",
+//                               {"source","channel","board","variant","current","auto_check","checking",
 //                                "checked_at"(null = not yet),"latest"(null = unknown),
 //                                "available","notes"?,"error"?,"detail"?}
 //   POST /api/v1/ota/release/check    fetch the manifest now -> 202 {"status":"started"}
@@ -13,14 +13,21 @@
 //                               the device downloads the image itself (engineering)
 //   GET  /api/v1/ota/status     {"state":"idle|running|failed|rebooting","source":"api|mqtt",
 //                               "http","received","total" (null = unknown),"error"?,"detail"?}
-//   GET  /api/v1/ota/settings   {"source","auto_check","allow_http"}
-//   PUT  /api/v1/ota/settings   {"auto_check"?}; "source"? and "allow_http"? need engineering
+//   GET  /api/v1/ota/settings   {"source","channel","auto_check","allow_http"}
+//   PUT  /api/v1/ota/settings   {"auto_check"?,"channel"?}; "source"? and "allow_http"? need
+//                               engineering
 //   MQTT "<base>/ota/state"     progress and result (not retained)
 //
 // Update source: the address of the release manifest (ota_manifest.h),
 // factory setting CONFIG_LGAL_OTA_SOURCE. With auto_check the device fetches
 // it shortly after the start and then daily; it only reports a newer
-// version, installing always needs a request. The firmware file of the own
+// version, installing always needs a request.
+// Channel: while the source is the factory one, the admin may choose
+// "beta" (CONFIG_LGAL_OTA_SOURCE_BETA: newest release candidate or
+// release) instead of "stable"; "channel" is null when there is no choice
+// (own source from the engineering menu, or no beta address). Back to
+// stable never installs an older version: the device stays on the release
+// candidate until a newer release is out. The firmware file of the own
 // board and variant must match the SHA-256 of the manifest before it is
 // activated.
 //
@@ -60,10 +67,13 @@ bool in_progress();
 constexpr size_t kMaxUrl = 512;
 struct Settings {
     std::string source;       // release manifest, "" = no update source
+    bool beta = false;        // beta channel instead of source (see channel())
     bool auto_check = true;   // fetch it daily (only reports)
     bool allow_http = false;  // plain http for updates
 };
 Settings settings();
+// "stable" or "beta" while the channel can be chosen, otherwise nullptr
+const char* channel();
 
 // Last check of the update source
 struct ReleaseInfo {

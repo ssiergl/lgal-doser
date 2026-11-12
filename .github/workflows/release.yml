@@ -3,8 +3,13 @@
 # the update source
 #   https://github.com/<owner>/<repo>/releases/latest/download/manifest.json
 # then offer it. Tags with a pre-release part (v1.0.0-rc.1) become
-# pre-releases, which "latest" skips. The images hold no secret: every
-# device keeps its own in the factory partition (tools/provision.py).
+# pre-releases, which "latest" skips. Every release also updates the beta
+# channel when it is newer than the channel: the pre-release "channel-beta"
+# holds only a manifest.json with the newest version, release candidate or
+# release (tools/channel_manifest.py); devices set to the beta channel read
+#   https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json
+# The images hold no secret: every device keeps its own in the factory
+# partition (tools/provision.py).
 name: Release
 on:
   push:
@@ -45,7 +50,8 @@ jobs:
       - name: Install GitHub CLI
         run: |
           apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gh ca-certificates
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gh ca-certificates python3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: dist
@@ -58,3 +64,19 @@ jobs:
           case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" --generate-notes $pre
+      - name: Update the beta channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="$GITHUB_REPOSITORY"
+          if gh release view channel-beta --repo "$repo" >/dev/null 2>&1; then
+            gh release download channel-beta --repo "$repo" --pattern manifest.json --dir current || true
+          else
+            gh release create channel-beta --repo "$repo" --prerelease --target "$GITHUB_SHA" \
+              --title "Beta channel" \
+              --notes "Update manifest of the beta channel (newest release candidate or release). Not a release of its own: devices set to the beta channel read manifest.json here."
+          fi
+          python3 tools/channel_manifest.py dist/manifest.json \
+            "https://github.com/$repo/releases/download/$GITHUB_REF_NAME" \
+            -o channel/manifest.json --current current/manifest.json
+          [ ! -f channel/manifest.json ] || gh release upload channel-beta channel/manifest.json --clobber --repo "$repo"

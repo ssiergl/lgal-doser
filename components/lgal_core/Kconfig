@@ -25,6 +25,16 @@ menu "LG Aquatic Life Core"
             https://github.com/<owner>/<repo>/releases/latest/download/manifest.json.
             Empty = no update source; it can be changed in the engineering menu.
 
+    config LGAL_OTA_SOURCE_BETA
+        string "Release manifest of the beta channel (factory setting)"
+        default ""
+        help
+            Address of manifest.json of the beta channel (newest release candidate
+            or release), e.g.
+            https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json.
+            Empty = no beta channel. The admin can choose it in the pro view while
+            the update source is the factory one (LGAL_OTA_SOURCE).
+
     config LGAL_ETH_SPI_CLOCK_MHZ
         int "W5500 SPI clock (MHz)"
         default 20
