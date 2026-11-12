@@ -119,5 +119,7 @@ other property.
   [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 - Hardware (enclosure, schematic, circuit board, Gerber): **CC BY-NC-SA 4.0**, see
   [LICENSE-hardware.md](LICENSE-hardware.md). Commercial use only with written permission.
+- Name and logo of LG Aquatic Life: not covered by these licenses, see
+  [TRADEMARKS.md](TRADEMARKS.md).
 
 Copyright © 2026 Lars Greiss / LG Aquatic Life
