@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/ssiergl/lgal-brand/main/logo/lgal-plaque.svg" width="200" alt="LG Aquatic Life"></p>
+
 # LGAL-Doser
 
 *[English](README.md) · Deutsch*
