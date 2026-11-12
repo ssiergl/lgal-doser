@@ -46,26 +46,26 @@ esp_err_t save_blob(const char* key, const T& v) {
 }
 }  // namespace
 
-void load(motion::PumpConfig (&pumps)[5]) {
+void load(motion::PumpConfig (&pumps)[kMaxPumps]) {
     nvs_handle_t h;
     if (nvs_open(kNs, NVS_READONLY, &h) != ESP_OK) {
         ESP_LOGI(TAG, "No stored hardware parameters, using defaults");
         return;
     }
     char key[12];
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kMaxPumps; ++i) {
         snprintf(key, sizeof(key), "pump%d", i);
         load_blob(h, key, &pumps[i]);
     }
     uint8_t m = kAllFitted;
     if (load_blob(h, "fitted", &m) && valid_mask(m)) s_fitted = s_fitted_saved = m;
     nvs_close(h);
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < kMaxPumps; ++i)
         if (!fitted(i)) ESP_LOGI(TAG, "Pump %d: not fitted", i + 1);
 }
 
 uint8_t fitted_mask() { return s_fitted; }
-bool fitted(int pump) { return pump >= 0 && pump < 5 && (s_fitted >> pump & 1); }
+bool fitted(int pump) { return pump >= 0 && pump < kMaxPumps && (s_fitted >> pump & 1); }
 uint8_t stored_fitted_mask() { return s_fitted_saved; }
 
 esp_err_t save_fitted(uint8_t mask) {

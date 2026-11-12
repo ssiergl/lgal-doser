@@ -64,7 +64,7 @@ esp_err_t ok(httpd_req_t* req) { return http::send_json(req, "{\"status\":\"ok\"
 
 int pump_arg(httpd_req_t* req) {
     int64_t p = 0;
-    if (!http::query_int(req, "pump", &p) || p < 1 || p > 5) return -1;
+    if (!http::query_int(req, "pump", &p) || p < 1 || p > kMaxPumps) return -1;
     return static_cast<int>(p - 1);
 }
 
@@ -172,7 +172,7 @@ esp_err_t get_pumps(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     Json j;
     j.obj().arr("pumps");
-    for (int i = 0; i < 5; ++i) write_pump(j, i);
+    for (int i = 0; i < kMaxPumps; ++i) write_pump(j, i);
     j.end().end();
     return http::send_json(req, j.c_str());
 }
@@ -212,9 +212,9 @@ esp_err_t post_stop(httpd_req_t* req) {
     int64_t p = 0;
     http::query_int(req, "pump", &p);
     if (p == 0) {
-        for (int i = 0; i < 5; ++i) scheduler::cancel_queued(i);
+        for (int i = 0; i < kMaxPumps; ++i) scheduler::cancel_queued(i);
         dosing::stop_all();
-    } else if (p >= 1 && p <= 5) {
+    } else if (p >= 1 && p <= kMaxPumps) {
         scheduler::cancel_queued(static_cast<int>(p - 1));
         dosing::stop(static_cast<int>(p - 1));
     } else {
@@ -436,7 +436,7 @@ esp_err_t post_engineering(httpd_req_t* req) {
 // operation, the full picture comes from GET /api/v1/pumps
 void write_live(Json& j) {
     j.arr("pumps");
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kMaxPumps; ++i) {
         const auto s = dosing::status(i);
         const auto& set = s.settings;
         j.obj()
@@ -469,7 +469,7 @@ void write_live(Json& j) {
 
 // Client that started priming per pump (-1 = none / REST). Only touched in
 // the HTTP server task (messages and close hook), no lock needed.
-int s_prime_owner[5] = {-1, -1, -1, -1, -1};
+int s_prime_owner[kMaxPumps] = {};  // WebSocket client + 1, 0 = none
 
 // {"type":"prime","pump":1..5,"action":"start|beat|stop","tier"?:0..2}
 // Hold-to-run: start once, beat every ~150 ms while the button is held. A
@@ -477,7 +477,7 @@ int s_prime_owner[5] = {-1, -1, -1, -1, -1};
 const char* ws_prime(int client, const JsonValue& msg, Json& reply) {
     int64_t pump = 0, tier = -1;
     char action[8] = "";
-    if (!msg["pump"].get(&pump) || pump < 1 || pump > 5) return "invalid_param";
+    if (!msg["pump"].get(&pump) || pump < 1 || pump > kMaxPumps) return "invalid_param";
     msg["action"].get(action, sizeof(action));
     if (msg["tier"].valid() && (!msg["tier"].get(&tier) || tier < 0 || tier >= dose::kTiers)) return "invalid_param";
     const int p = static_cast<int>(pump - 1);
@@ -485,12 +485,12 @@ const char* ws_prime(int client, const JsonValue& msg, Json& reply) {
     const char* e = nullptr;
     if (!std::strcmp(action, "start")) {
         e = dosing::prime_start(p, static_cast<int>(tier));
-        if (!e) s_prime_owner[p] = client;
+        if (!e) s_prime_owner[p] = client + 1;
     } else if (!std::strcmp(action, "beat")) {
         e = dosing::prime_beat(p);
     } else if (!std::strcmp(action, "stop")) {
         e = dosing::prime_stop(p);
-        s_prime_owner[p] = -1;
+        s_prime_owner[p] = 0;
     } else {
         return "invalid_param";
     }
@@ -499,9 +499,9 @@ const char* ws_prime(int client, const JsonValue& msg, Json& reply) {
 }
 
 void ws_closed(int client) {
-    for (int p = 0; p < 5; ++p) {
-        if (s_prime_owner[p] != client) continue;
-        s_prime_owner[p] = -1;
+    for (int p = 0; p < kMaxPumps; ++p) {
+        if (s_prime_owner[p] != client + 1) continue;
+        s_prime_owner[p] = 0;
         if (!dosing::prime_stop(p)) ESP_LOGW("dosing_api", "Pump %d: priming stopped (connection closed)", p + 1);
     }
 }

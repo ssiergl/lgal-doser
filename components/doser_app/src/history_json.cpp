@@ -109,7 +109,7 @@ void write_event(lgal::Json& j, const Event& e, int64_t local, bool leave_open) 
                 if (from[0]) j.kv("from", from);
             } else if (is_code(e, "channels")) {
                 j.arr("pumps");
-                for (int p = 0; p < 5; ++p)
+                for (int p = 0; p < kMaxPumps; ++p)
                     if (e.value & (1 << p)) j.v(p + 1);
                 j.end();
             }
@@ -179,7 +179,7 @@ void Daily::reset(int32_t today, int n_days) {
 }
 
 void Daily::add(const Event& e, int64_t local) {
-    if (e.pump < 1 || e.pump > 5) return;
+    if (e.pump < 1 || e.pump > kMaxPumps) return;
     const int32_t i = sched::day_of(local) - first_day;
     if (i < 0 || i >= days) return;
     const int p = e.pump - 1;
@@ -199,11 +199,11 @@ void Daily::write(lgal::Json& j) const {
         sched_json::fmt_date(first_day + i, d);
         j.obj().kv("date", d);
         j.arr("ml");
-        for (int p = 0; p < 5; ++p) j.v(ml(dosed_ul[i][p]), 3);
+        for (int p = 0; p < kMaxPumps; ++p) j.v(ml(dosed_ul[i][p]), 3);
         j.end().arr("doses");
-        for (int p = 0; p < 5; ++p) j.v(static_cast<int>(doses[i][p]));
+        for (int p = 0; p < kMaxPumps; ++p) j.v(static_cast<int>(doses[i][p]));
         j.end().arr("skipped");
-        for (int p = 0; p < 5; ++p) j.v(static_cast<int>(skipped[i][p]));
+        for (int p = 0; p < kMaxPumps; ++p) j.v(static_cast<int>(skipped[i][p]));
         j.end().end();
     }
     j.end();

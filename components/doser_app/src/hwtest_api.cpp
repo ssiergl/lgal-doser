@@ -28,7 +28,7 @@ esp_err_t bad(httpd_req_t* req, const char* msg) { return http::send_error(req, 
 // Read pump number 1..5 from ?key= -> index 0..4, otherwise -1
 int pump_arg(httpd_req_t* req, const char* key = "pump") {
     int64_t p = 0;
-    if (!http::query_int(req, key, &p) || p < 1 || p > 5) return -1;
+    if (!http::query_int(req, key, &p) || p < 1 || p > kMaxPumps) return -1;
     return static_cast<int>(p - 1);
 }
 
@@ -93,7 +93,7 @@ esp_err_t post_channels(httpd_req_t* req) {
     if (!http::query_str(req, "pumps", list, sizeof(list))) return bad(req, "pumps=1,2,... required");
     uint8_t mask = 0;
     for (const char* c = list; *c; ++c) {
-        if (*c >= '1' && *c <= '5') mask |= uint8_t(1u << (*c - '1'));
+        if (*c >= '1' && *c < '1' + kMaxPumps) mask |= uint8_t(1u << (*c - '1'));
         else if (*c != ',') return bad(req, "pumps: numbers 1..5, separated by commas");
     }
     if (!mask) return bad(req, "pumps: at least one pump");
@@ -111,14 +111,14 @@ esp_err_t get_status(httpd_req_t* req) {
     j.kv("drivers_enabled", motion::drivers_enabled()).kv("locked", motion::locked());
     // channel population: in effect now and after the next restart
     j.arr("fitted");
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < kMaxPumps; ++i)
         if (hwconfig::fitted_mask() >> i & 1) j.v(i + 1);
     j.end().arr("fitted_next");
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < kMaxPumps; ++i)
         if (hwconfig::stored_fitted_mask() >> i & 1) j.v(i + 1);
     j.end();
     j.arr("pumps");
-    for (int i = 0; i < 5; ++i) write_pump(j, i);
+    for (int i = 0; i < kMaxPumps; ++i) write_pump(j, i);
     j.end();
 
     j.obj("rtc").kv("present", rtc::present());
@@ -207,7 +207,7 @@ esp_err_t post_stop(httpd_req_t* req) {
     http::query_str(req, "mode", mode, sizeof(mode));
     const bool hard = std::strcmp(mode, "hard") == 0;
     if (p == 0) motion::stop_all(hard);
-    else if (p >= 1 && p <= 5) motion::stop(static_cast<int>(p - 1), hard);
+    else if (p >= 1 && p <= kMaxPumps) motion::stop(static_cast<int>(p - 1), hard);
     else return bad(req, "pump=0..5");
     return http::send_json(req, hard ? "{\"status\":\"stopped\"}" : "{\"status\":\"stopping\"}");
 }

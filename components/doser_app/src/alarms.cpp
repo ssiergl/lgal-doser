@@ -23,7 +23,7 @@ Output evaluate(const Input& in) {
 
 uint16_t conditions(const Input& in) {
     uint16_t m = in.rtc_ok ? 0 : uint16_t(1u << kRtcBit);
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kMaxPumps; ++i) {
         const Pump& p = in.pumps[i];
         if (!p.active) continue;
         if (low(p)) m |= cond_bit(i, Cond::ContainerLow);

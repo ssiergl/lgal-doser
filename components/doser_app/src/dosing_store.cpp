@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "doser/i2c_devices.h"
+#include "doser/limits.h"
 #include "doser/nvs_blob.h"
 #include "esp_log.h"
 
@@ -20,7 +21,7 @@ struct Slots {
     uint32_t seq = 0;  // last written sequence number
     int next = 0;      // next EEPROM slot
 };
-Slots s_slots[5];
+Slots s_slots[kMaxPumps];
 
 template <typename T>
 bool nvs_load(const char* key, T* out) {

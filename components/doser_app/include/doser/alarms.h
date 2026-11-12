@@ -10,6 +10,8 @@
 
 #include <cstdint>
 
+#include "doser/limits.h"
+
 namespace doser::alarms {
 
 struct Pump {
@@ -23,7 +25,7 @@ struct Pump {
 };
 
 struct Input {
-    Pump pumps[5];
+    Pump pumps[kMaxPumps];
     bool rtc_ok = true;
     bool clock_valid = true;
 };

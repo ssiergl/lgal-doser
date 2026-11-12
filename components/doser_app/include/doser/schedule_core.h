@@ -13,11 +13,12 @@
 
 #include <cstdint>
 
+#include "doser/limits.h"
 #include "doser/posix_tz.h"
 
 namespace doser::sched {
 
-constexpr int kPumps = 5;
+constexpr int kPumps = kMaxPumps;
 constexpr int kMaxTimes = 24;         // single times of a "times" plan
 constexpr int kMaxSlotsPerDay = 96;   // per pump and day
 constexpr int kMaxLocks = 10;
