@@ -482,7 +482,8 @@ with all keys, loaded only when that language is used – a missing key shows in
 device pages (sign-in, setup, `/recovery`) carry their dictionaries inline, because `/recovery`
 must work without the web UI. New language: entry in `settings::kLanguages` and in `languages`
 of `lib/i18n.js`, the file in `lang/`, and the dictionaries in the device pages. The UI language
-is a device setting and can be switched on every page.
+is a device setting and can be switched on every page with a picker that shows the flag of each
+language (`/flags.js`).
 
 | Method | Path | Function |
 |---|---|---|
@@ -511,6 +512,7 @@ is a device setting and can be switched on every page.
 | GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
 | POST | `/api/v1/setup/complete` | finish the setup (409 `password_not_set` / `not_connected`), setup Wi-Fi off after 20 s |
 | GET | `/i18n.js` | shared translation base of the pages (without sign-in) |
+| GET | `/flags.js` | flag icons of the languages and the styles of the language picker, for the pages and the web UI (without sign-in) |
 | GET | `/api/v1/system/log` | RAM log of the last ~32 KB |
 | POST | `/api/v1/system/reboot` | restart |
 | GET / DELETE | `/api/v1/system/coredump` | last crash dump (ELF) / delete |

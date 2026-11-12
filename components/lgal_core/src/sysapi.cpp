@@ -35,6 +35,8 @@ extern const char recovery_html_start[] asm("_binary_recovery_html_start");
 extern const char recovery_html_end[] asm("_binary_recovery_html_end");
 extern const char i18n_js_start[] asm("_binary_i18n_js_start");
 extern const char i18n_js_end[] asm("_binary_i18n_js_end");
+extern const char flags_js_start[] asm("_binary_flags_js_start");
+extern const char flags_js_end[] asm("_binary_flags_js_end");
 
 namespace lgal::sysapi {
 
@@ -126,6 +128,13 @@ esp_err_t get_i18n(httpd_req_t* req) {
     httpd_resp_set_type(req, "text/javascript; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
     return httpd_resp_send(req, i18n_js_start, i18n_js_end - i18n_js_start - 1);
+}
+
+// Flag icons of the languages (device pages and web UI) -> no login
+esp_err_t get_flags(httpd_req_t* req) {
+    httpd_resp_set_type(req, "text/javascript; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+    return httpd_resp_send(req, flags_js_start, flags_js_end - flags_js_start - 1);
 }
 
 esp_err_t get_info(httpd_req_t* req) {
@@ -490,6 +499,7 @@ esp_err_t register_handlers(httpd_handle_t server) {
     reg(server, "/api/v1/system/coredump", HTTP_GET, get_coredump);
     reg(server, "/api/v1/system/coredump", HTTP_DELETE, delete_coredump);
     reg(server, "/i18n.js", HTTP_GET, get_i18n);
+    reg(server, "/flags.js", HTTP_GET, get_flags);
     reg(server, "/api/v1/system/language", HTTP_GET, get_language);
     reg(server, "/api/v1/system/language", HTTP_POST, post_language);
     reg(server, "/api/v1/system/time", HTTP_GET, get_time);
