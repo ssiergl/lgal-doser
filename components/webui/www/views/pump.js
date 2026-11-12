@@ -242,7 +242,7 @@ function DoseCard({ p, pro, nowLocal }) {
       });
   };
   const stop = () => api('POST', '/api/v1/pumps/stop?pump=' + p.pump).then(refresh).catch(msg.err);
-  return html`<section class="card"><h2>${t('dose.title')}</h2>
+  return html`<section class=${'card' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('dose.title')}</h2>
     <form onSubmit=${dose}>
       <div class="form-row">
         <label>${t('dose.amount')}<${Amount} value=${ml} onInput=${setMl}/></label>
@@ -278,7 +278,7 @@ function PrimeHold({ p, msg }) {
 
 function PrimeCard({ p }) {
   const msg = useMsg();
-  return html`<section class="card"><h2>${t('prime.title')}</h2>
+  return html`<section class=${'card' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('prime.title')}</h2>
     <p class="mut small">${t('prime.hint')}</p>
     <${PrimeHold} p=${p} msg=${msg}/>
     ${msg.node}
@@ -364,7 +364,7 @@ function CalibCard({ p, pro }) {
       ${pro && html`<div class="form-row"><label>${t('cal.target')}<${Amount} value=${target} onInput=${setTarget} placeholder=${num(cal.target_ml, 2)}/></label></div>`}
       <button class="sec" onClick=${open} disabled=${p.activity !== 'idle' || p.mode === 'disabled'}>${t('cal.start')}</button>`;
   }
-  return html`<section class="card"><h2>${t('cal.title')}</h2>
+  return html`<section class=${'card' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('cal.title')}</h2>
     <p class=${cal.calibrated ? 'small' : 'small warn'}>${cal.calibrated
       ? t('cal.ok', { v: num(cal.ml_per_rev, 3) }) + (when ? ' ' + t('cal.when', { d: when }) : '') : t('cal.none')}</p>
     ${body}
@@ -461,8 +461,8 @@ function BoostCard({ p, sp, nowLocal, pro }) {
         <div class="row"><button type="submit" disabled=${busy || !ok}>${t('bo.start')}</button></div>
       </form>`;
   }
-  return html`<section class="card boost"><h2>${t('bo.title')}</h2>
-    ${!auto && html`<p class="small warn">${t((b ? 'bo.paused.' : 'bo.mode.') + p.mode)}</p>`}
+  return html`<section class=${'card boost' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('bo.title')}</h2>
+    ${!auto && html`<p class="small warn keep">${t((b ? 'bo.paused.' : 'bo.mode.') + p.mode)}</p>`}
     ${body}
     ${msg.node}
   </section>`;

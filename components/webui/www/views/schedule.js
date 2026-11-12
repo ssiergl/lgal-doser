@@ -504,8 +504,8 @@ export function ScheduleCard({ p, pro, nowLocal }) {
   const slots = !s || s.error ? []
     : pro && draft && today ? daySlots(draft, dayNum(today), grid)
       : s.today ? s.today.slots.map(x => ({ min: toMin(x.time), ul: ul(x.ml) })) : [];
-  return html`<section class="card sched"><h2>${t('sched.title')}</h2>
-    ${p.mode !== 'auto' && html`<p class="small warn">${t('sc.mode.' + p.mode)}</p>`}
+  return html`<section class=${'card sched' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('sched.title')}</h2>
+    ${p.mode !== 'auto' && html`<p class="small warn keep">${t('sc.mode.' + p.mode)}</p>`}
     ${!s ? html`<p class="mut">${t('sc.loading')}</p>`
       : s.error ? html`<p class="msg err">${errText(s.error)}</p>`
         : html`<${DayBar} slots=${slots} nowMin=${nowMin}/>

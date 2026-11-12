@@ -288,7 +288,10 @@ select.small { padding: 5px 8px; font-size: 13px; }
   border-top: 3px solid var(--pc); transition: transform .12s ease, border-color .12s ease;
 }
 .pump-card:hover { transform: translateY(-2px); }
-.pump-card.dim > * { opacity: .6; }  /* contents only: the card stays as see-through as the others */
+.pump-card.dim > * { opacity: .4; filter: grayscale(1); }  /* contents only: the card stays as see-through as the others */
+/* a card of a switched-off pump: everything but the title and its notice greyed out */
+.card.off > :not(h2, .keep) { opacity: .4; filter: grayscale(1); }
+.card.off button:disabled { opacity: 1; }  /* already greyed by the card */
 .pc-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .pc-head h2 { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .badge {
