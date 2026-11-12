@@ -5,35 +5,49 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LG Aquatic Life – Login</title>
 <link rel="icon" href="/ui/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/ui/style.css">
+<script>
+// colour theme as chosen in the web UI (otherwise the system setting)
+try{const t=localStorage.getItem('lgal.theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}
+</script>
 <style>
-:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);
- background:radial-gradient(circle at 50% 150px,#173a52 0,#11283a 170px,var(--bg) 420px) no-repeat,var(--bg)}
-main{position:relative;max-width:420px;margin:0 auto;padding:16px}
-h1{font-size:22px;margin:0}h2{font-size:16px;margin:0 0 10px}
-.hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin:34px 0 22px}
-.hero .logo{display:block;width:min(220px,56vw);height:auto;aspect-ratio:1;margin-bottom:18px;filter:drop-shadow(0 12px 36px rgba(0,0,0,.45))}
-.hero .dev{color:var(--mut);font-size:13px;margin-top:2px;min-height:1.3em}
-#lang{position:absolute;top:14px;right:16px}
-.card{background:var(--card);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
-button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:600}
-input{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:8px 10px;width:100%}
+/* Colours, cards, fields, buttons, the reef and the background logo come from the web UI
+   (/ui/style.css, public), so the sign-in looks like the pages behind it. */
+body{min-height:100vh;min-height:100dvh}
+.mark{--head-h:56px}
+@media (max-width:939px){  /* no bottom bar here: the reef sits on the bottom edge */
+ .reef,.bubbles{bottom:env(safe-area-inset-bottom)}
+ .mark{--reef-top:calc(env(safe-area-inset-bottom) + min(22vh,180px))}
+}
+/* the form floats in the middle of the logo: the same box between the language picker and the
+   reef that style.css gives the logo (.mark) */
+main{--gap-y:clamp(12px,4vh,40px);display:flex;flex-direction:column;justify-content:center;max-width:420px;
+ min-height:100vh;min-height:100dvh;margin:0 auto;padding:calc(56px + var(--gap-y)) 16px calc(min(30vh,240px) + var(--gap-y))}
+@media (max-width:939px){main{padding-bottom:calc(env(safe-area-inset-bottom) + min(22vh,180px) + var(--gap-y))}}
+/* only the cards are centred: the title hangs above them, otherwise it all looks a little too low */
+.box{position:relative;margin-bottom:-14px}  /* without the gap under the last card */
+.head{position:absolute;left:0;right:0;bottom:100%;margin-bottom:16px;text-align:center}
+.head .dev{color:var(--mut);font-size:13px;margin-top:2px;min-height:1.3em}
+.card{margin-bottom:14px}
+h2{margin:0 0 10px}
+label{display:block;font-size:13px;color:var(--mut);font-weight:600;margin:10px 0 6px}
+input{width:100%}
 input[readonly]{color:var(--mut);background:transparent}
-select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:5px 7px}
-label{display:block;font-size:13px;color:var(--mut);margin-top:8px}
 [hidden]{display:none!important}
-.row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.msg{min-height:1.3em;font-size:13px;margin-top:8px}.err{color:var(--err)}.ok{color:var(--ok)}
+.row{justify-content:flex-end;margin-top:14px}
+.msg:empty{display:none}
 .hint{font-size:13px;color:var(--mut);margin:0 0 6px}
+#lang{position:absolute;top:14px;right:16px;z-index:2}
 </style>
 <script src="/i18n.js"></script>
 </head>
 <body>
-<main>
 <select id="lang" data-i18n-title="lang.label"></select>
-<div class="hero"><img class="logo" src="/ui/logo.svg" alt="LG Aquatic Life" width="220" height="220" onerror="this.remove()">
-<h1 data-i18n="title"></h1><div class="dev" id="dev"></div></div>
+<div class="sea" aria-hidden="true"></div>
+<img class="mark" src="/ui/logo.svg" alt="" aria-hidden="true" onerror="this.remove()">
+<main>
+<div class="box">
+<div class="head"><h1 data-i18n="title"></h1><div class="dev" id="dev"></div></div>
 
 <section class="card" id="c_login" hidden>
 <p class="hint" id="l_hint"></p>
@@ -53,8 +67,12 @@ label{display:block;font-size:13px;color:var(--mut);margin-top:8px}
 <div class="row"><button data-i18n="rec.btn"></button></div></form>
 <div class="msg" id="r_msg"></div>
 </section>
-
+</div>
 </main>
+<script type="module">
+import { drawReef } from '/ui/lib/reef.js';
+drawReef(document.querySelector('.sea'));
+</script>
 <script>
 i18n.add({
 en:{
