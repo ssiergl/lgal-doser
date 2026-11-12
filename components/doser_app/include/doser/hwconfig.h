@@ -18,10 +18,13 @@ uint8_t board_mask();
 // Channel population: bit i = pump i+1 is fitted (driver, motor), only pumps
 // of the board. A pump that is not fitted is never probed, never doses and is
 // hidden in the UI and in Home Assistant. A change takes effect after a
-// restart.
+// restart. Until one is saved, and again after a factory reset, the factory
+// population applies (tools/provision.py --pumps, default: all pumps of the
+// board).
 uint8_t fitted_mask();          // as loaded at startup
 bool fitted(int pump);          // pump 0..kMaxPumps-1
 uint8_t stored_fitted_mask();   // saved, in effect after the next restart
+uint8_t factory_fitted_mask();  // factory population
 // At least one pump, none beyond the board; ESP_ERR_INVALID_ARG otherwise
 esp_err_t save_fitted(uint8_t mask);
 

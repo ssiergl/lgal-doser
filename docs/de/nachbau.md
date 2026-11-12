@@ -140,6 +140,9 @@ Engineering-Schlüssel ableitet. Dafür gibt es zwei Wege:
    python3 tools/provision.py -p /dev/cu.usbmodem*
    ```
 
+   Sind weniger Pumpen eingebaut, z. B. `--pumps 1,2,3` anhängen: Das Gerät startet dann mit
+   genau diesen Pumpen, auch nach einem Werksreset.
+
    Die Werte lassen sich später jederzeit aus der MAC-Adresse neu berechnen
    (`tools/ap_password.py <MAC> --engineering`).
 
@@ -180,8 +183,8 @@ Einzelheiten und Hintergründe: [technische Doku, Erstinbetriebnahme](technik.md
 2. **Einrichten** wie in der [Bedienungsanleitung](benutzer.md#3-ersteinrichtung) beschrieben.
 3. **Engineering-Menü öffnen:** in der Oberfläche 7× schnell auf die Firmware-Version im Fuß
    klicken und den Engineering-Schlüssel eingeben.
-4. **Bestückung** (Bereich A): Sind weniger als fünf Pumpen eingebaut, die fehlenden abwählen.
-   Das Gerät startet danach neu.
+4. **Bestückung** (Bereich A): Sind weniger als fünf Pumpen eingebaut und wurde ohne `--pumps`
+   provisioniert, die fehlenden abwählen. Das Gerät startet danach neu.
 5. **Treiber prüfen** (Bereich D): Alle bestückten Treiber müssen antworten, ohne Fehlerflags
    (Kurzschluss, Übertemperatur, offene Spule).
 6. **Pumpen einzeln fahren** (Bereich D, Raw-Test): ein paar Umdrehungen vorwärts. Läuft eine

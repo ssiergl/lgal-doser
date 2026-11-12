@@ -194,6 +194,11 @@ also öffentlich sein. Werksreset und OTA-Updates lassen `fctry` unangetastet.
    python3 tools/provision.py -p /dev/cu.usbmodem*
    ```
 
+   Sind weniger Pumpen eingebaut, als das Board hat, speichert `--pumps 1,2,3` zusätzlich die
+   Werks-Bestückung: die Pumpen, die bei Auslieferung und nach jedem Werksreset bestückt sind
+   (ohne Angabe: alle Pumpen des Boards). Erneutes Provisionieren (z. B. nach einem
+   Komplett-Flash) braucht dieselben Werte.
+
    **Geräte-Passwort aufs Etikett** (z. B. Aufkleber ins Gehäuse), den Engineering-Schlüssel
    nicht. Beides lässt sich jederzeit aus der MAC neu berechnen:
 
@@ -499,7 +504,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
 | POST | `/api/v1/engineering/reset?what=network` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s); den Werksreset gibt es nur in der Wartung mit Admin-Passwort |
-| GET | `/api/v1/hw/status` | Board (`id`, `model`, `pumps`), Treiber und Pumpen des Boards, RTC, EEPROM, UART-Statistik; Bestückung `fitted` (jetzt) und `fitted_next` (nach dem nächsten Neustart) |
+| GET | `/api/v1/hw/status` | Board (`id`, `model`, `pumps`), Treiber und Pumpen des Boards, RTC, EEPROM, UART-Statistik; Bestückung `fitted` (jetzt), `fitted_next` (nach dem nächsten Neustart) und `fitted_factory` (Werks-Bestückung, `provision.py --pumps`) |
 | POST | `/api/v1/hw/channels?pumps=1,2,3,4` | Bestückung speichern (mindestens eine Pumpe), wirkt nach einem Neustart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |
@@ -729,7 +734,7 @@ Eingabe.
 
 | Bereich | Inhalt |
 |---|---|
-| A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle bestückten Pumpen. Bestückung: welche Pumpen eingebaut sind (mindestens eine); eine nicht bestückte Pumpe wird nie angesprochen (keine Treiber-Abfrage, kein Zeitplan, kein Alarm, Dosieren → 409 `pump_not_fitted`) und ist in der Weboberfläche und in Home Assistant ausgeblendet, ihre Einstellungen bleiben erhalten. Wirkt nach einem Neustart (Speichern startet das Gerät neu). |
+| A · Mechanik | Dosier-Physik für alle Pumpen: Rückzug „Standard“, Kalibrier-Zielmenge, drei Geschwindigkeitsstufen (U/min mit ml/min und Schritten/s). Treiber pro Pumpe: Lauf- und Haltestrom, Mikroschritte, Vollschritte/U, Beschleunigung, Startgeschwindigkeit, Drehrichtung; wahlweise für alle bestückten Pumpen. Bestückung: welche Pumpen eingebaut sind (mindestens eine; bei Auslieferung und nach einem Werksreset die Werks-Bestückung aus `provision.py --pumps`, sonst alle Pumpen des Boards); eine nicht bestückte Pumpe wird nie angesprochen (keine Treiber-Abfrage, kein Zeitplan, kein Alarm, Dosieren → 409 `pump_not_fitted`) und ist in der Weboberfläche und in Home Assistant ausgeblendet, ihre Einstellungen bleiben erhalten. Wirkt nach einem Neustart (Speichern startet das Gerät neu). |
 | B · Grenzen | Entlüften max. Dauer und Totmann-Timeout, kleinste Einzeldosis, Fenster des Tageslimits, Zeitplan-Raster, max. Verzögerung einer geplanten Dosis. |
 | C · Wartung | Schlauch-Lebensdauer, Betriebsstunden pro Pumpe setzen/zurücksetzen. DS3231-Temperatur, Aging-Offset: mit Zeitserver automatischer Abgleich (Messung seit, Abweichung jetzt, letzte Korrektur), ohne Zeitserver Eingabe von Hand, Hinweis bei leerer Pufferbatterie. Verlauf: aufgezeichnete Tage und Größe, verlorene Ereignisse, Aufbewahrungszeit (1–60 Tage). |
 | D · Diagnose | Raw-Stepper-Test (Schritte vor/zurück, Frequenz, Stopp/Sofort-Stopp, Live-Position und StallGuard; an Behälter, Zeitplan und Verlauf vorbei). Treiberdiagnose: Statusflags (Kurzschluss, Übertemperatur, offene Spule, Stillstand, StealthChop, Stromstufe) und TMC2209-Rohregister. Systemtelemetrie inkl. UART-Statistik und EEPROM-Selbsttest. Gefahrenzone: Verlauf löschen, Netzwerk zurücksetzen (den Werksreset gibt es in der Wartung). |
