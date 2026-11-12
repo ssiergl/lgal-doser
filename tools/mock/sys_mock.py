@@ -76,9 +76,11 @@ def info_json():
 IPRE = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
 
 # URL update: a ".bin" address downloads 1.6 MB in 6 s and restarts, anything else gets HTTP 404 after 2 s
-OTA = {"allow_http": False, "auto_check": True, "source": "https://github.com/example/lgal-doser/releases/latest/download/manifest.json",
+OTA_FACTORY = "https://github.com/example/lgal-doser/releases/latest/download/manifest.json"
+OTA = {"allow_http": False, "auto_check": True, "source": OTA_FACTORY, "beta": False,
        "t0": 0, "url": "", "http": False, "rebooted": False, "new_version": "0.5.1-dev"}
-# Update source: release 0.6.0, last checked 3 h ago; a check takes 2 s, a source not ending in ".json" fails
+# Update source: release 0.6.0 (beta channel: 0.7.0-rc.1), last checked 3 h ago; a check takes 2 s,
+# a source not ending in ".json" fails. The channel can be chosen while the source is the factory one.
 REL = {"latest": "0.6.0", "checked_at": time.time() - 3 * 3600, "checking_until": 0, "error": None}
 
 def ver_key(v):
@@ -86,14 +88,21 @@ def ver_key(v):
     if not m: return None
     return (int(m[1]), int(m[2]), int(m[3]), 0 if m[4] else 1, m[4] or "")
 
+def ota_channel():
+    return ("beta" if OTA["beta"] else "stable") if OTA["source"] == OTA_FACTORY else None
+
+def ota_settings():
+    return {"source": OTA["source"], "channel": ota_channel(), "auto_check": OTA["auto_check"], "allow_http": OTA["allow_http"]}
+
 def rel_json():
     now = time.time()
     checking = now < REL["checking_until"]
     if REL["checking_until"] and not checking and REL["checked_at"] < REL["checking_until"]:  # check finished
         REL["checked_at"] = REL["checking_until"]
         REL["error"] = None if OTA["source"].endswith(".json") else ("http_status", "HTTP 404")
+    REL["latest"] = "0.7.0-rc.1" if ota_channel() == "beta" else "0.6.0"
     cur, latest = ver_key(SYS["version"]), ver_key(REL["latest"])
-    j = {"source": bool(OTA["source"]), "board": "d5v1", "variant": "N16R8", "current": SYS["version"], "auto_check": OTA["auto_check"],
+    j = {"source": bool(OTA["source"]), "channel": ota_channel(), "board": "d5v1", "variant": "N16R8", "current": SYS["version"], "auto_check": OTA["auto_check"],
          "checking": checking, "checked_at": int(REL["checked_at"]) if REL["checked_at"] else None,
          "latest": REL["latest"] if REL["checked_at"] else None,
          "available": bool(REL["checked_at"] and cur and latest and latest > cur)}
@@ -222,10 +231,17 @@ def route(h, method, path, q, body):
                     err(h, 400, "invalid_url", "source"); return True
                 if src != OTA["source"]:
                     REL.update(checked_at=0, error=None, checking_until=time.time() + 2 if src else 0)
+                    OTA["beta"] = False
                 OTA["source"] = src
+            if "channel" in body:
+                if body["channel"] not in ("stable", "beta"): err(h, 400, "invalid_param", "channel"); return True
+                if not ota_channel(): err(h, 409, "no_channel", "No channel to choose (own update source)"); return True
+                if (body["channel"] == "beta") != OTA["beta"]:
+                    OTA["beta"] = body["channel"] == "beta"
+                    REL.update(checked_at=0, error=None, checking_until=time.time() + 2)
             for k in ("auto_check", "allow_http"):
                 if k in body: OTA[k] = body[k]
-        h.send(200, {k: OTA[k] for k in ("source", "auto_check", "allow_http")}); return True
+        h.send(200, ota_settings()); return True
     if path == "/api/v1/ota/release" and method == "GET": h.send(200, rel_json()); return True
     if path == "/api/v1/ota/release/check" and method == "POST":
         if not OTA["source"]: err(h, 400, "no_source", "No update source set"); return True

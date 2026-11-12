@@ -64,6 +64,8 @@ mock; the test on the finished hardware is still pending.
   replayed after a lost connection.
 - History up to 60 days with CSV export.
 - Backup of the schedule per pump and of the whole device (engineering).
+- Update channel stable or beta (release candidates, pro view, with a warning); the release
+  workflow keeps the beta manifest in the pre-release `channel-beta`.
 - Updates by file, from a fixed update source (release manifest) or from a URL; rollback on a
   failed start; update entity for Home Assistant. A device only accepts firmware for its own
   board and module variant.

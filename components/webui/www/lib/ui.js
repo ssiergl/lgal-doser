@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from './html.js';
 import { hub } from './hub.js';
 import { add, errText, t } from './i18n.js';
+import { Ic } from './pumps.js';
 
 add({
   en: { 'ui.save': 'Save', 'ui.discard': 'Discard', 'ui.unsaved': 'Unsaved changes', 'ui.ok': 'Confirm', 'ui.cancel': 'Cancel' },
@@ -92,14 +93,16 @@ export function HoldButton({ label, activeLabel, onStart, onBeat, onStop, every 
     ${held ? activeLabel : label}</button>`;
 }
 
-// Confirmation dialog in place of window.confirm(): ask(text, {ok, danger})
-// resolves true or false. <DialogHost/> renders it once for the whole app.
+// Confirmation dialog in place of window.confirm(): ask(text, {ok, danger,
+// title, warn, points}) resolves true or false. Optional: a title, the text
+// as a highlighted warning, and a list of points below it. <DialogHost/>
+// renders it once for the whole app.
 const dialogs = hub();
-let asking = null;   // {text, ok, danger, resolve}
+let asking = null;   // {text, ok, danger, title, warn, points, resolve}
 
-export function ask(text, { ok, danger = false } = {}) {
+export function ask(text, { ok, danger = false, title = '', warn = false, points = null } = {}) {
   if (asking) asking.resolve(false);
-  return new Promise(resolve => { asking = { text, ok, danger, resolve }; dialogs.emit(); });
+  return new Promise(resolve => { asking = { text, ok, danger, title, warn, points, resolve }; dialogs.emit(); });
 }
 
 function answer(v) {
@@ -125,8 +128,11 @@ export function DialogHost() {
   if (!a) return null;
   // a dangerous action starts focused on "cancel", so Enter cannot trigger it by accident
   return html`<div class="overlay" onClick=${e => { if (e.target === e.currentTarget) answer(false); }}>
-    <section class="card dialog ask" role="alertdialog" aria-modal="true" aria-describedby="ask-text">
-      <p id="ask-text">${a.text}</p>
+    <section class="card dialog ask" role="alertdialog" aria-modal="true" aria-describedby="ask-text"
+      aria-labelledby=${a.title ? 'ask-title' : null}>
+      ${a.title && html`<h2 id="ask-title">${a.title}</h2>`}
+      <p id="ask-text" class=${a.warn ? 'ask-warn' : ''}>${a.warn && html`<${Ic} n="warn"/>`}<span>${a.text}</span></p>
+      ${a.points && html`<ul class="ask-points">${a.points.map(x => html`<li>${x}</li>`)}</ul>`}
       <div class="row end">
         <button type="button" class="sec" ref=${a.danger ? first : null} onClick=${() => answer(false)}>${t('ui.cancel')}</button>
         <button type="button" class=${a.danger ? 'danger' : ''} ref=${a.danger ? null : first} onClick=${() => answer(true)}>${a.ok || t('ui.ok')}</button>

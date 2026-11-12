@@ -61,7 +61,10 @@ std::function<void()> s_change;
 
 // Update source and the last check (s_rel_mux)
 std::mutex s_rel_mux;
-std::string s_source;
+std::string s_source;  // as set; the beta channel replaces only the factory source
+bool s_beta = false;
+constexpr const char* kFactorySource = CONFIG_LGAL_OTA_SOURCE;
+constexpr const char* kBetaSource = CONFIG_LGAL_OTA_SOURCE_BETA;
 ReleaseInfo s_rel;
 char s_rel_detail[64] = "";
 std::atomic<int64_t> s_next_check_us{0};  // esp_timer time of the next automatic check
@@ -511,9 +514,15 @@ const char* spawn_failed() {
 
 // --- update source ---------------------------------------------------------------
 
+// The channel can be chosen while the source is the factory one
+bool channel_choice(const std::string& source) { return kBetaSource[0] && !source.empty() && source == kFactorySource; }
+std::string effective_source(const std::string& source, bool beta) {
+    return beta && channel_choice(source) ? std::string(kBetaSource) : source;
+}
+
 std::string source_url() {
     std::lock_guard<std::mutex> l(s_rel_mux);
-    return s_source;
+    return effective_source(s_source, s_beta);
 }
 
 // Variant of this build ("N16R8"): the partition table belongs to the flash size
@@ -568,7 +577,7 @@ void store_check(const std::string& url, const char* code, const char* detail, c
     {
         std::lock_guard<std::mutex> l(s_rel_mux);
         s_rel.checking = false;
-        stale = url != s_source;  // the source changed meanwhile: the result does not apply
+        stale = url != effective_source(s_source, s_beta);  // the source changed meanwhile: the result does not apply
         if (!stale) {
             s_rel.checked = true;
             s_rel.checked_at = now > 1700000000 ? int64_t(now) : 0;
@@ -659,7 +668,10 @@ void write_release(Json& j) {
         detail = s_rel_detail;
         source = !s_source.empty();
     }
-    j.obj().kv("source", source).kv("board", LGAL_BOARD_ID).kv("variant", variant() ? variant() : "");
+    j.obj().kv("source", source);
+    if (const char* c = channel()) j.kv("channel", c);
+    else j.null("channel");
+    j.kv("board", LGAL_BOARD_ID).kv("variant", variant() ? variant() : "");
     j.kv("current", running_version());
     j.kv("auto_check", s_auto_check.load()).kv("checking", r.checking);
     if (r.checked && r.checked_at) j.kv("checked_at", r.checked_at);
@@ -675,12 +687,14 @@ void write_release(Json& j) {
 // --- settings --------------------------------------------------------------------
 
 void load_settings() {
-    std::string src = CONFIG_LGAL_OTA_SOURCE;
+    std::string src = kFactorySource;
+    bool beta = false;
     nvs_handle_t h;
     if (nvs_open(kNs, NVS_READONLY, &h) == ESP_OK) {
         uint8_t v = 0;
         if (nvs_get_u8(h, "http", &v) == ESP_OK) s_allow_http = v != 0;
         if (nvs_get_u8(h, "auto", &v) == ESP_OK) s_auto_check = v != 0;
+        if (nvs_get_u8(h, "beta", &v) == ESP_OK) beta = v != 0;
         char buf[kMaxUrl + 1];
         size_t len = sizeof(buf);
         if (nvs_get_str(h, "src", buf, &len) == ESP_OK) src = buf;  // also "" = removed
@@ -688,6 +702,7 @@ void load_settings() {
     }
     std::lock_guard<std::mutex> l(s_rel_mux);
     s_source = src;
+    s_beta = beta;
 }
 
 esp_err_t save_settings(const Settings& s) {
@@ -696,6 +711,7 @@ esp_err_t save_settings(const Settings& s) {
     if (err != ESP_OK) return err;
     err = nvs_set_u8(h, "http", s.allow_http);
     if (err == ESP_OK) err = nvs_set_u8(h, "auto", s.auto_check);
+    if (err == ESP_OK) err = nvs_set_u8(h, "beta", s.beta);
     if (err == ESP_OK) err = nvs_set_str(h, "src", s.source.c_str());
     if (err == ESP_OK) err = nvs_commit(h);
     nvs_close(h);
@@ -703,19 +719,23 @@ esp_err_t save_settings(const Settings& s) {
     s_allow_http = s.allow_http;
     s_auto_check = s.auto_check;
     std::lock_guard<std::mutex> l(s_rel_mux);
-    if (s.source != s_source) {  // results of the old source no longer apply
+    if (effective_source(s.source, s.beta) != effective_source(s_source, s_beta)) {  // results of the old source no longer apply
         const bool checking = s_rel.checking;
         s_rel = ReleaseInfo{};
         s_rel.checking = checking;
         s_rel_detail[0] = 0;
     }
     s_source = s.source;
+    s_beta = s.beta;
     return ESP_OK;
 }
 
 void write_settings(Json& j) {
     const Settings s = settings();
-    j.obj().kv("source", s.source).kv("auto_check", s.auto_check).kv("allow_http", s.allow_http).end();
+    j.obj().kv("source", s.source);
+    if (const char* c = channel()) j.kv("channel", c);
+    else j.null("channel");
+    j.kv("auto_check", s.auto_check).kv("allow_http", s.allow_http).end();
 }
 
 esp_err_t get_settings(httpd_req_t* req) {
@@ -732,24 +752,34 @@ esp_err_t put_settings(httpd_req_t* req) {
     JsonToken tok[12];
     if (!http::read_json(req, kMaxUrl + 128, &body, &doc, tok, 12)) return ESP_OK;
     const JsonValue root = doc.root();
-    const JsonValue vs = root["source"], va = root["auto_check"], vh = root["allow_http"];
+    const JsonValue vs = root["source"], va = root["auto_check"], vh = root["allow_http"], vc = root["channel"];
     // where firmware may come from is up to the manufacturer
     if ((vs.valid() || vh.valid()) && !http::authorize_engineering(req)) return ESP_OK;
     Settings s = settings();
-    const std::string old_source = s.source;
+    const std::string old_source = effective_source(s.source, s.beta);
     if (vs.valid()) {
         char url[kMaxUrl + 2] = "";
         if (!vs.get(url, sizeof(url)) || (url[0] && check_url(url, true)))
             return http::send_error(req, "400 Bad Request", "invalid_url", "source");
+        if (s.source != url) s.beta = false;  // a new source starts on its stable channel
         s.source = url;
     }
     if (va.valid() && !va.get(&s.auto_check)) return http::send_error(req, "400 Bad Request", "invalid_param", "auto_check");
     if (vh.valid() && !vh.get(&s.allow_http)) return http::send_error(req, "400 Bad Request", "invalid_param", "allow_http");
+    if (vc.valid()) {  // the admin's choice (pro view, with a warning)
+        char c[8] = "";
+        if (!vc.get(c, sizeof(c)) || (std::strcmp(c, "stable") && std::strcmp(c, "beta")))
+            return http::send_error(req, "400 Bad Request", "invalid_param", "channel");
+        if (!channel_choice(s.source)) return http::send_error(req, "409 Conflict", "no_channel", "No channel to choose (own update source)");
+        s.beta = !std::strcmp(c, "beta");
+    }
+    const std::string new_source = effective_source(s.source, s.beta);
     if (s.allow_http && !s_allow_http) ESP_LOGW(TAG, "plain http allowed for firmware updates");
     if (save_settings(s) != ESP_OK) return http::send_error(req, "500 Internal Server Error", "storage_failed", "Could not save");
-    if (s.source != old_source) {
-        ESP_LOGW(TAG, "Update source %s", s.source.empty() ? "removed" : "changed");
-        if (!s.source.empty()) start_check();
+    if (new_source != old_source) {
+        if (vc.valid() && !vs.valid()) ESP_LOGW(TAG, "Update channel %s", s.beta ? "beta" : "stable");
+        else ESP_LOGW(TAG, "Update source %s", new_source.empty() ? "removed" : "changed");
+        if (!new_source.empty()) start_check();
     }
     Json j;
     write_settings(j);
@@ -842,7 +872,13 @@ Settings settings() {
     s.auto_check = s_auto_check;
     std::lock_guard<std::mutex> l(s_rel_mux);
     s.source = s_source;
+    s.beta = s_beta;
     return s;
+}
+
+const char* channel() {
+    std::lock_guard<std::mutex> l(s_rel_mux);
+    return channel_choice(s_source) ? (s_beta ? "beta" : "stable") : nullptr;
 }
 
 Status status() {

@@ -262,6 +262,12 @@ Settings → **Maintenance**:
 - **Updates:** if an update source is set up, the card shows the installed and the newest
   version, checks daily if you like and installs at the press of a button. Nothing is ever
   installed without an order.
+- **Update channel** (pro view only): **Stable** gets releases only. **Beta** also offers
+  release candidates – versions before a release that are not fully tested yet and may contain
+  bugs that lead to wrong doses. Only switch to beta if you want to test and know what you are
+  letting yourself in for, and test the water more often after an update. Back on stable the
+  device keeps the release candidate until a newer release is out; to go back at once, upload
+  the release file.
 - **Upload a firmware file:** a `.bin` file matching the module of the device.
 - During an update and while a pump runs, the update is locked or the pumps stand still. If the
   new firmware does not start cleanly, the device **returns to the old version by itself**; the

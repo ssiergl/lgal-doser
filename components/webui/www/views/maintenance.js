@@ -9,7 +9,7 @@ import { html } from '../lib/html.js';
 import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { hourCycle, usePrefs } from '../lib/prefs.js';
 import { reloadInfo, useStore } from '../lib/store.js';
-import { ask, Toggle, useMsg } from '../lib/ui.js';
+import { ask, Seg, Toggle, useMsg } from '../lib/ui.js';
 
 add({
   en: {
@@ -59,6 +59,18 @@ add({
     'mt.opt.http.on': 'http is allowed: firmware downloads over http are not protected against tampering. Switch it off again when you do not need it.',
     'mt.opt.http.ask': 'Allow firmware downloads over unencrypted http? Anyone in the network path could swap the firmware. Only do this if you know why.',
     'mt.opt.saved': 'Saved.',
+    'mt.ch': 'Update channel', 'mt.ch.stable': 'Stable', 'mt.ch.beta': 'Beta',
+    'mt.ch.h': 'Stable: releases only. Beta: release candidates as well – for testers only.',
+    'mt.ch.on': 'Beta channel: release candidates may contain bugs that lead to wrong doses. Test the water more often after an update.',
+    'mt.ch.ask.t': 'Switch to the beta channel?',
+    'mt.ch.ask': 'Release candidates are not fully tested yet and may contain bugs that lead to wrong doses.',
+    'mt.ch.ask.1': 'Only for testers who know what they are letting themselves in for.',
+    'mt.ch.ask.2': 'Nothing is ever installed by itself – every update is started by hand.',
+    'mt.ch.ask.3': 'Test the water more often after an update.',
+    'mt.ch.ask.4': 'Back to stable does not install an older version: the device keeps the release candidate until a newer release is out.',
+    'mt.ch.ok': 'Switch to beta',
+    'mt.ch.pre': 'A release candidate is installed. It stays until a newer release is out; to go back at once, install the release file under "Firmware update".',
+    'err.no_channel': 'This update source has no channel to choose',
     'err.no_source': 'No update source set', 'err.no_update': 'No newer version available',
     'err.sha256_mismatch': 'The downloaded file does not match the release (SHA-256) – discarded',
     'err.manifest_invalid': 'The update source sent an invalid release list', 'err.invalid_version': 'The release list has an invalid version',
@@ -255,8 +267,9 @@ function useDownload(msg) {
 }
 
 // Maintenance (all modes, only with an update source): last check, check now,
-// install the newer release, daily check on/off
-function ReleaseCard({ rel, setRel, busyPumps }) {
+// install the newer release, daily check on/off; pro view: update channel
+// (beta only after a warning). The beta notice shows in every view.
+function ReleaseCard({ rel, setRel, busyPumps, pro }) {
   const msg = useMsg();
   const dl = useDownload(msg);
   const watch = () => api('GET', '/api/v1/ota/release').then(j => { setRel(j); if (j.checking) setTimeout(watch, 1000); })
@@ -272,11 +285,22 @@ function ReleaseCard({ rel, setRel, busyPumps }) {
   };
   const auto = on => api('PUT', '/api/v1/ota/settings', { auto_check: on })
     .then(j => setRel({ ...rel, auto_check: j.auto_check })).catch(e => msg.err(e));
+  const channel = async c => {
+    if (c === 'beta' && !(await ask(t('mt.ch.ask'), {
+      title: t('mt.ch.ask.t'), warn: true, points: [1, 2, 3, 4].map(i => t('mt.ch.ask.' + i)), ok: t('mt.ch.ok'), danger: true,
+    }))) return;
+    msg.clear();
+    api('PUT', '/api/v1/ota/settings', { channel: c })
+      .then(j => { setRel({ ...rel, channel: j.channel, latest: null, available: false, notes: null, error: null, checking: true }); setTimeout(watch, 700); })
+      .catch(e => msg.err(e));
+  };
+  const pre = rel.current.includes('-');  // a release candidate is running
   const at = rel.checked_at ? new Date(rel.checked_at * 1000).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short', ...hourCycle() }) : null;
   const busy = dl.busy || rel.checking;
   return html`<section class="card">
     <div class="row between"><h2>${t('mt.rel')}</h2>
-      ${rel.latest && html`<span class=${'chip ' + (rel.available ? 'acc' : 'ok')}>${rel.available ? t('mt.rel.avail', { v: rel.latest }) : t('mt.rel.ok')}</span>`}</div>
+      <span class="row">${rel.channel === 'beta' && html`<span class="chip warn">${t('mt.ch.beta')}</span>`}
+      ${rel.latest && html`<span class=${'chip ' + (rel.available ? 'acc' : 'ok')}>${rel.available ? t('mt.rel.avail', { v: rel.latest }) : t('mt.rel.ok')}</span>`}</span></div>
     <p class="small mut">${t('mt.rel.hint')}</p>
     <dl class="stats">
       <dt>${t('mt.rel.cur')}</dt><dd>${rel.current}</dd>
@@ -284,9 +308,15 @@ function ReleaseCard({ rel, setRel, busyPumps }) {
         ${rel.notes && !rel.checking && html` · <a href=${rel.notes} target="_blank" rel="noopener noreferrer">${t('mt.rel.notes')}</a>`}</dd>
       ${at && html`<dt>${t('mt.rel.at')}</dt><dd>${at}</dd>`}
     </dl>
+    ${rel.channel === 'beta' && html`<p class="small warn">${t('mt.ch.on')}</p>`}
+    ${rel.channel === 'stable' && pre && !rel.available && html`<p class="small mut">${t('mt.ch.pre')}</p>`}
     ${rel.error && !rel.checking && html`<p class="small err">${t('mt.rel.failed', { e: errText({ code: rel.error }) })}${rel.detail ? ' (' + rel.detail + ')' : ''}</p>`}
     <${Toggle} checked=${rel.auto_check} onChange=${auto}>
       <span>${t('mt.rel.auto')}<br/><span class="small mut">${t('mt.rel.auto.h')}</span></span><//>
+    ${pro && rel.channel && html`<div class="field"><span class="lbl">${t('mt.ch')}</span>
+      <${Seg} value=${rel.channel} disabled=${busy} onChange=${channel}
+        options=${[['stable', t('mt.ch.stable')], ['beta', t('mt.ch.beta')]]}/>
+      <span class="small mut">${t('mt.ch.h')}</span></div>`}
     ${rel.available && busyPumps && !dl.busy && html`<p class="small warn">${t('mt.busy')}</p>`}
     ${dl.node}
     <div class="row savebar">
@@ -458,7 +488,7 @@ export function MaintenanceView() {
     ${pro && http && html`<p class="banner warn">${t('mt.opt.http.on')}</p>`}
     ${!info ? html`<p class="mut">…</p>` : html`<div class="grid settings">
       <${InfoCard} info=${info} pro=${pro}/>
-      ${rel && rel.source && html`<${ReleaseCard} rel=${rel} setRel=${setRel} busyPumps=${busyPumps}/>`}
+      ${rel && rel.source && html`<${ReleaseCard} rel=${rel} setRel=${setRel} busyPumps=${busyPumps} pro=${pro}/>`}
       <${UpdateCard} busyPumps=${busyPumps}/>
       <${RestartCard}/>
       <${FactoryCard}/>
