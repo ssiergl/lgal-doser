@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from './lib/html.js';
 import { add, initLang, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
+import { drawReef } from './lib/reef.js';
 import { start, useStore } from './lib/store.js';
 import { DialogHost } from './lib/ui.js';
 import { Dashboard } from './views/dashboard.js';
@@ -137,4 +138,5 @@ lockForeignUnlock();
 start();
 const root = document.getElementById('app');
 root.textContent = '';  // boot placeholder
+drawReef(document.querySelector('.sea'));
 render(html`<${App}/>`, root);
