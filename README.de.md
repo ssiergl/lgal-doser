@@ -123,5 +123,9 @@ Aquarium, Einrichtung oder anderen Gegenständen.
 - Hardware (Gehäuse, Schaltplan, Platine, Gerber): **CC BY-NC-SA 4.0**, siehe
   [LICENSE-hardware.md](LICENSE-hardware.md). Kommerzielle Nutzung nur mit schriftlicher
   Erlaubnis.
+- Name und Logo von LG Aquatic Life: Sie fallen nicht unter diese Lizenzen, siehe
+  [TRADEMARKS.md](TRADEMARKS.md) (englisch). Kurz: In unveränderten Kopien, Forks und selbst
+  gebauten Geräten darf das Logo bleiben; wer eine geänderte Fassung weitergibt, ersetzt das
+  Logo und verwendet einen eigenen Namen.
 
 Copyright © 2026 Lars Greiss / LG Aquatic Life
