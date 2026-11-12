@@ -272,6 +272,12 @@ Einstellungen → **Wartung**:
 - **Updates:** Ist eine Update-Quelle eingerichtet, zeigt die Karte die installierte und die
   neueste Version, prüft auf Wunsch täglich und installiert per Knopfdruck. Installiert wird
   nie ohne Auftrag.
+- **Update-Kanal** (nur Profi-Ansicht): **Stabil** bekommt nur fertige Versionen. **Beta**
+  bietet auch Vorabversionen an – Versionen vor einem Release, die noch nicht vollständig
+  getestet sind und Fehler enthalten können, die zu Fehldosierungen führen. Nur auf Beta
+  wechseln, wer testen will und weiß, worauf er sich einlässt, und nach einem Update die
+  Wasserwerte öfter messen. Zurück auf Stabil behält das Gerät die Vorabversion, bis eine neuere
+  fertige Version erscheint; wer sofort zurück will, lädt die Datei der fertigen Version hoch.
 - **Firmware-Datei hochladen:** eine `.bin`-Datei passend zum Modul des Geräts.
 - Während eines Updates und solange eine Pumpe läuft, ist das Update gesperrt bzw. die Pumpen
   stehen. Startet die neue Firmware nicht sauber, kehrt das Gerät **von selbst zur alten

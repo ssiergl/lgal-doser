@@ -17,7 +17,7 @@ components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitpla
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL, siehe TRADEMARKS.md)
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
@@ -163,6 +163,13 @@ der Workflow braucht deshalb keine Repository-Secrets. Tags mit
 Vorabversion (`v1.0.0-rc.1`) werden Vorab-Releases, die `releases/latest` überspringt.
 Als Update-Quelle der Geräte dient dann
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`.
+
+Für den [Beta-Kanal](#ota-update) aktualisiert jedes Release zusätzlich das Vorab-Release
+`channel-beta` (beim ersten Release angelegt): Es enthält nur eine `manifest.json`, die die
+neueste Version nennt, Vorabversion oder fertige Version, mit absoluten Adressen in das Release
+dieser Version (`tools/channel_manifest.py`). Ein älteres Release, z. B. ein Hotfix, während eine
+neuere Vorabversion draußen ist, lässt es unverändert. Geräte im Beta-Kanal lesen
+`https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json`.
 
 `.github/workflows/ci.yml` führt bei jedem Push auf `main` und jedem Pull Request die
 Host-Tests unter beiden Sanitizern, einen kurzen Fuzz-Lauf und den Build aller drei
@@ -365,7 +372,7 @@ nicht, `idf.py build` reicht.
 | Netzwerk | In den Einstellungen: Status (aktive Schnittstelle, LAN- und WLAN-Adresse, Signal, Setup-WLAN, Countdown bis zum WLAN-Ersatz) für alle. Nur Profi: Schnittstelle (automatisch / nur LAN / nur WLAN), DHCP oder feste Adressen je Schnittstelle (vorbelegt mit den aktuellen), WLAN-Suche, Passwort, Verbindungstest und Speichern; ändert sich die feste LAN-Adresse, nennt die Seite die neue. |
 | MQTT | In den Einstellungen: Verbindungsstatus mit letztem Fehler (Hostname, nicht erreichbar, TLS, Anmeldung) für alle. Nur Profi: Broker und Port, Verschlüsselung (keine / TLS mit öffentlichem Zertifikat / TLS mit eigenem CA-Zertifikat inkl. Hochladen, Ersetzen, Entfernen), Benutzer und Passwort, Basis-Topic, Home-Assistant-Erkennung mit Präfix, „Steuerung über MQTT erlauben“ mit Warnhinweis und die Liste der Topics. Siehe [MQTT / Home Assistant](#mqtt--home-assistant-m6). |
 | Anmeldung | In den Einstellungen: Passwort ändern (bzw. erstmals festlegen) und Abmelden für alle; API-Schlüssel (Liste, erzeugen mit einmaliger Anzeige und Kopieren, löschen) nur in Profi. `/login` bleibt für Anmeldung und Passwort vergessen. |
-| Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; nur mit [Update-Quelle](#ota-update) die Karte „Updates“: installierte und verfügbare Version (Badge „Aktuell“ / „Neu: x.y.z“), Zeit der letzten Prüfung, Link „Was ist neu“, „Nach Updates suchen“, „x.y.z installieren“ mit Rückfrage und Fortschritt, Schalter „Täglich prüfen“; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage; Werkseinstellungen mit erneuter Eingabe des Admin-Passworts; Lizenzen (GPLv3 und Fremdsoftware). Nur Profi: Warnung, solange http für Updates erlaubt ist, Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
+| Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; nur mit [Update-Quelle](#ota-update) die Karte „Updates“: installierte und verfügbare Version (Badge „Aktuell“ / „Neu: x.y.z“), Zeit der letzten Prüfung, Link „Was ist neu“, „Nach Updates suchen“, „x.y.z installieren“ mit Rückfrage und Fortschritt, Schalter „Täglich prüfen“, nur Profi: Update-Kanal Stabil/Beta (Beta mit Warnung, danach Badge „Beta“ und Hinweis in jeder Ansicht); Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage; Werkseinstellungen mit erneuter Eingabe des Admin-Passworts; Lizenzen (GPLv3 und Fremdsoftware). Nur Profi: Warnung, solange http für Updates erlaubt ist, Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk- und MQTT-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Gerät | In den Einstellungen: Gerätename (bis 32 Bytes, z. B. „Riffbecken“) für Kopfzeile, Home Assistant und mDNS-Dienst. Der Hostname folgt daraus (Kleinbuchstaben, Umlaute als ae/oe/ue/ss, sonst „-“, z. B. `riffbecken.local`); nur Profi: eigener Hostname (a–z, 0–9, „-“, bis 32 Zeichen). Ohne Namen bleibt `lgal-doser-xxxx`. mDNS übernimmt den Namen sofort, der Router nach der nächsten Adressvergabe. MQTT-Topics und Home-Assistant-IDs bleiben, bis man in der MQTT-Karte „Topics auf den Gerätenamen umziehen“ drückt. |
@@ -432,6 +439,14 @@ SHA-256 und optional Größe:
   Angeboten wird nur eine neuere Version als die laufende.
 - **Automatisch prüfen** (ab Werk an): etwa 10 min nach dem Start, danach täglich, nach einem
   Fehler stündlich. Das meldet nur – installiert wird nie ohne Auftrag.
+- **Kanal:** Solange die Quelle die ab Werk ist, wählt der Admin in der Profi-Ansicht unter
+  Wartung → Updates zwischen **Stabil** (ab Werk) und **Beta**: Das Manifest des Beta-Kanals
+  (`CONFIG_LGAL_OTA_SOURCE_BETA`, siehe [Release](#release)) bietet auch Vorabversionen an. Der
+  Wechsel auf Beta braucht eine Bestätigung mit Warnung; solange Beta an ist, zeigt die Karte
+  in jeder Ansicht ein Badge „Beta“ und eine Warnung. Zurück auf Stabil spielt nie eine ältere
+  Version ein: Das Gerät behält die Vorabversion, bis eine neuere fertige Version erscheint
+  (oder deren Datei hochgeladen wird). Eine eigene Quelle aus dem Engineering-Menü hat keinen
+  Kanal; wird eine gesetzt, springt der Kanal auf Stabil zurück.
 - Installieren lädt das Manifest noch einmal, dann die Datei des eigenen Boards und der eigenen Variante; stimmen
   SHA-256 oder Größe nicht, wird das Image verworfen, bevor es aktiv wird. Sonst wie beim Upload
   (gesperrt, solange eine Pumpe läuft; Rollback-Schutz).
@@ -501,12 +516,12 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
 | POST | `/api/v1/system/factory_reset` | `{"password":"…"}` – Werksreset mit Neustart; nur mit Browser-Sitzung (kein API-Key) und Admin-Passwort, Fehlversuche zählen wie beim Login (403 `wrong_password`, 429 `too_many_attempts`) |
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
-| GET | `/api/v1/ota/release` | letzte Prüfung der Update-Quelle: `{"source","board","variant","current","auto_check","checking","checked_at"(null = noch nicht / Uhr unbekannt),"latest"(null = unbekannt),"available","notes"?,"error"?,"detail"?}` |
+| GET | `/api/v1/ota/release` | letzte Prüfung der Update-Quelle: `{"source","channel"(null = keine Wahl),"board","variant","current","auto_check","checking","checked_at"(null = noch nicht / Uhr unbekannt),"latest"(null = unbekannt),"available","notes"?,"error"?,"detail"?}` |
 | POST | `/api/v1/ota/release/check` | Quelle jetzt prüfen → 202 `started` (Ergebnis bei `GET /api/v1/ota/release`); 400 `no_source` |
 | POST | `/api/v1/ota/release/install` | neuere Version der Quelle installieren → 202 `started`, Fortschritt bei `GET /api/v1/ota/status`; Fehler dort u. a. `no_update`, `sha256_mismatch`, `manifest_invalid`, `no_build`; 409 `pump_running` / `ota_in_progress` |
 | POST | `/api/v1/ota/url` | Engineering. `{"url":"https://…"}` → 202 `started`, das Gerät lädt selbst; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |
 | GET | `/api/v1/ota/status` | `{"state":"idle\|running\|failed\|rebooting","source":"api\|mqtt","http","received","total","error"?,"detail"?}` |
-| GET / PUT | `/api/v1/ota/settings` | `{"source","auto_check","allow_http"}`; `auto_check` ab Werk `true`, `allow_http` ab Werk `false`. `source` und `allow_http` ändern nur mit Engineering (`source` gesetzt → sofortige Prüfung) |
+| GET / PUT | `/api/v1/ota/settings` | `{"source","channel","auto_check","allow_http"}`; `auto_check` ab Werk `true`, `allow_http` ab Werk `false`. `channel` `"stable"` (ab Werk) oder `"beta"`, `null`, solange es keine Wahl gibt; dann 409 `no_channel`. `source` und `allow_http` ändern nur mit Engineering (`source` oder `channel` geändert → sofortige Prüfung) |
 | GET | `/api/v1/pumps` | Status, Kalibrierung, Rückzug, Limit, Behälter, Schlauch aller Pumpen; `fitted` = bestückt |
 | POST | `/api/v1/pumps/dose?pump=1&ml=1.5` | Dosieren (optional `tier=0..2`). Während einer Sperrzeit: 409 `collision_lock` mit `retry_at`/`retry_local`, oder 202 `queued` (Sperrzeit-Regel „vormerken“) |
 | POST | `/api/v1/pumps/stop?pump=0..5` | sanfter Stopp, Rückzug läuft noch (0 = alle); verwirft eine vorgemerkte Dosis |
