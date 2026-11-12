@@ -28,22 +28,6 @@ add({
     'tm.manual.ok': 'Time set.',
     'err.storage_failed': 'Could not save',
   },
-  de: {
-    'tm.title': 'Uhrzeit', 'tm.now': 'Gerätezeit', 'tm.src': 'Quelle', 'tm.last': 'Letzter Abgleich mit Zeitserver',
-    'tm.src.ntp': 'Zeitserver (NTP)', 'tm.src.rtc': 'Uhrenmodul', 'tm.src.manual': 'Von Hand gesetzt', 'tm.src.none': '–',
-    'tm.invalid': 'keine gültige Uhrzeit', 'tm.never': 'noch nie', 'tm.rtc_bad': 'Das Uhrenmodul antwortet nicht – nach einem Stromausfall fehlt die Uhrzeit, bis das Netzwerk wieder da ist.',
-    'tm.rtc_lost': 'Das Uhrenmodul hatte die Uhrzeit verloren, während das Gerät aus war – Pufferbatterie prüfen (CR2032/LIR2032).',
-    'tm.off': 'Weicht um {m} min von diesem Browser ab.',
-    'tm.zone': 'Zeitzone', 'tm.custom': 'Andere (POSIX-Angabe) …', 'tm.posix': 'POSIX-Zeitzone',
-    'tm.suggest': 'Dieser Browser nutzt {z}.', 'tm.use': 'Übernehmen',
-    'tm.ntp': 'Zeitserver (NTP)', 'tm.ntp.hint': 'Leer = kein Zeitserver; die Zeit kommt dann vom Uhrenmodul und lässt sich von Hand stellen. Mit Zeitserver stellt und gleicht das Gerät die Uhr selbst ab.',
-    'tm.browser': 'Uhrzeit von diesem Browser übernehmen', 'tm.browser.ok': 'Uhrzeit von diesem Browser übernommen.',
-    'tm.saved': 'Zeiteinstellungen gespeichert.', 'tm.field': 'Bitte prüfen: {f}',
-    'tm.manual': 'Von Hand stellen', 'tm.date': 'Datum', 'tm.time': 'Uhrzeit', 'tm.set': 'Uhrzeit setzen',
-    'tm.manual.hint': 'Datum und Uhrzeit in der Zeitzone des Geräts. Ein erreichbarer Zeitserver überschreibt sie beim nächsten Abgleich.',
-    'tm.manual.ok': 'Uhrzeit gesetzt.',
-    'err.storage_failed': 'Speichern fehlgeschlagen',
-  },
 });
 
 const draftOf = T => {

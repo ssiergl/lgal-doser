@@ -17,12 +17,6 @@ add({
     'eng.wait': 'Too many attempts – please wait {s} s.',
     'err.wrong_key': 'Wrong engineering key',
   },
-  de: {
-    'eng.title': 'Engineering', 'eng.hint': 'Servicebereich für den Hersteller. Braucht den Engineering-Schlüssel dieses Geräts.',
-    'eng.key': 'Engineering-Schlüssel', 'eng.unlock': 'Freischalten', 'eng.close': 'Schließen',
-    'eng.wait': 'Zu viele Versuche – bitte {s} s warten.',
-    'err.wrong_key': 'Falscher Engineering-Schlüssel',
-  },
 });
 
 // The unlock belongs to this browser tab: sessionStorage survives a reload

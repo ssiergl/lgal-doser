@@ -438,7 +438,7 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, open(ROOT + "/brand/logo/lgal-plaque.svg", "rb").read(), "image/svg+xml")
         if p.startswith("/ui/"):
             ext = p.rsplit(".", 1)[-1]
-            ct = {"js": "text/javascript", "mjs": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "html": "text/html"}.get(ext, "application/octet-stream")
+            ct = {"js": "text/javascript", "mjs": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "html": "text/html", "json": "application/json"}.get(ext, "application/octet-stream")
             try: return self.send(200, open(ROOT + "/components/webui/www/" + p[4:], "rb").read(), ct + "; charset=utf-8")
             except OSError: return self.send(404, {"error": {"code": "not_found", "message": "x"}})
         if p == "/api/v1/pumps/schedule":

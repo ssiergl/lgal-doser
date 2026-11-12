@@ -14,12 +14,6 @@ add({
     'dev.saved': 'Saved. The router shows the new name after the next address renewal or a restart.',
     'dev.long': 'At most 32 bytes (umlauts count twice)', 'dev.bad.host': 'Host name: only a–z, 0–9 and “-”, not at the start or end',
   },
-  de: {
-    'dev.name': 'Gerätename', 'dev.name.ph': 'z. B. Riffbecken', 'dev.name.h': 'Erscheint in der Kopfzeile, in Home Assistant und im Netzwerk.',
-    'dev.reach': 'Erreichbar als', 'dev.own': 'Eigener Hostname', 'dev.own.h': 'Leer = aus dem Gerätenamen. Buchstaben a–z, Ziffern und „-“.',
-    'dev.saved': 'Gespeichert. Der Router zeigt den neuen Namen nach der nächsten Adressvergabe oder einem Neustart.',
-    'dev.long': 'Höchstens 32 Bytes (Umlaute zählen doppelt)', 'dev.bad.host': 'Hostname: nur a–z, 0–9 und „-“, nicht am Anfang oder Ende',
-  },
 });
 
 const kMax = 32;

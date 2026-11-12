@@ -17,19 +17,6 @@ add({
     'ov.today': 'Today', 'ov.range': 'Lasts', 'ov.next': 'Next', 'ov.none': '–',
     'ov.days': '{d} days', 'ov.day1': '< 1 day', 'ov.next.boost': 'incl. {ml} ml boost', 'ov.boost.note': 'incl. boost (+{ml} ml per dose)',
   },
-  de: {
-    'pump': 'Pumpe {n}',
-    'st.idle': 'Bereit', 'st.dosing': 'Dosiert', 'st.priming': 'Entlüftet', 'st.calibrating': 'Kalibriert',
-    'st.disabled': 'Aus', 'st.manual_only': 'Nur manuell',
-    'al.low': 'Behälter fast leer', 'al.days': 'Reicht noch {d} Tage',
-    'al.uncal': 'Nicht kalibriert', 'al.recal': 'Kalibrierung älter als {m} Monate', 'al.newtube': 'Neuer Schlauch – neu kalibrieren', 'al.limit': 'Tageslimit erreicht', 'al.tube': 'Schlauch tauschen',
-    'al.fault': 'Letzter Lauf abgebrochen: Treiberfehler',
-    'al.delayed': 'Dosis wartet (Sperrzeit)', 'al.skipped': 'Heute {n} Dosen ausgelassen', 'al.calib': 'Gemessene Menge eintragen',
-    'day.tomorrow': 'morgen',
-    'ct.untracked': 'nicht erfasst',
-    'ov.today': 'Heute', 'ov.range': 'Reicht', 'ov.next': 'Nächste', 'ov.none': '–',
-    'ov.days': '{d} Tage', 'ov.day1': '< 1 Tag', 'ov.next.boost': 'inkl. {ml} ml Boost', 'ov.boost.note': 'inkl. Boost (+{ml} ml je Dosis)',
-  },
 });
 
 export const pumpName = p => p.name || t('pump', { n: p.pump });

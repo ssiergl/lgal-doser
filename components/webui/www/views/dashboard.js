@@ -12,11 +12,6 @@ add({
     'dash.run': '{done} of {target} ml', 'dash.prime': '{s} s · {ml} ml', 'dash.boost': 'Boost running',
     'dash.err1': '1 error', 'dash.errs': '{n} errors', 'dash.warn1': '1 warning', 'dash.warns': '{n} warnings',
   },
-  de: {
-    'dash.title': 'Übersicht', 'dash.left': 'noch {ml} ml',
-    'dash.run': '{done} von {target} ml', 'dash.prime': '{s} s · {ml} ml', 'dash.boost': 'Boost läuft',
-    'dash.err1': '1 Fehler', 'dash.errs': '{n} Fehler', 'dash.warn1': '1 Warnung', 'dash.warns': '{n} Warnungen',
-  },
 });
 
 function Running({ p }) {

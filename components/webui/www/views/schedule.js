@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
-import { add, errText, getLang, num, t } from '../lib/i18n.js';
+import { add, decimalSep, errText, getLang, num, t } from '../lib/i18n.js';
 import { hm, hourLabel, setMode } from '../lib/prefs.js';
 import { pumpName } from '../lib/pumps.js';
 import { reloadSched } from '../lib/store.js';
@@ -54,44 +54,6 @@ add({
     'err.duplicate_time': 'Each time only once', 'err.invalid_kind': 'Unknown kind of plan',
     'err.exceeds_daily_limit': 'The planned amount exceeds the daily limit', 'err.conflict': 'Doses collide',
   },
-  de: {
-    'sched.title': 'Zeitplan', 'sc.loading': 'Lädt …',
-    'sc.export': 'Exportieren', 'sc.import': 'Importieren', 'sc.io.hint': 'Zeitplan dieser Pumpe als Datei sichern oder laden.',
-    'sc.import.ask': 'Zeitplan von „{name}“ vom {d} für Pumpe {n} übernehmen? Der aktuelle Zeitplan wird ersetzt.',
-    'sc.import.ok': 'Zeitplan importiert', 'sc.import.bad': 'Diese Datei ist kein Zeitplan-Export.',
-    'sc.import.newer': 'Diese Datei stammt von einer neueren Firmware und kann nicht gelesen werden.',
-    'sc.none': 'Kein Zeitplan', 'sc.none.hint': 'Diese Pumpe dosiert nur, wenn du sie von Hand startest.',
-    'sc.daily': 'Tagesmenge', 'sc.count': 'Dosen pro Tag', 'sc.from': 'Von', 'sc.to': 'Bis', 'sc.at': 'Uhrzeit',
-    'sc.doses': 'Dosen', 'sc.every': 'alle {m} Min.', 'sc.everyh': 'alle {h} Std.', 'sc.each': '{n} × {ml} ml',
-    'sc.save': 'Speichern', 'sc.discard': 'Verwerfen', 'sc.saved': 'Zeitplan gespeichert',
-    'sc.create': 'Zeitplan anlegen',
-    'sc.pro.made': 'Dieser Zeitplan wurde in der Profi-Ansicht eingerichtet und bleibt so aktiv.',
-    'sc.pro.edit': 'In der Profi-Ansicht bearbeiten', 'sc.replace': 'Durch einfachen Zeitplan ersetzen',
-    'sc.mode.manual_only': 'Die Pumpe steht auf „Nur manuell“ – der Zeitplan ruht.',
-    'sc.mode.disabled': 'Die Pumpe ist aus – der Zeitplan ruht.',
-    'sc.limit': 'Tageslimit {l} ml – geplant {p} ml', 'sc.unsaved': 'Ungespeicherte Änderungen',
-    'sc.kind': 'Plan', 'sc.kind.spread': 'Verteilt', 'sc.kind.times': 'Einzelzeiten',
-    'sc.kind.hint.spread': 'Eine Tagesmenge, gleichmäßig auf mehrere Dosen verteilt.',
-    'sc.kind.hint.times': 'Feste Uhrzeiten, jede mit eigener Menge.',
-
-    'sc.ml.total': 'Menge pro Tag', 'sc.t.add': 'Uhrzeit hinzufügen', 'sc.t.del': 'Uhrzeit entfernen', 'sc.t.sum': '{n} Uhrzeiten · {ml} ml pro Tag',
-    'sc.days': 'Tage', 'sc.d.daily': 'Täglich', 'sc.d.weekdays': 'Wochentage', 'sc.d.interval': 'Alle N Tage',
-    'sc.d.every': 'Alle', 'sc.d.days': 'Tage', 'sc.d.anchor': 'ab', 'sc.d.everyN': 'alle {n} Tage',
-    'sc.wd.mon': 'Mo', 'sc.wd.tue': 'Di', 'sc.wd.wed': 'Mi', 'sc.wd.thu': 'Do', 'sc.wd.fri': 'Fr', 'sc.wd.sat': 'Sa', 'sc.wd.sun': 'So',
-    'sc.power': 'Nach einem Stromausfall', 'sc.pl.skip_missed': 'Verpasste auslassen', 'sc.pl.catch_up_window': 'Nachholen',
-    'sc.pl.hint.skip_missed': 'Dosen, die während des Ausfalls fällig waren, entfallen.',
-    'sc.pl.hint.catch_up_window': 'Verpasste Dosen werden nachgeholt, wenn sie höchstens so alt sind:',
-    'sc.total': 'Heute geplant: {ml} ml',
-    'sc.cf.overlap': 'Pumpe {p1} {t1} überschneidet sich mit Pumpe {p2} {t2}{d}',
-    'sc.cf.collision_lock': 'Pumpe {p1} {t1} und Pumpe {p2} {t2}{d}: Sperrzeit {g} Min.',
-    'sc.cf.next': ' (Folgetag)', 'sc.err.entry': '{time}: {e}',
-    'err.invalid_time': 'Ungültige Uhrzeit', 'err.invalid_amount': 'Die Menge muss größer als 0 ml sein', 'err.off_grid': 'Uhrzeiten müssen im {g}-Minuten-Raster liegen',
-    'err.invalid_range': 'Ende muss nach dem Start liegen', 'err.invalid_count': 'Ungültige Anzahl Dosen',
-    'err.slots_too_dense': 'Zu viele Dosen für dieses Zeitfenster', 'err.invalid_days': 'Mindestens einen Tag wählen',
-    'err.invalid_catch_up': 'Nachholfenster: 1 bis 1440 Minuten', 'err.too_many_slots': 'Zu viele Dosen pro Tag',
-    'err.duplicate_time': 'Jede Uhrzeit nur einmal', 'err.invalid_kind': 'Unbekannte Planart',
-    'err.exceeds_daily_limit': 'Die geplante Menge überschreitet das Tageslimit', 'err.conflict': 'Dosen kollidieren',
-  },
 });
 
 // ---------------------------------------------------------------------------
@@ -102,7 +64,7 @@ const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m %
 const dayNum = d => Math.floor(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5);
 const weekday = day => (((day % 7) + 7 + 3) % 7);  // 0 = Monday
 const ul = ml => Math.round(ml * 1000);
-const text = v => (v === undefined || v === null ? '' : String(v).replace('.', getLang() === 'de' ? ',' : '.'));
+const text = v => (v === undefined || v === null ? '' : String(v).replace('.', decimalSep()));
 
 function activeOn(days, day) {
   if (days.mode === 'weekdays') return days.weekdays.includes(WD[weekday(day)]);

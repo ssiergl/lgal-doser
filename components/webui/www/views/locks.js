@@ -27,19 +27,6 @@ add({
     'lk.err.dup': 'These pumps already have a rule',
     'err.invalid_lock': 'Invalid lock rule',
   },
-  de: {
-    'lk.title': 'Sperrzeiten zwischen Pumpen',
-    'lk.intro': 'Eine Sperrzeit hält zwei Pumpen auseinander: Endet eine Dosis der einen Pumpe, startet die andere frühestens nach Ablauf der Sperrzeit. Gedacht für Zusätze, die sich nicht im selben Wasserstrom treffen sollen.',
-    'lk.none': 'Keine Sperrzeiten – alle Pumpen dürfen gleichzeitig dosieren.',
-    'lk.add': 'Regel hinzufügen', 'lk.del': 'Regel löschen',
-    'lk.manual': 'Manuelle Dosis während einer Sperrzeit', 'lk.m.reject': 'Ablehnen', 'lk.m.queue': 'Warten',
-    'lk.m.hint.reject': 'Die Dosis wird abgelehnt, mit Hinweis, ab wann sie möglich ist.',
-    'lk.m.hint.queue': 'Die Dosis wartet und startet von selbst, sobald die Sperrzeit vorbei ist.',
-    'lk.saved': 'Sperrzeiten gespeichert', 'lk.rule': 'Regel {n}: {e}',
-    'lk.err.same': 'Zwei verschiedene Pumpen wählen', 'lk.err.gap': 'Sperrzeit: 1 bis 1440 Minuten',
-    'lk.err.dup': 'Für diese Pumpen gibt es schon eine Regel',
-    'err.invalid_lock': 'Ungültige Sperrzeit-Regel',
-  },
 });
 
 const draftOf = l => ({ manual: l.manual, rules: l.rules.map(r => ({ a: r.pumps[0], b: r.pumps[1], gap: String(r.gap_min) })) });
