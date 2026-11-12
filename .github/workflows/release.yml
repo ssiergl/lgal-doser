@@ -8,6 +8,8 @@
 # holds only a manifest.json with the newest version, release candidate or
 # release (tools/channel_manifest.py); devices set to the beta channel read
 #   https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json
+# The release text is the CHANGELOG.md section of the version plus every
+# commit since the previous tag (tools/release_notes.py).
 # The images hold no secret: every device keeps its own in the factory
 # partition (tools/provision.py).
 name: Release
@@ -50,8 +52,10 @@ jobs:
       - name: Install GitHub CLI
         run: |
           apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gh ca-certificates python3
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gh ca-certificates python3 git
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tags and history for the release notes
       - uses: actions/download-artifact@v4
         with:
           name: dist
@@ -62,8 +66,9 @@ jobs:
         run: |
           pre=""
           case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
+          python3 tools/release_notes.py "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > notes.md
           gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
-            --title "$GITHUB_REF_NAME" --generate-notes $pre
+            --title "$GITHUB_REF_NAME" --notes-file notes.md $pre
       - name: Update the beta channel
         env:
           GH_TOKEN: ${{ github.token }}

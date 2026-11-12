@@ -18,7 +18,7 @@ components/doser_app/   device logic: hardware diagnostics, dosing engine, sched
 components/webui/       web UI (M5): www/ (Preact + htm, no build), pack.py embeds it gzip-compressed
 brand/                  brand repository as Git submodule: the logo (not GPL, see TRADEMARKS.md)
 main/                   wiring of the components (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, third_party_notices.py, mock/ (device mock for the web UI)
+tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, mock/ (device mock for the web UI)
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest)
                         and simulation of dosing engine and scheduler (`tests/host/run.sh`)
 tests/fuzz/             fuzzers for all parsers of external input (`tests/fuzz/run.sh`)
@@ -158,6 +158,12 @@ publishes everything as a release. The images contain no secret (see
 repository secrets. Tags with a pre-release part (`v1.0.0-rc.1`) become pre-releases, which
 `releases/latest` skips. The devices then use
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json` as update source.
+
+The text of the release page comes from `tools/release_notes.py`: the section of `CHANGELOG.md`
+whose heading names the version (a release candidate `0.2.0-rc.1` uses the section of `0.2.0`,
+e.g. `## Unreleased – 0.2.0`) as a summary in bullet points, then every commit since the
+previous version tag, folded away under "All changes", and a link to the full comparison. So
+keep the changelog section up to date before tagging.
 
 For the [beta channel](#ota-update) every release also updates the pre-release `channel-beta`
 (created on the first release): it holds only a `manifest.json` that names the newest version,
