@@ -155,7 +155,7 @@ void write_discovery(lgal::Json& j, const DeviceInfo& d) {
     const Names& n = d.german ? kDe : kEn;
     j.obj();
     j.obj("device").arr("identifiers").v(d.id.c_str()).end();
-    j.kv("name", d.name).kv("manufacturer", "LG Aquatic Life").kv("model", "LGAL-Doser");
+    j.kv("name", d.name).kv("manufacturer", "LG Aquatic Life").kv("model", d.model);
     j.kv("sw_version", d.firmware);
     if (!d.url.empty()) j.kv("configuration_url", d.url);
     j.end();
