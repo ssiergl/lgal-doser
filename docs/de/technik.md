@@ -238,8 +238,10 @@ Anmeldung auf `/login`, einer reinen Anmeldeseite mit Logo, dem Benutzer „admi
 Passwort-Manager, das Gerät kennt nur diesen einen Benutzer) und dem Passwort. Angemeldete Browser
 werden direkt zum Ziel weitergeleitet; Passwort, API-Schlüssel und Engineering liegen in der
 Weboberfläche.
-- **Erste Anmeldung** mit dem Geräte-Passwort vom Etikett. Danach verlangt die Seite ein
-  eigenes Admin-Passwort (8–64 Zeichen); ab dann gilt nur noch dieses.
+- **Geräte-Passwort** (Etikett): meldet nie an. Es setzt nur in Schritt 2 der
+  [Ersteinrichtung](#ersteinrichtung-m4) das erste eigene Admin-Passwort (8–64 Zeichen) und
+  setzt ein vergessenes über das Setup-WLAN zurück. Ohne Admin-Passwort führt `/login` zur
+  Einrichtung.
 - **Sitzungen** liegen nur im RAM (Cookie `lgal_session`, max. 8, 7 Tage ohne Nutzung bzw.
   30 Tage absolut). Nach Neustart oder OTA neu anmelden. Passwort ändern meldet alle
   anderen Browser ab.
@@ -269,16 +271,26 @@ Passwortwechsel, API-Keys und Engineering-Freischaltung. Das schützt zusätzlic
 Origin-Header (Home Assistant, Apps, Skripte) sind nicht betroffen.
 
 Im Werkszustand (`setup_completed = false`) ist das Setup-WLAN immer an und `/` führt
-zur [Ersteinrichtung](#ersteinrichtung-m4).
+zur [Ersteinrichtung](#ersteinrichtung-m4). Bis zum Abschluss erreicht ein angemeldeter Browser
+nur die Einrichtung selbst: Assistent, Anmeldung, Netzwerk, Uhrzeit, Sprache, Systeminfo, Netzwerk-
+und Wartungsseite und Firmware-Updates. Alles andere – Pumpen, Zeitpläne, Verlauf, Backup, MQTT,
+Engineering, Weboberfläche und ihr WebSocket, neue API-Schlüssel – antwortet 409
+`setup_required` (Seiten: Weiterleitung auf `/setup`). Ohne eigenes Passwort und abgeschlossene
+Einrichtung kommt also niemand an die Pumpen; für einen Testlauf vor dem Versand das Gerät
+einrichten und danach zurücksetzen.
 
 ## Ersteinrichtung (M4)
 
 1. Mit dem Setup-WLAN `LG-Aquatic-Life-Setup-XXXX` verbinden (Passwort vom Etikett).
    Das **Captive Portal** öffnet die Einrichtung auf Handy und Laptop meist von selbst;
    sonst `http://192.168.4.1/` aufrufen.
-2. Mit dem Geräte-Passwort anmelden; die Seite **`/setup`** führt durch fünf Schritte:
-   Sprache → eigenes Admin-Passwort → Netzwerk (LAN-Status, WLAN suchen, testen,
-   speichern) → Zeitzone, NTP-Server, ggf. Uhrzeit vom Browser → Abschluss.
+2. Die Seite **`/setup`** führt durch fünf Schritte. Die ersten beiden brauchen keine
+   Anmeldung: Sprache → eigenes Admin-Passwort, gesetzt mit dem Geräte-Passwort vom Etikett
+   (`auth/claim`, speichert auch die Sprache). Dann geht der Browser auf `/login` und meldet sich
+   einmal mit dem neuen Passwort an (Benutzer „admin“ – der Passwort-Manager kann es hier
+   speichern); danach geht der Assistent weiter mit Netzwerk (LAN-Status, WLAN suchen, testen,
+   speichern) → Zeitzone, NTP-Server, ggf. Uhrzeit vom Browser → Abschluss. Eine abgebrochene
+   Einrichtung geht nach dem Anmelden beim Netzwerk-Schritt weiter.
 3. **Abschließen** geht erst mit Admin-Passwort und verbundenem LAN oder WLAN. Die Seite
    zeigt die neuen Adressen (`http://lgal-doser-xxxx.local/` und IP); 20 s später schaltet
    das Setup-WLAN ab.
@@ -387,9 +399,10 @@ In der Weboberfläche unter Wartung, über die Notfallseite (`/recovery`) per Da
 python3 tools/ota_upload.py lgal-doser-xxxx.local --key lgal_...
 ```
 
-Anmeldung: `--key` (oder `LGAL_API_KEY`), `--password` (oder `LGAL_PASSWORD`, Admin-Passwort)
-oder vor der Ersteinrichtung `--mac AA:BB:CC:DD:EE:FF` (Geräte-Passwort). Mit Passwort meldet
-sich das Skript nach dem Neustart selbst wieder an.
+Anmeldung: `--key` (oder `LGAL_API_KEY`) oder `--password` (oder `LGAL_PASSWORD`,
+Admin-Passwort). Ein neues Gerät braucht zuerst sein Admin-Passwort aus der Einrichtung
+(Schritte 1 und 2); ab dann gehen Updates, auch bevor die restliche Einrichtung erledigt ist. Mit
+Passwort meldet sich das Skript nach dem Neustart selbst wieder an.
 
 Ablauf und Schutz:
 - Das Image wird vor dem Schreiben geprüft (ESP32-S3, Projektname `lgal_doser`, Flash-Größe, Board) und
@@ -445,8 +458,9 @@ curl -H "Authorization: Bearer lgal_..." -H "X-Engineering-Key: ..." -d '{"url":
 ## API
 
 Alle Endpunkte brauchen eine Sitzung oder einen API-Key (siehe [Zugang](#zugang)). Ohne
-Anmeldung erreichbar: `/login`, `/api/v1/auth/status`, `/api/v1/auth/login`,
-`/api/v1/auth/recover` und `GET /api/v1/system/language`. Die `engineering`-Endpunkte und
+Anmeldung erreichbar: `/login`, `/setup`, `/api/v1/auth/status`, `/api/v1/auth/login`,
+`/api/v1/auth/claim`, `/api/v1/auth/recover` und `GET /api/v1/system/language`. Vor dem Abschluss
+der Ersteinrichtung ist nur die Einrichtung offen (409 `setup_required`, siehe [Zugang](#zugang)). Die `engineering`-Endpunkte und
 alle `/api/v1/hw/…`-Endpunkte brauchen zusätzlich die Engineering-Freischaltung.
 
 **Mehrsprachigkeit:** Firmware, Logs und API sind englisch. Fehler kommen immer als
@@ -467,17 +481,18 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | POST / GET | `/api/v1/net/scan` | WLAN-Suche starten / Ergebnis (`idle\|running\|done\|failed`, stärkstes zuerst) |
 | POST / GET | `/api/v1/net/wlan/test` | Verbindungstest `{"ssid","password"?,"dhcp",…}` / Ergebnis (`ok` mit `ip`, `failed` mit `reason`) |
 | GET | `/api/v1/auth/status` | angemeldet?, Passwort gesetzt?, Engineering-Restzeit, Wiederherstellung möglich? |
-| POST | `/api/v1/auth/login` | `{"password"}` → Sitzungs-Cookie |
+| POST | `/api/v1/auth/login` | `{"password"}` → Sitzungs-Cookie; ohne Admin-Passwort 409 `password_not_set` |
+| POST | `/api/v1/auth/claim` | `{"device_password","new","language"?}` erstes Admin-Passwort, nur solange keins gesetzt ist; keine Sitzung |
 | POST | `/api/v1/auth/logout` | Sitzung beenden |
-| POST | `/api/v1/auth/password` | `{"current","new"}` (vor dem ersten Setzen ohne `current`) |
+| POST | `/api/v1/auth/password` | `{"current","new"}` |
 | POST | `/api/v1/auth/recover` | `{"device_password","new"}`, nur aus dem Setup-WLAN |
-| GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | API-Keys auflisten / `{"name"}` anlegen / löschen |
+| GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | API-Keys auflisten / `{"name"}` anlegen (nach der Ersteinrichtung) / löschen |
 | POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` freischalten / sperren |
 | GET | `/api/v1/system/info` | Modell und Board, Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
 | GET / PUT | `/api/v1/system/led` | angezeigter Zustand (`shown`) und Nachtmodus / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (fehlende Felder bleiben, 400 `invalid_param` mit `field`) |
 | GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` oder statt `utc` `"local":"2026-11-10T18:30"` (Ortszeit des Geräts; alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
-| GET | `/setup` | Ersteinrichtung |
+| GET | `/setup` | Ersteinrichtung (Seite ohne Anmeldung) |
 | GET / PUT | `/api/v1/system/device` | `name`, `hostname` (in Gebrauch), `own_hostname` (`""` = aus dem Namen), `default_hostname` / `{"name","own_hostname"}` teilweise; 400 `invalid_param` mit `field` |
 | GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
 | POST | `/api/v1/setup/complete` | Einrichtung abschließen (409 `password_not_set` / `not_connected`), Setup-WLAN aus nach 20 s |

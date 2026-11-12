@@ -197,9 +197,13 @@ esp_err_t post_login(httpd_req_t* req) {
     const uint32_t ip = http::client_ipv4(req);
     const int64_t now = now_s();
     Guard g;
+    // The device password from the label never signs in; it only sets the first admin password (claim)
+    if (!is_set(s_pw)) {
+        std::memset(pw, 0, sizeof(pw));
+        return http::send_error(req, "409 Conflict", "password_not_set", "Choose the admin password in the setup first");
+    }
     if (const int64_t w = s_throttle.wait(ip, now)) return throttled(req, w);
-    // Before the setup: the device password from the label
-    const bool good = is_set(s_pw) ? verify(s_pw, pw) : equal_str_ct(pw, device::setup_password());
+    const bool good = verify(s_pw, pw);
     std::memset(pw, 0, sizeof(pw));
     if (!good) {
         s_throttle.failed(ip, now);
@@ -255,6 +259,43 @@ esp_err_t post_password(httpd_req_t* req) {
     return ok(req);
 }
 
+// First admin password (setup step 2): proves ownership with the device password from the
+// label. Does not sign in - the wizard sends the browser to /login, so the password manager
+// learns the new password right away.
+esp_err_t post_claim(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
+    Body b;
+    if (!read_body(req, &b)) return ESP_OK;
+    char dev[32], pw[kMaxPassword + 2];
+    if (!str_member(b.doc.root(), "device_password", dev, sizeof(dev)))
+        return http::send_error(req, "400 Bad Request", "invalid_param", "device_password");
+    if (!str_member(b.doc.root(), "new", pw, sizeof(pw))) return http::send_error(req, "400 Bad Request", "invalid_param", "new");
+    const uint32_t ip = http::client_ipv4(req);
+    const int64_t now = now_s();
+    Guard g;
+    if (is_set(s_pw)) {
+        std::memset(pw, 0, sizeof(pw));
+        return http::send_error(req, "409 Conflict", "password_already_set", "An admin password is already set");
+    }
+    if (const int64_t w = s_throttle.wait(ip, now)) return throttled(req, w);
+    if (!equal_str_ct(dev, device::setup_password())) {
+        std::memset(pw, 0, sizeof(pw));
+        s_throttle.failed(ip, now);
+        return http::send_error(req, "403 Forbidden", "wrong_password", "Wrong device password");
+    }
+    s_throttle.succeeded(ip);
+    const char* e = change_password(pw);
+    std::memset(pw, 0, sizeof(pw));
+    if (e) return fail(req, e);
+    ESP_LOGI(TAG, "First admin password set");
+    // the language chosen in step 1, before any sign-in
+    char lang[8];
+    if (str_member(b.doc.root(), "language", lang, sizeof(lang)) && settings::language_supported(lang))
+        settings::set_language(lang);
+    events::note("password", events::By::Browser);
+    return ok(req);
+}
+
 esp_err_t post_recover(httpd_req_t* req) {
     if (!http::same_origin(req)) return ESP_OK;
     const uint32_t ip = http::client_ipv4(req);
@@ -306,6 +347,8 @@ esp_err_t post_keys(httpd_req_t* req) {
         Guard g;
         if (session_of(req, now_s()) < 0) return http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
     }
+    if (!settings::setup_completed())
+        return http::send_error(req, "409 Conflict", "setup_required", "Complete the first setup first");
     Body b;
     if (!read_body(req, &b)) return ESP_OK;
     char name[kKeyNameLen + 1];
@@ -555,6 +598,7 @@ esp_err_t register_handlers(httpd_handle_t server) {
     http::route(server, "/api/v1/auth/login", HTTP_POST, post_login);
     http::route(server, "/api/v1/auth/logout", HTTP_POST, post_logout);
     http::route(server, "/api/v1/auth/password", HTTP_POST, post_password);
+    http::route(server, "/api/v1/auth/claim", HTTP_POST, post_claim);
     http::route(server, "/api/v1/auth/recover", HTTP_POST, post_recover);
     http::route(server, "/api/v1/auth/keys", HTTP_GET, get_keys);
     http::route(server, "/api/v1/auth/keys", HTTP_POST, post_keys);

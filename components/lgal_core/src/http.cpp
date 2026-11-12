@@ -9,6 +9,8 @@
 #include "esp_log.h"
 #include "lgal/auth.h"
 #include "lgal/json.h"
+#include "lgal/settings.h"
+#include "lgal/setup_core.h"
 #include "lgal/ws.h"
 #include "lgal/ws_core.h"
 #include "lwip/sockets.h"
@@ -106,10 +108,25 @@ bool own_origin(httpd_req_t* req) {
     return ws::origin_allowed(origin, host);
 }
 
+// Before the first setup is completed only the setup itself is open (setup_core.h)
+bool setup_required(httpd_req_t* req) {
+    if (wants_html(req)) {
+        httpd_resp_set_status(req, "302 Found");
+        httpd_resp_set_hdr(req, "Location", "/setup");
+        httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+        httpd_resp_send(req, nullptr, 0);
+    } else {
+        send_error(req, "409 Conflict", "setup_required", "Complete the first setup first");
+    }
+    return false;
+}
+
 bool check(httpd_req_t* req, bool engineering) {
     if (!same_origin(req)) return false;
     const auth::Result r = auth::check(req, engineering);
-    return r == auth::Result::Ok || deny(req, r);
+    if (r != auth::Result::Ok) return deny(req, r);
+    if (!settings::setup_completed() && !setup::open_during_setup(req->uri)) return setup_required(req);
+    return true;
 }
 }  // namespace
 

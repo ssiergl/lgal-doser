@@ -54,42 +54,32 @@ label{display:block;font-size:13px;color:var(--mut);margin-top:8px}
 <div class="msg" id="r_msg"></div>
 </section>
 
-<section class="card" id="c_setpw" hidden>
-<h2 data-i18n="pw.title"></h2>
-<p class="hint" data-i18n="pw.hint"></p>
-<form id="f_pw"><input value="admin" autocomplete="username" hidden>
-<label data-i18n="pw.new"></label><input id="p_pw" type="password" autocomplete="new-password" required>
-<label data-i18n="pw.repeat"></label><input id="p_pw2" type="password" autocomplete="new-password" required>
-<div class="row"><button data-i18n="btn.save"></button></div></form>
-<div class="msg" id="p_msg"></div>
-</section>
 </main>
 <script>
 i18n.add({
 en:{
  'page.title':'LG Aquatic Life – Sign in','title':'Sign in','user':'User','pw':'Password','login.btn':'Sign in',
- 'login.first':'First sign-in: use the device password from the label on the device.',
+ 'login.first':'Password saved. Sign in with it once now – your browser can remember it. Then the setup goes on.',
  'login.wait':'Too many attempts – please wait {s} s.',
  'rec.title':'Forgot password','rec.hint':'You are connected through the setup Wi-Fi. With the device password from the label you can set a new admin password. Schedules and calibration are kept.',
  'rec.device':'Device password (label)','rec.btn':'Set new password',
- 'pw.title':'Choose your admin password','pw.hint':'You signed in with the device password. Please choose your own password (at least 8 characters).',
- 'pw.new':'New password','pw.repeat':'Repeat new password','pw.mismatch':'The passwords do not match.','btn.save':'Save',
+ 'pw.new':'New password','pw.repeat':'Repeat new password','pw.mismatch':'The passwords do not match.',
  'err.wrong_password':'Wrong password','err.too_many_attempts':'Too many attempts – please wait',
  'err.password_too_short':'At least 8 characters','err.password_too_long':'At most 64 characters',
  'err.recovery_unavailable':'Only possible through the setup Wi-Fi (hold the button for 3 s)','err.unauthorized':'Please sign in'},
 de:{
  'page.title':'LG Aquatic Life – Anmeldung','title':'Anmelden','user':'Benutzer','pw':'Passwort','login.btn':'Anmelden',
- 'login.first':'Erste Anmeldung: Geräte-Passwort vom Typenschild verwenden.',
+ 'login.first':'Passwort gespeichert. Melde dich jetzt einmal damit an – dein Browser kann es sich dabei merken. Danach geht die Einrichtung weiter.',
  'login.wait':'Zu viele Versuche – bitte {s} s warten.',
  'rec.title':'Passwort vergessen','rec.hint':'Du bist über das Setup-WLAN verbunden. Mit dem Geräte-Passwort vom Typenschild kannst du ein neues Admin-Passwort setzen. Zeitpläne und Kalibrierung bleiben erhalten.',
  'rec.device':'Geräte-Passwort (Typenschild)','rec.btn':'Neues Passwort setzen',
- 'pw.title':'Eigenes Admin-Passwort festlegen','pw.hint':'Du bist mit dem Geräte-Passwort angemeldet. Bitte wähle ein eigenes Passwort (mindestens 8 Zeichen).',
- 'pw.new':'Neues Passwort','pw.repeat':'Neues Passwort wiederholen','pw.mismatch':'Die Passwörter stimmen nicht überein.','btn.save':'Speichern',
+ 'pw.new':'Neues Passwort','pw.repeat':'Neues Passwort wiederholen','pw.mismatch':'Die Passwörter stimmen nicht überein.',
  'err.wrong_password':'Falsches Passwort','err.too_many_attempts':'Zu viele Versuche – bitte warten',
  'err.password_too_short':'Mindestens 8 Zeichen','err.password_too_long':'Höchstens 64 Zeichen',
  'err.recovery_unavailable':'Nur über das Setup-WLAN möglich (Taster 3 s halten)','err.unauthorized':'Bitte anmelden'}
 });
-// Sign-in only: password, API keys and the engineering unlock live in the web interface
+// Sign-in only: password, API keys and the engineering unlock live in the web interface.
+// Without an admin password there is nothing to sign in with: the setup wizard sets it first.
 const $=id=>document.getElementById(id);
 const P=new URLSearchParams(location.search);
 // only local paths as target (no open redirect)
@@ -107,19 +97,16 @@ const go=()=>location.replace(next);
 
 async function load(){
   S=await api('GET','/api/v1/auth/status');
-  const li=S.logged_in&&S.via==='session';
-  // the setup wizard asks for the admin password itself
-  if(li&&(S.password_set||next.startsWith('/setup')))return go();
+  if(!S.password_set)return location.replace('/setup');
+  if(S.logged_in&&S.via==='session')return go();
   $('dev').textContent=S.device||'';
-  $('c_login').hidden=li;$('c_recover').hidden=li||!S.recovery;$('c_setpw').hidden=!li;
-  $('l_hint').textContent=S.password_set?'':t('login.first');$('l_hint').hidden=S.password_set;
-  if(!li)$('l_pw').focus();
+  $('c_login').hidden=false;$('c_recover').hidden=!S.recovery;
+  $('l_hint').textContent=t('login.first');$('l_hint').hidden=P.get('first')!=='1';
+  $('l_pw').focus();
 }
 $('f_login').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/login',{password:$('l_pw').value}).then(()=>{$('l_pw').value='';load()}).catch(e=>errMsg('l_msg',e))};
 $('f_rec').onsubmit=e=>{e.preventDefault();if(!same('r_pw','r_pw2','r_msg'))return;
   api('POST','/api/v1/auth/recover',{device_password:$('r_dev').value.trim(),new:$('r_pw').value}).then(load).catch(e=>errMsg('r_msg',e))};
-$('f_pw').onsubmit=e=>{e.preventDefault();if(!same('p_pw','p_pw2','p_msg'))return;
-  api('POST','/api/v1/auth/password',{current:'',new:$('p_pw').value}).then(load).catch(e=>errMsg('p_msg',e))};
 i18n.onChange(()=>{if(S)load()});
 i18n.init('lang').then(load);
 </script>

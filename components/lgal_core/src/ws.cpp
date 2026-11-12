@@ -10,6 +10,7 @@
 #include "freertos/task.h"
 #include "lgal/auth.h"
 #include "lgal/http.h"
+#include "lgal/settings.h"
 #include "lgal/timesync.h"
 #include "lgal/ws_core.h"
 
@@ -70,6 +71,10 @@ esp_err_t pre_handshake(httpd_req_t* req) {
     auth::Principal who;
     if (!auth::principal(req, &who)) {
         http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+        return ESP_FAIL;
+    }
+    if (!settings::setup_completed()) {  // live values and priming only after the first setup
+        http::send_error(req, "409 Conflict", "setup_required", "Complete the first setup first");
         return ESP_FAIL;
     }
     const int fd = httpd_req_to_sockfd(req);

@@ -410,6 +410,7 @@ def prime(cid, m):
     return "invalid_param"
 
 import eng_mock, sys_mock
+sys_mock.LANG_SET = lambda code: LANG.update(v=code)
 from urllib.parse import urlsplit as _us, parse_qsl as _pq
 
 def sysr(h, method, body=None):
@@ -428,6 +429,8 @@ class H(BaseHTTPRequestHandler):
         if p == "/api/v1/ws": return self.ws()
         if sysr(self, "GET"): return
         if p in ("/login", "/setup", "/network", "/recovery"): return self.send(200, open(ROOT + "/components/lgal_core/www" + p + ".html", "rb").read(), "text/html; charset=utf-8")
+        if p == "/" and not sys_mock.SETUP["completed"]:  # factory state: the start page is the setup
+            self.send_response(302); self.send_header("Location", "/setup"); self.send_header("Content-Length", "0"); self.end_headers(); return
         if p == "/": return self.send(200, open(ROOT + "/components/webui/www/index.html", "rb").read(), "text/html; charset=utf-8")
         if p in ("/ui/licenses/gpl-3.0.txt", "/ui/licenses/third-party.txt"):
             return self.send(200, open(ROOT + ("/LICENSE" if "gpl" in p else "/THIRD-PARTY-NOTICES.txt"), "rb").read(), "text/plain; charset=utf-8")
