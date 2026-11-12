@@ -36,6 +36,23 @@ bool verify(const PasswordRecord& r, const char* password) {
     return crypto::equal_ct(h, r.hash, sizeof(h));
 }
 
+bool valid_device_secret(const char* s) {
+    if (!s) return false;
+    size_t n = 0;
+    for (; s[n]; ++n)
+        if (n >= kDeviceSecretChars || !((s[n] >= '0' && s[n] <= '9') || (s[n] >= 'a' && s[n] <= 'f'))) return false;
+    return n == kDeviceSecretChars;
+}
+
+void hex_device_secret(const uint8_t raw[32], char out[kDeviceSecretChars + 1]) {
+    static constexpr char kHex[] = "0123456789abcdef";
+    for (size_t i = 0; i < 32; ++i) {
+        out[2 * i] = kHex[raw[i] >> 4];
+        out[2 * i + 1] = kHex[raw[i] & 0x0F];
+    }
+    out[kDeviceSecretChars] = '\0';
+}
+
 void derive_password(const char* secret, const char* label, const uint8_t mac[6], size_t chars, char* out) {
     static constexpr char kAlphabet[] = "23456789abcdefghjkmnpqrstuvwxyz";
     static_assert(sizeof(kAlphabet) - 1 == 31);

@@ -38,7 +38,15 @@ void make_record(PasswordRecord* r, const char* password, const uint8_t salt[16]
 bool is_set(const PasswordRecord& r);
 bool verify(const PasswordRecord& r, const char* password);
 
-// Device passwords derived from the build secret and the base MAC:
+// Device secret: 64 lower-case hex digits (32 bytes), kept per device in the
+// factory partition "fctry" (lgal/device.h). tools/provision.py writes
+// HMAC-SHA256(manufacturer master, "LGAL-DEVICE" || mac) there; a device
+// without one creates a random secret on its first start.
+constexpr size_t kDeviceSecretChars = 64;
+bool valid_device_secret(const char* s);
+void hex_device_secret(const uint8_t raw[32], char out[kDeviceSecretChars + 1]);
+
+// Device passwords derived from the device secret and the base MAC:
 // HMAC-SHA256(secret, label || mac) -> one character per byte from an
 // unambiguous alphabet (no 0/O/1/l/i). Labels: "LGAL-AP" = setup Wi-Fi and
 // password on the label (12 characters), "LGAL-ENG" = engineering key of the

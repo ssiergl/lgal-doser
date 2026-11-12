@@ -118,6 +118,23 @@ static void test_password() {
     CHECK(auth::check_policy(nullptr) != nullptr);
 }
 
+static void test_device_secret() {
+    uint8_t raw[32];
+    for (int i = 0; i < 32; ++i) raw[i] = uint8_t(i * 8 + 7);
+    char hex[auth::kDeviceSecretChars + 1];
+    auth::hex_device_secret(raw, hex);
+    CHECK(std::strcmp(hex, "070f171f272f373f474f575f676f777f878f979fa7afb7bfc7cfd7dfe7eff7ff") == 0);
+    CHECK(auth::valid_device_secret(hex));
+    // what tools/provision.py writes for the master "test-master-secret" and A0:B1:C2:D3:E4:F5
+    CHECK(auth::valid_device_secret("0ba9da55f69e9b4e63d0919fd75787aeec5077944585eff083bb3448e97909bb"));
+    CHECK(!auth::valid_device_secret(nullptr));
+    CHECK(!auth::valid_device_secret(""));
+    CHECK(!auth::valid_device_secret(std::string(63, 'a').c_str()));
+    CHECK(!auth::valid_device_secret(std::string(65, 'a').c_str()));
+    CHECK(!auth::valid_device_secret(std::string(64, 'A').c_str()));
+    CHECK(!auth::valid_device_secret((std::string(63, 'a') + "g").c_str()));
+}
+
 static void test_derive() {
     // same values as tools/ap_password.py with --secret test-secret
     const uint8_t mac[6] = {0xA0, 0xB1, 0xC2, 0xD3, 0xE4, 0xF5};
@@ -126,6 +143,11 @@ static void test_derive() {
     CHECK(std::strcmp(out, "jr5rf4tqe4ax") == 0);
     auth::derive_password("test-secret", "LGAL-ENG", mac, 16, out);
     CHECK(std::strcmp(out, "nufkq664m949efry") == 0);
+    // a provisioned device: same values as tools/ap_password.py with --master-file (test-master-secret)
+    auth::derive_password("0ba9da55f69e9b4e63d0919fd75787aeec5077944585eff083bb3448e97909bb", "LGAL-AP", mac, 12, out);
+    CHECK(std::strcmp(out, "79ng72jc87k4") == 0);
+    auth::derive_password("0ba9da55f69e9b4e63d0919fd75787aeec5077944585eff083bb3448e97909bb", "LGAL-ENG", mac, 16, out);
+    CHECK(std::strcmp(out, "brd7jfepbw37w8u4") == 0);
 }
 
 static void test_tokens() {
@@ -343,6 +365,7 @@ int main() {
     std::printf("Auth: password records\n");
     test_password();
     std::printf("Auth: derived device passwords\n");
+    test_device_secret();
     test_derive();
     std::printf("Auth: tokens\n");
     test_tokens();

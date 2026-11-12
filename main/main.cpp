@@ -69,6 +69,12 @@ void print_banner() {
     printf(" Hostname    : %s.local\n", lgal::device::hostname().c_str());
     printf(" Setup Wi-Fi : %s\n", lgal::device::setup_ssid().c_str());
     printf(" Password    : %s   (setup Wi-Fi and first web login)\n", lgal::device::setup_password().c_str());
+    if (lgal::device::secret_created()) {
+        printf("--------------------------------------------------------\n");
+        printf(" No device secret was provisioned, this device created\n");
+        printf(" its own. Note both now, they cannot be recomputed:\n");
+        printf(" Engineering : %s\n", lgal::device::engineering_key().c_str());
+    }
     printf("========================================================\n\n");
 }
 

@@ -13,7 +13,7 @@ components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte
 components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitplan (Scheduler), Engineering und ihre REST-APIs
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  ap_password.py, ota_upload.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  provision.py, ap_password.py, ota_upload.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
@@ -75,37 +75,45 @@ beim Bauen geprüft.
 Bootloader, Rollback-Einstellung und Partitionstabelle werden **nur** beim USB-Flash
 geschrieben. Danach laufen alle Updates per OTA.
 
-1. **Geräte-Geheimnis festlegen** (einmalig, danach nie wieder ändern – sonst
-   ändern sich alle Setup-Passwörter). Datei `sdkconfig.secrets` anlegen
-   (liegt nicht in Git):
+Jedes Gerät hat ein eigenes Geheimnis in der Partition `fctry`. Daraus leitet die Firmware
+das Geräte-Passwort (Etikett, Setup-WLAN, erste Anmeldung, Passwort-Wiederherstellung) und den
+Engineering-Schlüssel ab. Das Firmware-Image selbst enthält kein Geheimnis, Releases können
+also öffentlich sein. Werksreset und OTA-Updates lassen `fctry` unangetastet.
 
-   ```
-   CONFIG_LGAL_AP_SECRET="hier-ein-langes-zufaelliges-geheimnis"
-   ```
-
-   Danach `sdkconfig` löschen, damit die Werte neu eingelesen werden
-   (ESP-IDF übernimmt Defaults nur in ein neues `sdkconfig`):
-
-   ```bash
-   rm -f sdkconfig && idf.py build
-   ```
+1. **Hersteller-Master anlegen** (einmalig, für alle Geräte): Datei `factory.secret` im
+   Projektordner mit einer langen Zufallszeile (mindestens 16 Zeichen), z. B.
+   `python3 -c "import secrets; print(secrets.token_hex(32))" > factory.secret`. Sie liegt
+   nicht in Git und gelangt nie in die Firmware. **Sicher aufbewahren und sichern:** Ohne sie
+   lassen sich Etikett-Passwort und Engineering-Schlüssel nicht mehr aus der MAC berechnen;
+   wer sie hat, kann es für alle Geräte.
 
 2. **Flashen per USB** (Board noch nicht eingesteckt):
 
    ```bash
-   idf.py -p /dev/cu.usbmodem* flash monitor
+   idf.py -p /dev/cu.usbmodem* flash
    ```
 
-   Die serielle Ausgabe zeigt MAC, Hostname, Setup-WLAN und Passwort.
-   **MAC und Passwort notieren** (z. B. Aufkleber ins Gehäuse). Das Passwort lässt
-   sich jederzeit aus der MAC neu berechnen:
+3. **Provisionieren:** liest die MAC, schreibt das Geräte-Geheimnis
+   HMAC-SHA256(Master, „LGAL-DEVICE“ + MAC) nach `fctry` und zeigt die Werte fürs Etikett:
 
    ```bash
-   python3 tools/ap_password.py AA:BB:CC:DD:EE:FF
+   python3 tools/provision.py -p /dev/cu.usbmodem*
    ```
 
-   Den Engineering-Schlüssel (nur Hersteller, nicht aufs Etikett) liefert
-   `python3 tools/ap_password.py AA:BB:CC:DD:EE:FF --engineering`.
+   **Geräte-Passwort aufs Etikett** (z. B. Aufkleber ins Gehäuse), den Engineering-Schlüssel
+   nicht. Beides lässt sich jederzeit aus der MAC neu berechnen:
+
+   ```bash
+   python3 tools/ap_password.py AA:BB:CC:DD:EE:FF --engineering
+   ```
+
+   Danach zeigt `idf.py -p /dev/cu.usbmodem* monitor` beim Start MAC, Hostname, Setup-WLAN
+   und Passwort.
+
+   **Ohne Provisionieren** (z. B. Nachbau mit fremder Firmware-Datei) erzeugt das Gerät beim ersten
+   Start selbst ein zufälliges Geheimnis und zeigt Geräte-Passwort und Engineering-Schlüssel
+   einmal auf der seriellen Konsole. Diese Werte sofort notieren: Niemand kann sie neu
+   berechnen. Nachträgliches Provisionieren ersetzt sie.
 
 3. Board einstecken, LAN-Kabel anschließen.
 
@@ -133,7 +141,7 @@ Anmeldung auf `/login` (Seite „Account“):
   mit dem Geräte-Passwort ein neues Admin-Passwort setzen. Einstellungen, Zeitpläne und
   Kalibrierung bleiben erhalten.
 - **Engineering** (Super-Admin, nur Hersteller): `/login?eng=1`, Schlüssel pro Gerät aus
-  dem Geheimnis abgeleitet. Gilt für die angemeldete Sitzung und sperrt 15 min nach der
+  dem Geräte-Geheimnis abgeleitet (`tools/ap_password.py --engineering`). Gilt für die angemeldete Sitzung und sperrt 15 min nach der
   letzten Engineering-Anfrage. Mit API-Key zusätzlich Header `X-Engineering-Key`.
   Die Weboberfläche sperrt beim Start eine Freischaltung, die nicht aus demselben
   Browser-Tab stammt – ein geschlossener Tab bleibt damit gesperrt.

@@ -25,12 +25,20 @@ std::string own_hostname();         // set in pro mode, "" = follows the name
 esp_err_t set_names(const std::string& name, const std::string& host);
 
 const std::string& setup_ssid();    // "LG-Aquatic-Life-Setup-EEFF"
+// Both passwords come from the device secret in the factory partition "fctry"
+// (lgal/auth_core.h, written by tools/provision.py at the first USB flash;
+// neither the factory reset nor an update touches it). The firmware image
+// holds no secret.
+//
 // Device password on the label (12 characters) = HMAC-SHA256(secret, "LGAL-AP" + MAC):
 // setup Wi-Fi password, login before the setup and admin password recovery
 // via the setup Wi-Fi.
 const std::string& setup_password();
 // Engineering key of the manufacturer (16 characters, label "LGAL-ENG"),
-// never shown on the device; tools/ap_password.py --engineering.
+// never shown in the web UI; tools/ap_password.py --engineering.
 const std::string& engineering_key();
+// true if this start created the device secret (nothing provisioned): the
+// serial console then shows both passwords once, nobody else can know them.
+bool secret_created();
 
 }  // namespace lgal::device
