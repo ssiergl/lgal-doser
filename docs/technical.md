@@ -482,8 +482,8 @@ with all keys, loaded only when that language is used – a missing key shows in
 device pages (sign-in, setup, `/recovery`) carry their dictionaries inline, because `/recovery`
 must work without the web UI. New language: entry in `settings::kLanguages` and in `languages`
 of `lib/i18n.js`, the file in `lang/`, and the dictionaries in the device pages. The UI language
-is a device setting and can be switched on every page with a picker that shows the flag of each
-language (`/flags.js`).
+is a device setting, chosen with a picker that shows the flag of each language (`/flags.js`) on
+the sign-in, setup and `/recovery` pages and in the settings of the web UI.
 
 | Method | Path | Function |
 |---|---|---|
