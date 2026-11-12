@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <type_traits>
 
+#include "doser/pins.h"
 #include "esp_log.h"
 #include "nvs.h"
 
@@ -12,10 +13,10 @@ namespace {
 constexpr const char* TAG = "hwconfig";
 constexpr const char* kNs = "hw";
 constexpr uint16_t kVersion = 1;
-uint8_t s_fitted = kAllFitted;         // in effect since startup
-uint8_t s_fitted_saved = kAllFitted;   // in effect after the next restart
+uint8_t s_fitted = pins::kBoardMask;         // in effect since startup
+uint8_t s_fitted_saved = pins::kBoardMask;   // in effect after the next restart
 
-bool valid_mask(uint8_t m) { return m != 0 && (m & ~kAllFitted) == 0; }
+bool valid_mask(uint8_t m) { return m != 0 && (m & ~pins::kBoardMask) == 0; }
 
 template <typename T>
 struct Blob {
@@ -57,12 +58,15 @@ void load(motion::PumpConfig (&pumps)[kMaxPumps]) {
         snprintf(key, sizeof(key), "pump%d", i);
         load_blob(h, key, &pumps[i]);
     }
-    uint8_t m = kAllFitted;
+    uint8_t m = pins::kBoardMask;
     if (load_blob(h, "fitted", &m) && valid_mask(m)) s_fitted = s_fitted_saved = m;
     nvs_close(h);
-    for (int i = 0; i < kMaxPumps; ++i)
+    for (int i = 0; i < pins::kPumpCount; ++i)
         if (!fitted(i)) ESP_LOGI(TAG, "Pump %d: not fitted", i + 1);
 }
+
+int board_pumps() { return pins::kPumpCount; }
+uint8_t board_mask() { return pins::kBoardMask; }
 
 uint8_t fitted_mask() { return s_fitted; }
 bool fitted(int pump) { return pump >= 0 && pump < kMaxPumps && (s_fitted >> pump & 1); }

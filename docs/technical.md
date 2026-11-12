@@ -22,6 +22,7 @@ tests/host/             host tests (TMC protocol, current, ramp, calendar, time 
                         and simulation of dosing engine and scheduler (`tests/host/run.sh`)
 tests/fuzz/             fuzzers for all parsers of external input (`tests/fuzz/run.sh`)
 partitions*.csv         final partition tables per flash size (can only be changed over USB!)
+boards/                 board definitions (model name per board; pins in components/doser_hal/include/doser/boards/)
 variants/               configuration per module variant (N8R8, N16R8, N32R8)
 .github/workflows/      CI (tests, fuzzers, all variants) and release build per git tag
 docs/                   documentation, German versions in docs/de/
@@ -77,6 +78,31 @@ After changes to `sdkconfig.defaults`, `sdkconfig` must be regenerated
 (`rm sdkconfig && idf.py build`). The IRAM options of the step clocks are checked at build time.
 
 Both test scripts take another compiler with `HOST_CXX=clang++` (the CI uses that).
+
+### Boards
+
+A board is one circuit board with its pin assignment and number of pumps. The firmware is built
+for exactly one board; board and module variant (below) can be combined freely.
+
+| Board | Model | Pumps | Circuit board |
+|---|---|---|---|
+| `d5v1` | LGAL-Doser 5 | 5 | v1.0 (11/2026) |
+
+Without an option `idf.py build` builds `d5v1`; another board: `idf.py -DBOARD=<id> build`. The
+ID reads d = doser, number of pumps, v = circuit board version.
+
+A board consists of two files:
+
+- `boards/<id>.cmake` sets `LGAL_BOARD_MODEL` (model name in the web UI, system info and Home
+  Assistant).
+- `components/doser_hal/include/doser/boards/<id>.h` defines the pins in `doser::pins`: number of
+  pumps (1–5), STEP pin, TMC2209 bus and address per pump, 1 or 2 UART buses, EN,
+  Ethernet, I²C, LED and button. `doser/pins.h` lists the required names and checks them at
+  compile time.
+
+Records, backups, API and web UI are sized for five pumps (`doser::kMaxPumps`) on every board;
+the pumps a board does not have are never fitted. The step clocks come from RMT for pumps 1–4
+and MCPWM for pump 5. A board with fewer pumps uses only what it needs.
 
 ### Module variants
 
@@ -461,7 +487,7 @@ on every page.
 | GET / POST | `/api/v1/engineering/scheduler?…` | super admin: `grid_min` (divisor of 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | super admin: uptime, reset reason, chip temperature, heap (free, minimum, largest block, fragmentation), PSRAM, NVS entries, LittleFS and history |
 | POST | `/api/v1/engineering/reset?what=network` | super admin: reset the network settings (applies after 1 s); the factory reset is only on the maintenance page with the admin password |
-| GET | `/api/v1/hw/status` | drivers, pumps, RTC, EEPROM, UART statistics; fitting `fitted` (now) and `fitted_next` (after the next restart) |
+| GET | `/api/v1/hw/status` | board (`id`, `model`, `pumps`), drivers and pumps of the board, RTC, EEPROM, UART statistics; fitting `fitted` (now) and `fitted_next` (after the next restart) |
 | POST | `/api/v1/hw/channels?pumps=1,2,3,4` | save the fitting (at least one pump), applies after a restart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | raw run (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | stop (0 = all) |

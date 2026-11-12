@@ -347,7 +347,7 @@ extern "C" void app_main(void) {
 
     vTaskDelay(pdMS_TO_TICKS(1500));  // let the boot fade-in finish
     lgal::led::set(lgal::led::State::Boot, false);
-    ESP_LOGI(TAG, "System ready");
+    ESP_LOGI(TAG, "System ready (board %s, %s)", LGAL_BOARD_ID, LGAL_BOARD_MODEL);
 
     while (true) {
         update_status_led();

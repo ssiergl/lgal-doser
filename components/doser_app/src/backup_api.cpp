@@ -141,14 +141,17 @@ esp_err_t post_backup(httpd_req_t* req) {
     if (todo & bk::kEngineering) {
         if (const char* e = dosing::set_engineering(d->dosing)) return apply_failed(req, bk::kEngineering, e, applied);
         if (const char* e = scheduler::set_config(d->scheduler)) return apply_failed(req, bk::kEngineering, e, applied);
-        for (int i = 0; i < kMaxPumps; ++i) {
+        // a backup of a board with more pumps: only the pumps of this board
+        for (int i = 0; i < hwconfig::board_pumps(); ++i) {
             const esp_err_t e = motion::set_config(i, d->hw[i]);
             if (e == ESP_ERR_INVALID_ARG || e == ESP_ERR_INVALID_STATE)
                 return apply_failed(req, bk::kEngineering, e == ESP_ERR_INVALID_STATE ? "pump_busy" : "invalid_param", applied);
             hwconfig::save_pump(i, d->hw[i]);  // also when the driver did not answer
         }
-        // channel population: in effect after the next restart
-        if (d->fitted && hwconfig::save_fitted(d->fitted) != ESP_OK)
+        // channel population: in effect after the next restart, limited to the
+        // board (no pump of the backup on this board: unchanged)
+        const uint8_t fitted = d->fitted & hwconfig::board_mask();
+        if (fitted && hwconfig::save_fitted(fitted) != ESP_OK)
             return apply_failed(req, bk::kEngineering, "storage_error", applied);
         if (d->history_keep_days && history::set_keep_days(d->history_keep_days) != ESP_OK)
             return apply_failed(req, bk::kEngineering, "storage_error", applied);

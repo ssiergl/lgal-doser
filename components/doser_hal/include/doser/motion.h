@@ -83,6 +83,8 @@ esp_err_t read_register(int pump, uint8_t reg, uint32_t* value);
 struct BusStats {
     uint32_t transfers, timeouts, crc_errors, echo_errors;
 };
-BusStats bus_stats(int bus);  // 0 = A (pumps 1-4), 1 = B (pump 5)
+// bus = index in pins::kUartBus (board d5v1: 0 = A, pumps 1-4; 1 = B, pump 5)
+BusStats bus_stats(int bus);
+int bus_count();
 
 }  // namespace doser::motion
