@@ -60,12 +60,18 @@ A new device opens its own Wi-Fi for this, the setup Wi-Fi (LED pulsing orange).
 1. On a phone or laptop, choose the Wi-Fi **`LG-Aquatic-Life-Setup-XXXX`** and enter the device
    password from the rating plate.
 2. Usually the setup opens by itself. Otherwise open `http://192.168.4.1/` in the browser.
-3. Sign in with the device password. The wizard guides you through five steps:
+3. The wizard guides you through five steps:
    - **language** (English or German),
-   - **own admin password** (8–64 characters) – from now on only this one is valid,
+   - **own admin password** (8–64 characters): enter the device password from the rating plate
+     once, then choose your own password – from now on only this one signs in,
+   - **sign in** once with the new password (user "admin"); your browser can remember it now.
+     Then the setup goes on with
    - **network:** check the LAN status or scan, test and save a Wi-Fi,
    - **time zone** and time server, if needed take the time from the browser,
    - **finish.**
+
+   Until the setup is finished the device does nothing else – no pump can be started. If you
+   stop in between, you get back to the setup after signing in.
 4. After finishing, the page shows the new address of the device, e.g.
    `http://lgal-doser-xxxx.local/`, and the IP address. 20 seconds later the setup Wi-Fi switches
    off. Connect phone or laptop to the home network again and open the new address.
@@ -75,7 +81,7 @@ address; it is also listed in the router's device list.
 
 ## 4. Signing in
 
-- You sign in with your own **admin password**. The browser stays signed in as long as it is used
+- You sign in as user **admin** with your own **admin password**. The browser stays signed in as long as it is used
   at least once a week (at most 30 days). After a restart or update of the device you have to
   sign in again.
 - After five wrong attempts the device waits before every further attempt, briefly at first,

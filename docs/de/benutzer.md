@@ -64,12 +64,18 @@ Ein neues Gerät öffnet dafür ein eigenes WLAN, das Setup-WLAN (LED orange pul
    Geräte-Passwort vom Typenschild eingeben.
 2. Meist öffnet sich die Einrichtung von selbst. Sonst im Browser `http://192.168.4.1/`
    aufrufen.
-3. Mit dem Geräte-Passwort anmelden. Der Assistent führt durch fünf Schritte:
+3. Der Assistent führt durch fünf Schritte:
    - **Sprache** (Deutsch oder Englisch),
-   - **eigenes Admin-Passwort** (8–64 Zeichen) – ab jetzt gilt nur noch dieses,
+   - **eigenes Admin-Passwort** (8–64 Zeichen): einmal das Geräte-Passwort vom Typenschild
+     eingeben, dann ein eigenes Passwort wählen – ab jetzt meldet nur noch dieses an,
+   - einmal mit dem neuen Passwort **anmelden** (Benutzer „admin“); dein Browser kann es sich
+     dabei merken. Danach geht es weiter mit
    - **Netzwerk:** LAN-Status prüfen oder ein WLAN suchen, testen und speichern,
    - **Zeitzone** und Zeitserver, bei Bedarf die Uhrzeit vom Browser übernehmen,
    - **Abschluss.**
+
+   Bis die Einrichtung abgeschlossen ist, macht das Gerät nichts anderes – keine Pumpe lässt sich
+   starten. Brichst du zwischendurch ab, kommst du nach dem Anmelden wieder in die Einrichtung.
 4. Nach dem Abschluss zeigt die Seite die neue Adresse des Geräts, z. B.
    `http://lgal-doser-xxxx.local/`, und die IP-Adresse. 20 Sekunden später schaltet sich das
    Setup-WLAN ab. Handy oder Laptop wieder mit dem Heimnetz verbinden und die neue Adresse
@@ -80,8 +86,8 @@ Android-Geräte), die IP-Adresse verwenden; sie steht auch in der Geräteliste d
 
 ## 4. Anmelden
 
-- Angemeldet wird mit dem eigenen **Admin-Passwort**. Der Browser bleibt angemeldet, solange
-  er mindestens einmal pro Woche benutzt wird (höchstens 30 Tage). Nach einem Neustart oder
+- Angemeldet wird als Benutzer **admin** mit dem eigenen **Admin-Passwort**. Der Browser bleibt
+  angemeldet, solange er mindestens einmal pro Woche benutzt wird (höchstens 30 Tage). Nach einem Neustart oder
   Update des Geräts muss man sich neu anmelden.
 - Nach fünf falschen Versuchen wartet das Gerät vor jedem weiteren Versuch, erst kurz, dann
   immer länger (bis 5 Minuten).

@@ -44,6 +44,8 @@ mock; the test on the finished hardware is still pending.
   derived from the device name.
 - Own admin password, sessions in RAM, API keys, throttling of password guessing, origin check
   for changing requests; engineering access for the manufacturer only.
+- Locked until the first setup is completed: the device password from the label only sets the
+  own admin password, then the setup goes on after signing in once; no pump runs before.
 - Device secret per device in the `fctry` partition; firmware images contain no secret.
 
 ### Web UI

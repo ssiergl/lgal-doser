@@ -34,8 +34,9 @@ void write_urls(Json& j) {
     j.end();
 }
 
+// The page itself is public: its first two steps (language, first admin password) work
+// before any sign-in; every API call after them needs the session.
 esp_err_t get_page(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     return httpd_resp_send(req, setup_html_start, setup_html_end - setup_html_start - 1);

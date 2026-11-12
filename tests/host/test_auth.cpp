@@ -5,6 +5,7 @@
 #include <string>
 
 #include "lgal/auth_core.h"
+#include "lgal/setup_core.h"
 #include "lgal/sha256.h"
 
 using namespace lgal;
@@ -357,6 +358,20 @@ static void test_headers() {
     CHECK(!auth::bearer_token("Bearer 0123456789", v, 5));
 }
 
+static void test_setup_gate() {
+    // the setup and what its steps need
+    for (const char* u : {"/setup", "/setup?x=1", "/api/v1/setup", "/api/v1/setup/complete", "/login?next=/setup",
+                          "/api/v1/auth/status", "/api/v1/net/scan", "/network", "/api/v1/system/time",
+                          "/api/v1/system/language?lang=de", "/api/v1/ota/url", "/recovery", "/i18n.js"})
+        CHECK(setup::open_during_setup(u));
+    // no way to the pumps or the web UI
+    for (const char* u : {"/", "/ui/app.js", "/ws", "/api/v1/pumps", "/api/v1/pumps/prime", "/api/v1/hw/pump/run",
+                          "/api/v1/engineering/dosing", "/api/v1/schedule/status", "/api/v1/history", "/api/v1/backup",
+                          "/api/v1/mqtt", "/setupx", "/networks", "/api/v1/setupx", "/recoveryx", ""})
+        CHECK(!setup::open_during_setup(u));
+    CHECK(!setup::open_during_setup(nullptr));
+}
+
 int main() {
     std::printf("Auth: SHA-256\n");
     test_sha256();
@@ -379,6 +394,8 @@ int main() {
     test_throttle();
     std::printf("Auth: headers\n");
     test_headers();
+    std::printf("Setup gate\n");
+    test_setup_gate();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

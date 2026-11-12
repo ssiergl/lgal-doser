@@ -232,8 +232,9 @@ Factory reset and OTA updates leave `fctry` untouched.
 Sign-in on `/login`, a pure sign-in page with the logo, the user "admin" (shown for password
 managers, the device has only this one user) and the password. Signed-in browsers are sent on to
 the target right away; password, API keys and engineering live in the web UI.
-- **First sign-in** with the device password from the rating plate. Then the page asks for an
-  own admin password (8–64 characters); from then on only that one is valid.
+- **Device password** (rating plate): it never signs in. It only sets the first own admin
+  password (8–64 characters) in step 2 of the [initial setup](#initial-setup-m4) and resets a
+  forgotten one through the setup Wi-Fi. Without an admin password `/login` leads to the setup.
 - **Sessions** live in RAM only (cookie `lgal_session`, max. 8, 7 days without use or 30 days
   absolute). Sign in again after a restart or OTA. Changing the password signs out all other
   browsers.
@@ -263,16 +264,24 @@ protects against other devices under the same home domain. Clients without an Or
 (Home Assistant, apps, scripts) are not affected.
 
 In factory state (`setup_completed = false`) the setup Wi-Fi is always on and `/` leads to
-the [initial setup](#initial-setup-m4).
+the [initial setup](#initial-setup-m4). Until it is completed a signed-in browser reaches only the
+setup itself: the wizard, sign-in, network, time, language, system information, the network and
+maintenance pages and firmware updates. Everything else – pumps, schedules, history, backup,
+MQTT, engineering, the web UI and its WebSocket, new API keys – answers 409 `setup_required`
+(pages: redirect to `/setup`). So nobody gets to the pumps before an own password is set and the
+setup is finished; for a test run before shipping, set the device up and reset it afterwards.
 
 ## Initial setup (M4)
 
 1. Connect to the setup Wi-Fi `LG-Aquatic-Life-Setup-XXXX` (password from the rating plate).
    The **captive portal** usually opens the setup on phones and laptops by itself; otherwise
    open `http://192.168.4.1/`.
-2. Sign in with the device password; the page **`/setup`** guides through five steps:
-   language → own admin password → network (LAN status, scan Wi-Fi, test, save) → time zone,
-   NTP server, optionally time from the browser → finish.
+2. The page **`/setup`** guides through five steps. The first two need no sign-in: language →
+   own admin password, set with the device password from the rating plate (`auth/claim`, also
+   stores the language). Then the browser goes to `/login` and signs in once with the new
+   password (user "admin" – the password manager can save it here); after that the wizard goes on
+   with network (LAN status, scan Wi-Fi, test, save) → time zone, NTP server, optionally time from
+   the browser → finish. An interrupted setup goes on after signing in at the network step.
 3. **Finishing** is only possible with an admin password and a connected LAN or Wi-Fi. The page
    shows the new addresses (`http://lgal-doser-xxxx.local/` and IP); 20 s later the setup Wi-Fi
    switches off.
@@ -380,9 +389,10 @@ script:
 python3 tools/ota_upload.py lgal-doser-xxxx.local --key lgal_...
 ```
 
-Sign-in: `--key` (or `LGAL_API_KEY`), `--password` (or `LGAL_PASSWORD`, admin password) or,
-before the initial setup, `--mac AA:BB:CC:DD:EE:FF` (device password). With a password the script
-signs in again by itself after the restart.
+Sign-in: `--key` (or `LGAL_API_KEY`) or `--password` (or `LGAL_PASSWORD`, admin password). A new
+device needs its admin password from the setup first (steps 1 and 2); updates work from then on,
+also before the rest of the setup is done. With a password the script signs in again by itself
+after the restart.
 
 Procedure and protection:
 - The image is checked before writing (ESP32-S3, project name `lgal_doser`, flash size, board) and
@@ -438,8 +448,9 @@ curl -H "Authorization: Bearer lgal_..." -H "X-Engineering-Key: ..." -d '{"url":
 ## API
 
 All endpoints need a session or an API key (see [Access](#access)). Reachable without sign-in:
-`/login`, `/api/v1/auth/status`, `/api/v1/auth/login`, `/api/v1/auth/recover` and
-`GET /api/v1/system/language`. The `engineering` endpoints and all `/api/v1/hw/…` endpoints
+`/login`, `/setup`, `/api/v1/auth/status`, `/api/v1/auth/login`, `/api/v1/auth/claim`,
+`/api/v1/auth/recover` and `GET /api/v1/system/language`. Before the initial setup is completed
+only the setup is open (409 `setup_required`, see [Access](#access)). The `engineering` endpoints and all `/api/v1/hw/…` endpoints
 additionally need the engineering unlock.
 
 **Languages:** firmware, logs and API are English. Errors always come as
@@ -460,17 +471,18 @@ on every page.
 | POST / GET | `/api/v1/net/scan` | start Wi-Fi scan / result (`idle\|running\|done\|failed`, strongest first) |
 | POST / GET | `/api/v1/net/wlan/test` | connection test `{"ssid","password"?,"dhcp",…}` / result (`ok` with `ip`, `failed` with `reason`) |
 | GET | `/api/v1/auth/status` | signed in?, password set?, engineering time left, recovery possible? |
-| POST | `/api/v1/auth/login` | `{"password"}` → session cookie |
+| POST | `/api/v1/auth/login` | `{"password"}` → session cookie; without an admin password 409 `password_not_set` |
+| POST | `/api/v1/auth/claim` | `{"device_password","new","language"?}` first admin password, only while none is set; no session |
 | POST | `/api/v1/auth/logout` | end session |
-| POST | `/api/v1/auth/password` | `{"current","new"}` (without `current` before it is first set) |
+| POST | `/api/v1/auth/password` | `{"current","new"}` |
 | POST | `/api/v1/auth/recover` | `{"device_password","new"}`, only from the setup Wi-Fi |
-| GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | list API keys / create `{"name"}` / delete |
+| GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | list API keys / create `{"name"}` (after the initial setup) / delete |
 | POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` unlock / lock |
 | GET | `/api/v1/system/info` | model and board, version, partition, OTA status, network, memory, time, language, links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | UI language |
 | GET / PUT | `/api/v1/system/led` | shown state (`shown`) and night mode / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (missing fields stay, 400 `invalid_param` with `field`) |
 | GET / PUT | `/api/v1/system/time` | time, source, time zone, NTP server / `{"timezone"?,"ntp_server"?,"utc"?}` or instead of `utc` `"local":"2026-11-10T18:30"` (local time of the device; everything checked before anything is applied; 400 `invalid_param` with `field`) |
-| GET | `/setup` | initial setup |
+| GET | `/setup` | initial setup (page without sign-in) |
 | GET / PUT | `/api/v1/system/device` | `name`, `hostname` (in use), `own_hostname` (`""` = from the name), `default_hostname` / `{"name","own_hostname"}` partially; 400 `invalid_param` with `field` |
 | GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
 | POST | `/api/v1/setup/complete` | finish the setup (409 `password_not_set` / `not_connected`), setup Wi-Fi off after 20 s |

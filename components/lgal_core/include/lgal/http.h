@@ -26,7 +26,9 @@ httpd_handle_t handle();
 bool same_origin(httpd_req_t* req);
 
 // Checks the login (and same_origin). On failure 401 (or a redirect to /login for pages) is
-// sent and false is returned; the handler must then return ESP_OK immediately.
+// sent and false is returned; the handler must then return ESP_OK immediately. Before the
+// first setup is completed, addresses outside the setup (setup_core.h) get 409
+// "setup_required" (pages: a redirect to /setup).
 bool authorize(httpd_req_t* req);
 // Same for the engineering area (spec 11.1): 403 "engineering_locked" if the
 // session has not unlocked it.

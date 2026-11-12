@@ -54,9 +54,12 @@ a{color:var(--acc)}ul{padding-left:20px}
 <h2 data-i18n="pw.title"></h2>
 <div id="pw_set" hidden><p data-i18n="pw.done"></p></div>
 <form id="f_pw"><p class="hint" data-i18n="pw.hint"></p>
+<input value="admin" autocomplete="username" hidden>
+<label data-i18n="pw.device"></label><input id="pw0" maxlength="31" autocomplete="off" autocapitalize="off" spellcheck="false">
 <label data-i18n="pw.new"></label><input id="pw1" type="password" autocomplete="new-password" minlength="8" maxlength="64">
 <label data-i18n="pw.repeat"></label><input id="pw2" type="password" autocomplete="new-password" maxlength="64">
-<div class="row"><span></span><button data-i18n="pw.save"></button></div></form>
+<div class="row"><span></span><button data-i18n="pw.save"></button></div>
+<p class="hint" data-i18n="pw.then"></p></form>
 <div class="msg" id="pw_msg"></div>
 </section>
 
@@ -99,8 +102,9 @@ a{color:var(--acc)}ul{padding-left:20px}
 i18n.add({
 en:{'title':'Setup','step':'Step {n} of {m}','back':'Back','next':'Next',
  'lang.title':'Language','lang.hint':'Language of the web interface. It can be changed on every page.',
- 'pw.title':'Admin password','pw.hint':'Choose your own password for this device (at least 8 characters). The password from the label then only works for recovery via the setup Wi-Fi.',
- 'pw.new':'New password','pw.repeat':'Repeat password','pw.save':'Save password','pw.done':'An admin password is set.','pw.ok':'Password saved.','pw.mismatch':'The passwords do not match.',
+ 'pw.title':'Admin password','pw.hint':'Enter the device password from the label on the device and choose your own password (at least 8 characters). The label password then only works for recovery via the setup Wi-Fi.',
+ 'pw.device':'Device password (label)','pw.new':'New password','pw.repeat':'Repeat password','pw.save':'Save password','pw.done':'An admin password is set.','pw.mismatch':'The passwords do not match.',
+ 'pw.then':'Next you sign in once with the new password (user "admin") – your browser can remember it then. After that the setup goes on.',
  'net.title':'Network','net.lan':'LAN cable (recommended)','net.wlan':'Wi-Fi','net.ssid':'Network (SSID)','net.scan':'Search','net.scan.run':'Searching …','net.scan.none':'No networks found.',
  'net.password':'Wi-Fi password','net.connect':'Connect','net.testing':'Connecting to {s} …','net.saved':'Connected and saved.','net.fail':'Connection failed: {r}',
  'net.more':'Static addresses and more options: page "Network" after the setup.',
@@ -114,11 +118,13 @@ en:{'title':'Setup','step':'Step {n} of {m}','back':'Back','next':'Next',
  'done.ap':'The setup Wi-Fi switches off in {s} s. Connect this phone or computer to your normal network again and open one of the addresses above.',
  'done.again':'Setup has already been completed. You can still change everything here.',
  'err.password_not_set':'Please set an admin password first (step 2).','err.not_connected':'The device is not connected to LAN or Wi-Fi yet (step 3).',
- 'err.password_too_short':'At least 8 characters','err.password_too_long':'At most 64 characters'},
+ 'err.password_too_short':'At least 8 characters','err.password_too_long':'At most 64 characters',
+ 'err.wrong_password':'Wrong device password','err.too_many_attempts':'Too many attempts – please wait a moment'},
 de:{'title':'Einrichtung','step':'Schritt {n} von {m}','back':'Zurück','next':'Weiter',
  'lang.title':'Sprache','lang.hint':'Sprache der Weboberfläche. Sie lässt sich auf jeder Seite ändern.',
- 'pw.title':'Admin-Passwort','pw.hint':'Wähle ein eigenes Passwort für dieses Gerät (mindestens 8 Zeichen). Das Passwort vom Typenschild gilt danach nur noch zur Wiederherstellung über das Setup-WLAN.',
- 'pw.new':'Neues Passwort','pw.repeat':'Passwort wiederholen','pw.save':'Passwort speichern','pw.done':'Ein Admin-Passwort ist gesetzt.','pw.ok':'Passwort gespeichert.','pw.mismatch':'Die Passwörter stimmen nicht überein.',
+ 'pw.title':'Admin-Passwort','pw.hint':'Gib das Geräte-Passwort vom Typenschild ein und wähle ein eigenes Passwort (mindestens 8 Zeichen). Das Passwort vom Typenschild gilt danach nur noch zur Wiederherstellung über das Setup-WLAN.',
+ 'pw.device':'Geräte-Passwort (Typenschild)','pw.new':'Neues Passwort','pw.repeat':'Passwort wiederholen','pw.save':'Passwort speichern','pw.done':'Ein Admin-Passwort ist gesetzt.','pw.mismatch':'Die Passwörter stimmen nicht überein.',
+ 'pw.then':'Danach meldest du dich einmal mit dem neuen Passwort an (Benutzer „admin“) – dein Browser kann es sich dabei merken. Anschließend geht die Einrichtung weiter.',
  'net.title':'Netzwerk','net.lan':'LAN-Kabel (empfohlen)','net.wlan':'WLAN','net.ssid':'Netzwerk (SSID)','net.scan':'Suchen','net.scan.run':'Suche …','net.scan.none':'Keine Netzwerke gefunden.',
  'net.password':'WLAN-Passwort','net.connect':'Verbinden','net.testing':'Verbinde mit {s} …','net.saved':'Verbunden und gespeichert.','net.fail':'Verbindung fehlgeschlagen: {r}',
  'net.more':'Feste Adressen und weitere Optionen: Seite „Netzwerk“ nach der Einrichtung.',
@@ -132,7 +138,8 @@ de:{'title':'Einrichtung','step':'Schritt {n} von {m}','back':'Zurück','next':'
  'done.ap':'Das Setup-WLAN schaltet in {s} s ab. Verbinde dieses Handy oder diesen Computer wieder mit deinem normalen Netzwerk und öffne eine der Adressen oben.',
  'done.again':'Die Einrichtung ist bereits abgeschlossen. Du kannst hier trotzdem alles ändern.',
  'err.password_not_set':'Bitte zuerst ein Admin-Passwort setzen (Schritt 2).','err.not_connected':'Das Gerät ist noch nicht mit LAN oder WLAN verbunden (Schritt 3).',
- 'err.password_too_short':'Mindestens 8 Zeichen','err.password_too_long':'Höchstens 64 Zeichen'}
+ 'err.password_too_short':'Mindestens 8 Zeichen','err.password_too_long':'Höchstens 64 Zeichen',
+ 'err.wrong_password':'Falsches Geräte-Passwort','err.too_many_attempts':'Zu viele Versuche – bitte kurz warten'}
 });
 // Time zones: IANA names (for the browser's zone) -> POSIX rule
 const ZONES=[
@@ -168,7 +175,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const STEPS=['lang','pw','net','time','done'];
-let step=0,S=null,NS=null,T=null,timer=null,done=false;
+let step=0,S=null,NS=null,T=null,timer=null,done=false,signedIn=false;
 async function api(method,path,body){
   const o={method,cache:'no-store'};if(body!==undefined){o.body=JSON.stringify(body);o.headers={'Content-Type':'application/json'}}
   const r=await fetch(path,o);let j={};try{j=await r.json()}catch(e){}
@@ -203,14 +210,17 @@ function updNext(){
 function buildLangs(){
   const sel=$('lang');
   $('langs').innerHTML=[...sel.options].map(o=>`<button type="button" class="${o.value===i18n.lang?'':'sec'}" data-l="${o.value}">${esc(o.textContent)}</button>`).join('');
-  $('langs').querySelectorAll('button').forEach(b=>b.onclick=()=>{i18n.setLang(b.dataset.l,true);show(1)});
+  // before the sign-in the choice stays in the browser; step 2 stores it on the device
+  $('langs').querySelectorAll('button').forEach(b=>b.onclick=()=>{i18n.setLang(b.dataset.l,signedIn);show(1)});
 }
 // 2 password
-function showPw(){$('pw_set').hidden=!S.password_set;$('f_pw').hidden=S.password_set;if(!S.password_set)$('pw1').focus()}
+function showPw(){$('pw_set').hidden=!S.password_set;$('f_pw').hidden=S.password_set;if(!S.password_set)$('pw0').focus()}
+// First admin password with the device password from the label; then sign in once with it
 $('f_pw').onsubmit=async e=>{e.preventDefault();
   if($('pw1').value!==$('pw2').value){msg('pw_msg',t('pw.mismatch'));return}
-  try{await api('POST','/api/v1/auth/password',{new:$('pw1').value});$('pw1').value=$('pw2').value='';
-    S.password_set=true;msg('pw_msg',t('pw.ok'),'ok');showPw();updNext()}catch(err){msg('pw_msg',err.message)}};
+  try{await api('POST','/api/v1/auth/claim',{device_password:$('pw0').value.trim(),new:$('pw1').value,language:i18n.lang});
+    ['pw0','pw1','pw2'].forEach(i=>$(i).value='');location.href='/login?next=/setup&first=1'}
+  catch(err){const c=err.body&&err.body.error&&err.body.error.code;if(c==='password_already_set')location.reload();else msg('pw_msg',err.message)}};
 // 3 network
 const via=()=>document.querySelector('[name=via]:checked').value;
 document.querySelectorAll('[name=via]').forEach(r=>r.onchange=()=>{$('wbox').hidden=via()!=='wlan';netStatus()});
@@ -284,9 +294,15 @@ $('next').onclick=async()=>{
 };
 function build(){buildLangs();buildZones();i18n.apply();if(S)show(step)}
 i18n.onChange(build);
+// Steps 1 and 2 work without sign-in. Once an admin password exists the wizard needs a
+// session; after the first sign-in it goes on with the network.
 i18n.init('lang').then(async()=>{
-  try{S=await api('GET','/api/v1/setup')}catch(e){return}
-  build();show(0);
+  let A;try{A=await api('GET','/api/v1/auth/status')}catch(e){return}
+  signedIn=A.logged_in&&A.via==='session';
+  if(A.password_set&&!signedIn){location.replace('/login?next=/setup');return}
+  if(signedIn){try{S=await api('GET','/api/v1/setup')}catch(e){return}}
+  else S={password_set:false,completed:A.setup_completed};
+  build();show(signedIn&&!S.completed?2:0);
 });
 </script>
 </body>

@@ -1,5 +1,5 @@
 # Mock of the time, network and auth endpoints (test values only)
-import re, secrets, threading, time
+import os, re, secrets, threading, time
 
 OFFSET = 600  # device clock runs 10 min ahead of the host -> "differs" warning
 TIME = {"timezone": "CET-1CEST,M3.5.0,M10.5.0/3", "ntp_server": "pool.ntp.org", "source": "rtc", "valid": True,
@@ -9,7 +9,15 @@ NET = {"mode": "auto",
        "wlan": {"ssid": "HomeNet", "password_set": True, "dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""}}
 SCAN = {"state": "idle", "t": 0}
 TEST = {"state": "idle", "t": 0, "ok": True}
-AUTH = {"password": "test-admin-pw", "password_set": True, "session": True}  # only /login looks at "session"
+AUTH = {"password": "test-admin-pw", "password_set": True, "session": True}  # only /login and /setup look at "session"
+# MOCK_FACTORY=1: factory state - no admin password, setup not completed, not signed in.
+# The device password from the label is then "test-label-pw".
+LABEL_PW = "test-label-pw"
+SETUP = {"completed": True}
+LANG_SET = lambda code: None  # set by webui_server.py (it keeps the language)
+if os.environ.get("MOCK_FACTORY") == "1":
+    AUTH.update(password="", password_set=False, session=False)
+    SETUP["completed"] = False
 KEYS = [{"slot": 1, "name": "Home Assistant", "created": int(time.time()) - 86400 * 12}]
 MAX_KEYS = 4
 ENGKEY = "test-eng-key"
@@ -194,9 +202,10 @@ def route(h, method, path, q, body):
         if method == "DELETE": SYS["coredump"] = False; h.send(200, {"status": "deleted"}); return True
     if path == "/api/v1/system/reboot" and method == "POST": h.send(200, {"status": "rebooting"}); restart(); return True
     if path == "/api/v1/setup" and method == "GET":
-        h.send(200, {"completed": True, "password_set": AUTH["password_set"], "connected": True, "hostname": hostname(),
+        h.send(200, {"completed": SETUP["completed"], "password_set": AUTH["password_set"], "connected": True, "hostname": hostname(),
                      "urls": ["http://" + hostname() + ".local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
     if path == "/api/v1/setup/complete" and method == "POST":
+        SETUP["completed"] = True
         h.send(200, {"status": "ok", "ap_off_in_s": 20, "urls": ["http://" + hostname() + ".local/", "http://" + net_status()["lan"]["ip"] + "/"]}); return True
     if path == "/api/v1/system/factory_reset" and method == "POST":
         if body.get("password") != AUTH["password"]: err(h, 403, "wrong_password", "Wrong password"); return True
@@ -313,7 +322,7 @@ def route(h, method, path, q, body):
     if path == "/api/v1/system/language" and method == "GET" and down():
         return True
     if path == "/api/v1/auth/status" and method == "GET":
-        h.send(200, {"logged_in": AUTH["session"], "via": "session" if AUTH["session"] else "none", "password_set": AUTH["password_set"], "setup_completed": True,
+        h.send(200, {"logged_in": AUTH["session"], "via": "session" if AUTH["session"] else "none", "password_set": AUTH["password_set"], "setup_completed": SETUP["completed"],
                      "engineering": ENG["until"] > time.time(), "engineering_left_s": int(max(0, ENG["until"] - time.time())), "recovery": False, "device": hostname()}); return True
     if path == "/api/v1/auth/password" and method == "POST":
         if AUTH["password_set"] and body.get("current") != AUTH["password"]: err(h, 403, "wrong_password", "Current password is wrong"); return True
@@ -321,8 +330,18 @@ def route(h, method, path, q, body):
         if len(n) < 8: err(h, 400, "password_too_short", "Password too short"); return True
         if len(n) > 64: err(h, 400, "password_too_long", "Password too long"); return True
         AUTH.update(password=n, password_set=True); h.send(200, {"status": "ok"}); return True
+    if path == "/api/v1/auth/claim" and method == "POST":
+        if AUTH["password_set"]: err(h, 409, "password_already_set", "An admin password is already set"); return True
+        if body.get("device_password") != LABEL_PW: err(h, 403, "wrong_password", "Wrong device password"); return True
+        n = body.get("new", "")
+        if len(n) < 8: err(h, 400, "password_too_short", "Password too short"); return True
+        if len(n) > 64: err(h, 400, "password_too_long", "Password too long"); return True
+        AUTH.update(password=n, password_set=True, session=False)
+        if body.get("language") in ("en", "de"): LANG_SET(body["language"])
+        h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/auth/logout" and method == "POST": AUTH["session"] = False; h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/auth/login" and method == "POST":
+        if not AUTH["password_set"]: err(h, 409, "password_not_set", "Choose the admin password in the setup first"); return True
         if body.get("password") != AUTH["password"]: err(h, 403, "wrong_password", "Wrong password"); return True
         AUTH["session"] = True; h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}); return True
     if path == "/api/v1/auth/keys":

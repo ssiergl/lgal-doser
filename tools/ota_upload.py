@@ -4,12 +4,12 @@
 Usage:
     tools/ota_upload.py lgal-doser-eeff.local --key lgal_...
     tools/ota_upload.py 192.168.1.50 --bin build/lgal_doser.bin --password ...
-    tools/ota_upload.py 192.168.4.1 --mac AA:BB:CC:DD:EE:FF   # before the setup
 
-Login: an API key (--key or LGAL_API_KEY, created on /login), the admin
-password (--password or LGAL_PASSWORD) or, as long as no admin password is
-set, the device password (--mac: derived from the MAC and the manufacturer
-master in factory.secret as in tools/ap_password.py).
+Login: an API key (--key or LGAL_API_KEY, created in the web UI settings) or
+the admin password (--password or LGAL_PASSWORD). The device password from
+the label never signs in: on a new device choose the admin password in the
+setup wizard first (steps 1 and 2, http://192.168.4.1/setup); updates work
+from then on, also before the rest of the setup is done.
 Afterwards the script waits until the device answers with the new version.
 """
 import argparse
@@ -70,18 +70,11 @@ def main():
     ap.add_argument("--bin", default=str(ROOT / "build" / "lgal_doser.bin"))
     ap.add_argument("--key", default=os.environ.get("LGAL_API_KEY"), help="API key (lgal_...)")
     ap.add_argument("--password", default=os.environ.get("LGAL_PASSWORD"), help="admin password")
-    ap.add_argument("--mac", help="base MAC to derive the device password (before the setup)")
     args = ap.parse_args()
 
     password = args.password
-    if not password and args.mac:
-        sys.path.insert(0, str(ROOT / "tools"))
-        import ap_password  # noqa: E402
-
-        mac = bytes.fromhex("".join(c for c in args.mac if c.isalnum()))
-        password = ap_password.derive(mac, ap_password.device_secret(ap_password.read_master(ap_password.MASTER_FILE), mac))
     if not password and not args.key:
-        sys.exit("Login missing (--key, --password or --mac)")
+        sys.exit("Login missing (--key or --password; a new device needs its admin password from the setup first)")
 
     image = pathlib.Path(args.bin).read_bytes()
     client = Client(f"http://{args.host}", key=args.key, password=password)
