@@ -138,8 +138,8 @@ std::string resolve_url(const char* base, const char* ref) {
     return dir.substr(0, slash + 1) + r;
 }
 
-const char* parse_manifest(const char* json, size_t len, const char* variant, const char* manifest_url,
-                           Release* out) {
+const char* parse_manifest(const char* json, size_t len, const char* board, const char* variant,
+                           const char* manifest_url, Release* out) {
     if (!json || len == 0 || len > kMaxManifest) return "manifest_invalid";
     std::unique_ptr<JsonToken[]> tok(new JsonToken[kMaxTokens]);
     JsonReader doc;
@@ -160,7 +160,7 @@ const char* parse_manifest(const char* json, size_t len, const char* variant, co
     if (builds.type() != JsonType::Array) return "manifest_invalid";
     JsonValue b;
     for (int i = 0; i < builds.size(); ++i) {
-        if (builds[i]["variant"].equals(variant)) {
+        if (builds[i]["board"].equals(board) && builds[i]["variant"].equals(variant)) {
             b = builds[i];
             break;
         }

@@ -33,6 +33,7 @@
 #include "lgal/json_reader.h"
 #include "lgal/mqtt_config.h"
 #include "lgal/net_config.h"
+#include "lgal/ota_image.h"
 #include "lgal/ota_manifest.h"
 #include "lgal/ws_core.h"
 
@@ -315,10 +316,13 @@ void t_manifest(const Bytes& b) {
     const char* url = "https://example.invalid/releases/latest/download/manifest.json";
     for (const char* var : {"N8R8", "N16R8", "N32R8", ""}) {
         const char* e =
-            lgal::ota::parse_manifest(reinterpret_cast<const char*>(b.data()), b.size(), var, url, &r);
+            lgal::ota::parse_manifest(reinterpret_cast<const char*>(b.data()), b.size(), "d5v1", var, url, &r);
         if (!e && strncasecmp(r.url.c_str(), "http://", 7) != 0 && strncasecmp(r.url.c_str(), "https://", 8) != 0)
             std::abort();  // an accepted release always has an absolute http(s) url (scheme case-insensitive)
     }
+    // board descriptor of an uploaded image
+    const std::string board = lgal::ota::image_board(b.data(), b.size());
+    if (!board.empty() && !lgal::ota::valid_board_id(board.c_str())) std::abort();
 }
 
 void t_dns(const Bytes& b) {
@@ -379,9 +383,9 @@ std::vector<Bytes> json_seeds() {
 
 std::vector<Bytes> manifest_seeds() {
     return {bytes(R"({"name":"LGAL-Doser","version":"1.4.0","notes":"https://example.invalid/r/1.4.0",)"
-                  R"("builds":[{"variant":"N16R8","url":"lgal-doser-N16R8-1.4.0.bin","size":1638400,)"
+                  R"("builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin","size":1638400,)"
                   R"("sha256":"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"},)"
-                  R"({"variant":"N8R8","url":"https://example.invalid/fw-N8R8.bin",)"
+                  R"({"board":"d5v1","variant":"N8R8","url":"https://example.invalid/fw-N8R8.bin",)"
                   R"("sha256":"ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100"}]})")};
 }
 

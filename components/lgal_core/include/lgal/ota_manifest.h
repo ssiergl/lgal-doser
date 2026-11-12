@@ -7,12 +7,13 @@
 //
 //   {"version":"0.2.0",
 //    "notes":"https://github.com/<owner>/<repo>/releases/tag/v0.2.0",
-//    "builds":[{"variant":"N16R8","url":"lgal_doser-N16R8.bin",
+//    "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin",
 //               "sha256":"<64 hex digits>","size":1234567}, …]}
 //
 // "url" is absolute or relative to the manifest address; "notes" and "size"
-// are optional. The device picks the build of its own variant (flash size)
-// and checks the SHA-256 of the download before switching to it.
+// are optional. The device picks the build of its own board (circuit board,
+// lgal/ota_image.h) and variant (flash size) and checks the SHA-256 of the
+// download before switching to it.
 
 #include <cstddef>
 #include <cstdint>
@@ -42,11 +43,11 @@ struct Release {
     uint32_t size = 0;    // 0 = not given
 };
 
-// Release of the given variant from a manifest. nullptr = ok; otherwise
-// "manifest_invalid", "invalid_version", "no_build" (variant missing),
-// "invalid_sha256" or "invalid_url".
-const char* parse_manifest(const char* json, size_t len, const char* variant, const char* manifest_url,
-                           Release* out);
+// Release of the given board and variant from a manifest. nullptr = ok;
+// otherwise "manifest_invalid", "invalid_version", "no_build" (no build for
+// board and variant), "invalid_sha256" or "invalid_url".
+const char* parse_manifest(const char* json, size_t len, const char* board, const char* variant,
+                           const char* manifest_url, Release* out);
 
 // ref relative to base (RFC 3986 without dot segments): absolute http(s)
 // addresses are kept, "/path" replaces the path, anything else replaces

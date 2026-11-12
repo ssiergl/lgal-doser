@@ -11,6 +11,7 @@ idf_component_register(
         "src/sysapi.cpp"
         "src/ota.cpp"
         "src/ota_manifest.cpp"
+        "src/ota_image.cpp"
         "src/json.cpp"
         "src/json_reader.cpp"
         "src/sha256.cpp"
@@ -54,3 +55,7 @@ idf_component_register(
         log
         lwip
 )
+
+# Board descriptor in the image (lgal/ota_image.h): keep it although nothing
+# references it
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-u lgal_board_desc")

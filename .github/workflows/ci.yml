@@ -1,4 +1,4 @@
-# Host tests, a short fuzz run and the firmware of every module variant on
+# Host tests, a short fuzz run and the firmware of every board and module variant on
 # each push to main and each pull request.
 name: CI
 on:
@@ -27,11 +27,12 @@ jobs:
     container: espressif/idf:v6.0.3
     strategy:
       matrix:
+        board: [d5v1]  # one entry per boards/<id>.cmake
         variant: [N8R8, N16R8, N32R8]
     steps:
       - uses: actions/checkout@v4
-      - name: Build ${{ matrix.variant }}
+      - name: Build ${{ matrix.board }} ${{ matrix.variant }}
         shell: bash
         run: |
           . "$IDF_PATH/export.sh"
-          idf.py -B "build-${{ matrix.variant }}" -DVARIANT=${{ matrix.variant }} build
+          idf.py -B "build-${{ matrix.board }}-${{ matrix.variant }}" -DBOARD=${{ matrix.board }} -DVARIANT=${{ matrix.variant }} build
