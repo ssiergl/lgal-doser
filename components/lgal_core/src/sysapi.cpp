@@ -147,7 +147,8 @@ esp_err_t get_info(httpd_req_t* req) {
 
     char buf[1400];
     snprintf(buf, sizeof(buf),
-             "{\"device\":{\"vendor\":\"LG Aquatic Life\",\"model\":\"LGAL-Doser\",\"hostname\":\"%s\","
+             "{\"device\":{\"vendor\":\"LG Aquatic Life\",\"model\":\"" LGAL_BOARD_MODEL "\","
+             "\"board\":\"" LGAL_BOARD_ID "\",\"hostname\":\"%s\","
              "\"mac\":\"%s\",\"setup_completed\":%s},"
              "\"firmware\":{\"project\":\"%s\",\"version\":\"%s\",\"idf\":\"%s\",\"built\":\"%s %s\","
              "\"partition\":\"%s\",\"ota_state\":\"%s\",\"last_invalid_partition\":%s%s%s},"

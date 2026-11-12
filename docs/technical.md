@@ -448,7 +448,7 @@ on every page.
 | POST | `/api/v1/auth/recover` | `{"device_password","new"}`, only from the setup Wi-Fi |
 | GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | list API keys / create `{"name"}` / delete |
 | POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` unlock / lock |
-| GET | `/api/v1/system/info` | version, partition, OTA status, network, memory, time, language, links |
+| GET | `/api/v1/system/info` | model and board, version, partition, OTA status, network, memory, time, language, links |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | UI language |
 | GET / PUT | `/api/v1/system/led` | shown state (`shown`) and night mode / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (missing fields stay, 400 `invalid_param` with `field`) |
 | GET / PUT | `/api/v1/system/time` | time, source, time zone, NTP server / `{"timezone"?,"ntp_server"?,"utc"?}` or instead of `utc` `"local":"2026-11-10T18:30"` (local time of the device; everything checked before anything is applied; 400 `invalid_param` with `field`) |

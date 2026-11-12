@@ -13,7 +13,7 @@ import { ask, Toggle, useMsg } from '../lib/ui.js';
 
 add({
   en: {
-    'mt.title': 'Maintenance', 'mt.device': 'Device', 'mt.license': 'License', 'mt.license.v': 'GPLv3 or later', 'mt.third': 'third-party software', 'mt.fw': 'Firmware', 'mt.slot': 'Slot', 'mt.built': 'Built',
+    'mt.title': 'Maintenance', 'mt.device': 'Device', 'mt.license': 'License', 'mt.license.v': 'GPLv3 or later', 'mt.third': 'third-party software', 'mt.fw': 'Firmware', 'mt.model': 'Model', 'mt.slot': 'Slot', 'mt.built': 'Built',
     'mt.host': 'Address', 'mt.mac': 'MAC', 'mt.uptime': 'Running for', 'mt.reset': 'Last restart', 'mt.mem': 'Memory free / lowest',
     'mt.psram': 'PSRAM free', 'mt.rolledback': 'The last update did not start – the device went back to the previous firmware ({p} is marked invalid).',
     'mt.uptime.v': '{d} d {h} h {m} min', 'mt.uptime.h': '{h} h {m} min',
@@ -69,7 +69,7 @@ add({
     'err.too_many_redirects': 'Too many redirects',
   },
   de: {
-    'mt.title': 'Wartung', 'mt.device': 'Gerät', 'mt.license': 'Lizenz', 'mt.license.v': 'GPLv3 oder neuer', 'mt.third': 'Fremdsoftware', 'mt.fw': 'Firmware', 'mt.slot': 'Speicherplatz', 'mt.built': 'Erstellt',
+    'mt.title': 'Wartung', 'mt.device': 'Gerät', 'mt.license': 'Lizenz', 'mt.license.v': 'GPLv3 oder neuer', 'mt.third': 'Fremdsoftware', 'mt.fw': 'Firmware', 'mt.model': 'Modell', 'mt.slot': 'Speicherplatz', 'mt.built': 'Erstellt',
     'mt.host': 'Adresse', 'mt.mac': 'MAC', 'mt.uptime': 'Läuft seit', 'mt.reset': 'Letzter Neustart', 'mt.mem': 'Speicher frei / tiefster Wert',
     'mt.psram': 'PSRAM frei', 'mt.rolledback': 'Das letzte Update ist nicht gestartet – das Gerät ist zur vorherigen Firmware zurückgekehrt ({p} ist als ungültig markiert).',
     'mt.uptime.v': '{d} d {h} h {m} min', 'mt.uptime.h': '{h} h {m} min',
@@ -179,6 +179,7 @@ function InfoCard({ info, pro }) {
   return html`<section class="card"><h2>${t('mt.device')}</h2>
     ${f.last_invalid_partition && html`<p class="msg err">${t('mt.rolledback', { p: f.last_invalid_partition })}</p>`}
     <dl class="stats">
+      ${d.model && html`<dt>${t('mt.model')}</dt><dd>${d.model}${pro && d.board ? html`<br/><span class="mut small">${d.board}</span>` : ''}</dd>`}
       <dt>${t('mt.fw')}</dt><dd>${f.version}</dd>
       ${pro && html`<dt>${t('mt.slot')}</dt><dd>${f.partition} · ${f.ota_state}</dd>`}
       <dt>${t('mt.built')}</dt><dd>${f.built}${pro && html`<br/><span class="mut small">IDF ${f.idf}</span>`}</dd>

@@ -152,6 +152,7 @@ ha::DeviceInfo device_info(const lgal::mqttcfg::Config& c) {
     d.name = lgal::device::name();
     if (d.name.empty()) d.name = "LGAL Doser " + sid;
     d.firmware = esp_app_get_description()->version;
+    d.model = LGAL_BOARD_MODEL;
     d.url = "http://" + lgal::device::hostname() + ".local/";
     d.base = lgal::mqtt::base_topic();
     d.german = std::strcmp(lgal::settings::language(), "de") == 0;

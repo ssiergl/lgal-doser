@@ -32,6 +32,7 @@ constexpr int kPumps = kMaxPumps;
 struct DeviceInfo {
     std::string id;       // "lgal_doser_eeff" (unique, object id)
     std::string name;     // device name in Home Assistant
+    std::string model = "LGAL-Doser";  // model of the board ("LGAL-Doser 5")
     std::string firmware;
     std::string url;      // configuration URL, "" = none
     std::string base;     // base topic
