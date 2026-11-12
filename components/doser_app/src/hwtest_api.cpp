@@ -136,6 +136,9 @@ esp_err_t get_status(httpd_req_t* req) {
     j.end().arr("fitted_next");
     for (int i = 0; i < kN; ++i)
         if (hwconfig::stored_fitted_mask() >> i & 1) j.v(i + 1);
+    j.end().arr("fitted_factory");
+    for (int i = 0; i < kN; ++i)
+        if (hwconfig::factory_fitted_mask() >> i & 1) j.v(i + 1);
     j.end();
     j.arr("pumps");
     for (int i = 0; i < kN; ++i) write_pump(j, i);

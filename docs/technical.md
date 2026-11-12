@@ -190,6 +190,10 @@ Factory reset and OTA updates leave `fctry` untouched.
    python3 tools/provision.py -p /dev/cu.usbmodem*
    ```
 
+   With fewer pumps built in than the board has, `--pumps 1,2,3` also stores the factory
+   population: the pumps fitted on delivery and again after every factory reset (default: all
+   pumps of the board). Provisioning again (e.g. after a full flash) needs the same values.
+
    **Device password on the rating plate** (e.g. a sticker inside the enclosure), not the
    engineering key. Both can be recomputed from the MAC at any time:
 
@@ -494,7 +498,7 @@ on every page.
 | GET / POST | `/api/v1/engineering/scheduler?…` | super admin: `grid_min` (divisor of 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | super admin: uptime, reset reason, chip temperature, heap (free, minimum, largest block, fragmentation), PSRAM, NVS entries, LittleFS and history |
 | POST | `/api/v1/engineering/reset?what=network` | super admin: reset the network settings (applies after 1 s); the factory reset is only on the maintenance page with the admin password |
-| GET | `/api/v1/hw/status` | board (`id`, `model`, `pumps`), drivers and pumps of the board, RTC, EEPROM, UART statistics; fitting `fitted` (now) and `fitted_next` (after the next restart) |
+| GET | `/api/v1/hw/status` | board (`id`, `model`, `pumps`), drivers and pumps of the board, RTC, EEPROM, UART statistics; fitting `fitted` (now), `fitted_next` (after the next restart) and `fitted_factory` (factory population, `provision.py --pumps`) |
 | POST | `/api/v1/hw/channels?pumps=1,2,3,4` | save the fitting (at least one pump), applies after a restart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | raw run (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | stop (0 = all) |
@@ -720,7 +724,7 @@ keyboard – so the device locks 15 min after the last real input.
 
 | Area | Content |
 |---|---|
-| A · Mechanics | Dosing physics for all pumps: retract "default", calibration target, three speed tiers (rpm with ml/min and steps/s). Drivers per pump: run and holding current, microsteps, full steps/rev, acceleration, start speed, direction; optionally for all fitted pumps. Fitting: which pumps are built in (at least one); a pump not fitted is never addressed (no driver polling, no schedule, no alarm, dosing → 409 `pump_not_fitted`) and is hidden in the web UI and in Home Assistant; its settings are kept. Applies after a restart (saving restarts the device). |
+| A · Mechanics | Dosing physics for all pumps: retract "default", calibration target, three speed tiers (rpm with ml/min and steps/s). Drivers per pump: run and holding current, microsteps, full steps/rev, acceleration, start speed, direction; optionally for all fitted pumps. Fitting: which pumps are built in (at least one; on delivery and after a factory reset the factory population from `provision.py --pumps`, otherwise all pumps of the board); a pump not fitted is never addressed (no driver polling, no schedule, no alarm, dosing → 409 `pump_not_fitted`) and is hidden in the web UI and in Home Assistant; its settings are kept. Applies after a restart (saving restarts the device). |
 | B · Limits | Priming max. duration and dead-man timeout, smallest single dose, daily limit window, schedule grid, max. delay of a scheduled dose. |
 | C · Maintenance | Tube life, set/reset operating hours per pump. DS3231 temperature, aging offset: with a time server automatic trimming (measuring since, deviation now, last correction), without a time server input by hand, hint for a flat backup battery. History: recorded days and size, lost events, retention (1–60 days). |
 | D · Diagnostics | Raw stepper test (steps forward/back, frequency, stop/immediate stop, live position and StallGuard; bypassing container, schedule and history). Driver diagnostics: status flags (short circuit, over-temperature, open coil, standstill, StealthChop, current scale) and TMC2209 raw registers. System telemetry incl. UART statistics and EEPROM self-test. Danger zone: delete history, reset network (the factory reset is on the maintenance page). |

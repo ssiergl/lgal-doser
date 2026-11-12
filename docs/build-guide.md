@@ -140,6 +140,9 @@ key. There are two ways:
    python3 tools/provision.py -p /dev/cu.usbmodem*
    ```
 
+   With fewer pumps built in, add e.g. `--pumps 1,2,3`: the device then comes up with exactly
+   these pumps, also after a factory reset.
+
    The values can be computed again from the MAC address at any time
    (`tools/ap_password.py <MAC> --engineering`).
 
@@ -179,8 +182,8 @@ Details and background: [technical docs, first start-up](technical.md#first-star
 2. **Set up** as described in the [user guide](user-guide.md#3-initial-setup).
 3. **Open the engineering menu:** in the web UI click the firmware version in the footer 7×
    quickly and enter the engineering key.
-4. **Fitting** (area A): if fewer than five pumps are built in, deselect the missing ones. The
-   device restarts afterwards.
+4. **Fitting** (area A): if fewer than five pumps are built in and provisioning had no `--pumps`,
+   deselect the missing ones. The device restarts afterwards.
 5. **Check the drivers** (area D): all fitted drivers must answer, without fault flags (short
    circuit, over-temperature, open coil).
 6. **Run the pumps one by one** (area D, raw test): a few revolutions forward. If a pump runs the

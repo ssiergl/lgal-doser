@@ -6,6 +6,7 @@
 #include "doser/pins.h"
 #include "esp_log.h"
 #include "nvs.h"
+#include "nvs_flash.h"
 
 namespace doser::hwconfig {
 
@@ -13,8 +14,26 @@ namespace {
 constexpr const char* TAG = "hwconfig";
 constexpr const char* kNs = "hw";
 constexpr uint16_t kVersion = 1;
+uint8_t s_factory = pins::kBoardMask;        // factory population
 uint8_t s_fitted = pins::kBoardMask;         // in effect since startup
 uint8_t s_fitted_saved = pins::kBoardMask;   // in effect after the next restart
+
+// Factory population from the factory partition (tools/provision.py
+// --pumps): u8 mask "pumps" in namespace "lgal", limited to the board.
+// Missing or no pump of the board: all pumps of the board.
+uint8_t load_factory_mask() {
+    constexpr const char* kFactory = "fctry";  // also lgal::device (device.cpp)
+    uint8_t m = 0;
+    nvs_handle_t h;
+    // already initialised by an earlier call returns ESP_OK; formatting is left to lgal::device
+    if (nvs_flash_init_partition(kFactory) == ESP_OK &&
+        nvs_open_from_partition(kFactory, "lgal", NVS_READONLY, &h) == ESP_OK) {
+        if (nvs_get_u8(h, "pumps", &m) != ESP_OK) m = 0;
+        nvs_close(h);
+    }
+    m &= pins::kBoardMask;
+    return m ? m : pins::kBoardMask;
+}
 
 bool valid_mask(uint8_t m) { return m != 0 && (m & ~pins::kBoardMask) == 0; }
 
@@ -48,9 +67,14 @@ esp_err_t save_blob(const char* key, const T& v) {
 }  // namespace
 
 void load(motion::PumpConfig (&pumps)[kMaxPumps]) {
+    // until the population is saved (and again after a factory reset): factory population
+    s_factory = s_fitted = s_fitted_saved = load_factory_mask();
+    if (s_factory != pins::kBoardMask) ESP_LOGI(TAG, "Factory population 0x%02x", s_factory);
     nvs_handle_t h;
     if (nvs_open(kNs, NVS_READONLY, &h) != ESP_OK) {
         ESP_LOGI(TAG, "No stored hardware parameters, using defaults");
+        for (int i = 0; i < pins::kPumpCount; ++i)
+            if (!fitted(i)) ESP_LOGI(TAG, "Pump %d: not fitted", i + 1);
         return;
     }
     char key[12];
@@ -58,7 +82,7 @@ void load(motion::PumpConfig (&pumps)[kMaxPumps]) {
         snprintf(key, sizeof(key), "pump%d", i);
         load_blob(h, key, &pumps[i]);
     }
-    uint8_t m = pins::kBoardMask;
+    uint8_t m = 0;
     if (load_blob(h, "fitted", &m) && valid_mask(m)) s_fitted = s_fitted_saved = m;
     nvs_close(h);
     for (int i = 0; i < pins::kPumpCount; ++i)
@@ -71,6 +95,7 @@ uint8_t board_mask() { return pins::kBoardMask; }
 uint8_t fitted_mask() { return s_fitted; }
 bool fitted(int pump) { return pump >= 0 && pump < kMaxPumps && (s_fitted >> pump & 1); }
 uint8_t stored_fitted_mask() { return s_fitted_saved; }
+uint8_t factory_fitted_mask() { return s_factory; }
 
 esp_err_t save_fitted(uint8_t mask) {
     if (!valid_mask(mask)) return ESP_ERR_INVALID_ARG;
