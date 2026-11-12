@@ -14,6 +14,7 @@
 #include "esp_http_client.h"
 #include "esp_log.h"
 #include "esp_ota_ops.h"
+#include "esp_partition.h"
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -80,6 +81,16 @@ void schedule_restart(uint32_t ms) {
     if (esp_timer_create(&args, &t) == ESP_OK) esp_timer_start_once(t, uint64_t(ms) * 1000);
 }
 
+// Flash size in the header of the running image: the module variant this
+// device runs (N8R8/N16R8/N32R8 differ in flash size and partition table).
+// 0xff = unknown.
+uint8_t own_flash_size() {
+    esp_image_header_t h{};
+    const esp_partition_t* p = esp_ota_get_running_partition();
+    if (!p || esp_partition_read(p, 0, &h, sizeof(h)) != ESP_OK || h.magic != ESP_IMAGE_HEADER_MAGIC) return 0xff;
+    return h.spi_size;
+}
+
 // Checks whether the image matches this device.
 bool check_header(const uint8_t* data, std::string& err, const char*& code) {
     const auto* img = reinterpret_cast<const esp_image_header_t*>(data);
@@ -91,6 +102,11 @@ bool check_header(const uint8_t* data, std::string& err, const char*& code) {
     if (img->chip_id != ESP_CHIP_ID_ESP32S3) {
         code = "wrong_chip";
         err = "Firmware is not built for ESP32-S3";
+        return false;
+    }
+    if (const uint8_t own = own_flash_size(); own != 0xff && img->spi_size != own) {
+        code = "wrong_variant";
+        err = "Firmware is built for a module with a different flash size";
         return false;
     }
     const auto* desc = reinterpret_cast<const esp_app_desc_t*>(
