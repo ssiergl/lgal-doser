@@ -24,7 +24,7 @@ ENGKEY = "test-eng-key"
 ENG = {"until": 0}
 SYS = {"coredump": True, "boot": time.time(), "down_until": 0, "version": "0.5.0-dev", "partition": "ota_0", "invalid": None}
 LINKS = [{"id": "app", "name": "Web interface", "path": "/"},
-         {"id": "network", "name": "Network", "path": "/network"}, {"id": "setup", "name": "Setup wizard", "path": "/setup"}]
+         {"id": "setup", "name": "Setup wizard", "path": "/setup"}]
 
 LED = {"enabled": False, "start": "22:00", "end": "07:00", "brightness": 0}
 HM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")

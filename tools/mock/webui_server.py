@@ -428,7 +428,7 @@ class H(BaseHTTPRequestHandler):
         p = self.path.split("?")[0]
         if p == "/api/v1/ws": return self.ws()
         if sysr(self, "GET"): return
-        if p in ("/login", "/setup", "/network", "/recovery"): return self.send(200, open(ROOT + "/components/lgal_core/www" + p + ".html", "rb").read(), "text/html; charset=utf-8")
+        if p in ("/login", "/setup", "/recovery"): return self.send(200, open(ROOT + "/components/lgal_core/www" + p + ".html", "rb").read(), "text/html; charset=utf-8")
         if p == "/" and not sys_mock.SETUP["completed"]:  # factory state: the start page is the setup
             self.send_response(302); self.send_header("Location", "/setup"); self.send_header("Content-Length", "0"); self.end_headers(); return
         if p == "/": return self.send(200, open(ROOT + "/components/webui/www/index.html", "rb").read(), "text/html; charset=utf-8")

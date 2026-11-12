@@ -315,7 +315,6 @@ extern "C" void app_main(void) {
     doser::backup_api::register_handlers(lgal::http::handle());
     doser::engineering::register_handlers(lgal::http::handle());
     lgal::sysapi::add_link("app", "Web interface", "/");
-    lgal::sysapi::add_link("network", "Network", "/network");
     lgal::sysapi::add_link("setup", "Setup wizard", "/setup");
 
     lgal::ota::set_guard([](std::string& reason) {

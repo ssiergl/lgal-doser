@@ -11,8 +11,6 @@
 #include "lgal/net.h"
 #include "lgal/net_config.h"
 
-extern const char network_html_start[] asm("_binary_network_html_start");
-extern const char network_html_end[] asm("_binary_network_html_end");
 
 namespace lgal::netapi {
 
@@ -75,13 +73,6 @@ struct Body {
 };
 
 bool read_body(httpd_req_t* req, Body* b) { return http::read_json(req, 1024, &b->text, &b->doc, b->tok, 48); }
-
-esp_err_t get_page(httpd_req_t* req) {
-    if (!http::authorize(req)) return ESP_OK;
-    httpd_resp_set_type(req, "text/html; charset=utf-8");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, network_html_start, network_html_end - network_html_start - 1);
-}
 
 esp_err_t get_status(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
@@ -203,7 +194,6 @@ esp_err_t get_test(httpd_req_t* req) {
 
 esp_err_t register_handlers(httpd_handle_t server) {
     if (!server) return ESP_ERR_INVALID_STATE;
-    http::route(server, "/network", HTTP_GET, get_page);
     http::route(server, "/api/v1/net/status", HTTP_GET, get_status);
     http::route(server, "/api/v1/net/settings", HTTP_GET, get_settings);
     http::route(server, "/api/v1/net/settings", HTTP_PUT, put_settings);
