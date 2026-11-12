@@ -1,0 +1,90 @@
+name: Bug report
+description: Something does not work as described (firmware, web UI, build, documentation).
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Security vulnerabilities do not belong here** – please report
+        them confidentially as described in `SECURITY.md`. Never paste passwords, API keys or
+        engineering keys. Reports in English or German are welcome.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you observe? Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open pump 2
+        2. Schedule "single times" with …
+        3. Save
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Firmware version
+      description: shown in the footer of the web UI and on the maintenance page
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: variant
+    attributes:
+      label: Module variant
+      options:
+        - N16R8
+        - N8R8
+        - N32R8
+        - don't know
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dosing, calibration, container
+        - Schedule, boost, lock times
+        - Web UI
+        - Network, Wi-Fi, setup
+        - MQTT, Home Assistant
+        - Update
+        - Hardware, build
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: Browser and device
+      description: only for problems with the web UI
+      placeholder: "e.g. Safari on iPhone, Chrome on Windows"
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Maintenance → Log (pro view). Check it for passwords and keys first.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: The report contains no passwords, API keys or engineering keys.
+          required: true
+        - label: This is not a security vulnerability (see `SECURITY.md` for those).
+          required: true
