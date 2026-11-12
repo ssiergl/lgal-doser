@@ -11,6 +11,7 @@
 
 #include <cstdint>
 
+#include "doser/limits.h"
 #include "doser/tmc2209_proto.h"
 #include "esp_err.h"
 
@@ -60,7 +61,7 @@ struct PumpStatus {
 
 // Starts buses, drivers, step clocks and the monitoring task (core 1).
 // fitted: bit i = pump i+1 is fitted; the others are never probed or moved.
-esp_err_t init(const PumpConfig (&configs)[5], uint8_t fitted = 0x1F);
+esp_err_t init(const PumpConfig (&configs)[kMaxPumps], uint8_t fitted = (1u << kMaxPumps) - 1);
 
 esp_err_t run(int pump, const Move& move);
 void stop(int pump, bool immediate);

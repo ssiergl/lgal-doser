@@ -39,7 +39,7 @@ const char* set_locks(const sched::Locks& l, SaveResult* r = nullptr, history::S
 sched::Locks locks();
 // All schedules and the lock rules at once (restore of a backup): checked
 // together, nothing is changed if they do not fit
-const char* set_all(const sched::PumpSchedule (&all)[5], const sched::Locks& l, SaveResult* r = nullptr);
+const char* set_all(const sched::PumpSchedule (&all)[kMaxPumps], const sched::Locks& l, SaveResult* r = nullptr);
 const char* set_config(const sched::Config& c);
 sched::Config config();
 

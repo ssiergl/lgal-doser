@@ -7,15 +7,15 @@
 
 namespace doser::hwconfig {
 
-void load(motion::PumpConfig (&pumps)[5]);
+void load(motion::PumpConfig (&pumps)[kMaxPumps]);
 esp_err_t save_pump(int pump, const motion::PumpConfig& cfg);
 
 // Channel population: bit i = pump i+1 is fitted (driver, motor). A pump
 // that is not fitted is never probed, never doses and is hidden in the UI
 // and in Home Assistant. A change takes effect after a restart.
-inline constexpr uint8_t kAllFitted = 0x1F;
+inline constexpr uint8_t kAllFitted = (1u << kMaxPumps) - 1;
 uint8_t fitted_mask();          // as loaded at startup
-bool fitted(int pump);          // pump 0..4
+bool fitted(int pump);          // pump 0..kMaxPumps-1
 uint8_t stored_fitted_mask();   // saved, in effect after the next restart
 // At least one pump; ESP_ERR_INVALID_ARG otherwise
 esp_err_t save_fitted(uint8_t mask);

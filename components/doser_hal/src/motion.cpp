@@ -234,7 +234,7 @@ void task(void*) {
 }
 }  // namespace
 
-esp_err_t init(const PumpConfig (&configs)[5], uint8_t fitted) {
+esp_err_t init(const PumpConfig (&configs)[kMaxPumps], uint8_t fitted) {
     s_mutex = xSemaphoreCreateMutex();
     s_ready = xSemaphoreCreateBinary();
     if (!s_mutex || !s_ready) return ESP_ERR_NO_MEM;

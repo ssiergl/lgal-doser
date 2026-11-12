@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string>
 
 #include "doser/event_source.h"
 #include "doser/history.h"
@@ -26,8 +27,9 @@ constexpr int64_t kMaxLimit = 500;
 bool read_filter(httpd_req_t* req, history::Filter* f) {
     int64_t v = 0;
     if (http::query_int(req, "pump", &v)) {
-        if (v < 0 || v > 5) {
-            http::send_error(req, "400 Bad Request", "invalid_param", "pump=0..5");
+        if (v < 0 || v > kMaxPumps) {
+            const std::string range = "pump=0.." + std::to_string(kMaxPumps);
+            http::send_error(req, "400 Bad Request", "invalid_param", range.c_str());
             return false;
         }
         f->pump = static_cast<uint8_t>(v);

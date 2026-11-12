@@ -161,6 +161,7 @@ $CXX \
 echo
 $CXX \
     -I components/doser_app/include \
+    -I components/doser_hal/include \
     -I components/lgal_core/include \
     tests/host/test_alarms.cpp \
     components/doser_app/src/alarms.cpp \
@@ -170,6 +171,7 @@ $CXX \
 echo
 $CXX \
     -I components/doser_app/include \
+    -I components/doser_hal/include \
     tests/host/test_rtc_trim.cpp \
     components/doser_app/src/rtc_trim_core.cpp \
     -o "$OUT/rtc_trim"
@@ -178,6 +180,7 @@ $CXX \
 echo
 $CXX \
     -I components/doser_app/include \
+    -I components/doser_hal/include \
     tests/host/test_history.cpp \
     components/doser_app/src/history_core.cpp \
     -o "$OUT/history"
@@ -216,6 +219,7 @@ $CXX \
 echo
 $CXX \
     -I components/doser_app/include \
+    -I components/doser_hal/include \
     tests/host/test_event_cursor.cpp \
     components/doser_app/src/event_cursor.cpp \
     -o "$OUT/event_cursor"

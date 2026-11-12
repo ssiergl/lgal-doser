@@ -77,7 +77,7 @@ void write_pump(Writer& w, const DeviceInfo& d, const Names& n, int p) {
     const std::string t = d.base + sfx;
     const std::string state = t + "state";
     lgal::Json& j = w.j();
-    const bool on = d.fitted[p];  // a pump that is not fitted has no entities
+    const bool on = !d.unfitted[p];  // a pump that is not fitted has no entities
 
     if (w.open(key + "state", "sensor", on)) {
         w.name(label, n.state);

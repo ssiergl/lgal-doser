@@ -65,13 +65,13 @@ struct Data {
     lgal::netcfg::Config net;
     bool wlan_password = false;  // net.password is part of the document
     // pumps
-    dose::PumpSettings pumps[5];
-    sched::PumpSchedule schedules[5];
+    dose::PumpSettings pumps[kMaxPumps];
+    sched::PumpSchedule schedules[kMaxPumps];
     sched::Locks locks;
     // engineering
     dose::Engineering dosing;
     sched::Config scheduler;
-    motion::PumpConfig hw[5];
+    motion::PumpConfig hw[kMaxPumps];
     uint8_t fitted = 0;  // channel population (bit i = pump i+1), 0 = not in the document (older backups)
     uint16_t history_keep_days = 0;  // 0 = not in the document (older backups): unchanged
     // mqtt

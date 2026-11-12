@@ -22,11 +22,12 @@
 #include <cstdint>
 #include <string>
 
+#include "doser/limits.h"
 #include "lgal/json.h"
 
 namespace doser::ha {
 
-constexpr int kPumps = 5;
+constexpr int kPumps = kMaxPumps;
 
 struct DeviceInfo {
     std::string id;       // "lgal_doser_eeff" (unique, object id)
@@ -37,7 +38,7 @@ struct DeviceInfo {
     bool german = false;  // entity names in German
     bool control = false;
     bool update_source = false;   // firmware update entity (update source set)
-    bool fitted[kPumps] = {true, true, true, true, true};  // channel population: others are removed
+    bool unfitted[kPumps] = {};   // channel population: pumps that are not fitted are removed
     std::string pump_names[kPumps];  // "" = "Pumpe n" / "Pump n"
 };
 

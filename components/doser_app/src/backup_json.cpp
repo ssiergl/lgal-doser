@@ -86,7 +86,7 @@ void write_network(Json& j, const Data& d) {
 
 void write_pumps(Json& j, const Data& d) {
     j.arr("pumps");
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kMaxPumps; ++i) {
         const auto& p = d.pumps[i];
         j.obj().kv("pump", i + 1).kv("name", p.name).kv("mode", dose::mode_str(p.mode)).kv("tier", static_cast<int>(p.speed_tier));
         j.kv("daily_limit_ml", ml(p.daily_limit_ul), 3).kv("retract_mrev", static_cast<int>(p.retract_mrev));
@@ -126,7 +126,7 @@ void write_engineering(Json& j, const Data& d) {
     j.end();
     if (d.fitted) {
         j.arr("fitted");
-        for (int i = 0; i < 5; ++i)
+        for (int i = 0; i < kMaxPumps; ++i)
             if (d.fitted >> i & 1) j.v(i + 1);
         j.end();
     }
@@ -255,15 +255,15 @@ bool parse_pump(const JsonValue& v, int i, int32_t today, Data* d, Error* err) {
 
 bool parse_pumps(const JsonValue& root, int32_t today, Data* d, Error* err) {
     const JsonValue arr = root["pumps"];
-    bool seen[5] = {};
-    for (int k = 0; k < 5; ++k) {
+    bool seen[kMaxPumps] = {};
+    for (int k = 0; k < kMaxPumps; ++k) {
         const JsonValue v = arr[k];
         int64_t n = 0;
-        if (!v.valid() || !get_int(v["pump"], 1, 5, &n) || seen[n - 1]) return failf(err, "pumps[%d].%s", k, "pump");
+        if (!v.valid() || !get_int(v["pump"], 1, kMaxPumps, &n) || seen[n - 1]) return failf(err, "pumps[%d].%s", k, "pump");
         seen[n - 1] = true;
         if (!parse_pump(v, static_cast<int>(n - 1), today, d, err)) return false;
     }
-    if (arr[5].valid()) return fail(err, "invalid_param", "pumps");
+    if (arr[kMaxPumps].valid()) return fail(err, "invalid_param", "pumps");
     sched_json::Error se;
     if (!sched_json::parse_locks(root["locks"], &d->locks, &se)) return fail(err, se.code ? se.code : "invalid_param", "locks");
     return true;
@@ -314,7 +314,7 @@ bool parse_engineering(const JsonValue& v, Data* d, Error* err) {
     }
 
     const JsonValue hp = v["hardware"]["pumps"];
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kMaxPumps; ++i) {
         const JsonValue h = hp[i];
         auto& c = d->hw[i];
         if (!get_int(h["run_ma"], 50, 1500, &x)) return failf(err, "engineering.hardware.pumps[%d].%s", i, "run_ma");
@@ -332,12 +332,12 @@ bool parse_engineering(const JsonValue& v, Data* d, Error* err) {
         if (!get_int(h["v_start"], 0, 1000000, &x)) return failf(err, "engineering.hardware.pumps[%d].%s", i, "v_start");
         c.v_start = static_cast<uint32_t>(x);
     }
-    if (hp[5].valid()) return fail(err, "invalid_param", "engineering.hardware.pumps");
+    if (hp[kMaxPumps].valid()) return fail(err, "invalid_param", "engineering.hardware.pumps");
     d->fitted = 0;
     const JsonValue fv = v["hardware"]["fitted"];
     if (fv.valid()) {
         for (int i = 0; fv[i].valid(); ++i) {
-            if (i >= 5 || !get_int(fv[i], 1, 5, &x)) return fail(err, "invalid_param", "engineering.hardware.fitted");
+            if (i >= kMaxPumps || !get_int(fv[i], 1, kMaxPumps, &x)) return fail(err, "invalid_param", "engineering.hardware.fitted");
             d->fitted |= uint8_t(1u << (x - 1));
         }
         if (!d->fitted) return fail(err, "invalid_param", "engineering.hardware.fitted");

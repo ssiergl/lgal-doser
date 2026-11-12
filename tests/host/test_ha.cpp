@@ -137,7 +137,7 @@ static void test_discovery() {
     CHECK(stubs == 0);
 
     // pump 3 not fitted: all its entities become removal stubs
-    d.fitted[2] = false;
+    d.unfitted[2] = true;
     Doc nf;
     {
         lgal::Json j;

@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "doser/history_core.h"
+#include "doser/limits.h"
 #include "esp_err.h"
 
 namespace doser::history {
@@ -23,7 +24,7 @@ inline void note(Kind kind, int pump, Source source, const char* code, uint32_t 
                  int32_t value = 0) {
     Event e;
     e.kind = kind;
-    e.pump = pump >= 0 && pump < 5 ? static_cast<uint8_t>(pump + 1) : 0;
+    e.pump = pump >= 0 && pump < kMaxPumps ? static_cast<uint8_t>(pump + 1) : 0;
     e.source = source;
     e.code = code_of(code);
     e.target_ul = target_ul;

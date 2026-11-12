@@ -85,7 +85,7 @@ doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
     in.clock_valid = ts.valid;
     const int32_t today = doser::scheduler::today();
     const auto eng = doser::dosing::engineering();
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < doser::kMaxPumps; ++i) {
         const auto d = doser::dosing::status(i);
         const auto s = doser::scheduler::status(i);
         auto& a = in.pumps[i];
@@ -119,7 +119,7 @@ void log_alarm_changes(uint16_t now) {
     for (const auto& [bits, kind] : {std::pair{started, history::Kind::Alarm}, std::pair{ended, history::Kind::AlarmEnd}}) {
         if (!bits) continue;
         if (bits & (1u << doser::alarms::kRtcBit)) history::note(kind, -1, history::Source::None, "rtc_fault");
-        for (int i = 0; i < 5; ++i)
+        for (int i = 0; i < doser::kMaxPumps; ++i)
             for (int c = 0; c < doser::alarms::kConds; ++c)
                 if (bits & doser::alarms::cond_bit(i, static_cast<Cond>(c)))
                     history::note(kind, i, history::Source::None, doser::alarms::cond_code(static_cast<Cond>(c)));
@@ -214,7 +214,7 @@ void update_status_led() {
 
 void init_hardware() {
     // stored parameters (current, microsteps) or defaults
-    doser::motion::PumpConfig pumps[5];
+    doser::motion::PumpConfig pumps[doser::kMaxPumps];
     doser::hwconfig::load(pumps);
 
     // I²C: RTC + EEPROM (absence does not abort startup)

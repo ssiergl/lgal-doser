@@ -19,7 +19,7 @@ namespace doser::dosing {
 
 namespace {
 constexpr const char* TAG = "dosing";
-constexpr int kN = 5;
+constexpr int kN = kMaxPumps;
 constexpr int kTickMs = 20;
 constexpr uint16_t kMaxRpm = 600;
 

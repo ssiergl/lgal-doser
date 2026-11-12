@@ -8,11 +8,13 @@
 
 #include <array>
 #include "driver/gpio.h"
+#include "doser/limits.h"
 #include "driver/spi_common.h"
 
 namespace doser::pins {
 
 constexpr int kPumpCount = 5;
+static_assert(kPumpCount >= 1 && kPumpCount <= kMaxPumps);
 
 // STEP inputs of the drivers, index 0 = pump 1
 constexpr std::array<gpio_num_t, kPumpCount> kStep = {

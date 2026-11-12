@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "doser/history_core.h"
+#include "doser/limits.h"
 #include "lgal/json.h"
 
 namespace doser::history_json {
@@ -38,14 +39,14 @@ constexpr int kMaxDays = 60;
 struct Daily {
     int32_t first_day = 0;  // local day number of index 0
     int days = 0;
-    uint32_t dosed_ul[kMaxDays][5] = {};
-    uint16_t doses[kMaxDays][5] = {};
-    uint16_t skipped[kMaxDays][5] = {};
+    uint32_t dosed_ul[kMaxDays][kMaxPumps] = {};
+    uint16_t doses[kMaxDays][kMaxPumps] = {};
+    uint16_t skipped[kMaxDays][kMaxPumps] = {};
 
     void reset(int32_t today, int n_days);
     // Adds the event if it falls into the range; local = to_local(e.utc)
     void add(const history::Event& e, int64_t local);
-    void write(lgal::Json& j) const;  // "days":[{"date","ml":[5],"doses":[5],"skipped":[5]}] oldest first
+    void write(lgal::Json& j) const;  // "days":[{"date","ml":[…],"doses":[…],"skipped":[…]}] oldest first, kMaxPumps each
 };
 
 }  // namespace doser::history_json

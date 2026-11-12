@@ -158,7 +158,7 @@ ha::DeviceInfo device_info(const lgal::mqttcfg::Config& c) {
     d.control = c.control;
     d.update_source = !lgal::ota::settings().source.empty();
     for (int p = 0; p < ha::kPumps; ++p) {
-        d.fitted[p] = hwconfig::fitted(p);
+        d.unfitted[p] = !hwconfig::fitted(p);
         d.pump_names[p] = dosing::settings(p).name;
     }
     return d;

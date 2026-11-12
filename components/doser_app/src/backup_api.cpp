@@ -44,7 +44,7 @@ void collect(bk::Data* d) {
     std::snprintf(d->name, sizeof(d->name), "%s", lgal::device::name().c_str());
     std::snprintf(d->own_hostname, sizeof(d->own_hostname), "%s", lgal::device::own_hostname().c_str());
     d->net = lgal::net::config();
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kMaxPumps; ++i) {
         d->pumps[i] = dosing::settings(i);
         d->schedules[i] = scheduler::schedule(i);
         d->hw[i] = motion::config(i);
@@ -141,7 +141,7 @@ esp_err_t post_backup(httpd_req_t* req) {
     if (todo & bk::kEngineering) {
         if (const char* e = dosing::set_engineering(d->dosing)) return apply_failed(req, bk::kEngineering, e, applied);
         if (const char* e = scheduler::set_config(d->scheduler)) return apply_failed(req, bk::kEngineering, e, applied);
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < kMaxPumps; ++i) {
             const esp_err_t e = motion::set_config(i, d->hw[i]);
             if (e == ESP_ERR_INVALID_ARG || e == ESP_ERR_INVALID_STATE)
                 return apply_failed(req, bk::kEngineering, e == ESP_ERR_INVALID_STATE ? "pump_busy" : "invalid_param", applied);
@@ -163,7 +163,7 @@ esp_err_t post_backup(httpd_req_t* req) {
         applied |= bk::kSystem;
     }
     if (todo & bk::kPumps) {
-        for (int i = 0; i < 5; ++i)
+        for (int i = 0; i < kMaxPumps; ++i)
             if (const char* e = dosing::set_settings(i, d->pumps[i])) return apply_failed(req, bk::kPumps, e, applied);
         // schedules and lock rules are checked together; on a conflict they stay as they were
         if (const char* e = scheduler::set_all(d->schedules, d->locks)) return apply_failed(req, bk::kPumps, e, applied);
