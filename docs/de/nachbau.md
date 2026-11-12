@@ -1,4 +1,4 @@
-# LGAL-Doser – Nachbau-Anleitung
+# LGAL Doser – Nachbau-Anleitung
 
 *[English](../build-guide.md) · Deutsch*
 
@@ -30,7 +30,7 @@ löten, mit einem Multimeter messen und ein Python-Skript auf der Kommandozeile 
 
 | Pos. | Anzahl | Teil | Hinweis |
 |---|---|---|---|
-| 1 | 1 | Platine LGAL-Doser v1.0 | Fertigungsdaten in [`hardware/platine/`](../../hardware/pcb/) (folgen) |
+| 1 | 1 | Platine LGAL Doser v1.0 | Fertigungsdaten in [`hardware/platine/`](../../hardware/pcb/) (folgen) |
 | 2 | 1 | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB Flash, 8 MB PSRAM; gesteckt auf Buchsenleisten. Zu den Varianten N8R8 und N32R8 siehe [technische Doku](technik.md#modulvarianten) |
 | 3 | 5 | Kamoer KPHM100-ST | Schlauchpumpe mit Schrittmotor, 24 V, 1,0 A, 200 Vollschritte/U, ohne Getriebe |
 | 4 | 5 | TMC2209-StepStick (z. B. Ulegqin V2.0) | mit Kühlkörper; Sense-Widerstand prüfen (siehe [unten](#tmc2209-treiber)) |
@@ -126,7 +126,7 @@ Engineering-Schlüssel ableitet. Dafür gibt es zwei Wege:
    ```
 
 2. Firmware flashen – aus einem Release die Gesamtdatei passend zu Board und Modul
-   (`d5v1` = LGAL-Doser 5, Platine v1.0):
+   (`d5v1` = LGAL Doser 5, Platine v1.0):
 
    ```bash
    python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin

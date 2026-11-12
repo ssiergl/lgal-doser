@@ -20,7 +20,7 @@ IDF = os.environ.get("IDF_PATH", "")
 OUT = os.path.join(ROOT, "THIRD-PARTY-NOTICES.txt")
 
 HEADER = """\
-LGAL-Doser firmware - license and third-party notices
+LGAL Doser firmware - license and third-party notices
 =========================================================
 
 Copyright (C) 2026 Lars Greiss / LG Aquatic Life

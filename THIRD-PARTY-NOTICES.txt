@@ -1,4 +1,4 @@
-LGAL-Doser firmware - license and third-party notices
+LGAL Doser firmware - license and third-party notices
 =========================================================
 
 Copyright (C) 2026 Lars Greiss / LG Aquatic Life

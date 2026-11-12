@@ -1,4 +1,4 @@
-# LGAL-Doser – firmware project
+# LGAL Doser – firmware project
 
 Dosing system for aquariums ("LG Aquatic Life"). First device: board v1.0 – 11/2026 with five pumps.
 This file describes the **finished hardware**. Pin assignment and circuit are fixed and must

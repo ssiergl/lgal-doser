@@ -1,4 +1,4 @@
-# LGAL-Doser – user guide
+# LGAL Doser – user guide
 
 *English · [Deutsch](de/benutzer.md)*
 

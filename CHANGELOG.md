@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the LGAL-Doser firmware. The format follows
+All notable changes to the LGAL Doser firmware. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/). The current version is in `version.txt`.
 
@@ -21,7 +21,7 @@ mock; the test on the finished hardware is still pending.
 - Fitting: fewer than five pumps possible, with a factory population set at provisioning
   (`provision.py --pumps`) that a factory reset restores.
 - Board selected at build time: pins and pump count per circuit board, first board `d5v1`
-  (LGAL-Doser 5, board v1.0); the model is shown in the web UI and in Home Assistant.
+  (LGAL Doser 5, board v1.0); the model is shown in the web UI and in Home Assistant.
 - Firmware for the module variants N8R8, N16R8 and N32R8.
 
 ### Dosing

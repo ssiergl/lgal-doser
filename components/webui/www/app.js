@@ -74,8 +74,8 @@ function Header({ route }) {
   const s = useStore();
   const prefs = usePrefs();
   const host = s.info && s.info.device ? s.info.device.hostname : '';
-  // own device name, otherwise the model of the board ("LGAL-Doser 5")
-  const name = (s.info && (s.info.device_name || (s.info.device && s.info.device.model))) || 'LGAL-Doser';
+  // own device name, otherwise the model of the board ("LGAL Doser 5")
+  const name = (s.info && (s.info.device_name || (s.info.device && s.info.device.model))) || 'LGAL Doser';
   return html`<header class="top"><div class="top-in">
     <a class="brand" href="#/"><img src="/ui/icon.svg" alt=""/><div><b>LG Aquatic Life</b><span>${name}${host ? ' · ' + host : ''}</span></div></a>
     <span class="spacer"></span>

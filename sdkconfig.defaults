@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# LGAL-Doser – base configuration (ESP32-S3-DEV-KIT-N16R8)
+# LGAL Doser – base configuration (ESP32-S3-DEV-KIT-N16R8)
 # Bootloader-relevant options (rollback, flash, partitions) only take effect
 # via the first USB flash and must be final from M0 on.
 # ---------------------------------------------------------------------------

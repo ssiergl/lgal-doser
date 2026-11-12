@@ -1,4 +1,4 @@
-# LGAL-Doser – Technische Dokumentation
+# LGAL Doser – Technische Dokumentation
 
 *[English](../technical.md) · Deutsch*
 
@@ -97,7 +97,7 @@ genau ein Board gebaut; Board und Modulvariante (unten) lassen sich frei kombini
 
 | Board | Modell | Pumpen | Platine |
 |---|---|---|---|
-| `d5v1` | LGAL-Doser 5 | 5 | v1.0 (11/2026) |
+| `d5v1` | LGAL Doser 5 | 5 | v1.0 (11/2026) |
 
 Ohne Angabe baut `idf.py build` das Board `d5v1`; ein anderes Board:
 `idf.py -DBOARD=<id> build`. Die ID liest sich d = Doser, Pumpenzahl, v = Platinenversion.

@@ -1,6 +1,6 @@
 # Hardware
 
-Design files of the LGAL-Doser. The circuit board (v1.0, 11/2026) is designed; the files will
+Design files of the LGAL Doser. The circuit board (v1.0, 11/2026) is designed; the files will
 be published here after the hardware test.
 
 | Folder | Content |

@@ -31,7 +31,7 @@ static DeviceInfo device() {
     d.id = "lgal_doser_eeff";
     d.name = "LGAL Doser eeff";
     d.firmware = "1.2.3";
-    d.model = "LGAL-Doser 5";
+    d.model = "LGAL Doser 5";
     d.url = "http://lgal-doser-eeff.local/";
     d.base = "lgal-doser-eeff";
     d.pump_names[1] = "Kalium";
@@ -58,7 +58,7 @@ static void test_discovery() {
     CHECK(doc.parse());
     const auto root = doc.r.root();
     CHECK(str(root["device"]["identifiers"][0]) == "lgal_doser_eeff");
-    CHECK(str(root["device"]["model"]) == "LGAL-Doser 5");
+    CHECK(str(root["device"]["model"]) == "LGAL Doser 5");
     CHECK(str(root["device"]["name"]) == "LGAL Doser eeff");
     CHECK(str(root["device"]["sw_version"]) == "1.2.3");
     CHECK(str(root["device"]["configuration_url"]) == "http://lgal-doser-eeff.local/");
