@@ -18,7 +18,10 @@ mock; the test on the finished hardware is still pending.
 - Step clocks for all five pumps at the same time (RMT and MCPWM/PCNT) with trapezoidal ramp.
 - DS3231 clock with NTP sync, automatic drift correction and a warning for a flat backup
   battery; EEPROM for the run state.
-- Fitting: fewer than five pumps possible.
+- Fitting: fewer than five pumps possible, with a factory population set at provisioning
+  (`provision.py --pumps`) that a factory reset restores.
+- Board selected at build time: pins and pump count per circuit board, first board `d5v1`
+  (LGAL-Doser 5, board v1.0); the model is shown in the web UI and in Home Assistant.
 - Firmware for the module variants N8R8, N16R8 and N32R8.
 
 ### Dosing
@@ -58,5 +61,6 @@ mock; the test on the finished hardware is still pending.
 - History up to 60 days with CSV export.
 - Backup of the schedule per pump and of the whole device (engineering).
 - Updates by file, from a fixed update source (release manifest) or from a URL; rollback on a
-  failed start; update entity for Home Assistant.
+  failed start; update entity for Home Assistant. A device only accepts firmware for its own
+  board and module variant.
 - License texts of the firmware and the third-party software on the device.
