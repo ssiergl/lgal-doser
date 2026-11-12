@@ -24,18 +24,29 @@
 #include "lgal/json_reader.h"
 #include "lgal/led.h"
 #include "lgal/mqtt.h"
+#include "lgal/ota_image.h"
 #include "lgal/ota_manifest.h"
 #include "lgal/sha256.h"
 #include "nvs.h"
 #include "sdkconfig.h"
+
+#ifndef LGAL_BOARD_ID
+#error "LGAL_BOARD_ID is set by the top-level CMakeLists.txt"
+#endif
+
+// Board descriptor of this image, behind esp_app_desc_t (lgal/ota_image.h)
+extern "C" __attribute__((used, section(".rodata_custom_desc")))
+const lgal::ota::BoardDesc lgal_board_desc = {lgal::ota::kBoardDescMagic, LGAL_BOARD_ID, {}};
+static_assert(sizeof(LGAL_BOARD_ID) - 1 <= lgal::ota::kMaxBoardId, "board ID too long");
 
 namespace lgal::ota {
 
 namespace {
 constexpr const char* TAG = "ota";
 constexpr size_t kChunk = 4096;
-constexpr size_t kHeaderLen =
-    sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t);
+static_assert(kBoardDescOffset ==
+              sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t));
+constexpr size_t kHeaderLen = kBoardDescOffset + sizeof(BoardDesc);
 constexpr const char* kNs = "ota";
 constexpr int kMaxRedirects = 5;
 constexpr int kTimeoutMs = 15000;
@@ -122,8 +133,15 @@ bool check_header(const uint8_t* data, std::string& err, const char*& code) {
         err = std::string("Wrong project: ") + std::string(desc->project_name, strnlen(desc->project_name, 32));
         return false;
     }
-    ESP_LOGI(TAG, "New image: %s %s (%s %s), running: %s", desc->project_name, desc->version, desc->date,
-             desc->time, own->version);
+    // other circuit board: other pins, other pump count
+    if (const std::string b = image_board(data + kBoardDescOffset, sizeof(BoardDesc)); b != LGAL_BOARD_ID) {
+        code = "wrong_board";
+        err = b.empty() ? std::string("Firmware has no board ID")
+                        : "Firmware is for board " + b + ", this device is " LGAL_BOARD_ID;
+        return false;
+    }
+    ESP_LOGI(TAG, "New image: %s %s for %s (%s %s), running: %s", desc->project_name, desc->version, LGAL_BOARD_ID,
+             desc->date, desc->time, own->version);
     return true;
 }
 
@@ -537,7 +555,7 @@ const char* fetch_manifest(const std::string& url, Release* rel, char (&detail)[
     esp_http_client_close(client);
     esp_http_client_cleanup(client);
     // relative file addresses refer to the configured address, not to a redirect target
-    if (!code) code = parse_manifest(body.data(), body.size(), variant(), url.c_str(), rel);
+    if (!code) code = parse_manifest(body.data(), body.size(), LGAL_BOARD_ID, variant(), url.c_str(), rel);
     return code;
 }
 
@@ -641,7 +659,8 @@ void write_release(Json& j) {
         detail = s_rel_detail;
         source = !s_source.empty();
     }
-    j.obj().kv("source", source).kv("variant", variant() ? variant() : "").kv("current", running_version());
+    j.obj().kv("source", source).kv("board", LGAL_BOARD_ID).kv("variant", variant() ? variant() : "");
+    j.kv("current", running_version());
     j.kv("auto_check", s_auto_check.load()).kv("checking", r.checking);
     if (r.checked && r.checked_at) j.kv("checked_at", r.checked_at);
     else j.null("checked_at");

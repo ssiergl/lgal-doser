@@ -30,6 +30,7 @@ ${HOST_CXX:-c++} -std=c++20 -O1 -g -fno-omit-frame-pointer -fsanitize=address,un
     components/lgal_core/src/mqtt_config.cpp \
     components/lgal_core/src/net_config.cpp \
     components/lgal_core/src/ota_manifest.cpp \
+    components/lgal_core/src/ota_image.cpp \
     components/lgal_core/src/ws_core.cpp \
     -o "$OUT/fuzz_parsers"
 ASAN_OPTIONS=detect_leaks=0 "$OUT/fuzz_parsers" "$@"

@@ -101,6 +101,11 @@ Ein Board besteht aus zwei Dateien:
   2 UART-Busse, EN, Ethernet, I²C, LED und Taster. `doser/pins.h` nennt die nötigen Namen
   und prüft sie beim Übersetzen.
 
+Jedes Image trägt seine Board-ID (eigener App-Deskriptor, `lgal/ota_image.h`). Ein Gerät nimmt
+nur Updates für sein eigenes Board: Die Update-Prüfung wählt aus dem Manifest den Build seines
+Boards, und ein hochgeladenes Image für ein anderes Board wird abgelehnt, bevor etwas
+geschrieben wird (`wrong_board`).
+
 Datensätze, Datensicherung, API und Weboberfläche sind auf jedem Board für fünf Pumpen
 ausgelegt (`doser::kMaxPumps`); Pumpen, die ein Board nicht hat, sind nie bestückt. Die
 Schritt-Takte kommen für Pumpe 1–4 aus dem RMT und für Pumpe 5 aus dem MCPWM. Ein Board mit
@@ -132,10 +137,13 @@ es beim Upload ab (`wrong_variant`). N32R8 ist nur gebaut, nicht auf Hardware ge
 
 ### Release
 
-`tools/release.sh` baut alle Varianten nach `dist/`: je Variante das App-Image
-`lgal_doser-<V>.bin` (OTA) und `lgal_doser-<V>-full.bin` (Bootloader,
-Partitionstabelle, OTA-Daten und App für den ersten USB-Flash ab Adresse 0x0), dazu
-`manifest.json` (`tools/make_manifest.py`), `LICENSE` und `THIRD-PARTY-NOTICES.txt`.
+`tools/release.sh` baut jedes Board (`boards/`) in jeder Variante nach `dist/`: je Board und
+Variante das App-Image `lgal_doser-<B>-<V>.bin` (OTA, z. B. `lgal_doser-d5v1-N16R8.bin`) und
+`lgal_doser-<B>-<V>-full.bin` (Bootloader, Partitionstabelle, OTA-Daten und App für den
+ersten USB-Flash ab Adresse 0x0), dazu `manifest.json` (`tools/make_manifest.py`), `LICENSE`
+und `THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` baut nur
+einen Teil. Die CI baut dieselben Kombinationen (Matrix in `.github/workflows/ci.yml`: ein
+neues Board dort ergänzen).
 
 Auf GitHub macht das `.github/workflows/release.yml`: Version in `version.txt` erhöhen,
 committen, Tag `v<Version>` pushen. Der Workflow prüft, dass Tag und `version.txt`
@@ -176,7 +184,7 @@ also öffentlich sein. Werksreset und OTA-Updates lassen `fctry` unangetastet.
 
    bzw. `idf.py -B build-N8R8 -DVARIANT=N8R8 -p /dev/cu.usbmodem* flash`. Aus einem
    Release geht auch die fertige Gesamtdatei:
-   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-N16R8-full.bin`
+   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin`
    (sie überschreibt auch `fctry`, danach also immer Schritt 3).
 
 3. **Provisionieren:** liest die MAC, schreibt das Geräte-Geheimnis
@@ -365,7 +373,7 @@ oder vor der Ersteinrichtung `--mac AA:BB:CC:DD:EE:FF` (Geräte-Passwort). Mit P
 sich das Skript nach dem Neustart selbst wieder an.
 
 Ablauf und Schutz:
-- Das Image wird vor dem Schreiben geprüft (ESP32-S3, Projektname `lgal_doser`, Flash-Größe) und
+- Das Image wird vor dem Schreiben geprüft (ESP32-S3, Projektname `lgal_doser`, Flash-Größe, Board) und
   nach dem Schreiben per Hash verifiziert.
 - Das neue Image startet als `PENDING_VERIFY` und wird erst nach 60 s stabiler
   Laufzeit mit erreichbarem Webserver als gültig markiert.
@@ -376,13 +384,13 @@ Ablauf und Schutz:
 **Update-Quelle:** Eine feste Adresse für das Release-Manifest, z. B.
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`. Ab Werk aus
 `CONFIG_LGAL_OTA_SOURCE` (leer = keine Quelle), ändern lässt sie sich nur im
-[Engineering-Menü](#engineering-menü-m6). Das Manifest nennt die Version und je
-Modulvariante (`N8R8`, `N16R8`, `N32R8`, nach Flash-Größe des Builds) Datei, SHA-256 und
-optional Größe:
+[Engineering-Menü](#engineering-menü-m6). Das Manifest nennt die Version und je Board
+(`d5v1`, …) und Modulvariante (`N8R8`, `N16R8`, `N32R8`, nach Flash-Größe des Builds) Datei,
+SHA-256 und optional Größe:
 
 ```json
 {"version":"0.2.0","notes":"https://github.com/<owner>/<repo>/releases/tag/v0.2.0",
- "builds":[{"variant":"N16R8","url":"lgal_doser-N16R8.bin","sha256":"<64 Hex-Zeichen>","size":1234567}]}
+ "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin","sha256":"<64 Hex-Zeichen>","size":1234567}]}
 ```
 
 - `url` absolut oder relativ zur eingestellten Manifest-Adresse (nicht zum Ziel einer Weiterleitung);
@@ -391,7 +399,7 @@ optional Größe:
   Angeboten wird nur eine neuere Version als die laufende.
 - **Automatisch prüfen** (ab Werk an): etwa 10 min nach dem Start, danach täglich, nach einem
   Fehler stündlich. Das meldet nur – installiert wird nie ohne Auftrag.
-- Installieren lädt das Manifest noch einmal, dann die Datei der eigenen Variante; stimmen
+- Installieren lädt das Manifest noch einmal, dann die Datei des eigenen Boards und der eigenen Variante; stimmen
   SHA-256 oder Größe nicht, wird das Image verworfen, bevor es aktiv wird. Sonst wie beim Upload
   (gesperrt, solange eine Pumpe läuft; Rollback-Schutz).
 - Für Quelle und Datei gelten https und die http-Regel wie beim Update von einer Adresse.
@@ -459,7 +467,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
 | POST | `/api/v1/system/factory_reset` | `{"password":"…"}` – Werksreset mit Neustart; nur mit Browser-Sitzung (kein API-Key) und Admin-Passwort, Fehlversuche zählen wie beim Login (403 `wrong_password`, 429 `too_many_attempts`) |
 | POST | `/api/v1/ota/firmware` | Firmware-Upload (rohe `.bin`), abgelehnt solange eine Pumpe läuft |
-| GET | `/api/v1/ota/release` | letzte Prüfung der Update-Quelle: `{"source","variant","current","auto_check","checking","checked_at"(null = noch nicht / Uhr unbekannt),"latest"(null = unbekannt),"available","notes"?,"error"?,"detail"?}` |
+| GET | `/api/v1/ota/release` | letzte Prüfung der Update-Quelle: `{"source","board","variant","current","auto_check","checking","checked_at"(null = noch nicht / Uhr unbekannt),"latest"(null = unbekannt),"available","notes"?,"error"?,"detail"?}` |
 | POST | `/api/v1/ota/release/check` | Quelle jetzt prüfen → 202 `started` (Ergebnis bei `GET /api/v1/ota/release`); 400 `no_source` |
 | POST | `/api/v1/ota/release/install` | neuere Version der Quelle installieren → 202 `started`, Fortschritt bei `GET /api/v1/ota/status`; Fehler dort u. a. `no_update`, `sha256_mismatch`, `manifest_invalid`, `no_build`; 409 `pump_running` / `ota_in_progress` |
 | POST | `/api/v1/ota/url` | Engineering. `{"url":"https://…"}` → 202 `started`, das Gerät lädt selbst; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |

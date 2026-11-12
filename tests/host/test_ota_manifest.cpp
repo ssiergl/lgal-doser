@@ -1,8 +1,11 @@
-// Host test of the release manifest and version compare (lgal/ota_manifest.h)
+// Host test of the release manifest, version compare (lgal/ota_manifest.h)
+// and board ID of an image (lgal/ota_image.h)
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <string>
 
+#include "lgal/ota_image.h"
 #include "lgal/ota_manifest.h"
 
 using namespace lgal::ota;
@@ -73,13 +76,13 @@ static std::string manifest(const char* builds, const char* extra = "") {
 }
 
 static std::string build(const char* variant, const char* url = "fw.bin", const char* sha = kSha,
-                         const char* more = "") {
-    return std::string("{\"variant\":\"") + variant + "\",\"url\":\"" + url + "\",\"sha256\":\"" + sha + "\"" + more +
-           "}";
+                         const char* more = "", const char* board = "d5v1") {
+    return std::string("{\"board\":\"") + board + "\",\"variant\":\"" + variant + "\",\"url\":\"" + url +
+           "\",\"sha256\":\"" + sha + "\"" + more + "}";
 }
 
-static const char* parse(const std::string& j, Release* r, const char* variant = "N16R8") {
-    return parse_manifest(j.data(), j.size(), variant, "https://example.com/rel/manifest.json", r);
+static const char* parse(const std::string& j, Release* r, const char* variant = "N16R8", const char* board = "d5v1") {
+    return parse_manifest(j.data(), j.size(), board, variant, "https://example.com/rel/manifest.json", r);
 }
 
 static void test_manifest() {
@@ -95,6 +98,21 @@ static void test_manifest() {
     CHECK(parse(ok, &r, "N8R8") == nullptr && r.url == "https://example.com/rel/a.bin" && r.size == 0);
     CHECK(parse(ok, &r, "N32R8") == nullptr && r.url == "https://other.example.com/c.bin");
     CHECK(!std::strcmp(parse(ok, &r, "N4R2"), "no_build"));
+    CHECK(!std::strcmp(parse(ok, &r, "N16R8", "d2v1"), "no_build"));
+
+    // two boards (a hypothetical 2-pump board d2v1): each device takes its own
+    const std::string two = build("N16R8", "lgal_doser-d5v1-N16R8.bin") + "," +
+                            build("N16R8", "lgal_doser-d2v1-N16R8.bin", kSha, "", "d2v1") + "," +
+                            build("N8R8", "lgal_doser-d2v1-N8R8.bin", kSha, "", "d2v1");
+    CHECK(parse(manifest(two.c_str()), &r) == nullptr && r.url == "https://example.com/rel/lgal_doser-d5v1-N16R8.bin");
+    CHECK(parse(manifest(two.c_str()), &r, "N16R8", "d2v1") == nullptr &&
+          r.url == "https://example.com/rel/lgal_doser-d2v1-N16R8.bin");
+    CHECK(parse(manifest(two.c_str()), &r, "N8R8", "d2v1") == nullptr &&
+          r.url == "https://example.com/rel/lgal_doser-d2v1-N8R8.bin");
+    CHECK(!std::strcmp(parse(manifest(two.c_str()), &r, "N8R8"), "no_build"));
+    // a build without board (manifest of a firmware before board IDs) fits no device
+    CHECK(!std::strcmp(parse(manifest("{\"variant\":\"N16R8\",\"url\":\"fw.bin\",\"sha256\":\"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff\"}"), &r),
+                       "no_build"));
 
     // notes only as a web address (shown as a link)
     Release n;
@@ -114,7 +132,7 @@ static void test_manifest() {
         {manifest(build("N16R8", "fw.bin", "0011").c_str()), "invalid_sha256"},
         {manifest(build("N16R8", "fw.bin", "zz112233445566778899aabbccddeeff00112233445566778899aabbccddeeff").c_str()),
          "invalid_sha256"},
-        {manifest("{\"variant\":\"N16R8\",\"sha256\":\"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff\"}"),
+        {manifest("{\"board\":\"d5v1\",\"variant\":\"N16R8\",\"sha256\":\"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff\"}"),
          "invalid_url"},
         {manifest(build("N16R8", "https://").c_str()), "invalid_url"},
         {manifest(build("N16R8", "a b.bin").c_str()), "invalid_url"},
@@ -140,11 +158,40 @@ static void test_variants() {
     CHECK(variant_for_flash_mb(4) == nullptr);
 }
 
+static std::string desc(uint32_t magic, const char* board, size_t len = sizeof(BoardDesc)) {
+    BoardDesc d{};
+    d.magic = magic;
+    std::memcpy(d.board, board, std::min(std::strlen(board), sizeof(d.board)));
+    std::string s(reinterpret_cast<const char*>(&d), sizeof(d));
+    return s.substr(0, len);
+}
+
+static std::string board_of(const std::string& s) {
+    return image_board(reinterpret_cast<const uint8_t*>(s.data()), s.size());
+}
+
+static void test_image_board() {
+    std::printf("Image board\n");
+    CHECK(board_of(desc(kBoardDescMagic, "d5v1")) == "d5v1");
+    CHECK(board_of(desc(kBoardDescMagic, "d2v1")) == "d2v1");
+    CHECK(board_of(desc(kBoardDescMagic, "abcdefghij12345")) == "abcdefghij12345");  // 15 characters
+    CHECK(board_of(desc(kBoardDescMagic, "abcdefghij123456")).empty());              // not terminated
+    CHECK(board_of(desc(kBoardDescMagic, "")).empty());
+    CHECK(board_of(desc(kBoardDescMagic, "D5V1")).empty());
+    CHECK(board_of(desc(kBoardDescMagic, "d5 v1")).empty());
+    CHECK(board_of(desc(kBoardDescMagic, "../x")).empty());
+    CHECK(board_of(desc(0, "d5v1")).empty());                  // image before board IDs: no descriptor
+    CHECK(board_of(desc(kBoardDescMagic, "d5v1", 31)).empty());  // too short
+    CHECK(image_board(nullptr, 32).empty());
+    CHECK(valid_board_id("d5v1") && !valid_board_id("") && !valid_board_id("d5-v1"));
+}
+
 int main() {
     test_versions();
     test_urls();
     test_manifest();
     test_variants();
+    test_image_board();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

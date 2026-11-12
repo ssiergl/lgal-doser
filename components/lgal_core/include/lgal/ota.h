@@ -4,7 +4,7 @@
 //
 //   POST /api/v1/ota/firmware   body = raw .bin (application/octet-stream)
 //   GET  /api/v1/ota/release    last check of the update source:
-//                               {"source","variant","current","auto_check","checking",
+//                               {"source","board","variant","current","auto_check","checking",
 //                                "checked_at"(null = not yet),"latest"(null = unknown),
 //                                "available","notes"?,"error"?,"detail"?}
 //   POST /api/v1/ota/release/check    fetch the manifest now -> 202 {"status":"started"}
@@ -21,7 +21,8 @@
 // factory setting CONFIG_LGAL_OTA_SOURCE. With auto_check the device fetches
 // it shortly after the start and then daily; it only reports a newer
 // version, installing always needs a request. The firmware file of the own
-// variant must match the SHA-256 of the manifest before it is activated.
+// board and variant must match the SHA-256 of the manifest before it is
+// activated.
 //
 // URLs: https with the server certificate checked against the CA bundle.
 // Plain http only with allow_http (off from the factory, the WebUI warns);
@@ -31,7 +32,7 @@
 // the manifest (manifest_invalid, no_build, …) and those of the upload.
 //
 // Flow: ask guard (e.g. "no dosing active") -> lock pumps ->
-// check header (chip, project name) -> write to inactive slot ->
+// check header (chip, flash size, project name, board) -> write to inactive slot ->
 // verify image -> switch boot partition -> reboot.
 // The new image starts as PENDING_VERIFY and is only marked valid after
 // CONFIG_LGAL_OTA_CONFIRM_DELAY_S of stable runtime + health check.

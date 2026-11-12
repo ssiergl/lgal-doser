@@ -100,6 +100,10 @@ A board consists of two files:
   Ethernet, I²C, LED and button. `doser/pins.h` lists the required names and checks them at
   compile time.
 
+Every image carries its board ID (custom app descriptor, `lgal/ota_image.h`). A device takes only
+updates for its own board: the update check picks the build of its board from the manifest, and
+an uploaded image for another board is rejected before anything is written (`wrong_board`).
+
 Records, backups, API and web UI are sized for five pumps (`doser::kMaxPumps`) on every board;
 the pumps a board does not have are never fitted. The step clocks come from RMT for pumps 1–4
 and MCPWM for pump 5. A board with fewer pumps uses only what it needs.
@@ -129,10 +133,13 @@ the manifest when updating. It rejects an image for a different flash size on up
 
 ### Release
 
-`tools/release.sh` builds all variants into `dist/`: per variant the app image
-`lgal_doser-<V>.bin` (OTA) and `lgal_doser-<V>-full.bin` (bootloader, partition table,
-OTA data and app for the first USB flash at address 0x0), plus `manifest.json`
-(`tools/make_manifest.py`), `LICENSE` and `THIRD-PARTY-NOTICES.txt`.
+`tools/release.sh` builds every board (`boards/`) in every variant into `dist/`: per board and
+variant the app image `lgal_doser-<B>-<V>.bin` (OTA, e.g. `lgal_doser-d5v1-N16R8.bin`) and
+`lgal_doser-<B>-<V>-full.bin` (bootloader, partition table, OTA data and app for the first USB
+flash at address 0x0), plus `manifest.json` (`tools/make_manifest.py`), `LICENSE` and
+`THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` builds only some.
+The CI builds the same combinations (matrix in `.github/workflows/ci.yml`: add a new board
+there).
 
 On GitHub `.github/workflows/release.yml` does this: raise the version in `version.txt`, commit,
 push the tag `v<version>`. The workflow checks that tag and `version.txt` match, builds and
@@ -172,7 +179,7 @@ Factory reset and OTA updates leave `fctry` untouched.
 
    or `idf.py -B build-N8R8 -DVARIANT=N8R8 -p /dev/cu.usbmodem* flash`. From a release the
    complete file works too:
-   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-N16R8-full.bin`
+   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin`
    (it also overwrites `fctry`, so always do step 3 afterwards).
 
 3. **Provision:** reads the MAC, writes the device secret
@@ -361,7 +368,7 @@ before the initial setup, `--mac AA:BB:CC:DD:EE:FF` (device password). With a pa
 signs in again by itself after the restart.
 
 Procedure and protection:
-- The image is checked before writing (ESP32-S3, project name `lgal_doser`, flash size) and
+- The image is checked before writing (ESP32-S3, project name `lgal_doser`, flash size, board) and
   verified by hash after writing.
 - The new image starts as `PENDING_VERIFY` and is only marked valid after 60 s of stable running
   with a reachable web server.
@@ -372,13 +379,13 @@ Procedure and protection:
 **Update source:** a fixed address of the release manifest, e.g.
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`. Factory value from
 `CONFIG_LGAL_OTA_SOURCE` (empty = no source); it can only be changed in the
-[engineering menu](#engineering-menu-m6). The manifest names the version and, per module
-variant (`N8R8`, `N16R8`, `N32R8`, by flash size of the build), file, SHA-256 and optionally
-size:
+[engineering menu](#engineering-menu-m6). The manifest names the version and, per board
+(`d5v1`, …) and module variant (`N8R8`, `N16R8`, `N32R8`, by flash size of the build), file,
+SHA-256 and optionally size:
 
 ```json
 {"version":"0.2.0","notes":"https://github.com/<owner>/<repo>/releases/tag/v0.2.0",
- "builds":[{"variant":"N16R8","url":"lgal_doser-N16R8.bin","sha256":"<64 hex characters>","size":1234567}]}
+ "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin","sha256":"<64 hex characters>","size":1234567}]}
 ```
 
 - `url` absolute or relative to the configured manifest address (not to the target of a
@@ -387,7 +394,7 @@ size:
   a version newer than the running one is offered.
 - **Automatic check** (on by default): about 10 min after start, then daily, hourly after an
   error. It only reports – nothing is ever installed without an order.
-- Installing loads the manifest once more, then the file of the device's own variant; if SHA-256
+- Installing loads the manifest once more, then the file of the device's own board and variant; if SHA-256
   or size do not match, the image is discarded before it becomes active. Otherwise as with an
   upload (locked while a pump runs; rollback protection).
 - Source and file follow the https and http rules of the update from a URL.
@@ -455,7 +462,7 @@ on every page.
 | GET / DELETE | `/api/v1/system/coredump` | last crash dump (ELF) / delete |
 | POST | `/api/v1/system/factory_reset` | `{"password":"…"}` – factory reset with restart; only with a browser session (no API key) and the admin password, failed attempts count as for sign-in (403 `wrong_password`, 429 `too_many_attempts`) |
 | POST | `/api/v1/ota/firmware` | firmware upload (raw `.bin`), rejected while a pump runs |
-| GET | `/api/v1/ota/release` | last check of the update source: `{"source","variant","current","auto_check","checking","checked_at"(null = not yet / clock unknown),"latest"(null = unknown),"available","notes"?,"error"?,"detail"?}` |
+| GET | `/api/v1/ota/release` | last check of the update source: `{"source","board","variant","current","auto_check","checking","checked_at"(null = not yet / clock unknown),"latest"(null = unknown),"available","notes"?,"error"?,"detail"?}` |
 | POST | `/api/v1/ota/release/check` | check the source now → 202 `started` (result at `GET /api/v1/ota/release`); 400 `no_source` |
 | POST | `/api/v1/ota/release/install` | install a newer version of the source → 202 `started`, progress at `GET /api/v1/ota/status`; errors there e.g. `no_update`, `sha256_mismatch`, `manifest_invalid`, `no_build`; 409 `pump_running` / `ota_in_progress` |
 | POST | `/api/v1/ota/url` | engineering. `{"url":"https://…"}` → 202 `started`, the device downloads itself; 400 `invalid_url` / `http_not_allowed`, 409 `pump_running` / `ota_in_progress` |

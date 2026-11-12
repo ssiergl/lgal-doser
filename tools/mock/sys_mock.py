@@ -86,7 +86,7 @@ def rel_json():
         REL["checked_at"] = REL["checking_until"]
         REL["error"] = None if OTA["source"].endswith(".json") else ("http_status", "HTTP 404")
     cur, latest = ver_key(SYS["version"]), ver_key(REL["latest"])
-    j = {"source": bool(OTA["source"]), "variant": "N16R8", "current": SYS["version"], "auto_check": OTA["auto_check"],
+    j = {"source": bool(OTA["source"]), "board": "d5v1", "variant": "N16R8", "current": SYS["version"], "auto_check": OTA["auto_check"],
          "checking": checking, "checked_at": int(REL["checked_at"]) if REL["checked_at"] else None,
          "latest": REL["latest"] if REL["checked_at"] else None,
          "available": bool(REL["checked_at"] and cur and latest and latest > cur)}
@@ -228,7 +228,7 @@ def route(h, method, path, q, body):
         if ota_status()["state"] == "running": err(h, 409, "ota_in_progress", "An update is already in progress"); return True
         if not rel_json()["available"]:
             OTA.update(t0=time.time() - 3, url="no_update", http=False, rebooted=False); h.send(202, {"status": "started"}); return True
-        OTA.update(t0=time.time(), url="https://example.com/lgal_doser-N16R8.bin", http=False, rebooted=False, new_version=REL["latest"])
+        OTA.update(t0=time.time(), url="https://example.com/lgal_doser-d5v1-N16R8.bin", http=False, rebooted=False, new_version=REL["latest"])
         h.send(202, {"status": "started"}); return True
     if path == "/api/v1/ota/status" and method == "GET": h.send(200, ota_status()); return True
     if path == "/api/v1/ota/url" and method == "POST":

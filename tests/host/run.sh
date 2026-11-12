@@ -93,6 +93,7 @@ $CXX \
     -I components/lgal_core/include \
     tests/host/test_ota_manifest.cpp \
     components/lgal_core/src/ota_manifest.cpp \
+    components/lgal_core/src/ota_image.cpp \
     components/lgal_core/src/json_reader.cpp \
     -o "$OUT/ota_manifest"
 "$OUT/ota_manifest"

@@ -1,4 +1,4 @@
-# Pushing a tag vX.Y.Z (equal to version.txt) builds all module variants and
+# Pushing a tag vX.Y.Z (equal to version.txt) builds all boards and module variants and
 # publishes them with the update manifest as a GitHub release. Devices with
 # the update source
 #   https://github.com/<owner>/<repo>/releases/latest/download/manifest.json
@@ -21,7 +21,7 @@ jobs:
         run: |
           v="$(tr -d ' \n' < version.txt)"
           [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME does not match version.txt ($v)"; exit 1; }
-      - name: Build all variants
+      - name: Build all boards and variants
         shell: bash
         env:
           NOTES: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
