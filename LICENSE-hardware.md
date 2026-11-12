@@ -2,7 +2,7 @@
 
 Copyright (C) 2026 Lars Greiss / LG Aquatic Life
 
-The hardware design files of the LGAL-Doser are licensed under the
+The hardware design files of the LGAL Doser are licensed under the
 **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
 License (CC BY-NC-SA 4.0)**:
 
@@ -15,7 +15,7 @@ This applies to such files in this repository and in its releases, wherever
 they are placed.
 
 You may share and adapt them for **non-commercial** purposes, as long as you
-give appropriate credit ("LGAL-Doser by Lars Greiss / LG Aquatic Life"),
+give appropriate credit ("LGAL Doser by Lars Greiss / LG Aquatic Life"),
 indicate if changes were made, and distribute your contributions under the
 same license. Commercial use (for example selling boards, kits, enclosures or
 assembled devices) needs a separate written permission from the copyright

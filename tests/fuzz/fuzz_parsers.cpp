@@ -382,7 +382,7 @@ std::vector<Bytes> json_seeds() {
 }
 
 std::vector<Bytes> manifest_seeds() {
-    return {bytes(R"({"name":"LGAL-Doser","version":"1.4.0","notes":"https://example.invalid/r/1.4.0",)"
+    return {bytes(R"({"name":"LGAL Doser","version":"1.4.0","notes":"https://example.invalid/r/1.4.0",)"
                   R"("builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin","size":1638400,)"
                   R"("sha256":"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"},)"
                   R"({"board":"d5v1","variant":"N8R8","url":"https://example.invalid/fw-N8R8.bin",)"

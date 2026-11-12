@@ -1,4 +1,4 @@
-# LGAL-Doser – build guide
+# LGAL Doser – build guide
 
 *English · [Deutsch](de/nachbau.md)*
 
@@ -30,7 +30,7 @@ multimeter and start a Python script on the command line.
 
 | Item | Qty | Part | Note |
 |---|---|---|---|
-| 1 | 1 | Circuit board LGAL-Doser v1.0 | manufacturing data in [`hardware/pcb/`](../hardware/pcb/) (to follow) |
+| 1 | 1 | Circuit board LGAL Doser v1.0 | manufacturing data in [`hardware/pcb/`](../hardware/pcb/) (to follow) |
 | 2 | 1 | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB flash, 8 MB PSRAM; plugged into socket headers. For the variants N8R8 and N32R8 see the [technical docs](technical.md#module-variants) |
 | 3 | 5 | Kamoer KPHM100-ST | peristaltic pump with stepper motor, 24 V, 1.0 A, 200 full steps/rev, no gearbox |
 | 4 | 5 | TMC2209 StepStick (e.g. Ulegqin V2.0) | with heat sink; check the sense resistor (see [below](#tmc2209-drivers)) |
@@ -126,7 +126,7 @@ key. There are two ways:
    ```
 
 2. Flash the firmware – from a release the complete file matching the board and module
-   (`d5v1` = LGAL-Doser 5, circuit board v1.0):
+   (`d5v1` = LGAL Doser 5, circuit board v1.0):
 
    ```bash
    python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin

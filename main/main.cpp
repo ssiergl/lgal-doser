@@ -1,4 +1,4 @@
-// LGAL-Doser – entry point (M1: hardware layer)
+// LGAL Doser – entry point (M1: hardware layer)
 //
 // The order is safety-relevant: first the pump drivers are
 // switched off, only then does anything else start.

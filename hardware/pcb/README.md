@@ -1,6 +1,6 @@
 # Circuit board
 
-This folder holds the manufacturing and design data of the LGAL-Doser circuit board v1.0
+This folder holds the manufacturing and design data of the LGAL Doser circuit board v1.0
 (11/2026):
 
 | File | Purpose |

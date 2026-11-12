@@ -1,4 +1,4 @@
-# LGAL-Doser – technical documentation
+# LGAL Doser – technical documentation
 
 *English · [Deutsch](de/technik.md)*
 
@@ -96,7 +96,7 @@ for exactly one board; board and module variant (below) can be combined freely.
 
 | Board | Model | Pumps | Circuit board |
 |---|---|---|---|
-| `d5v1` | LGAL-Doser 5 | 5 | v1.0 (11/2026) |
+| `d5v1` | LGAL Doser 5 | 5 | v1.0 (11/2026) |
 
 Without an option `idf.py build` builds `d5v1`; another board: `idf.py -DBOARD=<id> build`. The
 ID reads d = doser, number of pumps, v = circuit board version.

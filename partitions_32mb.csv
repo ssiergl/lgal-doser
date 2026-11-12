@@ -1,4 +1,4 @@
-# LGAL-Doser partition table (32 MB octal flash, module variant N32R8)
+# LGAL Doser partition table (32 MB octal flash, module variant N32R8)
 #
 # CAUTION: bootloader and partition table are only written on the first USB
 # flash and can NOT be changed via OTA afterwards. Same layout as the 16 MB

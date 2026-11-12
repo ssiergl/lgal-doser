@@ -1,4 +1,4 @@
-# LGAL-Doser – Bedienungsanleitung
+# LGAL Doser – Bedienungsanleitung
 
 *[English](../user-guide.md) · Deutsch*
 
