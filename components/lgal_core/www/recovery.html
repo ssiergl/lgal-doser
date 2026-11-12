@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LG Aquatic Life – Maintenance</title>
+<link rel="icon" href="/ui/icon.svg" type="image/svg+xml">
 <style>
 :root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
@@ -18,13 +19,14 @@ select{background:var(--card);color:var(--fg);border:1px solid var(--mut);border
 progress{width:100%;height:14px;margin-top:10px}.msg{margin-top:8px;min-height:1.4em}.err{color:var(--err)}.ok{color:var(--ok)}
 pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:auto;font-size:12px;white-space:pre-wrap;word-break:break-all}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.top{display:flex;align-items:center;gap:16px;margin:8px 0 14px}.top h1{flex:1;margin:0;font-size:22px}.logo{flex:0 0 auto;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.45))}
 </style>
 <script src="/i18n.js"></script>
 </head>
 <body>
 <main>
 <header>
-<h1 data-i18n="title"></h1>
+<div class="top"><img class="logo" src="/ui/logo.svg" alt="LG Aquatic Life" width="112" height="112" onerror="this.remove()"><h1 data-i18n="title"></h1></div>
 <label class="row"><span data-i18n="lang.label"></span><select id="lang"></select></label>
 </header>
 <div class="row" id="links"></div>
@@ -55,7 +57,7 @@ pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:
 <script>
 i18n.add({
 en:{
- 'page.title':'LG Aquatic Life – Maintenance','title':'LG Aquatic Life · Doser · Maintenance',
+ 'page.title':'LG Aquatic Life – Maintenance','title':'Maintenance',
  'sec.device':'Device','sec.update':'Firmware update','sec.diag':'Diagnostics',
  'btn.upload':'Upload & flash','btn.log':'Show log','btn.coredump':'Download coredump','btn.reboot':'Reboot',
  'loading':'Loading …','error':'Error',
@@ -71,7 +73,7 @@ en:{
  'up.conn':'Connection lost.','reboot.confirm':'Reboot the device?','reboot.busy':'Rebooting …',
  'link.app':'Web interface','link.network':'Network','link.setup':'Setup wizard','link.account':'Account'},
 de:{
- 'page.title':'LG Aquatic Life – Wartung','title':'LG Aquatic Life · Doser · Wartung',
+ 'page.title':'LG Aquatic Life – Wartung','title':'Wartung',
  'sec.device':'Gerät','sec.update':'Firmware-Update','sec.diag':'Diagnose',
  'btn.upload':'Hochladen & flashen','btn.log':'Log anzeigen','btn.coredump':'Coredump laden','btn.reboot':'Neustart',
  'loading':'Lade …','error':'Fehler',

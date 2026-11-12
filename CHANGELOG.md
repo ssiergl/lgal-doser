@@ -53,6 +53,8 @@ mock; the test on the finished hardware is still pending.
 - Overview, pump detail, schedule editor with 24 h bar, history with charts and event list,
   settings, maintenance, engineering menu, coral reef in the background.
 - Live values over WebSocket.
+- LG Aquatic Life logo: large on the sign-in and setup pages, beside the title of the network
+  and maintenance pages, dimmed in the background of every page.
 
 ### Integration and maintenance
 

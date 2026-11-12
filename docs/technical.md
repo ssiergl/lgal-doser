@@ -16,6 +16,7 @@ components/lgal_core/   LG Aquatic Life core: network, HTTP, OTA, LED, button, s
 components/doser_hal/   pin assignment, safe start, TMC2209 UART, step clocks, pumps, RTC/EEPROM
 components/doser_app/   device logic: hardware diagnostics, dosing engine, scheduler, engineering and their REST APIs
 components/webui/       web UI (M5): www/ (Preact + htm, no build), pack.py embeds it gzip-compressed
+brand/                  brand repository as Git submodule: the logo (not GPL, see TRADEMARKS.md)
 main/                   wiring of the components (app_main)
 tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, third_party_notices.py, mock/ (device mock for the web UI)
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest)
@@ -34,6 +35,15 @@ hardware/               enclosure and circuit board files (CC BY-NC-SA 4.0)
 ```bash
 git clone -b v6.0.3 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.0.3
 ```
+
+This repository with the brand submodule (`brand/`, the logo):
+
+```bash
+git clone --recursive https://github.com/ssiergl/lgal-doser.git
+```
+
+In an existing checkout: `git submodule update --init`; a newer logo with
+`git submodule update --remote brand` and a commit.
 
 ```bash
 ~/esp/esp-idf-v6.0.3/install.sh esp32s3 && brew install cmake ninja
@@ -314,7 +324,7 @@ priming without it.
 ## Web UI (M5)
 
 `http://lgal-doser-xxxx.local/` opens the UI (sign-in as under [Access](#access)). It is
-embedded in the firmware: `pack.py` gzip-compresses `components/webui/www/` at build time
+embedded in the firmware: `pack.py` gzip-compresses `components/webui/www/` and the logo from `brand/` at build time
 (≈ 104 KB), and it is updated with the firmware over OTA – UI and API thus always match, and the
 rollback covers the UI as well. Preact and htm sit unchanged in `www/vendor/` (versions and
 checksums in the README there); there is no Node build, `idf.py build` is enough.

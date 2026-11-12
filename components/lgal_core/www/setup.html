@@ -4,12 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LG Aquatic Life – Setup</title>
+<link rel="icon" href="/ui/icon.svg" type="image/svg+xml">
 <style>
 :root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
-*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
-main{max-width:520px;margin:0 auto;padding:16px}
-h1{font-size:20px;margin:8px 0 4px}h2{font-size:17px;margin:0 0 10px}
-.card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:14px}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);
+ background:radial-gradient(circle at 50% 130px,#173a52 0,#11283a 150px,var(--bg) 380px) no-repeat,var(--bg)}
+main{position:relative;max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 10px}
+.card{background:var(--card);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 button,input,select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:600}
 button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button:disabled{opacity:.45;cursor:default}
 input,select{background:#0a161e;color:var(--fg);border:1px solid #2c4757;border-radius:6px;padding:8px 9px;width:100%}
@@ -26,15 +29,19 @@ label.opt{display:flex;align-items:center;color:var(--fg);font-size:15px;border:
 .langs button{display:block;width:100%;margin-top:8px;text-align:left}
 .nets{max-height:200px;overflow:auto}.nets button{display:flex;width:100%;justify-content:space-between;background:transparent;color:var(--fg);border:1px solid #2c4757;margin-top:4px;font-weight:400}
 .st{border-left:3px solid #2c4757;padding:4px 10px;margin-top:10px;font-size:14px}.st.good{border-color:var(--ok)}
-.top{display:flex;align-items:center;gap:8px}.top h1{flex:1}.top select{width:auto;padding:5px 7px}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin:30px 0 18px}
+.hero .logo{display:block;width:min(180px,46vw);height:auto;aspect-ratio:1;margin-bottom:16px;filter:drop-shadow(0 12px 36px rgba(0,0,0,.45))}
+.hero #stepno{margin:2px 0 0;font-size:13px}
+#lang{position:absolute;top:14px;right:16px;width:auto;padding:5px 7px}
 a{color:var(--acc)}ul{padding-left:20px}
 </style>
 <script src="/i18n.js"></script>
 </head>
 <body>
 <main>
-<div class="top"><h1 data-i18n="title"></h1><select id="lang" data-i18n-title="lang.label"></select></div>
-<p class="mut" id="stepno"></p>
+<select id="lang" data-i18n-title="lang.label"></select>
+<div class="hero"><img class="logo" src="/ui/logo.svg" alt="LG Aquatic Life" width="180" height="180" onerror="this.remove()">
+<h1 data-i18n="title"></h1><p class="mut" id="stepno"></p></div>
 <div class="steps" id="bar"></div>
 
 <section class="card" data-step="lang">
@@ -90,7 +97,7 @@ a{color:var(--acc)}ul{padding-left:20px}
 </main>
 <script>
 i18n.add({
-en:{'title':'LG Aquatic Life · Setup','step':'Step {n} of {m}','back':'Back','next':'Next',
+en:{'title':'Setup','step':'Step {n} of {m}','back':'Back','next':'Next',
  'lang.title':'Language','lang.hint':'Language of the web interface. It can be changed on every page.',
  'pw.title':'Admin password','pw.hint':'Choose your own password for this device (at least 8 characters). The password from the label then only works for recovery via the setup Wi-Fi.',
  'pw.new':'New password','pw.repeat':'Repeat password','pw.save':'Save password','pw.done':'An admin password is set.','pw.ok':'Password saved.','pw.mismatch':'The passwords do not match.',
@@ -108,7 +115,7 @@ en:{'title':'LG Aquatic Life · Setup','step':'Step {n} of {m}','back':'Back','n
  'done.again':'Setup has already been completed. You can still change everything here.',
  'err.password_not_set':'Please set an admin password first (step 2).','err.not_connected':'The device is not connected to LAN or Wi-Fi yet (step 3).',
  'err.password_too_short':'At least 8 characters','err.password_too_long':'At most 64 characters'},
-de:{'title':'LG Aquatic Life · Einrichtung','step':'Schritt {n} von {m}','back':'Zurück','next':'Weiter',
+de:{'title':'Einrichtung','step':'Schritt {n} von {m}','back':'Zurück','next':'Weiter',
  'lang.title':'Sprache','lang.hint':'Sprache der Weboberfläche. Sie lässt sich auf jeder Seite ändern.',
  'pw.title':'Admin-Passwort','pw.hint':'Wähle ein eigenes Passwort für dieses Gerät (mindestens 8 Zeichen). Das Passwort vom Typenschild gilt danach nur noch zur Wiederherstellung über das Setup-WLAN.',
  'pw.new':'Neues Passwort','pw.repeat':'Passwort wiederholen','pw.save':'Passwort speichern','pw.done':'Ein Admin-Passwort ist gesetzt.','pw.ok':'Passwort gespeichert.','pw.mismatch':'Die Passwörter stimmen nicht überein.',
