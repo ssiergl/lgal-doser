@@ -13,11 +13,13 @@ components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte
 components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitplan (Scheduler), Engineering und ihre REST-APIs
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
-partitions.csv          endgültige Partitionstabelle (nur per USB änderbar!)
+partitions*.csv         endgültige Partitionstabellen je Flash-Größe (nur per USB änderbar!)
+variants/               Konfiguration je Modulvariante (N8R8, N16R8, N32R8)
+.github/workflows/      CI (Tests, Fuzzer, alle Varianten) und Release-Build per Git-Tag
 ```
 
 ## Toolchain
@@ -70,6 +72,52 @@ Nach Änderungen an `sdkconfig.defaults` muss `sdkconfig` neu erzeugt werden
 (`rm sdkconfig && idf.py build`). Die IRAM-Optionen der Schritt-Takte werden
 beim Bauen geprüft.
 
+Beide Test-Skripte nehmen mit `HOST_CXX=clang++` einen anderen Compiler (die CI nutzt das).
+
+### Modulvarianten
+
+Die Firmware gibt es für drei ESP32-S3-Module mit gleicher Pinbelegung und 8 MB
+Octal-PSRAM. Sie unterscheiden sich nur in der Flash-Größe und damit in der
+Partitionstabelle:
+
+| Variante | Flash | Module (Beispiel) | Partitionstabelle | App-Slots | Speicher (Historie, Dateien) |
+|---|---|---|---|---|---|
+| `N8R8` | 8 MB Quad | ESP32-S3-WROOM-1-N8R8 | `partitions_8mb.csv` | 2 × 3 MB | 1,75 MB |
+| `N16R8` | 16 MB Quad | ESP32-S3-WROOM-1-N16R8 (Waveshare DEV-KIT-N16R8) | `partitions.csv` | 2 × 5 MB | 5,75 MB |
+| `N32R8` | 32 MB Octal, 1,8 V | ESP32-S3-WROOM-2-N32R8V | `partitions_32mb.csv` | 2 × 5 MB | 21,75 MB |
+
+Ohne Angabe baut `idf.py build` die Variante N16R8. Eine andere Variante baut in ein
+eigenes Verzeichnis mit eigenem `sdkconfig`:
+
+```bash
+idf.py -B build-N8R8 -DVARIANT=N8R8 build
+```
+
+Ein Gerät erkennt seine Variante an der Flash-Größe seines Images und holt sich beim
+Update aus dem Manifest die passende Datei. Ein Image für eine andere Flash-Größe lehnt
+es beim Upload ab (`wrong_variant`). N32R8 ist nur gebaut, nicht auf Hardware getestet
+(Flash über 16 MB unterstützt ESP-IDF nur als Octal-Flash, daher das WROOM-2-Modul).
+
+### Release
+
+`tools/release.sh` baut alle Varianten nach `dist/`: je Variante das App-Image
+`lgal_doser-<V>.bin` (OTA) und `lgal_doser-<V>-full.bin` (Bootloader,
+Partitionstabelle, OTA-Daten und App für den ersten USB-Flash ab Adresse 0x0), dazu
+`manifest.json` (`tools/make_manifest.py`), `LICENSE` und `THIRD-PARTY-NOTICES.txt`.
+
+Auf GitHub macht das `.github/workflows/release.yml`: Version in `version.txt` erhöhen,
+committen, Tag `v<Version>` pushen. Der Workflow prüft, dass Tag und `version.txt`
+übereinstimmen, baut und veröffentlicht alles als Release. Die Images enthalten kein
+Geheimnis (siehe [Erstinbetriebnahme](#erstinbetriebnahme-einmalig-per-usb-vor-dem-einbau)),
+der Workflow braucht deshalb keine Repository-Secrets. Tags mit
+Vorabversion (`v1.0.0-rc.1`) werden Vorab-Releases, die `releases/latest` überspringt.
+Als Update-Quelle der Geräte dient dann
+`https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`.
+
+`.github/workflows/ci.yml` führt bei jedem Push auf `main` und jedem Pull Request die
+Host-Tests unter beiden Sanitizern, einen kurzen Fuzz-Lauf und den Build aller drei
+Varianten aus (im Container `espressif/idf:v6.0.3`).
+
 ## Erstinbetriebnahme (einmalig per USB, vor dem Einbau)
 
 Bootloader, Rollback-Einstellung und Partitionstabelle werden **nur** beim USB-Flash
@@ -87,11 +135,17 @@ also öffentlich sein. Werksreset und OTA-Updates lassen `fctry` unangetastet.
    lassen sich Etikett-Passwort und Engineering-Schlüssel nicht mehr aus der MAC berechnen;
    wer sie hat, kann es für alle Geräte.
 
-2. **Flashen per USB** (Board noch nicht eingesteckt):
+2. **Flashen per USB** (Board noch nicht eingesteckt), Variante passend zum Modul
+   (siehe [Modulvarianten](#modulvarianten)):
 
    ```bash
    idf.py -p /dev/cu.usbmodem* flash
    ```
+
+   bzw. `idf.py -B build-N8R8 -DVARIANT=N8R8 -p /dev/cu.usbmodem* flash`. Aus einem
+   Release geht auch die fertige Gesamtdatei:
+   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-N16R8-full.bin`
+   (sie überschreibt auch `fctry`, danach also immer Schritt 3).
 
 3. **Provisionieren:** liest die MAC, schreibt das Geräte-Geheimnis
    HMAC-SHA256(Master, „LGAL-DEVICE“ + MAC) nach `fctry` und zeigt die Werte fürs Etikett:
@@ -110,7 +164,7 @@ also öffentlich sein. Werksreset und OTA-Updates lassen `fctry` unangetastet.
    Danach zeigt `idf.py -p /dev/cu.usbmodem* monitor` beim Start MAC, Hostname, Setup-WLAN
    und Passwort.
 
-   **Ohne Provisionieren** (z. B. Nachbau mit fremder Firmware-Datei) erzeugt das Gerät beim ersten
+   **Ohne Provisionieren** (z. B. Nachbau aus einem Release) erzeugt das Gerät beim ersten
    Start selbst ein zufälliges Geheimnis und zeigt Geräte-Passwort und Engineering-Schlüssel
    einmal auf der seriellen Konsole. Diese Werte sofort notieren: Niemand kann sie neu
    berechnen. Nachträgliches Provisionieren ersetzt sie.
@@ -515,7 +569,7 @@ Das Gerät zeichnet Ereignisse als 24-Byte-Einträge auf der LittleFS-Partition 
 Aufbewahrungszeit (Engineering-Menü, 1–60 Tage, ab Werk 60, Teil der Datensicherung) löscht es
 stündlich, nach dem Verkürzen innerhalb einer Minute. Geschrieben wird über eine Warteschlange in einem eigenen Task – Dosierung
 und Zeitplan warten nie auf den Flash. Ohne gültige Uhrzeit wird nichts aufgezeichnet.
-Bei rund 240 Dosen am Tag sind das etwa 6 KB pro Tag, 60 Tage ≈ 350 KB von 5,9 MB.
+Bei rund 240 Dosen am Tag sind das etwa 6 KB pro Tag, 60 Tage ≈ 350 KB (Speicher 1,75 MB bei N8R8, 5,75 MB bei N16R8).
 Werkseinstellungen löschen die Historie mit; einzeln löscht sie das Engineering-Menü.
 
 | `kind` | Inhalt |

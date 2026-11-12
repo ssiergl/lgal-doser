@@ -1,0 +1,58 @@
+# Pushing a tag vX.Y.Z (equal to version.txt) builds all module variants and
+# publishes them with the update manifest as a GitHub release. Devices with
+# the update source
+#   https://github.com/<owner>/<repo>/releases/latest/download/manifest.json
+# then offer it. Tags with a pre-release part (v1.0.0-rc.1) become
+# pre-releases, which "latest" skips. The images hold no secret: every
+# device keeps its own in the factory partition (tools/provision.py).
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v6.0.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag matches version.txt
+        run: |
+          v="$(tr -d ' \n' < version.txt)"
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME does not match version.txt ($v)"; exit 1; }
+      - name: Build all variants
+        shell: bash
+        env:
+          NOTES: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+        run: |
+          . "$IDF_PATH/export.sh"
+          tools/release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    permissions:
+      contents: write
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gh ca-certificates
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pre=""
+          case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" --generate-notes $pre

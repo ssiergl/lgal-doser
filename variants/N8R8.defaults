@@ -1,0 +1,4 @@
+# ESP32-S3 module with 8 MB quad flash and 8 MB octal PSRAM (e.g. ESP32-S3-WROOM-1-N8R8).
+# Added after sdkconfig.defaults: idf.py -B build-N8R8 -DVARIANT=N8R8 build
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_8mb.csv"

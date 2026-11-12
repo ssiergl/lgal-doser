@@ -1,12 +1,12 @@
 #!/bin/sh
 # Builds the parser fuzzer with AddressSanitizer and UndefinedBehaviorSanitizer
 # and runs it (no ESP-IDF needed).
-#   tests/fuzz/run.sh [rounds per target] [seed]
+#   tests/fuzz/run.sh [rounds per target] [seed]   (HOST_CXX=clang++: other compiler)
 set -e
 cd "$(dirname "$0")/../.."
 OUT="${TMPDIR:-/tmp}/lgal_fuzz"
 mkdir -p "$OUT"
-c++ -std=c++20 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all \
+${HOST_CXX:-c++} -std=c++20 -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all \
     -Wall -Wextra -Werror \
     -I tests/host/stubs \
     -I components/lgal_core/include \

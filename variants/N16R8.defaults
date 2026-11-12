@@ -1,0 +1,4 @@
+# ESP32-S3 module with 16 MB quad flash and 8 MB octal PSRAM (e.g. ESP32-S3-WROOM-1-N16R8,
+# the Waveshare ESP32-S3-DEV-KIT-N16R8 of the prototype). Same as sdkconfig.defaults.
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
