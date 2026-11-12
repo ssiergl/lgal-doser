@@ -67,7 +67,10 @@ add({
     'bo.wait': 'Starts with the next scheduled dose.', 'bo.stop': 'End boost',
     'bo.stop.ask': 'End the boost of pump {n}? The remaining {ml} ml are dropped.', 'bo.stopped': 'Boost ended',
     'bo.noplan': 'A boost needs a schedule – it is added to its doses.',
-    'bo.mode': 'The pump is not on “Automatic” – the boost is only dosed while the schedule runs.',
+    'bo.mode.manual_only': 'The pump is set to “manual only” – no boost possible.',
+    'bo.mode.disabled': 'The pump is off – no boost possible.',
+    'bo.paused.manual_only': 'The pump is set to “manual only” – the boost is paused.',
+    'bo.paused.disabled': 'The pump is off – the boost is paused.',
     'bo.limit': 'With the boost about {p} ml per day – more than the daily limit of {l} ml. Doses above the limit are skipped.',
     'err.no_slots': 'No scheduled doses in this period',
     'chip.boost': 'Boost',
@@ -128,7 +131,10 @@ add({
     'bo.wait': 'Beginnt mit der nächsten geplanten Dosis.', 'bo.stop': 'Boost beenden',
     'bo.stop.ask': 'Boost von Pumpe {n} beenden? Die restlichen {ml} ml entfallen.', 'bo.stopped': 'Boost beendet',
     'bo.noplan': 'Ein Boost braucht einen Zeitplan – er wird auf dessen Dosen aufgeschlagen.',
-    'bo.mode': 'Die Pumpe steht nicht auf „Automatisch“ – der Boost wird nur dosiert, wenn der Zeitplan läuft.',
+    'bo.mode.manual_only': 'Die Pumpe steht auf „Nur manuell“ – kein Boost möglich.',
+    'bo.mode.disabled': 'Die Pumpe ist aus – kein Boost möglich.',
+    'bo.paused.manual_only': 'Die Pumpe steht auf „Nur manuell“ – der Boost ruht.',
+    'bo.paused.disabled': 'Die Pumpe ist aus – der Boost ruht.',
     'bo.limit': 'Mit Boost etwa {p} ml pro Tag – mehr als das Tageslimit von {l} ml. Dosen über dem Limit werden ausgelassen.',
     'err.no_slots': 'In diesem Zeitraum sind keine Dosen geplant',
     'chip.boost': 'Boost',
@@ -413,6 +419,7 @@ function BoostCard({ p, sp, nowLocal, pro }) {
     return api('POST', '/api/v1/pumps/boost?' + qs({ pump: p.pump, ...q }))
       .then(() => { msg.ok(ok); refresh(); }).catch(msg.err).finally(() => setBusy(false));
   };
+  const auto = p.mode === 'auto';
   let body;
   if (b) {
     const done = Math.max(0, b.total_ml - b.remaining_ml);
@@ -421,8 +428,10 @@ function BoostCard({ p, sp, nowLocal, pro }) {
     body = html`<p><b class="num">${t('bo.active', { rest: num(b.remaining_ml, 2), total: num(b.total_ml, 2) })}</b></p>
       <div class="bar"><i style=${{ width: Math.min(100, (done / (b.total_ml || 1)) * 100) + '%' }}></i></div>
       ${b.end_local && html`<p class="small mut">${t('bo.until', { end: whenLocal(b.end_local, nowLocal), n: b.doses_left, ml: num(b.per_dose_ml, 2) })}</p>`}
-      ${!b.active && html`<p class="small mut">${t('bo.wait')}</p>`}
+      ${!b.active && auto && html`<p class="small mut">${t('bo.wait')}</p>`}
       <div class="row"><button type="button" class="sec" onClick=${stop} disabled=${busy}>${t('bo.stop')}</button></div>`;
+  } else if (!auto) {
+    body = null;  // the plan does not run, so the device takes no boost (no_slots)
   } else {
     const byDoses = pro && by === 'doses';
     const v = parseNum(ml), n = parseInt(byDoses ? doses : days, 10);
@@ -453,7 +462,7 @@ function BoostCard({ p, sp, nowLocal, pro }) {
       </form>`;
   }
   return html`<section class="card boost"><h2>${t('bo.title')}</h2>
-    ${p.mode !== 'auto' && html`<p class="small warn">${t('bo.mode')}</p>`}
+    ${!auto && html`<p class="small warn">${t((b ? 'bo.paused.' : 'bo.mode.') + p.mode)}</p>`}
     ${body}
     ${msg.node}
   </section>`;
