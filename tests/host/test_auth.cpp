@@ -361,13 +361,13 @@ static void test_headers() {
 static void test_setup_gate() {
     // the setup and what its steps need
     for (const char* u : {"/setup", "/setup?x=1", "/api/v1/setup", "/api/v1/setup/complete", "/login?next=/setup",
-                          "/api/v1/auth/status", "/api/v1/net/scan", "/network", "/api/v1/system/time",
+                          "/api/v1/auth/status", "/api/v1/net/scan", "/api/v1/system/time",
                           "/api/v1/system/language?lang=de", "/api/v1/ota/url", "/recovery", "/i18n.js"})
         CHECK(setup::open_during_setup(u));
     // no way to the pumps or the web UI
     for (const char* u : {"/", "/ui/app.js", "/ws", "/api/v1/pumps", "/api/v1/pumps/prime", "/api/v1/hw/pump/run",
                           "/api/v1/engineering/dosing", "/api/v1/schedule/status", "/api/v1/history", "/api/v1/backup",
-                          "/api/v1/mqtt", "/setupx", "/networks", "/api/v1/setupx", "/recoveryx", ""})
+                          "/api/v1/mqtt", "/setupx", "/network", "/api/v1/setupx", "/recoveryx", ""})
         CHECK(!setup::open_during_setup(u));
     CHECK(!setup::open_during_setup(nullptr));
 }

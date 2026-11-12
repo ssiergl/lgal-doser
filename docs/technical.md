@@ -294,7 +294,7 @@ setup is finished; for a test run before shipping, set the device up and reset i
 
 ## Network (M4)
 
-Page **`/network`**: status, settings, Wi-Fi scan and connection test.
+In the web UI under **Settings → Network** (status for everyone, settings, Wi-Fi scan and connection test in the pro view).
 
 | Topic | Behaviour |
 |---|---|
@@ -303,7 +303,7 @@ Page **`/network`**: status, settings, Wi-Fi scan and connection test.
 | Wi-Fi | WPA2 or newer (password 8–63 characters) or open. Reconnect with a wait of 2 s, doubling up to 60 s. |
 | Applying | Saved at once (NVS `net`), applied 1 s after the response – otherwise the response would not reach the browser at a new IP. |
 | Connection test | Checks SSID/password/addresses without saving (max. 25 s); afterwards the saved settings apply again. |
-| Locked out? | Button 3 s → setup Wi-Fi, open `/network` there. The setup Wi-Fi runs in parallel to the Wi-Fi client. |
+| Locked out? | Button 3 s → setup Wi-Fi, open `http://192.168.4.1/` there, sign in and change it under Settings → Network (pro view). The setup Wi-Fi runs in parallel to the Wi-Fi client. |
 
 Settings (`PUT /api/v1/net/settings`; missing fields stay, empty address = none):
 
@@ -352,7 +352,7 @@ checksums in the README there); there is no Node build, `idf.py build` is enough
 | Lock times | Pro only, in the settings: pump pairs with a minimum gap in minutes (up to 10 rules) and whether a manual dose during the lock time is rejected or waits. On save the device checks all schedules against the rules and reports collisions. |
 | Time | In the settings: device time and source (time server, clock module, by hand), warning for more than 2 min difference to the browser, a silent clock module or a lost time (backup battery), "Take the time from this browser". Time zone (list as in the setup wizard or POSIX string, suggestion from the browser) for everyone; time server (NTP) and last sync only in pro; date and time by hand (pro) only without time server – with a time server the device sets the clock itself. |
 | Status LED | In the settings for everyone: what the LED shows right now, the meaning of the colours and the night mode (time window, ready light at night off / 10 / 25 / 50 %). |
-| Network | In the settings: status (active interface, LAN and Wi-Fi address, signal, setup Wi-Fi, countdown to the Wi-Fi fallback) for everyone. Pro only: interface (automatic / LAN only / Wi-Fi only), DHCP or static addresses per interface (prefilled with the current ones), Wi-Fi scan, password, connection test and save; if the static LAN address changes, the page names the new one. `/network` stays as an emergency page. |
+| Network | In the settings: status (active interface, LAN and Wi-Fi address, signal, setup Wi-Fi, countdown to the Wi-Fi fallback) for everyone. Pro only: interface (automatic / LAN only / Wi-Fi only), DHCP or static addresses per interface (prefilled with the current ones), Wi-Fi scan, password, connection test and save; if the static LAN address changes, the page names the new one. |
 | MQTT | In the settings: connection status with the last error (host name, unreachable, TLS, sign-in) for everyone. Pro only: broker and port, encryption (none / TLS with public certificate / TLS with own CA certificate incl. upload, replace, remove), user and password, base topic, Home Assistant discovery with prefix, "Allow control via MQTT" with a warning and the list of topics. See [MQTT / Home Assistant](#mqtt--home-assistant-m6). |
 | Sign-in | In the settings: change the password (or set it for the first time) and sign out for everyone; API keys (list, create with one-time display and copy, delete) only in pro. `/login` stays for sign-in and the forgotten password. |
 | Maintenance | Firmware version, build date, address, uptime and a hint after a rollback for everyone; only with an [update source](#ota-update) the card "Updates": installed and available version (badge "Up to date" / "New: x.y.z"), time of the last check, link "What's new", "Check for updates", "Install x.y.z" with confirmation and progress, switch "Check daily"; firmware update by `.bin` upload with progress (locked while a pump runs), afterwards the page waits for the restart and reloads; restart with confirmation; factory reset with the admin password entered again; licenses (GPLv3 and third-party software). Pro only: warning while http is allowed for updates, storage and OTA state, MAC, last reset reason, memory, log and crash report (download, delete). |
@@ -361,7 +361,7 @@ checksums in the README there); there is no Node build, `idf.py build` is enough
 | Device | In the settings: device name (up to 32 bytes, e.g. "Reef tank") for header, Home Assistant and mDNS service. The host name follows from it (lower case, umlauts as ae/oe/ue/ss, otherwise "-", e.g. `reef-tank.local`); pro only: own host name (a–z, 0–9, "-", up to 32 characters). Without a name it stays `lgal-doser-xxxx`. mDNS takes the name at once, the router at the next address assignment. MQTT topics and Home Assistant IDs stay until "Move topics to the device name" is pressed in the MQTT card. |
 | Appearance | Dark, light or as the system; language as on all device pages; time format 24 hours (default) or 12 hours with AM/PM for all shown times (remembered in the browser; time input fields follow the browser). In the background a coral reef in three depths, drawn by `lib/reef.js` at load from a fixed seed (the same picture every time, ≈ 3 KB instead of ≈ 130 KB of SVG); seaweed sways, bubbles rise – off with "reduce motion". |
 | Service | Click the firmware version in the footer 7× quickly → dialog for the engineering key, then straight to the [engineering menu](#engineering-menu-m6) (at once if it is already unlocked). The [backup](#backup-m6) and "Lock now" are there too. |
-| Emergency | `/recovery` stays as a maintenance page without the web UI (firmware upload, restart, log, links to the web UI, network and setup) in case the UI does not load. It is deliberately not linked anywhere: type the address by hand, e.g. `http://lgal-doser-xxxx.local/recovery` (the user guide mentions it). |
+| Emergency | `/recovery` stays as a maintenance page without the web UI (firmware upload, restart, log, links to the web UI and setup) in case the UI does not load. It is deliberately not linked anywhere: type the address by hand, e.g. `http://lgal-doser-xxxx.local/recovery` (the user guide mentions it). |
 | Files | `/ui/…` without sign-in (program code only, no device data), ETag and `no-cache`. |
 
 ### Mock server (without a device)
@@ -465,7 +465,6 @@ on every page.
 | GET | `/recovery` | maintenance page (emergency, in the firmware image) |
 | GET | `/ui/…` | files of the web UI (without sign-in) |
 | GET | `/login` | sign-in, forgotten password (setup Wi-Fi), first own password |
-| GET | `/network` | network page |
 | GET | `/api/v1/net/status` | active interface, LAN, Wi-Fi (state, RSSI, failure reason), setup Wi-Fi, `fallback_in_s` |
 | GET / PUT | `/api/v1/net/settings` | settings (JSON, see [Network](#network-m4)); PUT takes partial documents |
 | POST / GET | `/api/v1/net/scan` | start Wi-Fi scan / result (`idle\|running\|done\|failed`, strongest first) |

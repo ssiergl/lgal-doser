@@ -303,7 +303,7 @@ einrichten und danach zurücksetzen.
 
 ## Netzwerk (M4)
 
-Seite **`/network`**: Status, Einstellungen, WLAN-Suche und Verbindungstest.
+In der Weboberfläche unter **Einstellungen → Netzwerk** (Status für alle, Einstellungen, WLAN-Suche und Verbindungstest in der Profi-Ansicht).
 
 | Thema | Verhalten |
 |---|---|
@@ -312,7 +312,7 @@ Seite **`/network`**: Status, Einstellungen, WLAN-Suche und Verbindungstest.
 | WLAN | WPA2 oder neuer (Passwort 8–63 Zeichen) oder offen. Wiederverbindung mit Wartezeit 2 s, verdoppelt bis 60 s. |
 | Übernahme | Gespeichert sofort (NVS `net`), angewendet 1 s nach der Antwort – sonst erreicht die Antwort bei einer neuen IP den Browser nicht mehr. |
 | Verbindungstest | Prüft SSID/Passwort/Adressen ohne zu speichern (max. 25 s); danach gelten wieder die gespeicherten Einstellungen. |
-| Ausgesperrt? | Taster 3 s → Setup-WLAN, dort `/network` öffnen. Das Setup-WLAN läuft parallel zum WLAN-Client. |
+| Ausgesperrt? | Taster 3 s → Setup-WLAN, dort `http://192.168.4.1/` öffnen, anmelden und unter Einstellungen → Netzwerk (Profi-Ansicht) ändern. Das Setup-WLAN läuft parallel zum WLAN-Client. |
 
 Einstellungen (`PUT /api/v1/net/settings`; fehlende Felder bleiben, leere Adresse = keine):
 
@@ -362,7 +362,7 @@ nicht, `idf.py build` reicht.
 | Sperrzeiten | Nur Profi, in den Einstellungen: Pumpenpaare mit Mindestabstand in Minuten (bis 10 Regeln) und ob eine manuelle Dosis in der Sperrzeit abgelehnt wird oder wartet. Das Gerät prüft beim Speichern alle Zeitpläne gegen die Regeln und meldet Kollisionen. |
 | Uhrzeit | In den Einstellungen: Gerätezeit und Quelle (Zeitserver, Uhrenmodul, von Hand), Warnung bei mehr als 2 min Abweichung zum Browser, stummem Uhrenmodul oder verlorener Uhrzeit (Pufferbatterie), „Uhrzeit von diesem Browser übernehmen“. Zeitzone (Liste wie im Einrichtungsassistenten oder POSIX-Angabe, Vorschlag aus dem Browser) für alle; Zeitserver (NTP) und letzter Abgleich nur in Profi; Datum und Uhrzeit von Hand (Profi) nur ohne Zeitserver – mit Zeitserver stellt das Gerät die Uhr selbst. |
 | Status-LED | In den Einstellungen für alle: was die LED gerade zeigt, die Bedeutung der Farben und der Nachtmodus (Zeitfenster, Bereit-Licht nachts aus / 10 / 25 / 50 %). |
-| Netzwerk | In den Einstellungen: Status (aktive Schnittstelle, LAN- und WLAN-Adresse, Signal, Setup-WLAN, Countdown bis zum WLAN-Ersatz) für alle. Nur Profi: Schnittstelle (automatisch / nur LAN / nur WLAN), DHCP oder feste Adressen je Schnittstelle (vorbelegt mit den aktuellen), WLAN-Suche, Passwort, Verbindungstest und Speichern; ändert sich die feste LAN-Adresse, nennt die Seite die neue. `/network` bleibt als Notfallseite. |
+| Netzwerk | In den Einstellungen: Status (aktive Schnittstelle, LAN- und WLAN-Adresse, Signal, Setup-WLAN, Countdown bis zum WLAN-Ersatz) für alle. Nur Profi: Schnittstelle (automatisch / nur LAN / nur WLAN), DHCP oder feste Adressen je Schnittstelle (vorbelegt mit den aktuellen), WLAN-Suche, Passwort, Verbindungstest und Speichern; ändert sich die feste LAN-Adresse, nennt die Seite die neue. |
 | MQTT | In den Einstellungen: Verbindungsstatus mit letztem Fehler (Hostname, nicht erreichbar, TLS, Anmeldung) für alle. Nur Profi: Broker und Port, Verschlüsselung (keine / TLS mit öffentlichem Zertifikat / TLS mit eigenem CA-Zertifikat inkl. Hochladen, Ersetzen, Entfernen), Benutzer und Passwort, Basis-Topic, Home-Assistant-Erkennung mit Präfix, „Steuerung über MQTT erlauben“ mit Warnhinweis und die Liste der Topics. Siehe [MQTT / Home Assistant](#mqtt--home-assistant-m6). |
 | Anmeldung | In den Einstellungen: Passwort ändern (bzw. erstmals festlegen) und Abmelden für alle; API-Schlüssel (Liste, erzeugen mit einmaliger Anzeige und Kopieren, löschen) nur in Profi. `/login` bleibt für Anmeldung und Passwort vergessen. |
 | Wartung | Firmware-Version, Erstellungsdatum, Adresse, Laufzeit und Hinweis nach einem Rollback für alle; nur mit [Update-Quelle](#ota-update) die Karte „Updates“: installierte und verfügbare Version (Badge „Aktuell“ / „Neu: x.y.z“), Zeit der letzten Prüfung, Link „Was ist neu“, „Nach Updates suchen“, „x.y.z installieren“ mit Rückfrage und Fortschritt, Schalter „Täglich prüfen“; Firmware-Update per `.bin`-Upload mit Fortschritt (gesperrt, solange eine Pumpe läuft), danach wartet die Seite auf den Neustart und lädt neu; Neustart mit Rückfrage; Werkseinstellungen mit erneuter Eingabe des Admin-Passworts; Lizenzen (GPLv3 und Fremdsoftware). Nur Profi: Warnung, solange http für Updates erlaubt ist, Speicherplatz und OTA-Zustand, MAC, letzter Neustart-Grund, Speicher, Log und Absturzbericht (laden, löschen). |
@@ -371,7 +371,7 @@ nicht, `idf.py build` reicht.
 | Gerät | In den Einstellungen: Gerätename (bis 32 Bytes, z. B. „Riffbecken“) für Kopfzeile, Home Assistant und mDNS-Dienst. Der Hostname folgt daraus (Kleinbuchstaben, Umlaute als ae/oe/ue/ss, sonst „-“, z. B. `riffbecken.local`); nur Profi: eigener Hostname (a–z, 0–9, „-“, bis 32 Zeichen). Ohne Namen bleibt `lgal-doser-xxxx`. mDNS übernimmt den Namen sofort, der Router nach der nächsten Adressvergabe. MQTT-Topics und Home-Assistant-IDs bleiben, bis man in der MQTT-Karte „Topics auf den Gerätenamen umziehen“ drückt. |
 | Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten; Zeitformat 24 Stunden (Standard) oder 12 Stunden mit AM/PM für alle angezeigten Uhrzeiten (im Browser gemerkt; Eingabefelder für Uhrzeiten folgen dem Browser). Im Hintergrund ein Korallenriff in drei Tiefen, das `lib/reef.js` beim Laden aus einem festen Startwert zeichnet (gleiches Bild bei jedem Aufruf, ≈ 3 KB statt ≈ 130 KB SVG); Seegras wiegt sich, Luftblasen steigen auf – aus bei „Bewegung reduzieren“. |
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel, danach direkt das [Engineering-Menü](#engineering-menü-m6) (ist der Bereich schon freigeschaltet, sofort). Dort liegen auch die [Datensicherung](#datensicherung-m6) und „Jetzt sperren“. |
-| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Links auf Weboberfläche, Netzwerk und Einrichtung) für den Fall, dass die Oberfläche nicht lädt. Sie ist bewusst nirgends verlinkt: Adresse von Hand eingeben, z. B. `http://lgal-doser-xxxx.local/recovery` (Hinweis gehört in die Bedienungsanleitung). |
+| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Links auf Weboberfläche und Einrichtung) für den Fall, dass die Oberfläche nicht lädt. Sie ist bewusst nirgends verlinkt: Adresse von Hand eingeben, z. B. `http://lgal-doser-xxxx.local/recovery` (Hinweis gehört in die Bedienungsanleitung). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
 
 ### Mock-Server (ohne Gerät)
@@ -475,7 +475,6 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/recovery` | Wartungsseite (Notfall, im Firmware-Image) |
 | GET | `/ui/…` | Dateien der Weboberfläche (ohne Anmeldung) |
 | GET | `/login` | Anmeldung, Passwort vergessen (Setup-WLAN), erstes eigenes Passwort |
-| GET | `/network` | Netzwerk-Seite |
 | GET | `/api/v1/net/status` | aktive Schnittstelle, LAN, WLAN (Zustand, RSSI, Fehlergrund), Setup-WLAN, `fallback_in_s` |
 | GET / PUT | `/api/v1/net/settings` | Einstellungen (JSON, siehe [Netzwerk](#netzwerk-m4)); PUT nimmt Teil-Dokumente |
 | POST / GET | `/api/v1/net/scan` | WLAN-Suche starten / Ergebnis (`idle\|running\|done\|failed`, stärkstes zuerst) |
