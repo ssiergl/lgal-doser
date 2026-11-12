@@ -7,4 +7,7 @@ __pycache__/
 .DS_Store
 .vscode/
 .cache/
+# manufacturer master for tools/provision.py; sdkconfig.secrets held the
+# build secret of earlier versions
+factory.secret
 sdkconfig.secrets

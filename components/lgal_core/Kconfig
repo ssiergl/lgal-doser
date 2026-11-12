@@ -7,16 +7,6 @@ menu "LG Aquatic Life Core"
             Used for the hostname (lgal-<type>-xxxx) and later the MQTT namespace
             lg-aquatic-life/<type>/<id>/.
 
-    config LGAL_AP_SECRET
-        string "Secret for deriving the setup password"
-        default "LGAL-change-me-before-first-flash"
-        help
-            The setup/admin password of every device is derived from the base
-            MAC and this secret (HMAC-SHA256). The MAC alone is public (BSSID),
-            hence the secret. Change it once before the first flash and NEVER
-            again afterwards, otherwise all passwords change.
-            tools/ap_password.py needs the same value.
-
     config LGAL_SETUP_AP_TIMEOUT_MIN
         int "Runtime of the setup AP opened via the button (minutes)"
         default 30

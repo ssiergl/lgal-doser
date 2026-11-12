@@ -8,8 +8,8 @@ Usage:
 
 Login: an API key (--key or LGAL_API_KEY, created on /login), the admin
 password (--password or LGAL_PASSWORD) or, as long as no admin password is
-set, the device password (--mac: derived from MAC + secret as in
-tools/ap_password.py).
+set, the device password (--mac: derived from the MAC and the manufacturer
+master in factory.secret as in tools/ap_password.py).
 Afterwards the script waits until the device answers with the new version.
 """
 import argparse
@@ -79,7 +79,7 @@ def main():
         import ap_password  # noqa: E402
 
         mac = bytes.fromhex("".join(c for c in args.mac if c.isalnum()))
-        password = ap_password.derive(mac, ap_password.secret_from_sdkconfig())
+        password = ap_password.derive(mac, ap_password.device_secret(ap_password.read_master(ap_password.MASTER_FILE), mac))
     if not password and not args.key:
         sys.exit("Login missing (--key, --password or --mac)")
 
