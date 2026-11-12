@@ -50,6 +50,7 @@ Pin assignment and circuit: [CLAUDE.md](CLAUDE.md).
 | Document | For |
 |---|---|
 | [User guide](docs/user-guide.md) | owners: setup, calibrating pumps, schedules, daily use, troubleshooting |
+| [Build guide](docs/build-guide.md) | makers: parts list, electrical safety, flashing the firmware, assembly and test |
 | [Technical documentation](docs/technical.md) | developers: building the firmware, first USB flash, API, MQTT, internals |
 
 German versions of the README and the guides are in [README.de.md](README.de.md) and

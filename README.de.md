@@ -53,6 +53,7 @@ Pinbelegung und Schaltung: [CLAUDE.md](CLAUDE.md).
 | Dokument | Für wen |
 |---|---|
 | [Bedienungsanleitung](docs/de/benutzer.md) | Anwender: Einrichtung, Pumpen kalibrieren, Zeitpläne, Alltag, Fehlersuche |
+| [Nachbau-Anleitung](docs/de/nachbau.md) | Bastler: Teileliste, elektrische Sicherheit, Firmware aufspielen, Aufbau und Test |
 | [Technische Dokumentation](docs/de/technik.md) | Entwickler: Firmware bauen, Erstinbetriebnahme per USB, API, MQTT, Interna |
 
 ## Projektstand
