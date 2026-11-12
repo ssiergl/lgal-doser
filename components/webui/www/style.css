@@ -20,6 +20,11 @@
   --p1: #38c6d9; --p2: #f59e6b; --p3: #a78bfa; --p4: #5ad17a; --p5: #f2c94c;
   --radius: 14px;
   --gap: 16px;
+  /* background reef (lib/reef.js): far layer and middle rock as solid colours,
+     corals as their hue mixed into --bg by the given share */
+  --reef-far: #0d1c28; --reef-rock: #112739;
+  --reef-mid: 40%; --reef-front: 85%; --reef-groove: 45%;
+  --reef-bubble: rgba(95, 138, 163, .6);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
@@ -30,6 +35,9 @@
     --water: #8fd3e3; --water-hi: #0d93aa;
     --shadow: 0 1px 2px rgba(15, 36, 51, .06), 0 6px 18px rgba(15, 36, 51, .06);
     --p1: #0d93aa; --p2: #e07a3f; --p3: #7656e0; --p4: #2f9e55; --p5: #c99a10;
+    --reef-far: #e1eaf0; --reef-rock: #d8e4ec;
+    --reef-mid: 20%; --reef-front: 45%; --reef-groove: 65%;
+    --reef-bubble: rgba(13, 147, 170, .35);
     color-scheme: light;
   }
 }
@@ -40,6 +48,9 @@
   --water: #8fd3e3; --water-hi: #0d93aa;
   --shadow: 0 1px 2px rgba(15, 36, 51, .06), 0 6px 18px rgba(15, 36, 51, .06);
   --p1: #0d93aa; --p2: #e07a3f; --p3: #7656e0; --p4: #2f9e55; --p5: #c99a10;
+  --reef-far: #e1eaf0; --reef-rock: #d8e4ec;
+  --reef-mid: 20%; --reef-front: 45%; --reef-groove: 65%;
+  --reef-bubble: rgba(13, 147, 170, .35);
   color-scheme: light;
 }
 
@@ -57,6 +68,37 @@ h3 { font-size: 15px; }
 .mut { color: var(--mut); }
 .small { font-size: 13px; }
 .num { font-variant-numeric: tabular-nums; }
+/* ---- background reef (drawn by lib/reef.js) ---- */
+.sea { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.reef { position: absolute; left: 0; bottom: 0; width: 100%; height: min(30vh, 240px); display: block; }
+.reef g { fill: none; stroke: var(--c); stroke-linecap: round; }
+.reef .b { fill: var(--c); stroke: none; }
+.reef .gr { stroke: color-mix(in srgb, var(--hue) var(--reef-groove), var(--bg)); stroke-width: 2; }
+.reef .far { --c: var(--reef-far); }
+.reef .rk { --c: var(--reef-rock); }
+.reef .m { --c: color-mix(in srgb, var(--hue) var(--reef-mid), var(--bg)); }
+.reef .f { --c: color-mix(in srgb, var(--hue) var(--reef-front), var(--bg)); }
+.reef .h0 { --hue: #7d4e5e; } .reef .h1 { --hue: #6b5a7e; } .reef .h2 { --hue: #8a6d4a; }
+.reef .h3 { --hue: #4f6e5e; } .reef .h4 { --hue: #4a6a82; } .reef .h5 { --hue: #7a5444; }
+.reef .sw { transform-box: fill-box; transform-origin: 50% 100%; animation: reef-sway 7s ease-in-out infinite alternate; }
+.reef .sw.s1 { animation-duration: 9s; animation-delay: -3s; }
+.reef .sw.s2 { animation-duration: 8s; animation-delay: -5s; }
+@keyframes reef-sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+.bubbles { position: absolute; left: 0; right: 0; bottom: 0; }
+.bubbles i {
+  position: absolute; border: 1px solid var(--reef-bubble); border-radius: 50%; opacity: 0;
+  animation: reef-bubble 20s linear infinite; will-change: transform, opacity;
+}
+@keyframes reef-bubble {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  6% { opacity: 1; }
+  30% { transform: translate3d(5px, -30vh, 0); }
+  60% { transform: translate3d(-4px, -60vh, 0); opacity: .8; }
+  100% { transform: translate3d(3px, -100vh, 0); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .reef .sw { animation: none; } .bubbles { display: none; } }
+@media print { .sea { display: none; } }
+
 .boot { display: grid; place-items: center; height: 100vh; color: var(--mut); }
 [hidden] { display: none !important; }
 
@@ -102,6 +144,8 @@ footer button.ver { all: unset; cursor: default; }
 @media (max-width: 939px) {
   .tabs { display: none; }
   footer { padding-bottom: 96px; }
+  .reef, .bubbles { bottom: calc(60px + env(safe-area-inset-bottom)); }  /* above the bottom bar */
+  .reef { height: min(22vh, 180px); }
   .top .hide-s { display: none; }
   .bottom {
     display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
