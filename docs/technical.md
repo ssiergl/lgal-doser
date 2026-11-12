@@ -25,6 +25,7 @@ partitions*.csv         final partition tables per flash size (can only be chang
 variants/               configuration per module variant (N8R8, N16R8, N32R8)
 .github/workflows/      CI (tests, fuzzers, all variants) and release build per git tag
 docs/                   documentation, German versions in docs/de/
+hardware/               enclosure and circuit board files (CC BY-NC-SA 4.0)
 ```
 
 ## Toolchain

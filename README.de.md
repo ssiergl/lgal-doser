@@ -79,6 +79,7 @@ main/         Start der Firmware
 tools/        Provisionieren, Update-Upload, Release-Build, Geräte-Mock
 tests/        Host-Tests und Fuzzer
 docs/         Dokumentation (englisch), docs/de/ deutsche Fassungen
+hardware/     Gehäuse (STL …) und Platine (Schaltplan, Gerber …)
 ```
 
 ## Sicherheit und Haftung
