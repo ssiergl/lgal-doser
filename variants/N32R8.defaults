@@ -1,0 +1,6 @@
+# ESP32-S3 module with 32 MB octal flash and 8 MB octal PSRAM (ESP32-S3-WROOM-2-N32R8V,
+# 1.8 V flash/PSRAM). Octal flash uses GPIO 33-37, which the board leaves free.
+# ESP-IDF supports flash above 16 MB only as octal flash.
+CONFIG_ESPTOOLPY_OCT_FLASH=y
+CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_32mb.csv"

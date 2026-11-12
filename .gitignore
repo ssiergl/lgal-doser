@@ -11,3 +11,5 @@ __pycache__/
 # build secret of earlier versions
 factory.secret
 sdkconfig.secrets
+build-*/
+dist/

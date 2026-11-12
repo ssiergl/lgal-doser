@@ -1,0 +1,37 @@
+# Host tests, a short fuzz run and the firmware of every module variant on
+# each push to main and each pull request.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  host-tests:
+    # GitHub only offers Ubuntu runners; the job itself runs in Debian.
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    steps:
+      - name: Install clang
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends clang libclang-rt-dev
+      - uses: actions/checkout@v4
+      - name: Host tests (AddressSanitizer, UndefinedBehaviorSanitizer)
+        run: SAN=1 HOST_CXX=clang++ sh tests/host/run.sh
+      - name: Fuzz parsers (short run)
+        run: HOST_CXX=clang++ sh tests/fuzz/run.sh 20000 1
+  firmware:
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v6.0.3
+    strategy:
+      matrix:
+        variant: [N8R8, N16R8, N32R8]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ${{ matrix.variant }}
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          idf.py -B "build-${{ matrix.variant }}" -DVARIANT=${{ matrix.variant }} build

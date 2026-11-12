@@ -1,0 +1,16 @@
+# LGAL-Doser partition table (8 MB flash, module variant N8R8)
+#
+# CAUTION: bootloader and partition table are only written on the first USB
+# flash and can NOT be changed via OTA afterwards. Same layout as the 16 MB
+# table up to the app slots; slots of 3 MB (the app is about 1.8 MB) and
+# 1.75 MB for history and settings files (60 days of history take ~350 KB).
+#
+# Name,     Type, SubType,  Offset,   Size
+nvs,        data, nvs,      0x9000,   0x10000
+otadata,    data, ota,      0x19000,  0x2000
+phy_init,   data, phy,      0x1B000,  0x1000
+fctry,      data, nvs,      0x1C000,  0x4000
+coredump,   data, coredump, 0x20000,  0x20000
+ota_0,      app,  ota_0,    0x40000,  0x300000
+ota_1,      app,  ota_1,    0x340000, 0x300000
+storage,    data, littlefs, 0x640000, 0x1C0000
