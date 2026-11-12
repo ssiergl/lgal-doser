@@ -388,8 +388,9 @@ Ablauf und Schutz:
 
 **Update-Quelle:** Eine feste Adresse für das Release-Manifest, z. B.
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`. Ab Werk aus
-`CONFIG_LGAL_OTA_SOURCE` (leer = keine Quelle), ändern lässt sie sich nur im
-[Engineering-Menü](#engineering-menü-m6). Das Manifest nennt die Version und je Board
+`CONFIG_LGAL_OTA_SOURCE` in `sdkconfig.defaults`: die Releases dieses Repositorys (ein Build aus
+einem Fork trägt dort seine eigene Adresse ein, leer = keine Quelle); ändern lässt sie sich nur
+im [Engineering-Menü](#engineering-menü-m6). „latest“ überspringt Vorabversionen. Das Manifest nennt die Version und je Board
 (`d5v1`, …) und Modulvariante (`N8R8`, `N16R8`, `N32R8`, nach Flash-Größe des Builds) Datei,
 SHA-256 und optional Größe:
 

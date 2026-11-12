@@ -382,8 +382,9 @@ Procedure and protection:
 
 **Update source:** a fixed address of the release manifest, e.g.
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`. Factory value from
-`CONFIG_LGAL_OTA_SOURCE` (empty = no source); it can only be changed in the
-[engineering menu](#engineering-menu-m6). The manifest names the version and, per board
+`CONFIG_LGAL_OTA_SOURCE` in `sdkconfig.defaults`: the releases of this repository (a build from a
+fork sets its own address there, empty = no source); it can only be changed in the
+[engineering menu](#engineering-menu-m6). "latest" skips pre-releases. The manifest names the version and, per board
 (`d5v1`, …) and module variant (`N8R8`, `N16R8`, `N32R8`, by flash size of the build), file,
 SHA-256 and optionally size:
 
