@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LG Aquatic Life – Network</title>
+<link rel="icon" href="/ui/icon.svg" type="image/svg+xml">
 <style>
 :root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950;--warn:#d29922}
 *{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
@@ -22,14 +23,14 @@ label{display:block;font-size:13px;color:var(--mut);margin-top:8px}label.chk{dis
 .hint{font-size:13px;color:var(--mut);margin:4px 0 0}
 table{width:100%;border-collapse:collapse;font-size:14px}td{padding:3px 8px 3px 0;vertical-align:top}td:first-child{color:var(--mut);white-space:nowrap;width:1%}
 .nets{max-height:220px;overflow:auto;margin-top:8px}.nets button{display:flex;width:100%;justify-content:space-between;background:transparent;color:var(--fg);border:1px solid #2c4757;margin-top:4px;font-weight:400}
-.top{display:flex;align-items:center;gap:8px}.top h1{flex:1}.top select{width:auto;padding:5px 7px}
+.top{display:flex;align-items:center;gap:16px;margin:8px 0 14px}.top h1{margin:0;font-size:22px}.logo{flex:0 0 auto;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.45))}.top h1{flex:1}.top select{width:auto;padding:5px 7px}
 a{color:var(--acc)}
 </style>
 <script src="/i18n.js"></script>
 </head>
 <body>
 <main>
-<div class="top"><h1 data-i18n="title"></h1><select id="lang" data-i18n-title="lang.label"></select></div>
+<div class="top"><img class="logo" src="/ui/logo.svg" alt="LG Aquatic Life" width="112" height="112" onerror="this.remove()"><h1 data-i18n="title"></h1><select id="lang" data-i18n-title="lang.label"></select></div>
 
 <section class="card">
 <h2 data-i18n="st.title"></h2>
@@ -62,7 +63,7 @@ a{color:var(--acc)}
 </main>
 <script>
 i18n.add({
-en:{'title':'LG Aquatic Life · Network','st.title':'Status','set.title':'Settings',
+en:{'title':'Network','st.title':'Status','set.title':'Settings',
  'st.active':'Active','st.lan':'LAN','st.wlan':'Wi-Fi','st.ap':'Setup Wi-Fi','st.fallback':'Wi-Fi starts in {s} s',
  'act.lan':'LAN','act.wlan':'Wi-Fi','act.none':'no connection',
  'lan.missing':'W5500 not found','lan.off':'switched off','lan.nolink':'no cable / link','lan.noip':'link, waiting for an address',
@@ -78,7 +79,7 @@ en:{'title':'LG Aquatic Life · Network','st.title':'Status','set.title':'Settin
  'r.timeout':'no answer','r.no_ap_found':'network not found','r.wrong_password':'wrong password','r.security_mismatch':'security not supported (WPA2 or newer required)','r.connection_failed':'connection failed',
  'field':'Please check: {f}','back':'← Maintenance page',
  'err.wlan_not_configured':'"Wi-Fi only" needs a Wi-Fi network','err.busy':'A search is already running','err.wifi_unavailable':'Wi-Fi is not available'},
-de:{'title':'LG Aquatic Life · Netzwerk','st.title':'Status','set.title':'Einstellungen',
+de:{'title':'Netzwerk','st.title':'Status','set.title':'Einstellungen',
  'st.active':'Aktiv','st.lan':'LAN','st.wlan':'WLAN','st.ap':'Setup-WLAN','st.fallback':'WLAN startet in {s} s',
  'act.lan':'LAN','act.wlan':'WLAN','act.none':'keine Verbindung',
  'lan.missing':'W5500 nicht gefunden','lan.off':'abgeschaltet','lan.nolink':'kein Kabel / Link','lan.noip':'Link, warte auf Adresse',

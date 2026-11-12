@@ -128,6 +128,7 @@ function App() {
   }
   return html`
     <${Header} route=${route}/>
+    <img class="mark" src="/ui/logo.svg" alt="" aria-hidden="true"/>
     <main><${Banners}/>${page}</main>
     <${Footer}/>
     <${Nav} route=${route} cls="bottom"/>
@@ -141,3 +142,8 @@ const root = document.getElementById('app');
 root.textContent = '';  // boot placeholder
 drawReef(document.querySelector('.sea'));
 render(html`<${App}/>`, root);
+// the background logo floats between the top bar and the reef (style.css .mark)
+const head = document.querySelector('header.top');
+if (head && window.ResizeObserver) {
+  new ResizeObserver(() => document.documentElement.style.setProperty('--head-h', head.offsetHeight + 'px')).observe(head);
+}

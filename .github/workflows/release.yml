@@ -17,6 +17,8 @@ jobs:
     container: espressif/idf:v6.0.3
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true  # brand/: the logo
       - name: Tag matches version.txt
         run: |
           v="$(tr -d ' \n' < version.txt)"

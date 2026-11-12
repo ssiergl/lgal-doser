@@ -5,17 +5,23 @@ idf_component_register(
 )
 
 # Pack www/ into one gzip blob at build time (pack.py) and embed it, together
-# with the license texts from the repository root (shown on the maintenance page)
+# with the logo from the brand submodule and the license texts from the repository root
+# (shown on the maintenance page)
 file(GLOB_RECURSE webui_files CONFIGURE_DEPENDS "${COMPONENT_DIR}/www/*")
 set(webui_bin "${CMAKE_CURRENT_BINARY_DIR}/webui.bin")
 idf_build_get_property(python PYTHON)
 idf_build_get_property(project_dir PROJECT_DIR)
+# The logo comes from the brand repository (Git submodule brand/, not GPL - see TRADEMARKS.md)
+set(logo "${project_dir}/brand/logo/lgal-plaque.svg")
+if(NOT EXISTS "${logo}")
+    message(FATAL_ERROR "brand/ is empty: run 'git submodule update --init' (or clone with --recursive)")
+endif()
 set(gpl "${project_dir}/LICENSE")
 set(notices "${project_dir}/THIRD-PARTY-NOTICES.txt")
 add_custom_command(
     OUTPUT "${webui_bin}"
     COMMAND "${python}" "${COMPONENT_DIR}/pack.py" "${COMPONENT_DIR}/www" "${webui_bin}"
-            "licenses/gpl-3.0.txt=${gpl}" "licenses/third-party.txt=${notices}"
-    DEPENDS "${COMPONENT_DIR}/pack.py" ${webui_files} "${gpl}" "${notices}"
+            "logo.svg=${logo}" "licenses/gpl-3.0.txt=${gpl}" "licenses/third-party.txt=${notices}"
+    DEPENDS "${COMPONENT_DIR}/pack.py" ${webui_files} "${logo}" "${gpl}" "${notices}"
     VERBATIM)
 target_add_binary_data(${COMPONENT_LIB} "${webui_bin}" BINARY)

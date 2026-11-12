@@ -15,6 +15,7 @@ components/lgal_core/   LG Aquatic Life Core: Netz, HTTP, OTA, LED, Taster, Eins
 components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte, Pumpen, RTC/EEPROM
 components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitplan (Scheduler), Engineering und ihre REST-APIs
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
+brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL, siehe TRADEMARKS.md)
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
@@ -33,6 +34,15 @@ hardware/               Gehäuse- und Platinendaten (CC BY-NC-SA 4.0)
 ```bash
 git clone -b v6.0.3 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.0.3
 ```
+
+Dieses Repository mit dem Marken-Submodul (`brand/`, das Logo):
+
+```bash
+git clone --recursive https://github.com/ssiergl/lgal-doser.git
+```
+
+In einem vorhandenen Checkout: `git submodule update --init`; ein neueres Logo mit
+`git submodule update --remote brand` und einem Commit.
 
 ```bash
 ~/esp/esp-idf-v6.0.3/install.sh esp32s3 && brew install cmake ninja
@@ -319,8 +329,8 @@ Abfragen und REST-Entlüften zurück.
 ## Weboberfläche (M5)
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
-Sie ist in die Firmware eingebettet: `components/webui/www/` wird beim Build von `pack.py`
-gzip-komprimiert (≈ 104 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
+Sie ist in die Firmware eingebettet: `components/webui/www/` und das Logo aus `brand/` werden beim
+Build von `pack.py` gzip-komprimiert (≈ 104 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.

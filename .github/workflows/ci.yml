@@ -31,6 +31,8 @@ jobs:
         variant: [N8R8, N16R8, N32R8]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true  # brand/: the logo
       - name: Build ${{ matrix.board }} ${{ matrix.variant }}
         shell: bash
         run: |
