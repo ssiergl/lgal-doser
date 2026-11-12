@@ -1,21 +1,45 @@
-// Translations. English is the base; views add their strings with add().
-// The language is a device setting (POST /api/v1/system/language), cached
-// per browser so the first paint is already right.
+// Translations. English is the base: views add their strings with add().
+// Every other language is one file lang/<code>.json with all keys of the
+// web UI, loaded only when that language is used; a missing key falls back
+// to English. New language: the file, an entry here and in the firmware
+// (settings::kLanguages). The language is a device setting
+// (POST /api/v1/system/language), cached per browser so the first paint is
+// already right (app.js waits for ready()).
 import { hub, load, save } from './hub.js';
 
 export const languages = [['en', 'English'], ['de', 'Deutsch']];
-const dict = { en: {}, de: {} };
+const known = l => languages.some(([c]) => c === l);
+const dict = { en: {} };
 const changes = hub();
 let lang = load('lgal.lang', (navigator.language || 'en').slice(0, 2));
-if (!dict[lang]) lang = 'en';
+if (!known(lang)) lang = 'en';
 document.documentElement.lang = lang;
 
+// Loads lang/<l>.json once; false if it cannot be had (then English stays)
+async function loadDict(l) {
+  if (dict[l]) return true;
+  try {
+    const r = await fetch('/ui/lang/' + l + '.json');
+    if (!r.ok) return false;
+    dict[l] = await r.json();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Before the first paint: the dictionary of the cached language
+export async function ready() {
+  if (!(await loadDict(lang))) lang = 'en';
+  document.documentElement.lang = lang;
+}
+
 export function add(d) {
-  for (const l in d) Object.assign(dict[l] || (dict[l] = {}), d[l]);
+  Object.assign(dict.en, d.en);
 }
 
 export function t(key, vars) {
-  let s = dict[lang][key] ?? dict.en[key] ?? key;
+  let s = dict[lang]?.[key] ?? dict.en[key] ?? key;
   if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
   return s;
 }
@@ -23,8 +47,8 @@ export function t(key, vars) {
 export const getLang = () => lang;
 export const useLang = () => { changes.use(); return lang; };
 
-export function setLang(l, persist = true) {
-  if (!dict[l] || l === lang) return;
+export async function setLang(l, persist = true) {
+  if (!known(l) || l === lang || !(await loadDict(l))) return;
   lang = l;
   save('lgal.lang', l);
   document.documentElement.lang = l;
@@ -43,10 +67,13 @@ export async function initLang() {
 export function errText(e) {
   if (!e) return '';
   const key = 'err.' + e.code;
-  const txt = dict[lang][key] ?? dict.en[key];
+  const txt = dict[lang]?.[key] ?? dict.en[key];
   if (txt) return t(key, e.vars);
   return e.message || String(e.code || e);
 }
+
+// Decimal separator of the UI language ("," or ".")
+export const decimalSep = () => (1.5).toLocaleString(lang).charAt(1);
 
 // Numbers in the UI language
 export function num(v, digits = 0) {
@@ -77,28 +104,5 @@ add({
     'err.speed_out_of_range': 'Speed not possible with this calibration',
     'err.queue_full': 'Too many waiting doses',
     'err.internal_error': 'Internal error',
-  },
-  de: {
-    'err.network': 'Keine Verbindung zum Gerät',
-    'err.invalid_param': 'Ungültige Eingabe',
-    'err.pump_busy': 'Pumpe ist beschäftigt',
-    'err.pump_disabled': 'Pumpe ist deaktiviert',
-    'err.pump_manual_only': 'Pumpe steht auf „nur manuell“',
-    'err.locked': 'Pumpen gesperrt (Update läuft)',
-    'err.daily_limit': 'Tageslimit würde überschritten',
-    'err.time_invalid': 'Keine gültige Uhrzeit',
-    'err.driver_unavailable': 'Treiber nicht erreichbar',
-    'err.dose_too_small': 'Menge unter der kleinsten Dosis',
-    'err.dose_too_large': 'Menge zu groß',
-    'err.not_priming': 'Entlüften ist bereits beendet',
-    'err.collision_lock': 'Sperrzeit läuft',
-    'err.storage_error': 'Speichern fehlgeschlagen',
-    'err.unauthorized': 'Bitte erneut anmelden',
-    'err.engineering_locked': 'Servicebereich ist gesperrt',
-    'err.no_calibration_run': 'Kein Kalibrierlauf zum Übernehmen',
-    'err.measured_out_of_range': 'Gemessene Menge unplausibel – bitte erneut messen',
-    'err.speed_out_of_range': 'Geschwindigkeit mit dieser Kalibrierung nicht möglich',
-    'err.queue_full': 'Zu viele wartende Dosen',
-    'err.internal_error': 'Interner Fehler',
   },
 });

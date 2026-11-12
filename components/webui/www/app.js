@@ -2,7 +2,7 @@
 import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from './lib/html.js';
-import { add, initLang, t, useLang } from './lib/i18n.js';
+import { add, initLang, ready, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
 import { drawReef } from './lib/reef.js';
 import { start, useStore } from './lib/store.js';
@@ -24,15 +24,6 @@ add({
     'nortc': 'The clock module does not answer – after a power cut the time is lost until the network is back.',
     'offline': 'No connection to the device ({e}).',
     'notfound': 'Page not found',
-  },
-  de: {
-    'nav.home': 'Übersicht', 'nav.history': 'Verlauf', 'nav.settings': 'Einstellungen',
-    'mode.beginner': 'Einfach', 'mode.pro': 'Profi', 'mode.title': 'Ansicht',
-    'live.on': 'Live', 'live.off': 'Verbinde …',
-    'notime': 'Das Gerät hat keine gültige Uhrzeit – Zeitpläne und Tageslimits ruhen.',
-    'nortc': 'Das Uhrenmodul antwortet nicht – nach einem Stromausfall fehlt die Uhrzeit, bis das Netzwerk wieder da ist.',
-    'offline': 'Keine Verbindung zum Gerät ({e}).',
-    'notfound': 'Seite nicht gefunden',
   },
 });
 
@@ -135,6 +126,7 @@ function App() {
     <${DialogHost}/>`;
 }
 
+await ready();  // dictionary of the cached language before the first paint
 initLang();
 lockForeignUnlock();
 start();

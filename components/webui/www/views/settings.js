@@ -18,12 +18,6 @@ add({
     'set.mode': 'View', 'set.mode.hint': 'Simple shows what daily use needs. Pro adds detailed schedules, pump fine-tuning, rules between pumps and network options. Settings made in Pro stay active in Simple. Stored in this browser.',
     'set.device': 'Device', 'set.setup': 'Setup wizard', 'set.maint': 'Maintenance and firmware update',
   },
-  de: {
-    'set.title': 'Einstellungen', 'set.look': 'Darstellung', 'set.lang': 'Sprache', 'set.theme': 'Farbschema', 'set.clock': 'Zeitformat', 'clock.24': '24 Stunden', 'clock.12': '12 Stunden (AM/PM)',
-    'theme.auto': 'Wie das System', 'theme.dark': 'Dunkel', 'theme.light': 'Hell',
-    'set.mode': 'Ansicht', 'set.mode.hint': 'Einfach zeigt, was der Alltag braucht. Profi ergänzt detaillierte Zeitpläne, Pumpen-Feintuning, Regeln zwischen Pumpen und Netzwerk-Optionen. In Profi Eingestelltes bleibt in Einfach aktiv. Gespeichert in diesem Browser.',
-    'set.device': 'Gerät', 'set.setup': 'Einrichtungsassistent', 'set.maint': 'Wartung und Firmware-Update',
-  },
 });
 
 export function SettingsView() {

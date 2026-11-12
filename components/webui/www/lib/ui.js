@@ -8,7 +8,6 @@ import { Ic } from './pumps.js';
 
 add({
   en: { 'ui.save': 'Save', 'ui.discard': 'Discard', 'ui.unsaved': 'Unsaved changes', 'ui.ok': 'Confirm', 'ui.cancel': 'Cancel' },
-  de: { 'ui.save': 'Speichern', 'ui.discard': 'Verwerfen', 'ui.unsaved': 'Ungespeicherte Änderungen', 'ui.ok': 'Bestätigen', 'ui.cancel': 'Abbrechen' },
 });
 
 // Decimal text ("2,5" or "2.5") -> number, NaN if invalid

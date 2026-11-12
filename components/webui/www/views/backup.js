@@ -28,25 +28,6 @@ add({
     'bk.rejected': 'The backup was rejected: {f} ({e})', 'bk.failed': 'Restoring “{p}” failed ({e}). Already restored: {list}',
     'err.nothing_to_restore': 'None of the chosen parts is in the file',
   },
-  de: {
-    'bk.title': 'Datensicherung', 'bk.hint': 'Alle Einstellungen, Pumpen, Zeitpläne, Sperrzeiten, Servicewerte und Hardware-Parameter als eine Datei. Behälterinhalt, Zähler und Verlauf gehören nicht dazu.',
-    'bk.secrets': 'Mit WLAN- und MQTT-Passwort, Admin-Passwort und API-Keys',
-    'bk.secrets.hint': 'Admin-Passwort und API-Keys stehen nur als Hash drin, WLAN- und MQTT-Passwort im Klartext – Datei sicher aufbewahren.',
-    'bk.export': 'Sicherung herunterladen', 'bk.exported': 'Sicherung heruntergeladen',
-    'bk.import': 'Aus Datei wiederherstellen …', 'bk.from': '{dev} · Firmware {fw} · {d}', 'bk.parts': 'Diese Teile wiederherstellen:',
-    'bk.p.system': 'Gerätename, Sprache, Zeitzone, Zeitserver, LED-Nachtmodus', 'bk.p.network': 'Netzwerk (LAN/WLAN)',
-    'bk.p.pumps': 'Pumpen, Zeitpläne und Sperrzeiten', 'bk.p.engineering': 'Servicewerte und Hardware',
-    'bk.p.auth': 'Admin-Passwort und API-Keys', 'bk.p.mqtt': 'MQTT / Home Assistant',
-    'bk.w.network': 'Das Gerät bekommt eventuell eine andere Adresse und die Seite verliert die Verbindung.',
-    'bk.w.auth': 'Alle werden abgemeldet, auch du; danach gilt das Passwort aus der Sicherung.',
-    'bk.nopw': 'ohne WLAN-Passwort – für dasselbe Netz bleibt das gespeicherte',
-    'bk.nopw.mqtt': 'ohne Passwort – für denselben Broker und Benutzer bleibt das gespeicherte',
-    'bk.restore': 'Wiederherstellen', 'bk.cancel': 'Abbrechen', 'bk.ask': 'Die gewählten Teile jetzt wiederherstellen? Aktuelle Werte werden überschrieben.',
-    'bk.done': 'Wiederhergestellt: {list}.', 'bk.relogin': 'Bitte neu anmelden.',
-    'bk.bad': 'Diese Datei ist keine Sicherung dieses Gerätetyps.', 'bk.newer': 'Diese Sicherung stammt von einer neueren Firmware und kann nicht gelesen werden.',
-    'bk.rejected': 'Die Sicherung wurde abgelehnt: {f} ({e})', 'bk.failed': 'Wiederherstellen von „{p}“ fehlgeschlagen ({e}). Bereits übernommen: {list}',
-    'err.nothing_to_restore': 'Keiner der gewählten Teile ist in der Datei',
-  },
 });
 
 const kFormat = 'lgal-doser-backup';

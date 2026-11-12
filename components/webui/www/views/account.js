@@ -24,22 +24,6 @@ add({
     'err.password_too_short': 'At least 8 characters', 'err.password_too_long': 'At most 64 characters',
     'err.too_many_keys': 'All key slots are in use',
   },
-  de: {
-    'ac.title': 'Anmeldung', 'ac.info': 'Angemeldet bei {d}.', 'ac.logout': 'Abmelden',
-    'ac.pw.set': 'Eigenes Admin-Passwort festlegen', 'ac.pw.set.hint': 'Du bist mit dem Geräte-Passwort angemeldet. Bitte wähle ein eigenes Passwort (mindestens 8 Zeichen).',
-    'ac.pw.change': 'Passwort ändern', 'ac.pw.hint': 'Alle anderen Browser werden danach abgemeldet. API-Schlüssel bleiben gültig.',
-    'ac.pw.current': 'Aktuelles Passwort', 'ac.pw.new': 'Neues Passwort', 'ac.pw.repeat': 'Neues Passwort wiederholen',
-    'ac.pw.mismatch': 'Die Passwörter stimmen nicht überein.', 'ac.pw.short': 'Mindestens 8 Zeichen', 'ac.pw.ok': 'Passwort gespeichert.', 'ac.pw.save': 'Passwort speichern',
-    'ac.wait': 'Zu viele Versuche – bitte {s} s warten.',
-    'ac.keys': 'API-Schlüssel', 'ac.keys.hint': 'Für App, Home Assistant oder Skripte. Mitsenden als Header „X-API-Key: …“ oder „Authorization: Bearer …“.',
-    'ac.keys.none': 'Noch keine API-Schlüssel.', 'ac.keys.created': 'erstellt {d}', 'ac.keys.name': 'Name des neuen Schlüssels',
-    'ac.keys.add': 'Schlüssel erzeugen', 'ac.keys.full': 'Alle {n} Schlüsselplätze sind belegt.', 'ac.keys.del': 'Schlüssel „{n}“ löschen? Programme, die ihn nutzen, verlieren den Zugriff.',
-    'ac.keys.delete': 'Löschen', 'ac.keys.once': 'Schlüssel jetzt kopieren – er wird nur einmal angezeigt:', 'ac.keys.copy': 'Kopieren', 'ac.keys.copied': 'Kopiert',
-    'ac.keys.done': 'Fertig', 'ac.keys.deleted': 'Schlüssel „{n}“ gelöscht.',
-    'err.wrong_password': 'Falsches Passwort', 'err.too_many_attempts': 'Zu viele Versuche – bitte warten',
-    'err.password_too_short': 'Mindestens 8 Zeichen', 'err.password_too_long': 'Höchstens 64 Zeichen',
-    'err.too_many_keys': 'Alle Schlüsselplätze sind belegt',
-  },
 });
 
 const authErr = e => {
