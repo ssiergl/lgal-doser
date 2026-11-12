@@ -362,7 +362,7 @@ static void test_setup_gate() {
     // the setup and what its steps need
     for (const char* u : {"/setup", "/setup?x=1", "/api/v1/setup", "/api/v1/setup/complete", "/login?next=/setup",
                           "/api/v1/auth/status", "/api/v1/net/scan", "/api/v1/system/time",
-                          "/api/v1/system/language?lang=de", "/api/v1/ota/url", "/recovery", "/i18n.js"})
+                          "/api/v1/system/language?lang=de", "/api/v1/ota/url", "/recovery", "/i18n.js", "/flags.js"})
         CHECK(setup::open_during_setup(u));
     // no way to the pumps or the web UI
     for (const char* u : {"/", "/ui/app.js", "/ws", "/api/v1/pumps", "/api/v1/pumps/prime", "/api/v1/hw/pump/run",

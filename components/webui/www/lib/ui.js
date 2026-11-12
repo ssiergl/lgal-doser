@@ -33,6 +33,51 @@ export function Seg({ value, options, onChange, disabled }) {
       disabled=${disabled} onClick=${() => onChange(v)}>${label}</button>`)}</div>`;
 }
 
+// Language picker: a pill with the flag that opens a list of all languages.
+// Flags and styles come from /flags.js (shared with the device pages);
+// without it the picker shows the names only. options = [[code, name], …]
+const flagOf = l => (window.lgalFlags && window.lgalFlags[l]
+  ? html`<span class="flag" dangerouslySetInnerHTML=${{ __html: window.lgalFlags[l] }}/>` : null);
+export function LangPicker({ value, options, onChange, left = false }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef(null);
+  useEffect(() => {
+    if (window.lgalLangCss && !document.getElementById('lgp-css')) {
+      const st = document.createElement('style');
+      st.id = 'lgp-css';
+      st.textContent = window.lgalLangCss;
+      document.head.appendChild(st);
+    }
+  }, []);
+  useEffect(() => {
+    if (!open) return undefined;
+    const sel = box.current.querySelector('[aria-selected=true]');
+    if (sel) sel.focus();
+    const away = e => { if (!box.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('click', away);
+    return () => document.removeEventListener('click', away);
+  }, [open]);
+  const key = e => {
+    if (e.key === 'Escape' && open) { setOpen(false); box.current.firstElementChild.focus(); }
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && open) {
+      e.preventDefault();
+      const items = [...box.current.querySelectorAll('.lgp-list button')], i = items.indexOf(document.activeElement);
+      items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+    }
+  };
+  const pick = l => { setOpen(false); box.current.firstElementChild.focus(); if (l !== value) onChange(l); };
+  const name = (options.find(([c]) => c === value) || [value, value])[1];
+  return html`<div class=${'lgp' + (left ? ' left' : '')} ref=${box} onKeyDown=${key}>
+    <button type="button" class="lgp-btn" aria-haspopup="listbox" aria-expanded=${open} onClick=${() => setOpen(!open)}>
+      ${flagOf(value)}<span>${name}</span>
+      <svg class="chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1.5l5 5 5-5"/></svg>
+    </button>
+    <div class="lgp-list" role="listbox" hidden=${!open}>
+      ${options.map(([c, n]) => html`<button type="button" role="option" lang=${c} aria-selected=${c === value} onClick=${() => pick(c)}>${flagOf(c)}<span>${n}</span></button>`)}
+    </div>
+  </div>`;
+}
+
 // On/off switch with its label on the left (a checkbox with role=switch)
 export function Toggle({ checked, onChange, disabled, children }) {
   return html`<label class=${'switch' + (disabled ? ' off' : '')}><span class="sw-l">${children}</span>

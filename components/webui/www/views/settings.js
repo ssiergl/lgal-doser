@@ -3,6 +3,7 @@
 import { html } from '../lib/html.js';
 import { add, languages, setLang, t, useLang } from '../lib/i18n.js';
 import { setClock, setMode, setTheme, usePrefs } from '../lib/prefs.js';
+import { LangPicker } from '../lib/ui.js';
 import { AccountCard, ApiCard } from './account.js';
 import { DeviceCard } from './device.js';
 import { LedCard } from './led.js';
@@ -29,7 +30,7 @@ export function SettingsView() {
   return html`<div class="page-head"><h1>${t('set.title')}</h1></div>
     <div class="grid settings">
       <section class="card"><h2>${t('set.look')}</h2>
-        <div class="field"><label>${t('set.lang')}</label>${seg(lang, languages, setLang)}</div>
+        <div class="field"><label>${t('set.lang')}</label><${LangPicker} value=${lang} options=${languages} onChange=${setLang} left/></div>
         <div class="field"><label>${t('set.theme')}</label>
           ${seg(prefs.theme, ['auto', 'dark', 'light'].map(v => [v, t('theme.' + v)]), setTheme)}</div>
         <div class="field"><label>${t('set.clock')}</label>

@@ -8,10 +8,14 @@
 //   <span data-i18n="k"></span>             // element text, via i18n.apply()
 //   <input data-i18n-placeholder="k">       // attributes: title, placeholder
 //   i18n.error(json, status)                // translate API error
-//   await i18n.init('lang');                // load language, picker in #lang
+//   await i18n.init('lang');                // load language, picker in <div id="lang">
+//   i18n.flag('de'), i18n.name('de'), i18n.languages
 //
 // New language: entry in settings::kLanguages (firmware) + dictionaries here
-// and in the pages. Missing keys fall back to English.
+// and in the pages. Missing keys fall back to English. The picker is a pill
+// with the flag of the language (/flags.js, loaded by the page before this
+// file, with the picker's styles; without it the picker shows the names only)
+// and opens a list.
 (function () {
   const dict = { en: {}, de: {} };
   const names = { en: 'English', de: 'Deutsch' };
@@ -56,8 +60,7 @@
     lang = l;
     try { localStorage.setItem('lgal.lang', l); } catch (e) {}
     apply();
-    const sel = document.getElementById(pickerId);
-    if (sel) sel.value = l;
+    renderPicker();
     listeners.forEach((f) => f(l));
     if (save) fetch('/api/v1/system/language?lang=' + encodeURIComponent(l), { method: 'POST' }).catch(() => {});
   }
@@ -76,13 +79,63 @@
         lang = j.language || lang;
       }
     } catch (e) {}
-    const sel = pickerId && document.getElementById(pickerId);
-    if (sel) {
-      sel.innerHTML = languages.map((l) => `<option value="${l}">${names[l] || l}</option>`).join('');
-      sel.onchange = () => setLang(sel.value, true);
-    }
     setLang(lang, false);
   }
+
+  const flag = (l) => {
+    const svg = window.lgalFlags && window.lgalFlags[l];
+    return svg ? `<span class="flag">${svg}</span>` : '';
+  };
+  const name = (l) => names[l] || l;
+
+  // Picker: <div id="lang"> becomes a pill button with a list below it
+  const chev = '<svg class="chev" viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1.5l5 5 5-5"/></svg>';
+
+  function renderPicker() {
+    const box = pickerId && document.getElementById(pickerId);
+    if (!box) return;
+    if (window.lgalLangCss && !document.getElementById('lgp-css')) {
+      const st = document.createElement('style');
+      st.id = 'lgp-css';
+      st.textContent = window.lgalLangCss;
+      document.head.appendChild(st);
+    }
+    box.classList.add('lgp');
+    box.innerHTML = `<button type="button" class="lgp-btn" aria-haspopup="listbox" aria-expanded="false" title="${t('lang.label')}">` +
+      `${flag(lang)}<span>${name(lang)}</span>${chev}</button>` +
+      `<div class="lgp-list" role="listbox" aria-label="${t('lang.label')}" hidden>` +
+      languages.map((l) => `<button type="button" role="option" lang="${l}" aria-selected="${l === lang}" data-l="${l}">${flag(l)}<span>${name(l)}</span></button>`).join('') +
+      '</div>';
+    const btn = box.firstElementChild, list = box.lastElementChild;
+    const open = (on) => {
+      list.hidden = !on;
+      btn.setAttribute('aria-expanded', on);
+      if (on) (list.querySelector('[aria-selected=true]') || list.firstElementChild).focus();
+    };
+    btn.onclick = () => open(list.hidden);
+    list.onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      open(false);
+      if (b.dataset.l !== lang) setLang(b.dataset.l, true);
+      box.firstElementChild.focus();
+    };
+    box.onkeydown = (e) => {
+      if (e.key === 'Escape' && !list.hidden) { open(false); btn.focus(); }
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !list.hidden) {
+        e.preventDefault();
+        const items = [...list.children], i = items.indexOf(document.activeElement);
+        items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+      }
+    };
+  }
+  document.addEventListener('click', (e) => {
+    const box = pickerId && document.getElementById(pickerId);
+    if (box && !box.contains(e.target)) {
+      const list = box.querySelector('.lgp-list');
+      if (list && !list.hidden) { list.hidden = true; box.firstElementChild.setAttribute('aria-expanded', 'false'); }
+    }
+  });
 
   add({
     en: {
@@ -147,7 +200,7 @@
     },
   });
 
-  window.i18n = { add, t, apply, error, init, setLang, onChange: (f) => listeners.push(f),
-                  get lang() { return lang; } };
+  window.i18n = { add, t, apply, error, init, setLang, flag, name, onChange: (f) => listeners.push(f),
+                  get lang() { return lang; }, get languages() { return languages; } };
   window.t = t;
 })();

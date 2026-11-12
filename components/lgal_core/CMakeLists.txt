@@ -30,7 +30,7 @@ idf_component_register(
         "src/ws.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
-    EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/login.html" "www/setup.html"
+    EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/flags.js" "www/login.html" "www/setup.html"
     REQUIRES
         bootloader_support
         esp_driver_gpio

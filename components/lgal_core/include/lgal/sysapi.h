@@ -16,6 +16,7 @@
 //                                   source) as UTC seconds or as device wall time
 //                                   "YYYY-MM-DDTHH:MM[:SS]"
 //   GET    /i18n.js                 shared translation base of the pages
+//   GET    /flags.js                flag icons of the languages (pages and web UI)
 
 #include "esp_err.h"
 #include "esp_http_server.h"

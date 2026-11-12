@@ -14,7 +14,7 @@ namespace lgal::setup {
 inline bool open_during_setup(const char* uri) {
     static constexpr const char* kOpen[] = {
         "/setup",          "/api/v1/setup", "/login",     "/api/v1/auth/", "/api/v1/net/",
-        "/api/v1/system/", "/api/v1/ota",   "/recovery",  "/i18n.js",
+        "/api/v1/system/", "/api/v1/ota",   "/recovery",  "/i18n.js",      "/flags.js",
     };
     if (!uri) return false;
     for (const char* p : kOpen) {
