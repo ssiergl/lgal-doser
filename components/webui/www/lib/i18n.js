@@ -7,7 +7,7 @@
 // already right (app.js waits for ready()).
 import { hub, load, save } from './hub.js';
 
-export const languages = [['en', 'English'], ['de', 'Deutsch'], ['fr', 'Français'], ['es', 'Español'], ['it', 'Italiano']];
+export const languages = [['en', 'English'], ['de', 'Deutsch'], ['fr', 'Français'], ['es', 'Español'], ['it', 'Italiano'], ['nl', 'Nederlands']];
 const known = l => languages.some(([c]) => c === l);
 const dict = { en: {} };
 const changes = hub();

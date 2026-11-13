@@ -18,7 +18,7 @@
 // and opens a list.
 (function () {
   const dict = { en: {}, de: {} };
-  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano' };
+  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano', nl: 'Nederlands' };
   let lang = 'en';
   let languages = ['en', 'de'];
   const listeners = [];
@@ -287,6 +287,36 @@
       "err.file_too_short": "File troppo corto",
       "err.image_invalid": "Verifica del firmware non riuscita",
       "err.upload_failed": "Aggiornamento non riuscito",
+    },
+    nl: {
+      "lang.label": "Taal",
+      "err.http": "Fout (HTTP {status})",
+      "err.unauthorized": "Aanmelden vereist",
+      "err.engineering_locked": "Engineering-gedeelte vergrendeld – ontgrendel het op /login?eng=1",
+      "err.too_many_attempts": "Te veel mislukte pogingen – even wachten",
+      "err.body_missing": "Verzoek zonder gegevens",
+      "err.body_too_large": "Verzoek te groot",
+      "err.invalid_json": "Ongeldige verzoekgegevens",
+      "err.invalid_param": "Ongeldige invoer",
+      "err.no_memory": "Het apparaat heeft te weinig geheugen",
+      "err.internal_error": "Interne fout",
+      "err.storage_error": "Instelling kon niet worden opgeslagen",
+      "err.no_coredump": "Geen coredump opgeslagen",
+      "err.ota_in_progress": "Er loopt al een update",
+      "err.pump_running": "Er draait een pomp – probeer het opnieuw als die klaar is",
+      "err.no_ota_partition": "Geen updatepartitie beschikbaar",
+      "err.invalid_size": "Ongeldige bestandsgrootte",
+      "err.transfer_aborted": "Overdracht afgebroken",
+      "err.not_esp_image": "Dit is geen firmwarebestand",
+      "err.wrong_chip": "De firmware is voor een andere chip",
+      "err.no_app_desc": "Het firmwarebestand is onvolledig",
+      "err.wrong_project": "De firmware is voor een ander apparaat",
+      "err.wrong_variant": "De firmware is voor een module met een andere flashgrootte",
+      "err.wrong_board": "De firmware is voor een andere printplaat (model)",
+      "err.flash_error": "Fout bij het schrijven naar de flash",
+      "err.file_too_short": "Bestand te kort",
+      "err.image_invalid": "Controle van de firmware mislukt",
+      "err.upload_failed": "Update mislukt",
     },
   });
 
