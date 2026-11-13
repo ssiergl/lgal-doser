@@ -85,7 +85,7 @@ Pump numbering = labels on enclosure and board: seen from the front, pump 1 is o
 - **DIAG is not connected.** Stall detection (StallGuard) only by reading `SG_RESULT` /
   `DRV_STATUS` over UART while running.
 - SPREAD, INDEX, CLK: open (internal clock, StealthChop by default).
-- **Rsense** of the module: please check on the part (usually 0.11 Ω) – needed for the current
+- **Rsense** of the module: 0.11 Ω (marked `R110`, checked 11/2026) – needed for the current
   calculation.
 - Driver VIO = 3.3 V, VM = 24 V.
 
