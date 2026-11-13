@@ -13,7 +13,7 @@ NET = {"mode": "auto",
        "wlan": {"ssid": "HomeNet", "password_set": True, "dhcp": True, "ip": "", "netmask": "", "gateway": "", "dns1": "", "dns2": ""}}
 SCAN = {"state": "idle", "t": 0}
 TEST = {"state": "idle", "t": 0, "ok": True}
-AUTH = {"password": "test-admin-pw", "password_set": True, "session": True}  # only /login and /setup look at "session"
+AUTH = {"password": "test-admin-pw", "password_set": True, "session": True}  # without a session only the sign-in and setup are open (webui_server.OPEN)
 # MOCK_FACTORY=1: factory state - no admin password, setup not completed, not signed in.
 # The device password from the label is then "test-label-pw".
 LABEL_PW = "test-label-pw"
