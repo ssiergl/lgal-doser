@@ -18,7 +18,7 @@
 // and opens a list.
 (function () {
   const dict = { en: {}, de: {} };
-  const names = { en: 'English', de: 'Deutsch', fr: 'Français' };
+  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español' };
   let lang = 'en';
   let languages = ['en', 'de'];
   const listeners = [];
@@ -227,6 +227,36 @@
       "err.file_too_short": "Fichier trop court",
       "err.image_invalid": "La vérification du firmware a échoué",
       "err.upload_failed": "La mise à jour a échoué",
+    },
+    es: {
+      "lang.label": "Idioma",
+      "err.http": "Error (HTTP {status})",
+      "err.unauthorized": "Se requiere iniciar sesión",
+      "err.engineering_locked": "Zona de ingeniería bloqueada – desbloquéela en /login?eng=1",
+      "err.too_many_attempts": "Demasiados intentos fallidos – espere, por favor",
+      "err.body_missing": "Solicitud sin datos",
+      "err.body_too_large": "Solicitud demasiado grande",
+      "err.invalid_json": "Datos de solicitud no válidos",
+      "err.invalid_param": "Entrada no válida",
+      "err.no_memory": "El dispositivo no tiene memoria suficiente",
+      "err.internal_error": "Error interno",
+      "err.storage_error": "No se pudo guardar el ajuste",
+      "err.no_coredump": "No hay ningún coredump guardado",
+      "err.ota_in_progress": "Ya hay una actualización en curso",
+      "err.pump_running": "Una bomba está funcionando – inténtelo de nuevo cuando termine",
+      "err.no_ota_partition": "No hay partición de actualización disponible",
+      "err.invalid_size": "Tamaño de archivo no válido",
+      "err.transfer_aborted": "Transferencia interrumpida",
+      "err.not_esp_image": "No es un archivo de firmware",
+      "err.wrong_chip": "El firmware es para otro chip",
+      "err.no_app_desc": "El archivo de firmware está incompleto",
+      "err.wrong_project": "El firmware es para otro dispositivo",
+      "err.wrong_variant": "El firmware es para un módulo con otro tamaño de flash",
+      "err.wrong_board": "El firmware es para otra placa (modelo)",
+      "err.flash_error": "Error al escribir en la flash",
+      "err.file_too_short": "Archivo demasiado corto",
+      "err.image_invalid": "La verificación del firmware ha fallado",
+      "err.upload_failed": "La actualización ha fallado",
     },
   });
 
