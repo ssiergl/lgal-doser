@@ -24,7 +24,9 @@ Assistant as well. Firmware, circuit board and enclosure are open in this reposi
 - **Protection against overdosing:** hard daily limit per pump, container level with range in
   days, all schedules checked on save, defined behaviour after a power cut.
 - **Web UI** right on the device, no cloud and no app: overview of all pumps, history with
-  charts, **simple** and **pro** view, dark and light theme, English and German.
+  charts, **simple** and **pro** view, dark and light theme, in English, German, French,
+  Spanish, Italian, Dutch, Polish, Turkish and Chinese (all but English and German
+  machine-translated).
 - **Networked:** LAN as the main connection, Wi-Fi as fallback. Setup Wi-Fi with a setup
   wizard, time via NTP with a clock module as fallback.
 - **Home Assistant / MQTT:** automatic discovery, sensors per pump, optional dosing and

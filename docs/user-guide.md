@@ -61,7 +61,8 @@ A new device opens its own Wi-Fi for this, the setup Wi-Fi (LED pulsing orange).
    password from the rating plate.
 2. Usually the setup opens by itself. Otherwise open `http://192.168.4.1/` in the browser.
 3. The wizard guides you through five steps:
-   - **language** (English or German),
+   - **language** (English, German, French, Spanish, Italian, Dutch, Polish, Turkish or
+     Chinese),
    - **own admin password** (8–64 characters): enter the device password from the rating plate
      once, then choose your own password – from now on only this one signs in,
    - **sign in** once with the new password (user "admin"); your browser can remember it now.

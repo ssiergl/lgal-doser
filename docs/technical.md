@@ -484,7 +484,8 @@ additionally need the engineering unlock.
 
 **Languages:** firmware, logs and API are English. Errors always come as
 `{"error":{"code":"pump_busy","message":"Pump is busy"}}`; the `code` is fixed and is translated
-by the pages (English default, German). The English texts of the web UI sit next to the code
+by the pages (English default; German, French, Spanish, Italian, Dutch, Polish, Turkish,
+Chinese – all but German machine-translated). The English texts of the web UI sit next to the code
 (`add()` in each view); every other language is one file `components/webui/www/lang/<code>.json`
 with all keys, loaded only when that language is used – a missing key shows in English. The
 device pages (sign-in, setup, `/recovery`) carry their dictionaries inline, because `/recovery`
