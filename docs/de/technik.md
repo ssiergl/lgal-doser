@@ -26,7 +26,7 @@ boards/                 Board-Definitionen (Modellname je Board; Pins in compone
 variants/               Konfiguration je Modulvariante (N8R8, N16R8, N32R8)
 .github/workflows/      CI (Tests, Fuzzer, alle Varianten) und Release-Build per Git-Tag
 docs/                   Dokumentation (englisch), deutsche Fassungen in docs/de/
-hardware/               Gehäuse- und Platinendaten (CC BY-NC-SA 4.0)
+hardware/               Gehäuse- und Platinendaten pro Ausführung, z. B. d5v1/ (CC BY-NC-SA 4.0)
 ```
 
 ## Toolchain

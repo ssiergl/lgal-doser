@@ -35,8 +35,8 @@ Teile anderer Hersteller passen ebenso.
 Die Platine LGAL Doser v1.0 trägt 72 bedrahtete Bauteile (Widerstände, Kondensatoren, Dioden,
 Transistoren, Spannungsregler, Sicherung, Steckverbinder und Buchsenleisten). Die vollständige
 Liste mit Referenzen, Werten, Footprints und Beispiel-Teilenummern steht in
-[`hardware/platine/bom.csv`](../../hardware/pcb/bom.csv) (englisch); die Fertigungsdaten der
-Platine folgen in [`hardware/platine/`](../../hardware/pcb/).
+[`hardware/d5v1/pcb/bom.csv`](../../hardware/d5v1/pcb/bom.csv) (englisch); die Fertigungsdaten der
+Platine folgen in [`hardware/d5v1/pcb/`](../../hardware/d5v1/pcb/).
 
 Auf der Platine sitzen unter anderem: der 24-V-Eingang mit Hohlbuchse (5,5 × 2,5 mm, Plus innen),
 Sicherung 3,15 A träge, Verpol- und Überspannungsschutz, die Spannungsregler RECOM R-78E5.0
@@ -48,7 +48,7 @@ hat sie für spätere Erweiterungen, die Firmware nutzt sie nicht.
 
 | Pos. | Anzahl | Teil | Typ / Beispiel | Hinweis |
 |---|---|---|---|---|
-| 1 | 1 | Platine LGAL Doser v1.0 | mit den Teilen aus [`bom.csv`](../../hardware/pcb/bom.csv) | Fertigungsdaten folgen |
+| 1 | 1 | Platine LGAL Doser v1.0 | mit den Teilen aus [`bom.csv`](../../hardware/d5v1/pcb/bom.csv) | Fertigungsdaten folgen |
 | 2 | 1 | ESP32-S3-Board (U1) | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB Flash, 8 MB PSRAM; vor dem Einstecken flashen, die USB-Buchse ist im Gehäuse nicht erreichbar. Zu N8R8 und N32R8 siehe [technische Doku](technik.md#modulvarianten) |
 | 3 | 5 | Schrittmotortreiber TMC2209-StepStick (U4–U8) | z. B. Ulegqin TMC2209 V2.0, mit Kühlkörper | Steckrichtung: EN auf das eckige Pad (Markierung „EN“); Sense-Widerstand prüfen (siehe [unten](#tmc2209-treiber)) |
 | 4 | 1 | Ethernet-Modul W5500 | USR-ES1 (z. B. Joy-IT SBC-USR-ES1) | Reihenabstand 20,32 mm prüfen |
@@ -59,7 +59,7 @@ hat sie für spätere Erweiterungen, die Firmware nutzt sie nicht.
 | 9 | 5 | Schlauchpumpe mit Schrittmotor | Kamoer KPHM100-ST | 24 V, 1,0 A, 200 Vollschritte/U, ohne Getriebe; Kabel mit JST-XH-Stecker 4-polig |
 | 10 | 1 | Netzteil 24 V DC, Schutzkleinspannung (SELV) | Mean Well GST60A24-P1M (24 V / 2,5 A / 60 W) | Hohlstecker 5,5 × 2,5 mm, Plus innen |
 | 11 | 1 | Netzkabel C13 (Kaltgerätekabel) | – | für das Netzteil |
-| 12 | 1 | Gehäuse | Druckdaten in [`hardware/gehaeuse/`](../../hardware/enclosure/) (folgen) | |
+| 12 | 1 | Gehäuse | Druckdaten in [`hardware/d5v1/enclosure/`](../../hardware/d5v1/enclosure/) (folgen) | |
 | 13 | – | Pumpenschlauch BPT 3 × 5 mm als Ersatz, Dosierschläuche, Rückschlagventile, Halter am Becken | – | Rückschlagventil oder Schlauchende über dem Wasserspiegel |
 | 14 | 1 | Aufkleber für das Typenschild | – | Geräte-Passwort und Name des Setup-WLANs |
 
@@ -102,7 +102,7 @@ Kombination aus Netzteil, Wasser und Salz:
 
 ## 4. Platine aufbauen und prüfen
 
-1. Platine nach der [Stückliste](../../hardware/pcb/bom.csv) bestücken; die Referenzen stehen
+1. Platine nach der [Stückliste](../../hardware/d5v1/pcb/bom.csv) bestücken; die Referenzen stehen
    im Bestückungsdruck. Polung der Elkos und Kathode der Dioden beachten. ESP-Board,
    StepSticks, Ethernet- und RTC-Modul noch **nicht** einstecken.
 2. **Sichtprüfung:** Lötbrücken, kalte Lötstellen, Polung der Bauteile.
