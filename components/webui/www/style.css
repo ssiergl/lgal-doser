@@ -303,7 +303,19 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .eng-table .amount input { width: 6ch; }
 .danger-zone { border-color: color-mix(in srgb, var(--err) 45%, var(--line)); }
 .danger-zone h2 { color: var(--err); }
-.eng-locked { max-width: 440px; }
+/* Locked: the card floats in the middle of the background logo (the same box between the top
+   bar and the reef that lgal.css gives .mark), the title hangs above it, as on the sign-in page */
+.eng-gate {
+  --reef-top: min(30vh, 240px); --mark-gap: clamp(12px, 4vh, 40px);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  margin-top: calc(var(--mark-gap) - var(--gap));
+  min-height: calc(100vh - var(--head-h, 61px) - var(--reef-top) - 2 * var(--mark-gap));
+  min-height: calc(100dvh - var(--head-h, 61px) - var(--reef-top) - 2 * var(--mark-gap));
+}
+@media (max-width: 939px) { .eng-gate { --reef-top: calc(60px + env(safe-area-inset-bottom) + min(22vh, 180px)); } }
+.eng-gate-box { position: relative; width: 100%; max-width: 440px; }
+.eng-gate-box h1 { position: absolute; left: 0; right: 0; bottom: 100%; margin: 0 0 16px; text-align: center; }
+.eng-gate .card { margin: 0; }
 /* Fixed grid of six tracks: cards take a third (w2), two thirds (w4), half
    (.halves) or the full width (w6) and a row stretches to its tallest card;
    the save bar sits at the bottom so buttons line up */

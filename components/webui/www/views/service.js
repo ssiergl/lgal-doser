@@ -710,10 +710,14 @@ export function ServiceView() {
 
   if (!auth) return html`${head}${err ? html`<p class="msg err">${errText(err)}</p>` : html`<p class="mut">${t('sv.loading')}</p>`}`;
   if (locked) {
-    return html`${head}<section class="card eng-locked">
-      <p>${t('sv.locked')}</p>
-      <${EngUnlock} autoFocus onDone=${() => loadAuth().then(loadAll)}/>
-    </section>`;
+    // like the sign-in page: the card floats in the middle of the background logo, the title above it
+    return html`<div class="eng-gate"><div class="eng-gate-box">
+      <h1>${t('sv.title')}</h1>
+      <section class="card">
+        <p>${t('sv.locked')}</p>
+        <${EngUnlock} autoFocus onDone=${() => loadAuth().then(loadAll)}/>
+      </section>
+    </div></div>`;
   }
   if (!eng || !sch || !hw) return html`${head}${err ? html`<p class="msg err">${errText(err)}</p>` : html`<p class="mut">${t('sv.loading')}</p>`}`;
 
