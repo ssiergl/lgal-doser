@@ -494,7 +494,8 @@ alle `/api/v1/hw/…`-Endpunkte brauchen zusätzlich die Engineering-Freischaltu
 
 **Mehrsprachigkeit:** Firmware, Logs und API sind englisch. Fehler kommen immer als
 `{"error":{"code":"pump_busy","message":"Pump is busy"}}`; der `code` ist fest und wird von den
-Seiten übersetzt (Englisch Standard, Deutsch). Die englischen Texte der Weboberfläche stehen
+Seiten übersetzt (Englisch Standard; Deutsch, Französisch, Spanisch, Italienisch,
+Niederländisch, Polnisch, Türkisch, Chinesisch – alle außer Deutsch maschinell übersetzt). Die englischen Texte der Weboberfläche stehen
 beim Code (`add()` in jeder Ansicht); jede andere Sprache ist eine Datei
 `components/webui/www/lang/<code>.json` mit allen Schlüsseln, die erst geladen wird, wenn die
 Sprache gewählt ist – ein fehlender Schlüssel erscheint englisch. Die Geräteseiten (Anmeldung,
