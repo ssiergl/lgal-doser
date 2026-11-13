@@ -18,7 +18,7 @@
 // and opens a list.
 (function () {
   const dict = { en: {}, de: {} };
-  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano', nl: 'Nederlands', pl: 'Polski' };
+  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe' };
   let lang = 'en';
   let languages = ['en', 'de'];
   const listeners = [];
@@ -347,6 +347,36 @@
       "err.file_too_short": "Plik za krótki",
       "err.image_invalid": "Weryfikacja firmware nie powiodła się",
       "err.upload_failed": "Aktualizacja nie powiodła się",
+    },
+    tr: {
+      "lang.label": "Dil",
+      "err.http": "Hata (HTTP {status})",
+      "err.unauthorized": "Oturum açmanız gerekiyor",
+      "err.engineering_locked": "Mühendislik alanı kilitli – /login?eng=1 adresinden kilidini açın",
+      "err.too_many_attempts": "Çok fazla başarısız deneme – lütfen bekleyin",
+      "err.body_missing": "Veri içermeyen istek",
+      "err.body_too_large": "İstek çok büyük",
+      "err.invalid_json": "Geçersiz istek verisi",
+      "err.invalid_param": "Geçersiz giriş",
+      "err.no_memory": "Cihazın belleği yetersiz",
+      "err.internal_error": "Dahili hata",
+      "err.storage_error": "Ayar kaydedilemedi",
+      "err.no_coredump": "Kayıtlı coredump yok",
+      "err.ota_in_progress": "Zaten bir güncelleme sürüyor",
+      "err.pump_running": "Bir pompa çalışıyor – bittiğinde tekrar deneyin",
+      "err.no_ota_partition": "Güncelleme bölümü yok",
+      "err.invalid_size": "Geçersiz dosya boyutu",
+      "err.transfer_aborted": "Aktarım iptal edildi",
+      "err.not_esp_image": "Bu bir firmware dosyası değil",
+      "err.wrong_chip": "Firmware başka bir çip için",
+      "err.no_app_desc": "Firmware dosyası eksik",
+      "err.wrong_project": "Firmware başka bir cihaz için",
+      "err.wrong_variant": "Firmware farklı flash boyutuna sahip bir modül için",
+      "err.wrong_board": "Firmware başka bir kart (model) için",
+      "err.flash_error": "Flash'a yazma hatası",
+      "err.file_too_short": "Dosya çok kısa",
+      "err.image_invalid": "Firmware doğrulaması başarısız",
+      "err.upload_failed": "Güncelleme başarısız",
     },
   });
 
