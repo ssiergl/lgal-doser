@@ -18,7 +18,7 @@
 // and opens a list.
 (function () {
   const dict = { en: {}, de: {} };
-  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe' };
+  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe', zh: '中文' };
   let lang = 'en';
   let languages = ['en', 'de'];
   const listeners = [];
@@ -377,6 +377,36 @@
       "err.file_too_short": "Dosya çok kısa",
       "err.image_invalid": "Firmware doğrulaması başarısız",
       "err.upload_failed": "Güncelleme başarısız",
+    },
+    zh: {
+      "lang.label": "语言",
+      "err.http": "错误（HTTP {status}）",
+      "err.unauthorized": "需要登录",
+      "err.engineering_locked": "工程区已锁定 – 请在 /login?eng=1 解锁",
+      "err.too_many_attempts": "失败次数过多 – 请稍候",
+      "err.body_missing": "请求没有数据",
+      "err.body_too_large": "请求过大",
+      "err.invalid_json": "请求数据无效",
+      "err.invalid_param": "输入无效",
+      "err.no_memory": "设备内存不足",
+      "err.internal_error": "内部错误",
+      "err.storage_error": "无法保存设置",
+      "err.no_coredump": "没有保存的 coredump",
+      "err.ota_in_progress": "已有更新正在进行",
+      "err.pump_running": "有泵正在运行 – 请在其结束后重试",
+      "err.no_ota_partition": "没有可用的更新分区",
+      "err.invalid_size": "文件大小无效",
+      "err.transfer_aborted": "传输已中止",
+      "err.not_esp_image": "这不是固件文件",
+      "err.wrong_chip": "该固件适用于其他芯片",
+      "err.no_app_desc": "固件文件不完整",
+      "err.wrong_project": "该固件适用于其他设备",
+      "err.wrong_variant": "该固件适用于闪存容量不同的模块",
+      "err.wrong_board": "该固件适用于其他电路板（型号）",
+      "err.flash_error": "写入闪存时出错",
+      "err.file_too_short": "文件过短",
+      "err.image_invalid": "固件校验失败",
+      "err.upload_failed": "更新失败",
     },
   });
 
