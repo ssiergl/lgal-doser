@@ -15,7 +15,7 @@ not be questioned by the firmware. If something is unclear, ask – do not guess
 | Drivers | 5× TMC2209 StepStick (Ulegqin V2.0) | STEP individual, UART bus, EN shared |
 | Ethernet | USR-ES1 (W5500) | SPI |
 | Clock | DS3231 module (with AT24C32 EEPROM) | I²C |
-| M8 sockets | 5× 3-wire (3.3 V / signal / GND), reserved | GPIO |
+| J11–J15 | 5× JST-XH 3-pin (3.3 V / signal / GND), reserved | GPIO |
 | Status | RGB light Mentor 2660.8302, common anode | 3× NPN low side |
 | Button | Multimec 3F (reset/setup) | GPIO0 |
 | Supply | 24 V external → R-78E5.0 (5 V) → ESP; R-78E3.3 (3.3 V) → logic | |
@@ -51,11 +51,11 @@ rollback on a failed start).
 | 47 | LED green | out | HIGH = on |
 | 45 | LED blue | out | HIGH = on. **Strapping pin**, do not drive during boot |
 | 0 | Button | in | active low, 100 nF debounce. **Strapping pin** (pressed at power-on = download mode) |
-| 7 | M8 socket 1 | – | reserved, not used by the firmware; **no external pull-up** |
-| 15 | M8 socket 2 | – | reserved |
-| 16 | M8 socket 3 | – | reserved |
-| 17 | M8 socket 4 | – | reserved |
-| 18 | M8 socket 5 | – | reserved |
+| 7 | J11 | – | reserved, not used by the firmware; **no external pull-up** |
+| 15 | J12 | – | reserved |
+| 16 | J13 | – | reserved |
+| 17 | J14 | – | reserved |
+| 18 | J15 | – | reserved |
 | 4, 5, 6 | free | – | |
 | 3, 46 | free | – | strapping pins, limited use only |
 | 35–37 | taken | – | octal PSRAM, do not use |
@@ -109,8 +109,9 @@ Please check how many independent hardware clocks (RMT/MCPWM/LEDC) the ESP32-S3 
 - **RTC:** DS3231 on I²C, address 0x68 (EEPROM AT24C32 at 0x57). Synchronise the time via NTP,
   RTC as the fallback without network. Backup battery LIR2032, or CR2032 without charging diode.
 - **I²C expansion:** connector J16 (3.3 V, SDA, SCL, GND) for later extensions, e.g. a display.
-- **M8 sockets:** 5× 3-wire (3.3 V / signal / GND) on GPIO 7, 15–18, reserved for later
-  extensions. The firmware does not use them and leaves the pins unconfigured.
+- **J11–J15:** 5× JST-XH 3-pin (3.3 V / signal / GND) on GPIO 7, 15–18, on the board for later
+  extensions; fitting them is optional. The firmware does not use the pins and leaves them
+  unconfigured.
 - **RGB light:** common anode on 5 V, the channels are switched to GND through NPN transistors:
   GPIO HIGH = colour on. PWM for mixed colours and brightness.
 - **Button (GPIO 0):** hold 3 s = setup mode (access point), hold 10 s = factory reset. Pressed at
