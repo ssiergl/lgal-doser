@@ -468,7 +468,7 @@ class H(BaseHTTPRequestHandler):
                                    "firmware": {"version": "0.5.0-dev", "partition": "ota_0"}, "time": {"valid": True}})
         if p == "/i18n.js": return self.send(200, open(ROOT + "/components/lgal_core/www/i18n.js", "rb").read(), "text/javascript")
         if p == "/flags.js": return self.send(200, open(ROOT + "/brand/web/flags.js", "rb").read(), "text/javascript")
-        if p == "/api/v1/system/language": return self.send(200, {"language": LANG["v"], "languages": ["en", "de"]})
+        if p == "/api/v1/system/language": return self.send(200, {"language": LANG["v"], "languages": sys_mock.LANGUAGES})
         if p == "/api/v1/engineering/dosing": return self.send(200, ENG)
         if p == "/api/v1/pumps":
             with LOCK: return self.send(200, {"pumps": [full(i) for i in range(5)]})
@@ -498,7 +498,7 @@ class H(BaseHTTPRequestHandler):
                 except ValueError: pb = {}
             if sysr(self, "POST", pb): return
         if p.startswith("/api/v1/system/language"):
-            LANG["v"] = p.split("lang=")[1]; return self.send(200, {"language": LANG["v"], "languages": ["en", "de"]})
+            LANG["v"] = p.split("lang=")[1]; return self.send(200, {"language": LANG["v"], "languages": sys_mock.LANGUAGES})
         if p.startswith("/mock/kill"):  # drop all WebSocket connections (connection loss)
             for s in list(CLIENTS.values()):
                 try: s.shutdown(socket.SHUT_RDWR)

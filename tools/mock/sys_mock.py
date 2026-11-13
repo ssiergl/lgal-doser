@@ -1,6 +1,10 @@
 # Mock of the time, network and auth endpoints (test values only)
 import os, re, secrets, threading, time
 
+# the languages of the firmware (settings::kLanguages), so the mock offers the same
+_SETTINGS_H = os.path.join(os.path.dirname(__file__), "..", "..", "components/lgal_core/include/lgal/settings.h")
+LANGUAGES = re.findall(r'"(\w+)"', re.search(r"kLanguages\[\] = \{([^}]*)\}", open(_SETTINGS_H).read()).group(1))
+
 OFFSET = 600  # device clock runs 10 min ahead of the host -> "differs" warning
 TIME = {"timezone": "CET-1CEST,M3.5.0,M10.5.0/3", "ntp_server": "pool.ntp.org", "source": "rtc", "valid": True,
         "rtc_ok": True, "last_ntp": time.time() - 3 * 3600}
@@ -72,7 +76,7 @@ def info_json():
             "system": {"uptime_s": int(max(0, time.time() - SYS["boot"])) + 2 * 86400 + 3 * 3600, "reset_reason": "SW", "heap_free": 182000,
                        "heap_min_free": 151000, "heap_largest_block": 98000, "psram_free": 8200000, "coredump": SYS["coredump"]},
             "network": {"active": "lan", "eth_present": True, "eth_link": True, "eth_ip": "192.168.1.50", "wlan": "off", "wlan_ip": None, "ap_active": False, "ap_clients": 0},
-            "time": time_json(), "language": "de", "languages": ["en", "de"], "device_name": DEVICE["name"], "links": LINKS}
+            "time": time_json(), "language": "de", "languages": LANGUAGES, "device_name": DEVICE["name"], "links": LINKS}
 IPRE = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
 
 # URL update: a ".bin" address downloads 1.6 MB in 6 s and restarts, anything else gets HTTP 404 after 2 s
