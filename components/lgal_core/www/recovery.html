@@ -5,32 +5,46 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LG Aquatic Life – Maintenance</title>
 <link rel="icon" href="/ui/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/ui/lgal.css">
+<script>
+// colour theme as chosen in the web UI (otherwise the system setting)
+try{const t=localStorage.getItem('lgal.theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}
+</script>
 <style>
-:root{--bg:#0d1b24;--card:#132836;--fg:#e6f1f5;--mut:#8fb0bf;--acc:#2bb5c9;--err:#e5534b;--ok:#3fb950}
-*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
-main{max-width:760px;margin:0 auto;padding:16px}
-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-h1{font-size:20px;margin:8px 0 16px}h2{font-size:16px;margin:0 0 10px}
-.card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:14px}
-table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}td:first-child{color:var(--mut);width:42%}
-button,input[type=file],select{font:inherit}button{background:var(--acc);color:#04222a;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
-button.sec{background:transparent;color:var(--fg);border:1px solid var(--mut)}button:disabled{opacity:.5;cursor:default}
-select{background:var(--card);color:var(--fg);border:1px solid var(--mut);border-radius:6px;padding:4px 8px}
-progress{width:100%;height:14px;margin-top:10px}.msg{margin-top:8px;min-height:1.4em}.err{color:var(--err)}.ok{color:var(--ok)}
-pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:auto;font-size:12px;white-space:pre-wrap;word-break:break-all}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.top{display:flex;align-items:center;gap:16px;margin:8px 0 14px}.top h1{flex:1;margin:0;font-size:22px}.logo{flex:0 0 auto;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.45))}
+/* Colours, cards, buttons and fields come from the shared design (/ui/lgal.css). This page stays
+   plain on purpose: no logo, no reef, no transparency, no animation, no web UI scripts. Without
+   the stylesheet it still works with the browser's own styles. */
+main{max-width:760px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 var(--gap)}
+.card{background:var(--card);backdrop-filter:none;margin-bottom:var(--gap)}
+.card h2{margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:7px 0;vertical-align:top;border-top:1px solid var(--line)}
+tr:first-child td{border-top:0}
+td:first-child{color:var(--mut);width:42%;padding-right:12px}
+.links a{color:var(--text)}
+.upload{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.upload input{flex:1 1 220px}
+progress{width:100%;height:8px;margin-top:12px;accent-color:var(--acc)}
+.msg{margin-top:10px;font-size:14px}.msg:empty{display:none}
+.err{color:var(--err)}.ok{color:var(--ok)}
+pre.log{margin:12px 0 0;max-height:360px;overflow:auto;padding:10px;border-radius:10px;background:var(--card-2);
+ font-size:12px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 </style>
 <script src="/flags.js"></script>
 <script src="/i18n.js"></script>
 </head>
 <body>
 <main>
-<header>
-<div class="top"><img class="logo" src="/ui/logo.svg" alt="LG Aquatic Life" width="112" height="112" onerror="this.remove()"><h1 data-i18n="title"></h1></div>
-<div class="row"><span data-i18n="lang.label"></span><div id="lang"></div></div>
+<header class="head">
+<h1 data-i18n="title"></h1>
+<div id="lang"></div>
 </header>
-<div class="row" id="links"></div>
+
+<section class="card" id="links-card" hidden>
+<h2 data-i18n="sec.links"></h2>
+<ul class="links" id="links"></ul>
+</section>
 
 <section class="card">
 <h2 data-i18n="sec.device"></h2>
@@ -39,7 +53,7 @@ pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:
 
 <section class="card">
 <h2 data-i18n="sec.update"></h2>
-<div class="row"><input type="file" id="fw" accept=".bin"><button id="up" data-i18n="btn.upload"></button></div>
+<div class="upload"><input type="file" id="fw" accept=".bin"><button id="up" data-i18n="btn.upload"></button></div>
 <progress id="prog" max="100" value="0" hidden></progress>
 <div class="msg" id="upmsg"></div>
 </section>
@@ -48,10 +62,10 @@ pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:
 <h2 data-i18n="sec.diag"></h2>
 <div class="row">
 <button class="sec" id="logbtn" data-i18n="btn.log"></button>
-<a href="/api/v1/system/coredump" id="cdlink" hidden><button class="sec" data-i18n="btn.coredump"></button></a>
+<a class="btn sec" href="/api/v1/system/coredump" id="cdlink" data-i18n="btn.coredump" hidden></a>
 <button class="sec" id="reboot" data-i18n="btn.reboot"></button>
 </div>
-<pre id="log" hidden></pre>
+<pre class="log" id="log" hidden></pre>
 </section>
 
 </main>
@@ -59,7 +73,7 @@ pre{background:#071118;padding:10px;border-radius:6px;max-height:340px;overflow:
 i18n.add({
 en:{
  'page.title':'LG Aquatic Life – Maintenance','title':'Maintenance',
- 'sec.device':'Device','sec.update':'Firmware update','sec.diag':'Diagnostics',
+ 'sec.links':'Pages','sec.device':'Device','sec.update':'Firmware update','sec.diag':'Diagnostics',
  'btn.upload':'Upload & flash','btn.log':'Show log','btn.coredump':'Download coredump','btn.reboot':'Reboot',
  'loading':'Loading …','error':'Error',
  'i.firmware':'Firmware','i.build':'Build','i.rolledback':'Rolled back','i.rolledback.v':'{p} is invalid',
@@ -114,7 +128,8 @@ function render(){
     row('i.coredump',s.coredump?`<span class="err">${t('i.coredump.yes')}</span>`:t('i.coredump.no'));
   $('cdlink').hidden=!s.coredump;
   // Translate link names via the id, otherwise show the firmware's English name
-  $('links').innerHTML=(j.links||[]).map(l=>{const k='link.'+l.id,x=t(k);return `<a href="${esc(l.path)}"><button class="sec">${esc(x===k?l.name:x)}</button></a>`}).join('');
+  $('links').innerHTML=(j.links||[]).map(l=>{const k='link.'+l.id,x=t(k);return `<li><a href="${esc(l.path)}">${esc(x===k?l.name:x)}</a></li>`}).join('');
+  $('links-card').hidden=!(j.links||[]).length;
 }
 async function loadInfo(){
   try{const r=await fetch('/api/v1/system/info',{cache:'no-store'});info=await r.json()}
