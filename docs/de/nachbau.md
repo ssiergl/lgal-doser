@@ -8,8 +8,7 @@ löten, mit einem Multimeter messen und ein Python-Skript auf der Kommandozeile 
 
 > **Stand:** Platine v1.0 (11/2026) ist entworfen, Firmware fertig. Der Test der Firmware auf
 > der echten Hardware steht noch aus, Platinen- und Gehäusedaten folgen danach in
-> [`hardware/`](../../hardware/). Werte, die erst mit der Hardware-Freigabe feststehen, sind unten
-> als **offen** markiert.
+> [`hardware/`](../../hardware/). Die Stückliste der Platine liegt dort bereits.
 
 > **Dosierfehler können Tiere töten.** Ein selbst gebautes Gerät erst ausgiebig ohne Tiere
 > testen (Abschnitt [Probelauf](#8-probelauf-ohne-tiere)). Nachbau und Betrieb auf eigene
@@ -28,27 +27,41 @@ löten, mit einem Multimeter messen und ein Python-Skript auf der Kommandozeile 
 
 ## 1. Teileliste
 
-| Pos. | Anzahl | Teil | Hinweis |
-|---|---|---|---|
-| 1 | 1 | Platine LGAL Doser v1.0 | Fertigungsdaten in [`hardware/platine/`](../../hardware/pcb/) (folgen) |
-| 2 | 1 | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB Flash, 8 MB PSRAM; gesteckt auf Buchsenleisten. Zu den Varianten N8R8 und N32R8 siehe [technische Doku](technik.md#modulvarianten) |
-| 3 | 5 | Kamoer KPHM100-ST | Schlauchpumpe mit Schrittmotor, 24 V, 1,0 A, 200 Vollschritte/U, ohne Getriebe |
-| 4 | 5 | TMC2209-StepStick (z. B. Ulegqin V2.0) | mit Kühlkörper; Sense-Widerstand prüfen (siehe [unten](#tmc2209-treiber)) |
-| 5 | 1 | USR-ES1 (W5500) | Ethernet über SPI |
-| 6 | 1 | DS3231-Modul mit AT24C32-EEPROM | Uhr (I²C 0x68) und Speicher (0x57) |
-| 7 | 1 | Pufferbatterie für das DS3231-Modul | LIR2032 (Akku) oder CR2032 – eine CR2032 **nur ohne Ladediode**, siehe [Sicherheit](#3-elektrische-sicherheit) |
-| 8 | 1 | RGB-Leuchte Mentor 2660.8302 | gemeinsame Anode |
-| 9 | 1 | Taster Multimec 3F | Einrichtung und Werkseinstellungen |
-| 10 | 1 | Schaltregler RECOM R-78E5.0 | 24 V → 5 V für das ESP-Board |
-| 11 | 1 | Schaltregler RECOM R-78E3.3 | 24 V → 3,3 V für die Logik |
-| 12 | 5 | JST-XH-Steckverbinder 4-polig (Buchse + Stecker) | Motoranschluss |
-| 13 | 5 | M8-Einbaubuchse 3-polig | reserviert für spätere Erweiterungen (3,3 V / Signal / GND), von der Firmware nicht genutzt |
-| 14 | 1 | Netzteil 24 V DC, Schutzkleinspannung (SELV) | Leistung und Steckverbinder **offen** (folgen mit der Platinen-Stückliste) |
-| 15 | 1 | Sicherung in der 24-V-Zuleitung | Wert und Bauform **offen** (folgen mit der Platinen-Stückliste) |
-| 16 | 1 | Gehäuse | Druckdaten in [`hardware/gehaeuse/`](../../hardware/enclosure/) (folgen) |
-| 17 | – | Pumpenschlauch BPT 3×5 mm als Ersatz, Dosierschläuche, Rückschlagventile, Halter am Becken | Rückschlagventil oder Schlauchende über dem Wasserspiegel |
-| 18 | – | Passive Bauteile, Transistoren, Buchsenleisten | laut Stückliste der Platine (1 kΩ für die Treiber-UART, 10-kΩ- und 4,7-kΩ-Pull-ups, 100 nF am Taster, NPN-Transistoren für die LED) |
-| 19 | 1 | Aufkleber für das Typenschild | Geräte-Passwort und Name des Setup-WLANs |
+Mengen für ein Gerät mit fünf Pumpen. Die Beispiel-Teilenummern zeigen den Typ; gleichwertige
+Teile anderer Hersteller passen ebenso.
+
+### Platine
+
+Die Platine LGAL Doser v1.0 trägt 72 bedrahtete Bauteile (Widerstände, Kondensatoren, Dioden,
+Transistoren, Spannungsregler, Sicherung, Steckverbinder und Buchsenleisten). Die vollständige
+Liste mit Referenzen, Werten, Footprints und Beispiel-Teilenummern steht in
+[`hardware/platine/bom.csv`](../../hardware/pcb/bom.csv) (englisch); die Fertigungsdaten der
+Platine folgen in [`hardware/platine/`](../../hardware/pcb/).
+
+Auf der Platine sitzen unter anderem: der 24-V-Eingang mit Hohlbuchse (5,5 × 2,5 mm, Plus innen),
+Sicherung 3,15 A träge, Verpol- und Überspannungsschutz, die Spannungsregler RECOM R-78E5.0
+(5 V) und R-78E3.3 (3,3 V), der Taster Multimec 3FTH9 und die Buchsenleisten für alle
+Steckmodule. Die 3-poligen Stiftleisten J11–J15 (GPIO 7, 15–18) sind optional: Die Platine
+hat sie für spätere Erweiterungen, die Firmware nutzt sie nicht.
+
+### Module und Geräteteile
+
+| Pos. | Anzahl | Teil | Typ / Beispiel | Hinweis |
+|---|---|---|---|---|
+| 1 | 1 | Platine LGAL Doser v1.0 | mit den Teilen aus [`bom.csv`](../../hardware/pcb/bom.csv) | Fertigungsdaten folgen |
+| 2 | 1 | ESP32-S3-Board (U1) | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB Flash, 8 MB PSRAM; vor dem Einstecken flashen, die USB-Buchse ist im Gehäuse nicht erreichbar. Zu N8R8 und N32R8 siehe [technische Doku](technik.md#modulvarianten) |
+| 3 | 5 | Schrittmotortreiber TMC2209-StepStick (U4–U8) | z. B. Ulegqin TMC2209 V2.0, mit Kühlkörper | Steckrichtung: EN auf das eckige Pad (Markierung „EN“); Sense-Widerstand prüfen (siehe [unten](#tmc2209-treiber)) |
+| 4 | 1 | Ethernet-Modul W5500 | USR-ES1 (z. B. Joy-IT SBC-USR-ES1) | Reihenabstand 20,32 mm prüfen |
+| 5 | 1 | Uhrmodul DS3231 mit AT24C32-EEPROM | beliebiges DS3231-Modul | flach montiert; eine gerade Stiftleiste 1 × 4 an seine 4er-Lochreihe löten |
+| 6 | 1 | Stiftleiste 1 × 4, 2,54 mm, gerade | – | für das Uhrmodul |
+| 7 | 1 | Pufferbatterie für das Uhrmodul | LIR2032 (3,6 V, Akku) | eine CR2032 **nur nach Auslöten der Ladediode** am Modul, siehe [Sicherheit](#3-elektrische-sicherheit) |
+| 8 | 1 | RGB-Leuchte, gemeinsame Anode, mit Stecker | Mentor 2660.8302 | Steckerbelegung vor dem Anschließen prüfen |
+| 9 | 5 | Schlauchpumpe mit Schrittmotor | Kamoer KPHM100-ST | 24 V, 1,0 A, 200 Vollschritte/U, ohne Getriebe; Kabel mit JST-XH-Stecker 4-polig |
+| 10 | 1 | Netzteil 24 V DC, Schutzkleinspannung (SELV) | Mean Well GST60A24-P1M (24 V / 2,5 A / 60 W) | Hohlstecker 5,5 × 2,5 mm, Plus innen |
+| 11 | 1 | Netzkabel C13 (Kaltgerätekabel) | – | für das Netzteil |
+| 12 | 1 | Gehäuse | Druckdaten in [`hardware/gehaeuse/`](../../hardware/enclosure/) (folgen) | |
+| 13 | – | Pumpenschlauch BPT 3 × 5 mm als Ersatz, Dosierschläuche, Rückschlagventile, Halter am Becken | – | Rückschlagventil oder Schlauchende über dem Wasserspiegel |
+| 14 | 1 | Aufkleber für das Typenschild | – | Geräte-Passwort und Name des Setup-WLANs |
 
 Pinbelegung und Schaltung sind festgelegt, siehe [CLAUDE.md](../../CLAUDE.md).
 
@@ -69,10 +82,10 @@ Kombination aus Netzteil, Wasser und Salz:
 - **Netzteil:** nur ein fertiges, geprüftes Netzteil mit CE-Kennzeichnung und
   Schutzkleinspannung (SELV) verwenden, kurzschluss- und überlastfest. Die Netzseite
   (230 V) nie selbst bauen oder öffnen.
-- **Absicherung:** Zusätzlich zum Schutz im Netzteil gehört eine Sicherung in die 24-V-Zuleitung
-  des Geräts, damit ein Fehler auf der Platine (z. B. ein defekter Treiber) keinen Brand
-  auslösen kann. Wert und Bauform legt die Platinen-Stückliste fest (**offen**). Leitungen
-  passend zum Strom bemessen.
+- **Absicherung:** Zusätzlich zum Schutz im Netzteil hat die Platine eine Sicherung im
+  24-V-Eingang (F1, 3,15 A träge, TR5), damit ein Fehler auf der Platine (z. B. ein defekter
+  Treiber) keinen Brand auslösen kann. Nur durch denselben Wert ersetzen, nie überbrücken.
+  Dahinter sitzen Verpolschutz und eine TVS-Diode gegen Überspannung.
 - **Fehlerstrom-Schutzschalter:** Das Netzteil an einer Steckdose mit FI (RCD, 30 mA)
   betreiben – am Aquarium ohnehin Pflicht für alle Geräte.
 - **Wasser:** Gerät und Netzteil oberhalb des Wasserspiegels und außerhalb von Spritzwasser
@@ -89,9 +102,9 @@ Kombination aus Netzteil, Wasser und Salz:
 
 ## 4. Platine aufbauen und prüfen
 
-1. Platine nach Stückliste und Bestückungsplan bestücken (folgen in
-   [`hardware/platine/`](../../hardware/pcb/)). ESP-Board, StepSticks, Ethernet- und
-   RTC-Modul noch **nicht** einstecken.
+1. Platine nach der [Stückliste](../../hardware/pcb/bom.csv) bestücken; die Referenzen stehen
+   im Bestückungsdruck. Polung der Elkos und Kathode der Dioden beachten. ESP-Board,
+   StepSticks, Ethernet- und RTC-Modul noch **nicht** einstecken.
 2. **Sichtprüfung:** Lötbrücken, kalte Lötstellen, Polung der Bauteile.
 3. **Ohne Spannung messen:** kein Kurzschluss zwischen 24 V und GND, 5 V und GND, 3,3 V und GND.
 4. **Erster Strom ohne Module:** 24 V anlegen (am besten über ein Labornetzteil mit
