@@ -8,6 +8,13 @@
 }
 :root[data-theme="light"] { --p1: #0d93aa; --p2: #e07a3f; --p3: #7656e0; --p4: #2f9e55; --p5: #c99a10; }
 .field .switch, td .switch { margin-top: 0; }
+/* header: the device name alone; a long name wraps to a second line on narrow screens and is
+   only then cut off with "…" */
+.brand .dev-name {
+  font-size: 16px; line-height: 1.2; white-space: normal; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+@media (max-width: 479px) { .brand .dev-name { font-size: 14px; } }
 
 /* ---- dashboard ---- */
 /* Two views only. Desktop (from 940 px, also tablets in landscape): two
