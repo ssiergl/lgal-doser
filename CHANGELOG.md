@@ -50,13 +50,20 @@ mock; the test on the finished hardware is still pending.
 
 ### Web UI
 
-- Embedded in the firmware (Preact + htm, no build step), English and German, dark and light
-  theme, simple and pro view.
+- Embedded in the firmware (Preact + htm, no build step), dark and light theme, simple and pro
+  view.
+- Nine languages, chosen from a list with flags in the setup, on the sign-in and recovery pages
+  and in the settings: English and German, plus machine-translated French, Spanish, Italian,
+  Dutch, Polish, Turkish and Chinese (simplified). The web UI loads only the chosen language.
 - Overview, pump detail, schedule editor with 24 h bar, history with charts and event list,
   settings, maintenance, engineering menu, coral reef in the background.
 - Live values over WebSocket.
-- LG Aquatic Life logo: large on the sign-in and setup pages, beside the title of the network
-  and maintenance pages, dimmed in the background of every page.
+- LG Aquatic Life logo: large on the sign-in and setup pages, dimmed in the background of the
+  web UI.
+- Shared design of the pages (colours, reef and bubbles, building blocks, flags) taken from the
+  brand repository, so other LGAL devices look the same.
+- `/recovery` as a plain maintenance page in the same look, without logo, reef, transparency or
+  animation, for when the web UI does not load.
 
 ### Integration and maintenance
 
@@ -66,6 +73,7 @@ mock; the test on the finished hardware is still pending.
 - Backup of the schedule per pump and of the whole device (engineering).
 - Update channel stable or beta (release candidates, pro view, with a warning); the release
   workflow keeps the beta manifest in the pre-release `channel-beta`.
+- Release text written from this changelog and the commits since the previous release.
 - Updates by file, from a fixed update source (release manifest) or from a URL; rollback on a
   failed start; update entity for Home Assistant. A device only accepts firmware for its own
   board and module variant.
