@@ -25,8 +25,9 @@ Home Assistant. Firmware, Platine und Gehäuse liegen offen in diesem Repository
   Reichweite in Tagen, Prüfung aller Zeitpläne beim Speichern, festgelegtes Verhalten nach
   einem Stromausfall.
 - **Weboberfläche** direkt im Gerät, ohne Cloud und ohne App: Übersicht aller Pumpen,
-  Verlauf mit Diagrammen, Ansicht **Einfach** und **Profi**, dunkles und helles Design,
-  Deutsch und Englisch.
+  Verlauf mit Diagrammen, Ansicht **Einfach** und **Profi**, dunkles und helles Design, auf
+  Deutsch, Englisch, Französisch, Spanisch, Italienisch, Niederländisch, Polnisch, Türkisch und
+  Chinesisch (alle außer Deutsch und Englisch maschinell übersetzt).
 - **Vernetzt:** LAN als Hauptverbindung, WLAN als Ersatz. Setup-WLAN mit Einrichtungsassistent,
   Uhrzeit per NTP mit Uhrenmodul als Rückfall.
 - **Home Assistant / MQTT:** automatische Erkennung, Sensoren je Pumpe, auf Wunsch

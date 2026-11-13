@@ -65,7 +65,8 @@ Ein neues Gerät öffnet dafür ein eigenes WLAN, das Setup-WLAN (LED orange pul
 2. Meist öffnet sich die Einrichtung von selbst. Sonst im Browser `http://192.168.4.1/`
    aufrufen.
 3. Der Assistent führt durch fünf Schritte:
-   - **Sprache** (Deutsch oder Englisch),
+   - **Sprache** (Deutsch, Englisch, Französisch, Spanisch, Italienisch, Niederländisch,
+     Polnisch, Türkisch oder Chinesisch),
    - **eigenes Admin-Passwort** (8–64 Zeichen): einmal das Geräte-Passwort vom Typenschild
      eingeben, dann ein eigenes Passwort wählen – ab jetzt meldet nur noch dieses an,
    - einmal mit dem neuen Passwort **anmelden** (Benutzer „admin“); dein Browser kann es sich
