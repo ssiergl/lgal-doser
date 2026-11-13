@@ -1,0 +1,29 @@
+Item,Reference,Part,Qty,Value,Specification,Footprint (KiCad),Example part number,Note
+1,R1,Resistor,1,100 kΩ,"metal film, 0.25 W, 1 %","R_Axial_DIN0207, 7.62 mm pitch",Yageo MFR-25FBF52-100K,gate pull-down of the reverse-polarity protection Q1
+2,"R2, R11",Resistor,2,10 kΩ,"metal film, 0.25 W, 1 %","R_Axial_DIN0207, 7.62 mm pitch",Yageo MFR-25FBF52-10K,"pull-ups: driver enable (R2), Ethernet reset (R11)"
+3,"R3, R4, R8",Resistor,3,1 kΩ,"metal film, 0.25 W, 1 %","R_Axial_DIN0207, 7.62 mm pitch",Yageo MFR-25FBF52-1K,"UART series resistors (R3, R4), LED red (R8)"
+4,"R5, R6, R7, R13, R14",Resistor,5,4.7 kΩ,"metal film, 0.25 W, 1 %","R_Axial_DIN0207, 7.62 mm pitch",Yageo MFR-25FBF52-4K7,"LED base resistors (R5–R7), I²C pull-ups (R13, R14)"
+5,"R9, R10",Resistor,2,470 Ω,"metal film, 0.25 W, 1 %","R_Axial_DIN0207, 7.62 mm pitch",Yageo MFR-25FBF52-470R,LED green/blue
+6,C1,Electrolytic capacitor,1,470 µF / 63 V,"radial, low ESR, 105 °C, Ø 12.5 mm",CP_Radial_D12.5mm_P5.00mm,Panasonic FR series 470 µF / 63 V,24 V input; mind the polarity
+7,"C5, C6, C7, C8, C9",Electrolytic capacitor,5,100 µF / 63 V,"radial, low ESR, 105 °C, Ø 10 mm",CP_Radial_D10.0mm_P5.00mm,Panasonic FR series 100 µF / 63 V,one per driver at VM; mind the polarity
+8,"C2, C3",Electrolytic capacitor,2,10 µF / 63 V,"radial, 105 °C, Ø 5 mm, 2 mm pitch",CP_Radial_D5.0mm_P2.00mm,Panasonic FR series 10 µF / 63 V,outputs of the 5 V and 3.3 V regulators; mind the polarity; not the 350 V types (too large)
+9,"C4, C10–C15",Ceramic capacitor,7,100 nF,"50 V, X7R, 5 mm pitch",C_Disc_D5.0mm_W2.5mm_P5.00mm,Vishay K104K15X7RF5TL2,"decoupling 3.3 V (C4, C10–C14), button debounce (C15)"
+10,D1,Zener diode,1,12 V / 1 W,glass or plastic,D_DO-41_SOD81_P10.16mm,1N4742A,gate protection of Q1; mind the cathode
+11,D2,TVS diode,1,"30 V, 600 W",unidirectional,D_DO-15_P10.16mm,P6KE30A,overvoltage protection 24 V; mind the cathode
+12,D3,Schottky diode,1,40 V / 1 A,,D_DO-41_SOD81_P10.16mm,1N5819,5 V to the ESP32; mind the cathode
+13,Q1,P-channel MOSFET,1,IRF4905,"−55 V, −74 A","TO-220-3, vertical",Infineon IRF4905PBF,reverse-polarity protection
+14,"Q2, Q3, Q4",NPN transistor,3,BC547B,"45 V, 100 mA",TO-92 inline,BC547B,LED drivers red/green/blue
+15,U2,DC/DC regulator,1,5 V / 1 A,input up to 28 V,SIP-3,RECOM R-78E5.0-1.0,supply of the ESP32 board
+16,U3,DC/DC regulator,1,3.3 V / 0.5 A,input up to 28 V,SIP-3,RECOM R-78E3.3-0.5,logic supply
+17,F1,Fuse holder,1,TR5,5.08 mm pitch,Fuseholder_TR5_Littelfuse_No560_No460,Littelfuse 560 series (or compatible),
+18,F1,Fuse,1,3.15 A slow-blow (T),TR5,–,Littelfuse 372 series 3.15 A T,replace only with the same value
+19,J1,DC barrel jack,1,5.5 × 2.5 mm,"PCB mount, horizontal, centre positive",BarrelJack_Horizontal,any 5.5 × 2.5 mm PCB barrel jack,check the pin layout against the footprint before soldering
+20,"J2–J6, J16",JST-XH header,6,4-pin,"2.5 mm pitch, vertical",JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical,JST B4B-XH-A(LF)(SN),"pumps 1–5 (J2–J6), I²C extension (J16)"
+21,J11–J15,JST-XH header,5,3-pin,"2.5 mm pitch, vertical",JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical,JST B3B-XH-A(LF)(SN),"optional: reserved for later extensions (3.3 V / signal / GND on GPIO 7, 15–18), not used by the firmware"
+22,"J7, J8",Socket strip,2,1 × 6,2.54 mm pitch,PinSocket_1x06_P2.54mm_Vertical,"socket strip 1 × 6, 2.54 mm",Ethernet module USR-ES1
+23,J10,Socket strip,1,1 × 4,2.54 mm pitch,PinSocket_1x04_P2.54mm_Vertical,cut from a 1 × 6 strip,RTC module (mounted flat)
+24,J9,Pin header,1,2 × 2,"2.54 mm pitch, straight",PinHeader_2x02_P2.54mm_Vertical,"pin header 2 × 2, 2.54 mm",connection of the Mentor RGB light
+25,SW1,Push button,1,Multimec 3FTH9,PCB button without cap,Multimec_3FTH9 (project library),Mec 3FTH9,operated with a paper clip through the lid
+26,U1 (socket),Socket strip,4,1 × 8,"2.54 mm pitch, 7 mm high",–,"socket strip 1 × 8, 7 mm",ESP32 board: per row 1 × 8 + 1 × 8 + 1 × 6 = 22 pins
+27,U1 (socket),Socket strip,2,1 × 6,"2.54 mm pitch, 7 mm high",–,"socket strip 1 × 6, 7 mm","ESP32 board, see above"
+28,U4–U8 (socket),Socket strip,10,1 × 8,"2.54 mm pitch, 7 mm high",–,"socket strip 1 × 8, 7 mm",2 per driver

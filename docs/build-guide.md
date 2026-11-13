@@ -8,8 +8,7 @@ multimeter and start a Python script on the command line.
 
 > **Status:** circuit board v1.0 (11/2026) is designed, the firmware is complete. Testing the
 > firmware on the real hardware is still pending; board and enclosure files follow afterwards in
-> [`hardware/`](../hardware/). Values that are only fixed with the hardware release are marked
-> **open** below.
+> [`hardware/`](../hardware/). The bill of materials of the board is already there.
 
 > **Dosing errors can kill animals.** Test a self-built device extensively without animals first
 > (section [Test run](#8-test-run-without-animals)). Building and operating it is at your own
@@ -28,27 +27,41 @@ multimeter and start a Python script on the command line.
 
 ## 1. Parts list
 
-| Item | Qty | Part | Note |
-|---|---|---|---|
-| 1 | 1 | Circuit board LGAL Doser v1.0 | manufacturing data in [`hardware/pcb/`](../hardware/pcb/) (to follow) |
-| 2 | 1 | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB flash, 8 MB PSRAM; plugged into socket headers. For the variants N8R8 and N32R8 see the [technical docs](technical.md#module-variants) |
-| 3 | 5 | Kamoer KPHM100-ST | peristaltic pump with stepper motor, 24 V, 1.0 A, 200 full steps/rev, no gearbox |
-| 4 | 5 | TMC2209 StepStick (e.g. Ulegqin V2.0) | with heat sink; check the sense resistor (see [below](#tmc2209-drivers)) |
-| 5 | 1 | USR-ES1 (W5500) | Ethernet over SPI |
-| 6 | 1 | DS3231 module with AT24C32 EEPROM | clock (I²C 0x68) and memory (0x57) |
-| 7 | 1 | Backup battery for the DS3231 module | LIR2032 (rechargeable) or CR2032 – a CR2032 **only without charging diode**, see [safety](#3-electrical-safety) |
-| 8 | 1 | RGB light Mentor 2660.8302 | common anode |
-| 9 | 1 | Button Multimec 3F | setup and factory reset |
-| 10 | 1 | Switching regulator RECOM R-78E5.0 | 24 V → 5 V for the ESP board |
-| 11 | 1 | Switching regulator RECOM R-78E3.3 | 24 V → 3.3 V for the logic |
-| 12 | 5 | JST-XH connector 4-pin (socket + plug) | motor connection |
-| 13 | 5 | M8 panel socket 3-pin | reserved for later extensions (3.3 V / signal / GND), not used by the firmware |
-| 14 | 1 | Power supply 24 V DC, safety extra-low voltage (SELV) | rating and connector **open** (follow with the board's bill of materials) |
-| 15 | 1 | Fuse in the 24 V supply line | value and type **open** (follow with the board's bill of materials) |
-| 16 | 1 | Enclosure | print files in [`hardware/enclosure/`](../hardware/enclosure/) (to follow) |
-| 17 | – | Spare pump tube BPT 3×5 mm, dosing tubes, check valves, holders at the tank | check valve or tube end above the water level |
-| 18 | – | Passive parts, transistors, socket headers | according to the board's bill of materials (1 kΩ for the driver UART, 10 kΩ and 4.7 kΩ pull-ups, 100 nF at the button, NPN transistors for the LED) |
-| 19 | 1 | Sticker for the rating plate | device password and setup Wi-Fi name |
+Quantities for one device with five pumps. The example part numbers show the type; equivalent
+parts from other makers fit as well.
+
+### Circuit board
+
+The circuit board LGAL Doser v1.0 carries 72 through-hole parts (resistors, capacitors, diodes,
+transistors, regulators, fuse, connectors and socket strips). The complete list with references,
+values, footprints and example part numbers is in
+[`hardware/pcb/bom.csv`](../hardware/pcb/bom.csv); the manufacturing data of the board follows in
+[`hardware/pcb/`](../hardware/pcb/).
+
+On the board, among others: the 24 V input with barrel jack (5.5 × 2.5 mm, centre positive),
+fuse 3.15 A slow-blow, reverse-polarity protection and overvoltage protection, the regulators
+RECOM R-78E5.0 (5 V) and R-78E3.3 (3.3 V), the button Multimec 3FTH9 and the socket strips for
+all plug-in modules. The 3-pin headers J11–J15 (GPIO 7, 15–18) are optional: the board has
+them for later extensions, the firmware does not use them.
+
+### Modules and device parts
+
+| Item | Qty | Part | Type / example | Note |
+|---|---|---|---|---|
+| 1 | 1 | Circuit board LGAL Doser v1.0 | with the parts from [`bom.csv`](../hardware/pcb/bom.csv) | manufacturing data to follow |
+| 2 | 1 | ESP32-S3 board (U1) | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB flash, 8 MB PSRAM; flash before plugging in, the USB socket is not reachable in the enclosure. For N8R8 and N32R8 see the [technical docs](technical.md#module-variants) |
+| 3 | 5 | Stepper driver TMC2209 StepStick (U4–U8) | e.g. Ulegqin TMC2209 V2.0, with heat sink | orientation: EN on the square pad (marked "EN"); check the sense resistor (see [below](#tmc2209-drivers)) |
+| 4 | 1 | Ethernet module W5500 | USR-ES1 (e.g. Joy-IT SBC-USR-ES1) | check the row spacing of 20.32 mm |
+| 5 | 1 | Clock module DS3231 with AT24C32 EEPROM | any DS3231 module | mounted flat; solder a straight 1 × 4 pin header to its 4-pin row |
+| 6 | 1 | Pin header 1 × 4, 2.54 mm, straight | – | for the clock module |
+| 7 | 1 | Backup battery for the clock module | LIR2032 (3.6 V, rechargeable) | a CR2032 **only after removing the charging diode** on the module, see [safety](#3-electrical-safety) |
+| 8 | 1 | RGB light, common anode, with plug | Mentor 2660.8302 | check the pin assignment of the plug before connecting |
+| 9 | 5 | Peristaltic pump with stepper motor | Kamoer KPHM100-ST | 24 V, 1.0 A, 200 full steps/rev, no gearbox; cable with JST-XH 4-pin plug |
+| 10 | 1 | Power supply 24 V DC, safety extra-low voltage (SELV) | Mean Well GST60A24-P1M (24 V / 2.5 A / 60 W) | barrel plug 5.5 × 2.5 mm, centre positive |
+| 11 | 1 | Mains cable C13 | – | for the power supply |
+| 12 | 1 | Enclosure | print files in [`hardware/enclosure/`](../hardware/enclosure/) (to follow) | |
+| 13 | – | Spare pump tube BPT 3 × 5 mm, dosing tubes, check valves, holders at the tank | – | check valve or tube end above the water level |
+| 14 | 1 | Sticker for the rating plate | – | device password and setup Wi-Fi name |
 
 Pin assignment and circuit are fixed, see [CLAUDE.md](../CLAUDE.md).
 
@@ -69,10 +82,10 @@ supply, water and salt:
 - **Power supply:** use only a finished, certified power supply with CE marking and safety
   extra-low voltage (SELV), short-circuit and overload proof. Never build or open the mains side
   (230 V) yourself.
-- **Fusing:** in addition to the protection in the power supply, a fuse belongs in the 24 V
-  supply line of the device, so that a fault on the board (e.g. a defective driver) cannot start
-  a fire. Value and type are set by the board's bill of materials (**open**). Size the wires for
-  the current.
+- **Fusing:** in addition to the protection in the power supply, the board has a fuse in the
+  24 V input (F1, 3.15 A slow-blow, TR5), so that a fault on the board (e.g. a defective driver)
+  cannot start a fire. Replace it only with the same value, never bridge it. Reverse-polarity
+  protection and a TVS diode against overvoltage sit behind it.
 - **Residual current device:** plug the power supply into a socket protected by an RCD (30 mA) –
   required at an aquarium for all devices anyway.
 - **Water:** place device and power supply above the water level and out of splash water, lay
@@ -88,9 +101,10 @@ supply, water and salt:
 
 ## 4. Building and checking the board
 
-1. Assemble the board according to the bill of materials and placement plan (to follow in
-   [`hardware/pcb/`](../hardware/pcb/)). Do **not** plug in the ESP board, StepSticks, Ethernet
-   and RTC module yet.
+1. Assemble the board according to the [bill of materials](../hardware/pcb/bom.csv); the
+   references are printed on the board. Mind the polarity of the electrolytic capacitors and the
+   cathode of the diodes. Do **not** plug in the ESP board, StepSticks, Ethernet and RTC module
+   yet.
 2. **Visual check:** solder bridges, cold joints, polarity of the parts.
 3. **Measure without power:** no short between 24 V and GND, 5 V and GND, 3.3 V and GND.
 4. **First power without modules:** apply 24 V (ideally from a lab supply with current limit) and
