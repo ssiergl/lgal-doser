@@ -417,14 +417,34 @@ def sysr(h, method, body=None):
     u = _us(h.path)
     return sys_mock.route(h, method, u.path, dict(_pq(u.query)), body or {})
 
+# As on the device: without a session only the sign-in, the setup and the files they need are open
+OPEN = {("GET", "/login"), ("GET", "/setup"), ("GET", "/i18n.js"), ("GET", "/flags.js"),
+        ("GET", "/api/v1/auth/status"), ("GET", "/api/v1/system/language"),
+        ("POST", "/api/v1/auth/login"), ("POST", "/api/v1/auth/claim"), ("POST", "/api/v1/auth/recover")}
+
 class H(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     def log_message(self, *a): pass
+    def locked(self, method):
+        """True when the request was answered: pages redirect to the sign-in, API calls get 401"""
+        p = self.path.split("?")[0]
+        if sys_mock.AUTH["session"] or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")): return False
+        if p == "/" and not sys_mock.SETUP["completed"]: return False  # factory state: redirect to /setup first
+        n = int(self.headers.get("Content-Length", 0) or 0)
+        if n: self.rfile.read(n)
+        if "text/html" in (self.headers.get("Accept") or ""):
+            from urllib.parse import quote
+            self.send_response(302); self.send_header("Location", "/login?next=" + quote(self.path, safe="/-_.~"))
+            self.send_header("Content-Length", "0"); self.send_header("Cache-Control", "no-store"); self.end_headers()
+        else:
+            self.send(401, {"error": {"code": "unauthorized", "message": "Login required"}})
+        return True
     def send(self, code, body, ctype="application/json"):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code); self.send_header("Content-Type", ctype); self.send_header("Content-Length", str(len(b))); self.send_header("Cache-Control", "no-store")
         self.end_headers(); self.wfile.write(b)
     def do_GET(self):
+        if self.locked("GET"): return
         p = self.path.split("?")[0]
         if p == "/api/v1/ws": return self.ws()
         if sysr(self, "GET"): return
@@ -475,6 +495,7 @@ class H(BaseHTTPRequestHandler):
         if p == "/mock/log": return self.send(200, LOG)
         self.send(404, {"error": {"code": "not_found", "message": "x"}})
     def do_PUT(self):
+        if self.locked("PUT"): return
         n = int(self.headers.get("Content-Length", 0))
         if self.path.startswith("/api/v1/mqtt/ca"):  # PEM text, not JSON
             import mqtt_mock
@@ -485,9 +506,11 @@ class H(BaseHTTPRequestHandler):
         if self.path.startswith("/api/v1/schedule/locks"): return put_locks(self, body)
         self.send(404, {"error": {"code": "not_found", "message": "x"}})
     def do_DELETE(self):
+        if self.locked("DELETE"): return
         if sysr(self, "DELETE"): return
         self.send(404, {"error": {"code": "not_found", "message": "x"}})
     def do_POST(self):
+        if self.locked("POST"): return
         p = self.path
         n = int(self.headers.get("Content-Length", 0) or 0)
         if not p.startswith("/api/v1/pumps/"):

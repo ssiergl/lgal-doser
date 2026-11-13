@@ -399,7 +399,9 @@ come straight from `components/webui/www/`; after a change a reload is enough. R
 WebSocket run with state in memory: pumps with dosing, priming (dead-man) and calibration,
 schedules, history, network, sign-in, MQTT, backup and engineering menu, plus setup wizard
 (`/setup`), sign-in page and emergency page (`/recovery`). Test values: admin password
-`test-admin-pw`, engineering key `test-eng-key`. The state is lost on exit.
+`test-admin-pw`, engineering key `test-eng-key`. It starts signed in; after signing out it
+locks like the device: pages redirect to the sign-in, API calls answer 401. The state is lost
+on exit.
 
 ## OTA update
 
