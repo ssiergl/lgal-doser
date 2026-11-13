@@ -66,6 +66,8 @@ jobs:
         run: |
           pre=""
           case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
+          # the container runs as another user than the checkout: let git trust it
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           python3 tools/release_notes.py "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > notes.md
           gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" --notes-file notes.md $pre

@@ -64,6 +64,10 @@ def main():
     if not m:
         sys.exit(f"invalid tag: {a.tag}")
     base = m[1]
+    # without a working git the notes would silently lose the commit list
+    r = subprocess.run(["git", "rev-parse", "--verify", f"{a.tag}^{{commit}}"], capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit(f"git cannot read {a.tag}: {r.stderr.strip()}")
     parts = []
     if a.tag.lstrip("v") != base:
         parts.append(f"**Release candidate of {base}** – for testing; devices on the beta channel are offered it.\n")
