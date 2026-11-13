@@ -5,8 +5,8 @@ idf_component_register(
 )
 
 # Pack www/ into one gzip blob at build time (pack.py) and embed it, together
-# with the logo from the brand submodule and the license texts from the repository root
-# (shown on the maintenance page)
+# with the logo and the shared web design (web/: lgal.css, reef.js) from the brand submodule
+# and the license texts from the repository root (shown on the maintenance page)
 file(GLOB_RECURSE webui_files CONFIGURE_DEPENDS "${COMPONENT_DIR}/www/*")
 set(webui_bin "${CMAKE_CURRENT_BINARY_DIR}/webui.bin")
 idf_build_get_property(python PYTHON)
@@ -16,12 +16,14 @@ set(logo "${project_dir}/brand/logo/lgal-plaque.svg")
 if(NOT EXISTS "${logo}")
     message(FATAL_ERROR "brand/ is empty: run 'git submodule update --init' (or clone with --recursive)")
 endif()
+set(css "${project_dir}/brand/web/lgal.css")
+set(reef "${project_dir}/brand/web/reef.js")
 set(gpl "${project_dir}/LICENSE")
 set(notices "${project_dir}/THIRD-PARTY-NOTICES.txt")
 add_custom_command(
     OUTPUT "${webui_bin}"
     COMMAND "${python}" "${COMPONENT_DIR}/pack.py" "${COMPONENT_DIR}/www" "${webui_bin}"
-            "logo.svg=${logo}" "licenses/gpl-3.0.txt=${gpl}" "licenses/third-party.txt=${notices}"
-    DEPENDS "${COMPONENT_DIR}/pack.py" ${webui_files} "${logo}" "${gpl}" "${notices}"
+            "logo.svg=${logo}" "lgal.css=${css}" "lib/reef.js=${reef}" "licenses/gpl-3.0.txt=${gpl}" "licenses/third-party.txt=${notices}"
+    DEPENDS "${COMPONENT_DIR}/pack.py" ${webui_files} "${logo}" "${css}" "${reef}" "${gpl}" "${notices}"
     VERBATIM)
 target_add_binary_data(${COMPONENT_LIB} "${webui_bin}" BINARY)

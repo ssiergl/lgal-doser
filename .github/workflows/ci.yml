@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true  # brand/: the logo
+          submodules: true  # brand/: the logo and the shared web design
       - name: Build ${{ matrix.board }} ${{ matrix.variant }}
         shell: bash
         run: |
