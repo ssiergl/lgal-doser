@@ -436,6 +436,10 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, open(ROOT + ("/LICENSE" if "gpl" in p else "/THIRD-PARTY-NOTICES.txt"), "rb").read(), "text/plain; charset=utf-8")
         if p == "/ui/logo.svg":  # from the brand submodule, as in the firmware
             return self.send(200, open(ROOT + "/brand/logo/lgal-plaque.svg", "rb").read(), "image/svg+xml")
+        if p == "/ui/lgal.css":  # shared web design from the brand submodule
+            return self.send(200, open(ROOT + "/brand/web/lgal.css", "rb").read(), "text/css; charset=utf-8")
+        if p == "/ui/lib/reef.js":
+            return self.send(200, open(ROOT + "/brand/web/reef.js", "rb").read(), "text/javascript")
         if p.startswith("/ui/"):
             ext = p.rsplit(".", 1)[-1]
             ct = {"js": "text/javascript", "mjs": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "html": "text/html", "json": "application/json"}.get(ext, "application/octet-stream")
@@ -463,7 +467,7 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, {"device": {"hostname": "lgal-doser-e4f5", "setup_completed": True},
                                    "firmware": {"version": "0.5.0-dev", "partition": "ota_0"}, "time": {"valid": True}})
         if p == "/i18n.js": return self.send(200, open(ROOT + "/components/lgal_core/www/i18n.js", "rb").read(), "text/javascript")
-        if p == "/flags.js": return self.send(200, open(ROOT + "/components/lgal_core/www/flags.js", "rb").read(), "text/javascript")
+        if p == "/flags.js": return self.send(200, open(ROOT + "/brand/web/flags.js", "rb").read(), "text/javascript")
         if p == "/api/v1/system/language": return self.send(200, {"language": LANG["v"], "languages": ["en", "de"]})
         if p == "/api/v1/engineering/dosing": return self.send(200, ENG)
         if p == "/api/v1/pumps":

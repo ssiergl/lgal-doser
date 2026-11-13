@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true  # brand/: the logo
+          submodules: true  # brand/: the logo and the shared web design
       - name: Tag matches version.txt
         run: |
           v="$(tr -d ' \n' < version.txt)"

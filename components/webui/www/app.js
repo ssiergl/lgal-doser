@@ -134,7 +134,7 @@ const root = document.getElementById('app');
 root.textContent = '';  // boot placeholder
 drawReef(document.querySelector('.sea'));
 render(html`<${App}/>`, root);
-// the background logo floats between the top bar and the reef (style.css .mark)
+// the background logo floats between the top bar and the reef (lgal.css .mark)
 const head = document.querySelector('header.top');
 if (head && window.ResizeObserver) {
   new ResizeObserver(() => document.documentElement.style.setProperty('--head-h', head.offsetHeight + 'px')).observe(head);

@@ -16,7 +16,7 @@ components/lgal_core/   LG Aquatic Life core: network, HTTP, OTA, LED, button, s
 components/doser_hal/   pin assignment, safe start, TMC2209 UART, step clocks, pumps, RTC/EEPROM
 components/doser_app/   device logic: hardware diagnostics, dosing engine, scheduler, engineering and their REST APIs
 components/webui/       web UI (M5): www/ (Preact + htm, no build), pack.py embeds it gzip-compressed
-brand/                  brand repository as Git submodule: the logo (not GPL, see TRADEMARKS.md)
+brand/                  brand repository as Git submodule: the logo (not GPL, see TRADEMARKS.md) and web/, the shared design of the pages (GPL)
 main/                   wiring of the components (app_main)
 tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, mock/ (device mock for the web UI)
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest)
@@ -36,13 +36,13 @@ hardware/               enclosure and circuit board files (CC BY-NC-SA 4.0)
 git clone -b v6.0.3 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.0.3
 ```
 
-This repository with the brand submodule (`brand/`, the logo):
+This repository with the brand submodule (`brand/`, the logo and the shared web design):
 
 ```bash
 git clone --recursive https://github.com/ssiergl/lgal-doser.git
 ```
 
-In an existing checkout: `git submodule update --init`; a newer logo with
+In an existing checkout: `git submodule update --init`; a newer logo or design with
 `git submodule update --remote brand` and a commit.
 
 ```bash
@@ -349,10 +349,18 @@ priming without it.
 ## Web UI (M5)
 
 `http://lgal-doser-xxxx.local/` opens the UI (sign-in as under [Access](#access)). It is
-embedded in the firmware: `pack.py` gzip-compresses `components/webui/www/` and the logo from `brand/` at build time
+embedded in the firmware: `pack.py` gzip-compresses `components/webui/www/` and, from `brand/`, the logo and the shared design at build time
 (≈ 104 KB), and it is updated with the firmware over OTA – UI and API thus always match, and the
 rollback covers the UI as well. Preact and htm sit unchanged in `www/vendor/` (versions and
 checksums in the README there); there is no Node build, `idf.py build` is enough.
+
+The look every LG Aquatic Life device shares comes from the brand repository (`brand/web/`, GPL):
+`lgal.css` (colour tokens of both themes, cards, buttons, forms, switches, dialogs, top bar,
+background; served as `/ui/lgal.css`), `reef.js` (background reef, `/ui/lib/reef.js`) and
+`flags.js` (flags and language picker, `/flags.js`). `www/style.css` holds only what is the
+doser's own (pump colours, dashboard, pump pages, …) and loads after `lgal.css`; the sign-in and
+setup pages need `lgal.css` only. Shared styles are changed in the brand repository, never
+overridden here.
 
 | Topic | Behaviour |
 |---|---|
@@ -372,7 +380,7 @@ checksums in the README there); there is no Node build, `idf.py build` is enough
 | View | **Simple** / **Pro**, stored per browser. Only in pro: detailed schedules, pump fine-tuning (speed, retract, daily limit), rules between pumps (lock times, queueing, power cut) plus network and MQTT settings, time server and API keys. What is set in pro stays active in simple. |
 | Live values | Over WebSocket; without a connection the page polls every second. |
 | Device | In the settings: device name (up to 32 bytes, e.g. "Reef tank") for header, Home Assistant and mDNS service. The host name follows from it (lower case, umlauts as ae/oe/ue/ss, otherwise "-", e.g. `reef-tank.local`); pro only: own host name (a–z, 0–9, "-", up to 32 characters). Without a name it stays `lgal-doser-xxxx`. mDNS takes the name at once, the router at the next address assignment. MQTT topics and Home Assistant IDs stay until "Move topics to the device name" is pressed in the MQTT card. |
-| Appearance | Dark, light or as the system; language as on all device pages; time format 24 hours (default) or 12 hours with AM/PM for all shown times (remembered in the browser; time input fields follow the browser). In the background a coral reef in three depths, drawn by `lib/reef.js` at load from a fixed seed (the same picture every time, ≈ 3 KB instead of ≈ 130 KB of SVG); seaweed sways, bubbles rise – off with "reduce motion". |
+| Appearance | Dark, light or as the system; language as on all device pages; time format 24 hours (default) or 12 hours with AM/PM for all shown times (remembered in the browser; time input fields follow the browser). In the background a coral reef in three depths, drawn by `reef.js` from the brand repository at load from a fixed seed (the same picture every time, ≈ 3 KB instead of ≈ 130 KB of SVG); seaweed sways, bubbles rise – off with "reduce motion". |
 | Service | Click the firmware version in the footer 7× quickly → dialog for the engineering key, then straight to the [engineering menu](#engineering-menu-m6) (at once if it is already unlocked). The [backup](#backup-m6) and "Lock now" are there too. |
 | Emergency | `/recovery` stays as a maintenance page without the web UI (firmware upload, restart, log, links to the web UI and setup) in case the UI does not load. It is deliberately not linked anywhere: type the address by hand, e.g. `http://lgal-doser-xxxx.local/recovery` (the user guide mentions it). |
 | Files | `/ui/…` without sign-in (program code only, no device data), ETag and `no-cache`. |

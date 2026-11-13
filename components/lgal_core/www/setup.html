@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LG Aquatic Life – Setup</title>
 <link rel="icon" href="/ui/icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/ui/style.css">
+<link rel="stylesheet" href="/ui/lgal.css">
 <script>
 // colour theme as chosen in the web UI (otherwise the system setting)
 try{const t=localStorage.getItem('lgal.theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}
 </script>
 <style>
 /* Colours, cards, fields, buttons, the reef and the background logo come from the web UI
-   (/ui/style.css, public), so the setup looks like the pages behind it. */
+   (/ui/lgal.css, public: the shared design from the brand repository), so the setup looks like the pages behind it. */
 body{min-height:100vh;min-height:100dvh}
 .mark{--head-h:56px}
 @media (max-width:939px){  /* no bottom bar here: the reef sits on the bottom edge */
@@ -20,7 +20,7 @@ body{min-height:100vh;min-height:100dvh}
  .mark{--reef-top:calc(env(safe-area-inset-bottom) + min(22vh,180px))}
 }
 /* the step card floats in the middle of the logo (the box between the language picker and the
-   reef that style.css gives .mark); title and progress hang above it, the buttons below */
+   reef that lgal.css gives .mark); title and progress hang above it, the buttons below */
 main{--gap-y:clamp(12px,4vh,40px);display:grid;grid-template-rows:1fr auto 1fr;max-width:520px;
  min-height:100vh;min-height:100dvh;margin:0 auto;padding:calc(56px + var(--gap-y)) 16px calc(min(30vh,240px) + var(--gap-y))}
 @media (max-width:939px){main{padding-bottom:calc(env(safe-area-inset-bottom) + min(22vh,180px) + var(--gap-y))}}

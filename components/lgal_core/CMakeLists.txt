@@ -1,3 +1,11 @@
+# The flags of the language picker are part of the shared web design in the brand
+# repository (Git submodule brand/, web/ is GPL-3.0-or-later)
+idf_build_get_property(project_dir PROJECT_DIR)
+set(flags_js "${project_dir}/brand/web/flags.js")
+if(NOT EXISTS "${flags_js}")
+    message(FATAL_ERROR "brand/ is empty: run 'git submodule update --init' (or clone with --recursive)")
+endif()
+
 idf_component_register(
     SRCS
         "src/led.cpp"
@@ -30,7 +38,7 @@ idf_component_register(
         "src/ws.cpp"
         "src/timesync.cpp"
     INCLUDE_DIRS "include"
-    EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "www/flags.js" "www/login.html" "www/setup.html"
+    EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "${flags_js}" "www/login.html" "www/setup.html"
     REQUIRES
         bootloader_support
         esp_driver_gpio
