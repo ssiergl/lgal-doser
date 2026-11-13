@@ -1,6 +1,6 @@
-# Circuit board
+# d5v1 – circuit board
 
-This folder holds the manufacturing and design data of the LGAL Doser circuit board v1.0
+This folder holds the manufacturing and design data of the LGAL Doser 5 circuit board v1.0
 (11/2026):
 
 | File | Purpose |
@@ -13,10 +13,10 @@ This folder holds the manufacturing and design data of the LGAL Doser circuit bo
 
 **Status:** designed; the bill of materials is published, the other files follow after the
 hardware test. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
-supply and other device parts are listed in the [build guide](../../docs/build-guide.md#1-parts-list).
+supply and other device parts are listed in the [build guide](../../../docs/build-guide.md#1-parts-list).
 
 The ESP32-S3 pin assignment and the circuit (UART addresses of the drivers, pull-ups, LED
-drivers, strapping pins) are fixed and described in [CLAUDE.md](../../CLAUDE.md); the firmware
+drivers, strapping pins) are fixed and described in [CLAUDE.md](../../../CLAUDE.md); the firmware
 follows them.
 
-License: CC BY-NC-SA 4.0, see [LICENSE-hardware.md](../../LICENSE-hardware.md).
+License: CC BY-NC-SA 4.0, see [LICENSE-hardware.md](../../../LICENSE-hardware.md).

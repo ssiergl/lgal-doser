@@ -27,7 +27,7 @@ boards/                 board definitions (model name per board; pins in compone
 variants/               configuration per module variant (N8R8, N16R8, N32R8)
 .github/workflows/      CI (tests, fuzzers, all variants) and release build per git tag
 docs/                   documentation, German versions in docs/de/
-hardware/               enclosure and circuit board files (CC BY-NC-SA 4.0)
+hardware/               enclosure and circuit board files per version, e.g. d5v1/ (CC BY-NC-SA 4.0)
 ```
 
 ## Toolchain

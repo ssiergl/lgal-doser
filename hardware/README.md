@@ -1,12 +1,21 @@
 # Hardware
 
-Design files of the LGAL Doser. The circuit board (v1.0, 11/2026) is designed; the files will
-be published here after the hardware test.
+Design files of the LGAL Doser, one folder per version. The folder name is the board ID the
+firmware uses: the release files of a version are called `lgal_doser-<board ID>-<module>.bin`.
+
+| Board ID | Device | Pumps | Board | Status |
+|---|---|---|---|---|
+| [d5v1](d5v1/) | LGAL Doser 5 | 5 | v1.0 (11/2026) | designed, bill of materials published; other files follow after the hardware test |
+
+Each version folder holds:
 
 | Folder | Content |
 |---|---|
-| [enclosure/](enclosure/) | enclosure and mechanical parts: STL, STEP, 3MF and CAD source files |
-| [pcb/](pcb/) | schematic, PCB layout, Gerber and drill data, bill of materials, placement data |
+| `pcb/` | schematic, PCB layout, Gerber and drill data, bill of materials, placement data |
+| `enclosure/` | enclosure and mechanical parts: STL, STEP, 3MF and CAD source files |
+
+A new board revision gets its own folder (e.g. `d5v2`). If it keeps the enclosure of an earlier
+version, its README points there instead of copying the files.
 
 Pin assignment and fixed circuit: [CLAUDE.md](../CLAUDE.md). Assembly and parts list:
 [build guide](../docs/build-guide.md).

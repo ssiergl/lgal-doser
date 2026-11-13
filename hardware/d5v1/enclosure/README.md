@@ -1,6 +1,6 @@
-# Enclosure
+# d5v1 – enclosure
 
-This folder holds the files for the enclosure and mechanical parts:
+This folder holds the files for the enclosure and mechanical parts of the LGAL Doser 5:
 
 | File | Purpose |
 |---|---|
@@ -24,4 +24,4 @@ Notes for your own enclosure:
   outside.
 - Splash water: openings facing down or sideways, cables with a drip loop.
 
-License: CC BY-NC-SA 4.0, see [LICENSE-hardware.md](../../LICENSE-hardware.md).
+License: CC BY-NC-SA 4.0, see [LICENSE-hardware.md](../../../LICENSE-hardware.md).
