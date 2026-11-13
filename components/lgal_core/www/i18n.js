@@ -18,7 +18,7 @@
 // and opens a list.
 (function () {
   const dict = { en: {}, de: {} };
-  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano', nl: 'Nederlands' };
+  const names = { en: 'English', de: 'Deutsch', fr: 'Français', es: 'Español', it: 'Italiano', nl: 'Nederlands', pl: 'Polski' };
   let lang = 'en';
   let languages = ['en', 'de'];
   const listeners = [];
@@ -317,6 +317,36 @@
       "err.file_too_short": "Bestand te kort",
       "err.image_invalid": "Controle van de firmware mislukt",
       "err.upload_failed": "Update mislukt",
+    },
+    pl: {
+      "lang.label": "Język",
+      "err.http": "Błąd (HTTP {status})",
+      "err.unauthorized": "Wymagane logowanie",
+      "err.engineering_locked": "Obszar engineering zablokowany – odblokuj go na /login?eng=1",
+      "err.too_many_attempts": "Zbyt wiele nieudanych prób – proszę czekać",
+      "err.body_missing": "Żądanie bez danych",
+      "err.body_too_large": "Żądanie zbyt duże",
+      "err.invalid_json": "Nieprawidłowe dane żądania",
+      "err.invalid_param": "Nieprawidłowe dane",
+      "err.no_memory": "Urządzeniu brakuje pamięci",
+      "err.internal_error": "Błąd wewnętrzny",
+      "err.storage_error": "Nie udało się zapisać ustawienia",
+      "err.no_coredump": "Brak zapisanego coredumpu",
+      "err.ota_in_progress": "Aktualizacja już trwa",
+      "err.pump_running": "Pompa pracuje – spróbuj ponownie, gdy skończy",
+      "err.no_ota_partition": "Brak partycji aktualizacji",
+      "err.invalid_size": "Nieprawidłowy rozmiar pliku",
+      "err.transfer_aborted": "Przesyłanie przerwane",
+      "err.not_esp_image": "To nie jest plik firmware",
+      "err.wrong_chip": "Firmware jest dla innego układu",
+      "err.no_app_desc": "Plik firmware jest niekompletny",
+      "err.wrong_project": "Firmware jest dla innego urządzenia",
+      "err.wrong_variant": "Firmware jest dla modułu z inną wielkością flash",
+      "err.wrong_board": "Firmware jest dla innej płytki (modelu)",
+      "err.flash_error": "Błąd zapisu do flash",
+      "err.file_too_short": "Plik za krótki",
+      "err.image_invalid": "Weryfikacja firmware nie powiodła się",
+      "err.upload_failed": "Aktualizacja nie powiodła się",
     },
   });
 
