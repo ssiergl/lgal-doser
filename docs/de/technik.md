@@ -15,9 +15,9 @@ components/lgal_core/   LG Aquatic Life Core: Netz, HTTP, OTA, LED, Taster, Eins
 components/doser_hal/   Pinbelegung, sicherer Start, TMC2209-UART, Schritt-Takte, Pumpen, RTC/EEPROM
 components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitplan (Scheduler), Engineering und ihre REST-APIs
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
-brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL, siehe TRADEMARKS.md)
+brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL, siehe TRADEMARKS.md) und web/, das gemeinsame Design der Seiten (GPL)
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
@@ -35,13 +35,13 @@ hardware/               Gehäuse- und Platinendaten (CC BY-NC-SA 4.0)
 git clone -b v6.0.3 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.0.3
 ```
 
-Dieses Repository mit dem Marken-Submodul (`brand/`, das Logo):
+Dieses Repository mit dem Marken-Submodul (`brand/`, das Logo und das gemeinsame Web-Design):
 
 ```bash
 git clone --recursive https://github.com/ssiergl/lgal-doser.git
 ```
 
-In einem vorhandenen Checkout: `git submodule update --init`; ein neueres Logo mit
+In einem vorhandenen Checkout: `git submodule update --init`; ein neueres Logo oder Design mit
 `git submodule update --remote brand` und einem Commit.
 
 ```bash
@@ -163,6 +163,12 @@ der Workflow braucht deshalb keine Repository-Secrets. Tags mit
 Vorabversion (`v1.0.0-rc.1`) werden Vorab-Releases, die `releases/latest` überspringt.
 Als Update-Quelle der Geräte dient dann
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`.
+
+Der Text der Release-Seite kommt von `tools/release_notes.py`: der Abschnitt aus `CHANGELOG.md`,
+dessen Überschrift die Version nennt (ein Release-Kandidat `0.2.0-rc.1` nimmt den Abschnitt von
+`0.2.0`, z. B. `## Unreleased – 0.2.0`), als Zusammenfassung in Stichpunkten, danach jeder Commit
+seit dem vorigen Versions-Tag, eingeklappt unter „All changes“, und ein Link auf den vollständigen
+Vergleich. Den Changelog-Abschnitt also vor dem Taggen aktuell halten.
 
 Für den [Beta-Kanal](#ota-update) aktualisiert jedes Release zusätzlich das Vorab-Release
 `channel-beta` (beim ersten Release angelegt): Es enthält nur eine `manifest.json`, die die
@@ -352,11 +358,19 @@ Abfragen und REST-Entlüften zurück.
 ## Weboberfläche (M5)
 
 `http://lgal-doser-xxxx.local/` öffnet die Oberfläche (Anmeldung wie unter [Zugang](#zugang)).
-Sie ist in die Firmware eingebettet: `components/webui/www/` und das Logo aus `brand/` werden beim
+Sie ist in die Firmware eingebettet: `components/webui/www/` sowie Logo und gemeinsames Design aus `brand/` werden beim
 Build von `pack.py` gzip-komprimiert (≈ 104 KB) und mit der Firmware per OTA aktualisiert – Oberfläche und API
 passen so immer zusammen, und der Rollback gilt auch für die Oberfläche. Preact und htm liegen
 unverändert in `www/vendor/` (Versionen und Prüfsummen dort im README); einen Node-Build gibt es
 nicht, `idf.py build` reicht.
+
+Das Aussehen, das alle LG-Aquatic-Life-Geräte teilen, kommt aus dem Marken-Repository
+(`brand/web/`, GPL): `lgal.css` (Farb-Tokens beider Designs, Karten, Buttons, Formulare, Schalter,
+Dialoge, Kopfleiste, Hintergrund; ausgeliefert als `/ui/lgal.css`), `reef.js` (Hintergrund-Riff,
+`/ui/lib/reef.js`) und `flags.js` (Flaggen und Sprachauswahl, `/flags.js`). `www/style.css`
+enthält nur, was dem Doser gehört (Pumpenfarben, Übersicht, Pumpenseiten, …), und lädt nach
+`lgal.css`; Anmelde- und Einrichtungsseite brauchen nur `lgal.css`. Gemeinsame Stile werden im
+Marken-Repository geändert, hier nie überschrieben.
 
 | Thema | Verhalten |
 |---|---|
@@ -376,9 +390,9 @@ nicht, `idf.py build` reicht.
 | Ansicht | **Einfach** / **Profi**, gespeichert pro Browser. Nur in Profi: detaillierte Zeitpläne, Pumpen-Feintuning (Stufe, Rückzug, Tageslimit), Regeln zwischen Pumpen (Sperrzeiten, Vormerken, Stromausfall) sowie Netzwerk- und MQTT-Einstellungen, Zeitserver und API-Keys. In Profi Eingestelltes bleibt in Einfach aktiv. |
 | Live-Werte | Per WebSocket; ohne Verbindung fragt die Seite jede Sekunde ab. |
 | Gerät | In den Einstellungen: Gerätename (bis 32 Bytes, z. B. „Riffbecken“) für Kopfzeile, Home Assistant und mDNS-Dienst. Der Hostname folgt daraus (Kleinbuchstaben, Umlaute als ae/oe/ue/ss, sonst „-“, z. B. `riffbecken.local`); nur Profi: eigener Hostname (a–z, 0–9, „-“, bis 32 Zeichen). Ohne Namen bleibt `lgal-doser-xxxx`. mDNS übernimmt den Namen sofort, der Router nach der nächsten Adressvergabe. MQTT-Topics und Home-Assistant-IDs bleiben, bis man in der MQTT-Karte „Topics auf den Gerätenamen umziehen“ drückt. |
-| Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten; Zeitformat 24 Stunden (Standard) oder 12 Stunden mit AM/PM für alle angezeigten Uhrzeiten (im Browser gemerkt; Eingabefelder für Uhrzeiten folgen dem Browser). Im Hintergrund ein Korallenriff in drei Tiefen, das `lib/reef.js` beim Laden aus einem festen Startwert zeichnet (gleiches Bild bei jedem Aufruf, ≈ 3 KB statt ≈ 130 KB SVG); Seegras wiegt sich, Luftblasen steigen auf – aus bei „Bewegung reduzieren“. |
+| Darstellung | Dunkel, hell oder wie das System; Sprache wie auf allen Geräteseiten; Zeitformat 24 Stunden (Standard) oder 12 Stunden mit AM/PM für alle angezeigten Uhrzeiten (im Browser gemerkt; Eingabefelder für Uhrzeiten folgen dem Browser). Im Hintergrund ein Korallenriff in drei Tiefen, das `reef.js` aus dem Marken-Repository beim Laden aus einem festen Startwert zeichnet (gleiches Bild bei jedem Aufruf, ≈ 3 KB statt ≈ 130 KB SVG); Seegras wiegt sich, Luftblasen steigen auf – aus bei „Bewegung reduzieren“. |
 | Service | 7× schnell auf die Firmware-Version im Fuß klicken → Dialog für den Engineering-Schlüssel, danach direkt das [Engineering-Menü](#engineering-menü-m6) (ist der Bereich schon freigeschaltet, sofort). Dort liegen auch die [Datensicherung](#datensicherung-m6) und „Jetzt sperren“. |
-| Notfall | `/recovery` bleibt als Wartungsseite ohne Weboberfläche (Firmware-Upload, Neustart, Log, Links auf Weboberfläche und Einrichtung) für den Fall, dass die Oberfläche nicht lädt. Sie ist bewusst nirgends verlinkt: Adresse von Hand eingeben, z. B. `http://lgal-doser-xxxx.local/recovery` (Hinweis gehört in die Bedienungsanleitung). |
+| Notfall | `/recovery` bleibt als schlichte Wartungsseite ohne die Skripte der Weboberfläche (Geräteinfo, Firmware-Upload, Neustart, Log, Links auf Weboberfläche und Einrichtung; das gemeinsame Design ohne Logo, Riff und Animation) für den Fall, dass die Oberfläche nicht lädt. Sie ist bewusst nirgends verlinkt: Adresse von Hand eingeben, z. B. `http://lgal-doser-xxxx.local/recovery` (Hinweis gehört in die Bedienungsanleitung). |
 | Dateien | `/ui/…` ohne Anmeldung (nur Programmcode, keine Gerätedaten), ETag und `no-cache`. |
 
 ### Mock-Server (ohne Gerät)
@@ -480,9 +494,16 @@ alle `/api/v1/hw/…`-Endpunkte brauchen zusätzlich die Engineering-Freischaltu
 
 **Mehrsprachigkeit:** Firmware, Logs und API sind englisch. Fehler kommen immer als
 `{"error":{"code":"pump_busy","message":"Pump is busy"}}`; der `code` ist fest und wird von den
-Seiten übersetzt (Englisch Standard, Deutsch; weitere Sprachen: Eintrag in
-`settings::kLanguages` + Wörterbücher in `i18n.js` und den Seiten). Die Sprache der Oberfläche
-ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
+Seiten übersetzt (Englisch Standard, Deutsch). Die englischen Texte der Weboberfläche stehen
+beim Code (`add()` in jeder Ansicht); jede andere Sprache ist eine Datei
+`components/webui/www/lang/<code>.json` mit allen Schlüsseln, die erst geladen wird, wenn die
+Sprache gewählt ist – ein fehlender Schlüssel erscheint englisch. Die Geräteseiten (Anmeldung,
+Einrichtung, `/recovery`) tragen ihre Wörterbücher selbst, weil `/recovery` ohne Weboberfläche
+funktionieren muss. Neue Sprache: Eintrag in `settings::kLanguages` und in `languages` von
+`lib/i18n.js`, die Datei in `lang/` und die Wörterbücher der Geräteseiten. Die Sprache der
+Oberfläche ist eine Geräteeinstellung, gewählt mit einer Auswahl, die die Flagge jeder Sprache
+zeigt (`/flags.js`), auf Anmelde-, Einrichtungs- und `/recovery`-Seite sowie in den Einstellungen
+der Weboberfläche.
 
 | Methode | Pfad | Funktion |
 |---|---|---|
@@ -511,6 +532,7 @@ ist eine Geräteeinstellung und lässt sich auf jeder Seite umschalten.
 | GET | `/api/v1/setup` | `completed`, `password_set`, `connected`, `hostname`, `urls` |
 | POST | `/api/v1/setup/complete` | Einrichtung abschließen (409 `password_not_set` / `not_connected`), Setup-WLAN aus nach 20 s |
 | GET | `/i18n.js` | gemeinsame Übersetzungsbasis der Seiten (ohne Anmeldung) |
+| GET | `/flags.js` | Flaggen der Sprachen und Stile der Sprachauswahl, für die Seiten und die Weboberfläche (ohne Anmeldung) |
 | GET | `/api/v1/system/log` | RAM-Log der letzten ~32 KB |
 | POST | `/api/v1/system/reboot` | Neustart |
 | GET / DELETE | `/api/v1/system/coredump` | letzter Absturz-Dump (ELF) / löschen |
