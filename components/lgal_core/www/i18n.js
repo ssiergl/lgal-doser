@@ -18,7 +18,7 @@
 // and opens a list.
 (function () {
   const dict = { en: {}, de: {} };
-  const names = { en: 'English', de: 'Deutsch' };
+  const names = { en: 'English', de: 'Deutsch', fr: 'Français' };
   let lang = 'en';
   let languages = ['en', 'de'];
   const listeners = [];
@@ -197,6 +197,36 @@
       'err.file_too_short': 'Datei zu kurz',
       'err.image_invalid': 'Prüfung der Firmware fehlgeschlagen',
       'err.upload_failed': 'Update fehlgeschlagen',
+    },
+    fr: {
+      "lang.label": "Langue",
+      "err.http": "Erreur (HTTP {status})",
+      "err.unauthorized": "Connexion requise",
+      "err.engineering_locked": "Zone engineering verrouillée – la déverrouiller sur /login?eng=1",
+      "err.too_many_attempts": "Trop de tentatives échouées – veuillez patienter",
+      "err.body_missing": "Requête sans données",
+      "err.body_too_large": "Requête trop volumineuse",
+      "err.invalid_json": "Données de requête invalides",
+      "err.invalid_param": "Saisie invalide",
+      "err.no_memory": "L’appareil manque de mémoire",
+      "err.internal_error": "Erreur interne",
+      "err.storage_error": "Impossible d’enregistrer le réglage",
+      "err.no_coredump": "Aucun coredump enregistré",
+      "err.ota_in_progress": "Une mise à jour est déjà en cours",
+      "err.pump_running": "Une pompe tourne – réessayez quand elle aura terminé",
+      "err.no_ota_partition": "Aucune partition de mise à jour disponible",
+      "err.invalid_size": "Taille de fichier invalide",
+      "err.transfer_aborted": "Transfert interrompu",
+      "err.not_esp_image": "Ce n’est pas un fichier firmware",
+      "err.wrong_chip": "Le firmware est destiné à une autre puce",
+      "err.no_app_desc": "Le fichier firmware est incomplet",
+      "err.wrong_project": "Le firmware est destiné à un autre appareil",
+      "err.wrong_variant": "Le firmware est destiné à un module avec une autre taille de flash",
+      "err.wrong_board": "Le firmware est destiné à une autre carte (modèle)",
+      "err.flash_error": "Erreur d’écriture en flash",
+      "err.file_too_short": "Fichier trop court",
+      "err.image_invalid": "La vérification du firmware a échoué",
+      "err.upload_failed": "La mise à jour a échoué",
     },
   });
 
