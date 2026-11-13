@@ -409,8 +409,9 @@ Seiten kommen direkt aus `components/webui/www/`; nach einer Änderung reicht Ne
 und WebSocket laufen mit Zustand im Speicher: Pumpen mit Dosieren, Entlüften (Totmann) und
 Kalibrieren, Zeitpläne, Verlauf, Netzwerk, Anmeldung, MQTT, Datensicherung und Engineering-Menü,
 dazu Einrichtungsassistent (`/setup`), Anmeldeseite und Notfallseite (`/recovery`).
-Testwerte: Admin-Passwort `test-admin-pw`, Engineering-Schlüssel `test-eng-key`. Der Zustand
-geht beim Beenden verloren.
+Testwerte: Admin-Passwort `test-admin-pw`, Engineering-Schlüssel `test-eng-key`. Er startet
+angemeldet; nach dem Abmelden sperrt er wie das Gerät: Seiten leiten zur Anmeldung um,
+API-Aufrufe antworten 401. Der Zustand geht beim Beenden verloren.
 
 ## OTA-Update
 
