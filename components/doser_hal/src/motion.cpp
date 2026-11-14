@@ -111,6 +111,16 @@ void probe_and_configure(int i) {
     }
 }
 
+// Full driver status of a fault: which phase, to GND or VS, temperature
+void log_drv_status(int i, uint32_t v) {
+    const auto d = tmc::decode_drv_status(v);
+    ESP_LOGE(TAG,
+             "Pump %d: DRV_STATUS 0x%08" PRIx32 " s2ga=%d s2gb=%d s2vsa=%d s2vsb=%d ola=%d olb=%d otpw=%d ot=%d "
+             "t120=%d t143=%d t150=%d t157=%d cs=%u stealth=%d",
+             i + 1, v, d.s2ga, d.s2gb, d.s2vsa, d.s2vsb, d.ola, d.olb, d.otpw, d.ot, d.t120, d.t143, d.t150, d.t157,
+             d.cs_actual, d.stealth);
+}
+
 void fault_stop(int i, const char* why) {
     auto* ch = step::channel(i);
     if (ch) ch->stop(true);
@@ -136,6 +146,13 @@ void health_check(int i) {
         return;
     }
     p.gstat = static_cast<uint8_t>(gstat);
+    if (!p.configured) {
+        // An earlier configuration failed (e.g. a lost datagram): try again,
+        // but not in the middle of a forced move without configuration
+        auto* ch = step::channel(i);
+        if (!(ch && ch->busy())) configure(i);
+        return;
+    }
     if (gstat & tmc::GSTAT_RESET) {
         // Driver restarted (e.g. 24 V lost and back) -> registers lost
         ESP_LOGW(TAG, "Pump %d: driver reset detected, reconfiguring", i + 1);
@@ -144,6 +161,8 @@ void health_check(int i) {
         configure(i);
     }
     if (gstat & tmc::GSTAT_DRV_ERR) {
+        uint32_t st = 0;
+        if (p.drv.read(tmc::reg::DRV_STATUS, &st) == ESP_OK) log_drv_status(i, st);
         auto* ch = step::channel(i);
         if (ch && ch->busy()) fault_stop(i, "driver_error");
         p.drv.write(tmc::reg::GSTAT, tmc::GSTAT_DRV_ERR);
@@ -165,6 +184,7 @@ void sample_running(int i, int64_t now) {
     if (p.drv.read(tmc::reg::DRV_STATUS, &v) == ESP_OK) {
         p.drv_status = v;
         const auto d = tmc::decode_drv_status(v);
+        if (d.short_circuit() || d.ot) log_drv_status(i, v);
         if (d.short_circuit()) fault_stop(i, "short_circuit");
         else if (d.ot) fault_stop(i, "overtemperature");
     }
