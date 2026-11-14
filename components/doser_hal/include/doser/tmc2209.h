@@ -34,12 +34,17 @@ public:
 private:
     // rx_len == 0: write datagram without reply
     esp_err_t transfer(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t rx_len);
+    void log_bad_reply(uint8_t addr, uint8_t reg, const uint8_t* rx, size_t len);
+    void log_bad_echo(const uint8_t* tx, size_t tx_len, const uint8_t* rx, int got);
 
     uart_port_t port_ = UART_NUM_MAX;
     gpio_num_t tx_pin_ = GPIO_NUM_NC;
     uint32_t byte_us_ = 87;
     SemaphoreHandle_t mutex_ = nullptr;
     Stats stats_{};
+    uint8_t logged_silent_ = 0;   // log budget: replies without any byte
+    uint8_t logged_garbage_ = 0;  // log budget: incomplete or corrupted replies
+    uint8_t logged_echo_ = 0;     // log budget: wrong echo
 };
 
 class Tmc2209 {

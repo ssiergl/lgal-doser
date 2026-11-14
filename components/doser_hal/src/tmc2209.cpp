@@ -1,6 +1,7 @@
 #include "doser/tmc2209.h"
 
 #include <cinttypes>
+#include <cstdio>
 #include <cstring>
 
 #include "esp_check.h"
@@ -52,6 +53,7 @@ esp_err_t TmcBus::transfer(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t
     if (got != static_cast<int>(tx_len) || std::memcmp(echo, tx, tx_len) != 0) {
         ++stats_.echo_errors;
         err = ESP_ERR_INVALID_RESPONSE;
+        log_bad_echo(tx, tx_len, echo, got);
     } else if (rx_len) {
         // The driver replies after SENDDELAY (24 bit times ≈ 200 µs)
         const TickType_t rx_to = pdMS_TO_TICKS(4 + rx_len * byte_us_ / 1000);
@@ -59,13 +61,36 @@ esp_err_t TmcBus::transfer(const uint8_t* tx, size_t tx_len, uint8_t* rx, size_t
         if (got <= 0) {
             ++stats_.timeouts;
             err = ESP_ERR_TIMEOUT;
+            log_bad_reply(tx[1], tx[2], rx, 0);
         } else if (got != static_cast<int>(rx_len)) {
             ++stats_.crc_errors;
             err = ESP_ERR_INVALID_SIZE;
+            log_bad_reply(tx[1], tx[2], rx, static_cast<size_t>(got));
         }
     }
     xSemaphoreGive(mutex_);
     return err;
+}
+
+// Raw bytes of failed transfers for the diagnosis on the device (limited, so
+// that missing drivers do not flood the log).
+void TmcBus::log_bad_reply(uint8_t addr, uint8_t reg, const uint8_t* rx, size_t len) {
+    uint8_t& budget = len ? logged_garbage_ : logged_silent_;
+    if (budget >= (len ? 20 : 5)) return;
+    ++budget;
+    char hex[3 * 8 + 1] = "";
+    for (size_t i = 0; i < len && i < 8; ++i) snprintf(hex + 3 * i, 4, " %02x", rx[i]);
+    ESP_LOGW(TAG, "GPIO%d address %u register 0x%02x: no valid reply, %u bytes:%s", tx_pin_, addr, reg,
+             unsigned(len), len ? hex : " -");
+}
+
+void TmcBus::log_bad_echo(const uint8_t* tx, size_t tx_len, const uint8_t* rx, int got) {
+    if (logged_echo_ >= 20) return;
+    ++logged_echo_;
+    char sent[3 * 8 + 1] = "", back[3 * 8 + 1] = "";
+    for (size_t i = 0; i < tx_len && i < 8; ++i) snprintf(sent + 3 * i, 4, " %02x", tx[i]);
+    for (int i = 0; i < got && i < 8; ++i) snprintf(back + 3 * i, 4, " %02x", rx[i]);
+    ESP_LOGW(TAG, "GPIO%d wrong echo: sent%s, back (%d)%s", tx_pin_, sent, got, got > 0 ? back : " -");
 }
 
 esp_err_t TmcBus::write(uint8_t addr, uint8_t reg, uint32_t value) {
@@ -88,6 +113,7 @@ esp_err_t TmcBus::read(uint8_t addr, uint8_t reg, uint32_t* value) {
         if (tmc::parse_reply(reply, reg, value)) return ESP_OK;
         ++stats_.crc_errors;
         err = ESP_ERR_INVALID_CRC;
+        log_bad_reply(addr, reg, reply, sizeof(reply));
     }
     return err;
 }
