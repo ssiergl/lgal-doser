@@ -45,6 +45,10 @@ CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 # Network: DNS servers follow the active interface (LAN or WLAN)
 CONFIG_ESP_NETIF_SET_DNS_PER_DEFAULT_NETIF=y
 
+# Sockets: budget see lgal_core/src/http.cpp (default 10 was too few,
+# accept() failed with ENFILE)
+CONFIG_LWIP_MAX_SOCKETS=16
+
 # HTTP server
 CONFIG_HTTPD_WS_SUPPORT=y
 CONFIG_HTTPD_WS_PRE_HANDSHAKE_CB_SUPPORT=y

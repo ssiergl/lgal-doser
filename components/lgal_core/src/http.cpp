@@ -14,12 +14,23 @@
 #include "lgal/ws.h"
 #include "lgal/ws_core.h"
 #include "lwip/sockets.h"
+#include "sdkconfig.h"
 
 namespace lgal::http {
 
 namespace {
 constexpr const char* TAG = "http";
 httpd_handle_t s_server = nullptr;
+
+// Socket budget: a browser opens up to 6 connections, plus the WebSocket and
+// API clients (Home Assistant). The server needs 2 more of its own (listen,
+// control), the rest of the firmware up to 3 (captive DNS, MQTT, OTA download).
+// The server must reach its own limit before lwIP runs out of sockets, else
+// accept() fails with ENFILE and the LRU purge never kicks in.
+constexpr int kMaxOpenSockets = 10;
+constexpr int kOtherSockets = 3;
+static_assert(kMaxOpenSockets + 2 + kOtherSockets <= CONFIG_LWIP_MAX_SOCKETS,
+              "CONFIG_LWIP_MAX_SOCKETS too small for the HTTP server");
 
 // Browsers asking for a page get a redirect to the login page, API clients JSON
 bool wants_html(httpd_req_t* req) {
@@ -75,6 +86,7 @@ esp_err_t start() {
     cfg.server_port = 80;
     cfg.max_uri_handlers = 112;
     cfg.stack_size = 8192;
+    cfg.max_open_sockets = kMaxOpenSockets;
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
     cfg.core_id = 0;          // network core; core 1 later belongs to the dosing engine
