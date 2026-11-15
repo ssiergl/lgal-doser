@@ -13,7 +13,7 @@ import { Seg } from '../lib/ui.js';
 add({
   en: {
     'hi.title': 'History', 'hi.daily': 'Dosed per day', 'hi.days': '{n} days',
-    'hi.sum': '{s} ml in total · ⌀ {a} ml/day', 'hi.hover': 'Point at or tap the chart for the values of a day.',
+    'hi.hover': 'Point at or tap the chart for the values of a day.',
     'hi.bar': 'Bars', 'hi.line': 'Line',
     'hi.day': '{d}: {ml} ml · {n} doses', 'hi.day.skip': '{n} skipped', 'hi.today': 'today',
     'hi.skipnote': 'Dot under the axis: doses were skipped that day.', 'hi.table': 'Show as table', 'hi.date': 'Day',
@@ -102,11 +102,10 @@ function DayChart({ n, name, days, today, kind }) {
   const i = n - 1;
   const vals = days.map(d => d.ml[i]);
   const max = niceMax(Math.max(...vals));
-  const total = vals.reduce((a, b) => a + b, 0);
   const dayText = d => t('hi.day', { d: d.date === today ? t('hi.today') : dayLabel(d.date), ml: num(d.ml[i], 2), n: d.doses[i] })
     + (d.skipped[i] ? ' · ' + t('hi.day.skip', { n: d.skipped[i] }) : '');
   const sel = hover >= 0 ? days[hover] : null;
-  const readout = sel ? dayText(sel) : t('hi.sum', { s: num(total, 1), a: num(total / days.length, 2) });
+  const readout = sel ? dayText(sel) : '';  // the line stays reserved, the chart does not move
 
   const W = Math.max(width, 160), pw = W - kM.l - kM.r, base = kM.t + kPlotH;
   // Bars sit in one slot per day; the line runs from axis to axis, its
@@ -142,9 +141,9 @@ function DayChart({ n, name, days, today, kind }) {
 
   return html`<div class="hc" style=${{ '--pc': pumpColor(n) }}>
     <div class="hc-head"><i class="sw"></i><b>${name}</b></div>
-    <p class=${'hc-read small' + (sel ? '' : ' mut')}>${readout}</p>
+    <p class="hc-read small">${readout}</p>
     <div class="hc-plot" ref=${ref}>
-      ${width > 0 && html`<svg width=${W} height=${base + kM.b} role="img" aria-label=${name + ': ' + readout}
+      ${width > 0 && html`<svg width=${W} height=${base + kM.b} role="img" aria-label=${readout ? name + ': ' + readout : name}
           onPointerMove=${pick} onPointerDown=${pick} onPointerLeave=${() => setHover(-1)}>
         ${hover >= 0 && bars && html`<rect class="hc-hl" x=${kM.l + slot * hover} y=${kM.t} width=${slot} height=${kPlotH}/>`}
         ${[0, 0.5, 1].map(f => html`<line class=${f ? 'hc-grid-l' : 'hc-base'} x1=${kM.l} x2=${W - kM.r} y1=${yv(max * f)} y2=${yv(max * f)}/>
