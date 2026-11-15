@@ -65,6 +65,8 @@ void print_banner() {
     // (first USB flash), not in the RAM log available over the network.
     printf("\n========================================================\n");
     printf(" LG Aquatic Life · Doser · Firmware %s\n", app->version);
+    const uint8_t rev = doser::hwconfig::board_rev();
+    printf(" Board       : %s v%u.%u\n", LGAL_BOARD_ID, rev / 10u, rev % 10u);
     printf(" MAC         : %s\n", lgal::device::mac_str().c_str());
     printf(" Hostname    : %s.local\n", lgal::device::hostname().c_str());
     printf(" Setup Wi-Fi : %s\n", lgal::device::setup_ssid().c_str());
@@ -345,7 +347,8 @@ extern "C" void app_main(void) {
 
     vTaskDelay(pdMS_TO_TICKS(1500));  // let the boot fade-in finish
     lgal::led::set(lgal::led::State::Boot, false);
-    ESP_LOGI(TAG, "System ready (board %s, %s)", LGAL_BOARD_ID, LGAL_BOARD_MODEL);
+    ESP_LOGI(TAG, "System ready (board %s v%u.%u, %s)", LGAL_BOARD_ID, doser::hwconfig::board_rev() / 10u,
+             doser::hwconfig::board_rev() % 10u, LGAL_BOARD_MODEL);
 
     while (true) {
         update_status_led();

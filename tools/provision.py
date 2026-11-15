@@ -10,7 +10,8 @@ neither the factory reset nor an OTA update touches the partition.
 
 Optionally it also writes the factory pump population (--pumps): the pumps
 fitted on delivery, again after every factory reset. Without it all pumps of
-the board are fitted.
+the board are fitted. --board-rev stores the revision of the circuit board
+(default 1.0); board d5v1 v1.1 needs it for its 24 V sense input.
 
 Run it after the firmware flash: a merged image (…-full.bin written at 0x0)
 also overwrites "fctry", so provision again with the same values. Needs the
@@ -19,6 +20,7 @@ ESP-IDF environment (export.sh).
 Usage:
     tools/provision.py -p /dev/cu.usbmodem1101
     tools/provision.py -p /dev/cu.usbmodem1101 --pumps 1,2,3
+    tools/provision.py -p /dev/cu.usbmodem1101 --board-rev 1.1
     tools/provision.py -p /dev/cu.usbmodem1101 --master-file /path/to/master
     tools/provision.py --mac AA:BB:CC:DD:EE:FF --dry-run   # only build and print
 """
@@ -40,6 +42,7 @@ NAMESPACE = "lgal"  # lgal::device, components/lgal_core/src/device.cpp
 KEY = "secret"
 KEY_PUMPS = "pumps"  # factory population, doser::hwconfig (components/doser_app/src/hwconfig.cpp)
 MAX_PUMPS = 5        # doser::kMaxPumps
+KEY_BOARD_REV = "board_rev"  # revision times ten, doser::hwconfig::board_rev()
 
 
 def parse_pumps(text: str) -> int:
@@ -51,6 +54,14 @@ def parse_pumps(text: str) -> int:
             raise ValueError(f"pump numbers 1..{MAX_PUMPS}, separated by commas: {text!r}")
         mask |= 1 << (int(part) - 1)
     return mask
+
+
+def parse_board_rev(text: str) -> int:
+    """'1.1' -> 11 (revision times ten)."""
+    m = re.fullmatch(r"\s*([1-9])\.([0-9])\s*", text)
+    if not m:
+        raise ValueError(f"board revision as major.minor, e.g. 1.1: {text!r}")
+    return int(m.group(1)) * 10 + int(m.group(2))
 
 
 def pump_list(mask: int) -> str:
@@ -85,7 +96,7 @@ def read_mac(port) -> bytes:
     return ap_password.parse_mac(m.group(1))
 
 
-def nvs_image(secret: str, pumps: int, size: int, out: pathlib.Path) -> None:
+def nvs_image(secret: str, pumps: int, board_rev: int, size: int, out: pathlib.Path) -> None:
     idf = os.environ.get("IDF_PATH")
     if not idf:
         sys.exit("IDF_PATH is not set (source export.sh first)")
@@ -94,6 +105,8 @@ def nvs_image(secret: str, pumps: int, size: int, out: pathlib.Path) -> None:
     rows = f"key,type,encoding,value\n{NAMESPACE},namespace,,\n{KEY},data,string,{secret}\n"
     if pumps:
         rows += f"{KEY_PUMPS},data,u8,{pumps}\n"
+    if board_rev:
+        rows += f"{KEY_BOARD_REV},data,u8,{board_rev}\n"
     src.write_text(rows)
     try:
         r = subprocess.run([sys.executable, str(gen), "generate", str(src), str(out), hex(size)],
@@ -111,12 +124,14 @@ def main() -> None:
     ap.add_argument("--master-file", default=str(ap_password.MASTER_FILE),
                     help="manufacturer master (default: factory.secret)")
     ap.add_argument("--pumps", help="factory pump population, e.g. 1,2,3 (default: all pumps of the board)")
+    ap.add_argument("--board-rev", help="revision of the circuit board, e.g. 1.1 (default: 1.0)")
     ap.add_argument("--dry-run", action="store_true", help="build the partition image, write nothing")
     args = ap.parse_args()
     if not args.port and not (args.dry_run and args.mac):
         sys.exit("--port is needed (or --mac with --dry-run)")
     try:
         pumps = parse_pumps(args.pumps) if args.pumps else 0
+        board_rev = parse_board_rev(args.board_rev) if args.board_rev else 0
     except ValueError as e:
         sys.exit(str(e))
 
@@ -127,13 +142,15 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory() as tmp:
         image = pathlib.Path(tmp) / "fctry.bin"
-        nvs_image(secret, pumps, size, image)
+        nvs_image(secret, pumps, board_rev, size, image)
         if args.dry_run:
             print(f"Partition image ok ({image.stat().st_size} bytes for 0x{offset:X}), nothing written.")
         else:
             esptool(["write-flash", hex(offset), str(image)], args.port)
             print(f"Device secret written to '{PARTITION}' at 0x{offset:X}.")
     print(f"Pumps fitted from the factory: {pump_list(pumps) if pumps else 'all of the board'}")
+    rev = board_rev or 10
+    print(f"Board revision: {rev // 10}.{rev % 10}")
     print()
     ap_password.print_label(mac, secret, engineering=True)
 

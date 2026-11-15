@@ -159,7 +159,8 @@ key. There are two ways:
    ```
 
    With fewer pumps built in, add e.g. `--pumps 1,2,3`: the device then comes up with exactly
-   these pumps, also after a factory reset.
+   these pumps, also after a factory reset. For circuit board v1.1 add `--board-rev 1.1`;
+   without it the firmware treats the board as v1.0.
 
    The values can be computed again from the MAC address at any time
    (`tools/ap_password.py <MAC> --engineering`).

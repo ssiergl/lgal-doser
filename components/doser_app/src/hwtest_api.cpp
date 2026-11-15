@@ -129,7 +129,9 @@ esp_err_t get_status(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     Json j;
     j.obj();
-    j.obj("board").kv("id", LGAL_BOARD_ID).kv("model", LGAL_BOARD_MODEL).kv("pumps", kN).end();
+    char rev[8];
+    std::snprintf(rev, sizeof(rev), "%u.%u", hwconfig::board_rev() / 10u, hwconfig::board_rev() % 10u);
+    j.obj("board").kv("id", LGAL_BOARD_ID).kv("rev", rev).kv("model", LGAL_BOARD_MODEL).kv("pumps", kN).end();
     j.kv("drivers_enabled", motion::drivers_enabled()).kv("locked", motion::locked());
     // channel population: in effect now and after the next restart
     j.arr("fitted");

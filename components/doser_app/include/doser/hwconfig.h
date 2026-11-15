@@ -28,4 +28,10 @@ uint8_t factory_fitted_mask();  // factory population
 // At least one pump, none beyond the board; ESP_ERR_INVALID_ARG otherwise
 esp_err_t save_fitted(uint8_t mask);
 
+// Revision of the circuit board times ten, from the factory partition
+// (tools/provision.py --board-rev): 10 = v1.0 (also when missing), 11 = v1.1.
+// All revisions of a board ID share the pins; a newer one may add inputs
+// (doser/pins.h). Readable before load().
+uint8_t board_rev();
+
 }  // namespace doser::hwconfig

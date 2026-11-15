@@ -101,6 +101,11 @@ for exactly one board; board and module variant (below) can be combined freely.
 Without an option `idf.py build` builds `d5v1`; another board: `idf.py -DBOARD=<id> build`. The
 ID reads d = doser, number of pumps, v = circuit board version.
 
+Revisions of a circuit board keep the board ID, the pins and the firmware image. The device
+learns its revision from the factory partition (`provision.py --board-rev`, missing = 1.0,
+`doser::hwconfig::board_rev()`); a newer revision only switches on inputs the older one does
+not have. The serial banner, the start log and `/api/v1/hw/status` show it.
+
 A board consists of two files:
 
 - `boards/<id>.cmake` sets `LGAL_BOARD_MODEL` (model name in the web UI, system info and Home
@@ -215,7 +220,9 @@ Factory reset and OTA updates leave `fctry` untouched.
 
    With fewer pumps built in than the board has, `--pumps 1,2,3` also stores the factory
    population: the pumps fitted on delivery and again after every factory reset (default: all
-   pumps of the board). Provisioning again (e.g. after a full flash) needs the same values.
+   pumps of the board). `--board-rev 1.1` stores the revision of the circuit board (default
+   1.0, see [Boards](#boards)). Provisioning again (e.g. after a full flash) needs the same
+   values.
 
    **Device password on the rating plate** (e.g. a sticker inside the enclosure), not the
    engineering key. Both can be recomputed from the MAC at any time:
@@ -561,7 +568,7 @@ the sign-in, setup and `/recovery` pages and in the settings of the web UI.
 | GET / POST | `/api/v1/engineering/scheduler?…` | super admin: `grid_min` (divisor of 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | super admin: uptime, reset reason, chip temperature, heap (free, minimum, largest block, fragmentation), PSRAM, NVS entries, LittleFS and history |
 | POST | `/api/v1/engineering/reset?what=network` | super admin: reset the network settings (applies after 1 s); the factory reset is only on the maintenance page with the admin password |
-| GET | `/api/v1/hw/status` | board (`id`, `model`, `pumps`), drivers and pumps of the board, RTC, EEPROM, UART statistics; fitting `fitted` (now), `fitted_next` (after the next restart) and `fitted_factory` (factory population, `provision.py --pumps`) |
+| GET | `/api/v1/hw/status` | board (`id`, `rev`, `model`, `pumps`), drivers and pumps of the board, RTC, EEPROM, UART statistics; fitting `fitted` (now), `fitted_next` (after the next restart) and `fitted_factory` (factory population, `provision.py --pumps`) |
 | POST | `/api/v1/hw/channels?pumps=1,2,3,4` | save the fitting (at least one pump), applies after a restart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | raw run (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | stop (0 = all) |

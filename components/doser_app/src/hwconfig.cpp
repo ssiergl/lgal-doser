@@ -18,20 +18,25 @@ uint8_t s_factory = pins::kBoardMask;        // factory population
 uint8_t s_fitted = pins::kBoardMask;         // in effect since startup
 uint8_t s_fitted_saved = pins::kBoardMask;   // in effect after the next restart
 
-// Factory population from the factory partition (tools/provision.py
-// --pumps): u8 mask "pumps" in namespace "lgal", limited to the board.
-// Missing or no pump of the board: all pumps of the board.
-uint8_t load_factory_mask() {
+// u8 value from the factory partition (tools/provision.py), namespace "lgal";
+// 0 when missing
+uint8_t read_factory_u8(const char* key) {
     constexpr const char* kFactory = "fctry";  // also lgal::device (device.cpp)
-    uint8_t m = 0;
+    uint8_t v = 0;
     nvs_handle_t h;
     // already initialised by an earlier call returns ESP_OK; formatting is left to lgal::device
     if (nvs_flash_init_partition(kFactory) == ESP_OK &&
         nvs_open_from_partition(kFactory, "lgal", NVS_READONLY, &h) == ESP_OK) {
-        if (nvs_get_u8(h, "pumps", &m) != ESP_OK) m = 0;
+        if (nvs_get_u8(h, key, &v) != ESP_OK) v = 0;
         nvs_close(h);
     }
-    m &= pins::kBoardMask;
+    return v;
+}
+
+// Factory population (provision.py --pumps): u8 mask "pumps", limited to the
+// board. Missing or no pump of the board: all pumps of the board.
+uint8_t load_factory_mask() {
+    const uint8_t m = read_factory_u8("pumps") & pins::kBoardMask;
     return m ? m : pins::kBoardMask;
 }
 
@@ -87,6 +92,15 @@ void load(motion::PumpConfig (&pumps)[kMaxPumps]) {
     nvs_close(h);
     for (int i = 0; i < pins::kPumpCount; ++i)
         if (!fitted(i)) ESP_LOGI(TAG, "Pump %d: not fitted", i + 1);
+}
+
+uint8_t board_rev() {
+    // provision.py --board-rev: u8 "board_rev" = revision times ten
+    static const uint8_t rev = [] {
+        const uint8_t r = read_factory_u8("board_rev");
+        return r < 10 ? uint8_t(10) : r;
+    }();
+    return rev;
 }
 
 int board_pumps() { return pins::kPumpCount; }
