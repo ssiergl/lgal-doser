@@ -1,19 +1,25 @@
 # d5v1 – circuit board
 
-This folder holds the manufacturing and design data of the LGAL Doser 5 circuit board v1.0
-(11/2026):
+Circuit boards of the LGAL Doser 5 (board ID `d5v1`). All versions share the same ESP32-S3 pin
+assignment and run the same firmware build.
+
+| Version | Folder | Status |
+|---|---|---|
+| v1.0 (11/2026) | [`v1.0/`](v1.0/) | ordered and built; needs two rework wires, see [below](#rework-rx-lines-of-the-driver-uart) |
+| v1.1 | [`v1.1/`](v1.1/) | in design, see the [revision plan](v1.1/plan.md) |
+
+Each version folder holds:
 
 | File | Purpose |
 |---|---|
-| schematic (PDF) | for reading and following the circuit |
-| [`d5v1.kicad_pro`](d5v1.kicad_pro), [`d5v1.kicad_sch`](d5v1.kicad_sch), [`d5v1.kicad_pcb`](d5v1.kicad_pcb) | KiCad 10 project: schematic and layout (4 layers) for editing, exactly as board v1.0 was ordered |
-| [`lgal_doser.kicad_sym`](lgal_doser.kicad_sym), [`lgal_doser.pretty/`](lgal_doser.pretty/) | project symbol and footprint library (ESP32-S3 socket, TMC2209 StepStick socket, Multimec 3F button), registered with project-relative paths in `sym-lib-table` and `fp-lib-table` |
-| `gerber/` | Gerber and drill data for PCB manufacturing |
-| [`bom.csv`](bom.csv) | bill of materials: all parts with reference, value, footprint and example part number |
-| placement data (CSV) | position and rotation for assembly |
+| `d5v1.kicad_pro`, `d5v1.kicad_sch`, `d5v1.kicad_pcb` | KiCad 10 project: schematic and layout for editing |
+| `lgal_doser.kicad_sym`, `lgal_doser.pretty/` | project symbol and footprint library (ESP32-S3 socket, TMC2209 StepStick socket, Multimec 3F button), registered with project-relative paths in `sym-lib-table` and `fp-lib-table` |
+| `bom.csv` | bill of materials: all parts with reference, value, footprint and example part number |
+| schematic (PDF), `gerber/`, placement data (CSV) | for reading the circuit, PCB manufacturing and assembly |
 
-**Status:** designed; the bill of materials and the KiCad project are published, the PDF,
-Gerber and placement files follow after the hardware test. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
+**Status v1.0:** the KiCad project (exactly as ordered, 4 layers) and the
+[bill of materials](v1.0/bom.csv) are published; the PDF, Gerber and placement files follow after
+the hardware test. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
 supply and other device parts are listed in the [build guide](../../../docs/build-guide.md#1-parts-list).
 
 The ESP32-S3 pin assignment and the circuit (UART addresses of the drivers, pull-ups, LED
@@ -35,7 +41,7 @@ directly on the bus. On board v1.0 two wires are added for this:
 
 Solder each wire, without power, from the GPIO pin of the ESP socket header to the driver side
 of the series resistor of its bus, i.e. to the PDN_UART line of the drivers. Without these wires
-the firmware gets no replies from the drivers and the pumps do not run. A later board revision
-routes the RX lines on the board. The board ID stays `d5v1`.
+the firmware gets no replies from the drivers and the pumps do not run. Board v1.1 routes the RX
+lines on the board. The board ID stays `d5v1`.
 
 License: CC BY-NC-SA 4.0, see [LICENSE-hardware.md](../../../LICENSE-hardware.md).

@@ -40,8 +40,7 @@ firmware is written against. Read it first.
 
 - **Every circuit change is made in the schematic first**, then transferred to the layout with
   "Update PCB from Schematic". Never add or change connections in the layout only.
-- KiCad 10. One project per board version, named `<board ID>.kicad_pro` (v1.0 currently still
-  directly in `d5v1/pcb/`; it moves to `d5v1/pcb/v1.0/` when v1.1 is started).
+- KiCad 10. One project per board version, named `<board ID>.kicad_pro`, with its own `bom.csv`.
 - Libraries are project-local: symbols in `lgal_doser.kicad_sym`, footprints in
   `lgal_doser.pretty/`, registered in `sym-lib-table` / `fp-lib-table` with `${KIPRJMOD}`.
   No absolute paths, no references to libraries outside the repository except the KiCad
