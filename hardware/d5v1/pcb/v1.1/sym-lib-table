@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "lgal_doser")(type "KiCad")(uri "${KIPRJMOD}/lgal_doser.kicad_sym")(options "")(descr "LGAL Doser symbols"))
+)
