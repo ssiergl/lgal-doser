@@ -190,6 +190,17 @@ void sample_running(int i, int64_t now) {
     }
 }
 
+// Logs the end of the last move once. Called by the task loop and by run(), which can start
+// the next move before the loop has seen the end of the previous one.
+void log_done(int i, int64_t now) {
+    Pump& p = s_pump[i];
+    if (!p.was_running) return;
+    p.was_running = false;
+    const auto* ch = step::channel(i);
+    ESP_LOGI(TAG, "Pump %d: done, %" PRIu32 " of %" PRIu32 " steps in %.2f s", i + 1, ch->position(),
+             ch->target(), (now - p.start_us) / 1e6);
+}
+
 void task(void*) {
     // Allocate all interrupts (UART, RMT, PCNT, GPTimer) on core 1,
     // separate from the network on core 0.
@@ -222,16 +233,8 @@ void task(void*) {
         Lock l;
 
         // detect end of move
-        for (int i = 0; i < kN; ++i) {
-            Pump& p = s_pump[i];
-            auto* ch = step::channel(i);
-            const bool busy = ch->busy();
-            if (p.was_running && !busy) {
-                p.was_running = false;
-                ESP_LOGI(TAG, "Pump %d: done, %" PRIu32 " of %" PRIu32 " steps in %.2f s", i + 1,
-                         ch->position(), ch->target(), (now - p.start_us) / 1e6);
-            }
-        }
+        for (int i = 0; i < kN; ++i)
+            if (!step::channel(i)->busy()) log_done(i, now);
 
         if (now >= next_sg) {
             next_sg = now + kSgEveryUs;
@@ -279,6 +282,7 @@ esp_err_t run(int pump, const Move& move) {
     Pump& p = s_pump[pump];
     if (!p.fitted) return ESP_ERR_NOT_FOUND;
     if (ch->busy()) return ESP_ERR_INVALID_STATE;
+    log_done(pump, esp_timer_get_time());
     if (!p.configured && !move.force) return ESP_ERR_NOT_FOUND;
     if (move.sps == 0 || move.sps > p.cfg.max_sps()) return ESP_ERR_INVALID_ARG;
     const uint32_t steps = static_cast<uint32_t>(std::abs(move.steps));
