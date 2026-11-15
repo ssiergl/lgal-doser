@@ -20,7 +20,8 @@ constexpr const char* kCodes[] = {
     "rtc_fault",       "set",              "refilled",           "started",        "cancelled",
     "finished",        "cleared",          "boot",               "updated",        "restored",
     "time_set",        "settings",         "channels",           "engineering",    "network",
-    "mqtt",            "password",         "key_added",          "key_removed",
+    "mqtt",            "password",         "key_added",          "key_removed",    "supply_missing",
+    "supply_low",
 };
 constexpr uint8_t kCodeCount = sizeof(kCodes) / sizeof(kCodes[0]);
 constexpr const char* kKinds[] = {"",         "dose",     "prime",  "calib_run", "skip",      "container",

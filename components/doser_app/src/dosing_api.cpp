@@ -40,6 +40,8 @@ constexpr ErrInfo kErrors[] = {
     {"pump_not_fitted", "409 Conflict", "Pump is not fitted"},
     {"pump_manual_only", "409 Conflict", "Pump is set to manual only"},
     {"locked", "409 Conflict", "Pumps are locked (update in progress)"},
+    {"supply_missing", "409 Conflict", "No 24 V supply"},
+    {"supply_low", "409 Conflict", "24 V supply too low"},
     {"daily_limit", "409 Conflict", "Daily limit would be exceeded"},
     {"time_invalid", "409 Conflict", "No valid time - daily limit cannot be checked"},
     {"driver_unavailable", "409 Conflict", "Driver not reachable or not configured"},

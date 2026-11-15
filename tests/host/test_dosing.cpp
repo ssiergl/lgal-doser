@@ -264,6 +264,39 @@ static void test_fault() {
     CHECK(!dosing::busy());
 }
 
+// Start guard of the device (24 V supply)
+static const char* g_guard = nullptr;
+
+static void test_start_guard() {
+    sim::reset();
+    const int p = 0;
+    dosing::set_start_guard([]() -> const char* { return g_guard; });
+    g_guard = "supply_low";
+    CHECK_STR(dosing::dose(p, 10000, dosing::Trigger::Manual), "supply_low");
+    CHECK_STR(dosing::prime_start(p), "supply_low");
+    CHECK(!dosing::busy());
+    // a running dose goes on when the supply sags, starts are blocked
+    g_guard = nullptr;
+    CHECK(dosing::dose(p, 10000, dosing::Trigger::Manual) == nullptr);
+    for (int i = 0; i < 20; ++i) sim::tick();
+    g_guard = "supply_low";
+    CHECK(sim::run_until_idle(p));
+    CHECK_STR(dosing::status(p).last_result, "success");
+    // 24 V lost during the move: the supply lock stops it, the result names the reason
+    g_guard = nullptr;
+    CHECK(dosing::dose(p, 10000, dosing::Trigger::Manual) == nullptr);
+    for (int i = 0; i < 20; ++i) sim::tick();
+    g_guard = "supply_missing";
+    sim::locked = true;
+    sim::motor[p].running = false;
+    CHECK(sim::run_until_idle(p, 1));
+    CHECK_STR(dosing::status(p).last_result, "supply_missing");
+    CHECK_STR(dosing::dose(p, 10000, dosing::Trigger::Manual), "supply_missing");
+    g_guard = nullptr;
+    dosing::set_start_guard(nullptr);
+    sim::locked = false;
+}
+
 static void test_engineering() {
     sim::reset();
     auto e = dosing::engineering();
@@ -435,6 +468,8 @@ int main(int argc, char**) {
     test_calibration();
     std::printf("Driver fault and OTA lock\n");
     test_fault();
+    std::printf("Start guard (24 V supply)\n");
+    test_start_guard();
     std::printf("Engineering parameters\n");
     test_engineering();
     std::printf("Retraction off\n");

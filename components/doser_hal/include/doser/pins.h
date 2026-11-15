@@ -8,6 +8,9 @@
 //   kTmc            bus index and address per pump
 //   kTmcRsenseMohm, kTmcBaud, kDriverEnable (EN of all drivers, active low)
 //   kEth*, kI2c*, kLed*, kButton
+//   kSupplySense    24 V sense input (GPIO_NUM_NC = none), used from board
+//                   revision kSupplySenseRev on (hwconfig::board_rev()), with
+//                   the divider ratio kSupplyDivider (doser/supply.h)
 
 #include <cstdint>
 

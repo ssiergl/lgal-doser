@@ -2,10 +2,11 @@
 // Alarm and warning of the status LED from the pump state (functional spec
 // chapter 10). Pure logic, host-tested; main.cpp collects the input.
 //   critical (prio 1, red fast): a scheduled dose skipped today because of
-//            the daily limit, driver fault, clock module not answering
+//            the daily limit, driver fault, clock module not answering, no
+//            24 V supply (board with sense input, doser/supply.h)
 //   warning  (prio 6, yellow slow): container almost empty (lasts fewer days
 //            than the pump's alarm threshold, default 4), tube lifetime
-//            reached, no valid time
+//            reached, no valid time, 24 V supply too low
 // Disabled pumps are ignored.
 
 #include <cstdint>
@@ -28,6 +29,8 @@ struct Input {
     Pump pumps[kMaxPumps];
     bool rtc_ok = true;
     bool clock_valid = true;
+    bool supply_missing = false;  // below 12 V: board peripherals off
+    bool supply_low = false;      // 12-20 V: no dose starts
 };
 
 struct Output {
@@ -41,7 +44,10 @@ Output evaluate(const Input& in);
 // and the daily limit are already logged as dose result / skipped slot.
 enum class Cond : uint8_t { ContainerLow, TubeWorn };
 constexpr int kConds = 2;
-constexpr int kRtcBit = 15;  // device: clock module not answering
+constexpr int kRtcBit = 15;            // device: clock module not answering
+constexpr int kSupplyMissingBit = 14;  // device: no 24 V supply
+constexpr int kSupplyLowBit = 13;      // device: 24 V supply too low
+static_assert(kMaxPumps * kConds <= kSupplyLowBit, "pump bits below the device bits");
 inline uint16_t cond_bit(int pump, Cond c) { return uint16_t(1u << (pump * kConds + static_cast<int>(c))); }
 uint16_t conditions(const Input& in);
 const char* cond_code(Cond c);  // history code string

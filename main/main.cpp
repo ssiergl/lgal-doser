@@ -27,6 +27,7 @@
 #include "doser/schedule_api.h"
 #include "doser/schedule_core.h"
 #include "doser/scheduler.h"
+#include "doser/supply.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
 #include "esp_system.h"
@@ -83,7 +84,11 @@ void print_banner() {
 // Alarm input from the pump, schedule and clock state (doser/alarms.h)
 doser::alarms::Input alarm_input(const lgal::timesync::Status& ts) {
     doser::alarms::Input in;
-    in.rtc_ok = ts.rtc_ok;
+    const auto supply = doser::supply::state();
+    in.supply_missing = supply == doser::supply::State::Missing;
+    in.supply_low = supply == doser::supply::State::Low;
+    // without 24 V the clock module is off, not faulty
+    in.rtc_ok = ts.rtc_ok || in.supply_missing;
     in.clock_valid = ts.valid;
     const int32_t today = doser::scheduler::today();
     const auto eng = doser::dosing::engineering();
@@ -121,6 +126,9 @@ void log_alarm_changes(uint16_t now) {
     for (const auto& [bits, kind] : {std::pair{started, history::Kind::Alarm}, std::pair{ended, history::Kind::AlarmEnd}}) {
         if (!bits) continue;
         if (bits & (1u << doser::alarms::kRtcBit)) history::note(kind, -1, history::Source::None, "rtc_fault");
+        if (bits & (1u << doser::alarms::kSupplyMissingBit))
+            history::note(kind, -1, history::Source::None, "supply_missing");
+        if (bits & (1u << doser::alarms::kSupplyLowBit)) history::note(kind, -1, history::Source::None, "supply_low");
         for (int i = 0; i < doser::kMaxPumps; ++i)
             for (int c = 0; c < doser::alarms::kConds; ++c)
                 if (bits & doser::alarms::cond_bit(i, static_cast<Cond>(c)))
@@ -179,6 +187,46 @@ void log_core_event(const char* code, lgal::events::By by) {
     history::note(history::Kind::System, -1, src, code);
 }
 
+// 24 V supply (board with sense input): false = missing at boot. The board
+// 3.3 V rail is then only back-fed through the I/O pins (USB power only), so
+// its peripherals (TMC2209, W5500, DS3231/EEPROM) stay off.
+bool check_supply() {
+    using doser::supply::State;
+    if (!doser::supply::init(doser::hwconfig::board_rev())) return true;  // no sense input: as before
+    doser::dosing::set_start_guard([]() -> const char* {
+        switch (doser::supply::state()) {
+            case State::Missing: return "supply_missing";
+            case State::Low: return "supply_low";
+            default: return nullptr;
+        }
+    });
+    if (doser::supply::boot_state() != State::Missing) return true;
+    ESP_LOGW(TAG, "No 24 V supply: pump drivers, Ethernet and clock module stay off");
+    doser::release_driver_enable();
+    return false;
+}
+
+// 24 V changes while running (only with USB power next to it): missing ->
+// pumps stop, drivers off; back after it was missing -> restart, so the
+// peripherals start cleanly
+void watch_supply() {
+    using doser::supply::State;
+    if (!doser::supply::present()) return;
+    if (doser::supply::poll()) {
+        const State st = doser::supply::state();
+        ESP_LOGW(TAG, "24 V supply %s (%.1f V)", doser::supply::state_name(st), doser::supply::millivolts() / 1000.0);
+        if (st == State::Missing) {
+            doser::motion::lock(true, doser::motion::LockBy::Supply);
+            doser::release_driver_enable();
+        }
+    }
+    if (doser::supply::returned() && doser::supply::state() != State::Missing && !lgal::ota::in_progress()) {
+        ESP_LOGW(TAG, "24 V supply back - restarting");
+        vTaskDelay(pdMS_TO_TICKS(200));  // let the log out
+        esp_restart();
+    }
+}
+
 void update_status_led() {
     using lgal::led::State;
     const auto ns = lgal::net::status();
@@ -214,17 +262,21 @@ void update_status_led() {
     lgal::led::set_idle_brightness(lgal::led::idle_brightness(lgal::settings::led_night(), minute));
 }
 
-void init_hardware() {
+// powered = false: no 24 V, RTC, EEPROM and drivers are not touched (the
+// dosing engine then keeps its state in NVS and does not start jobs)
+void init_hardware(bool powered) {
     // stored parameters (current, microsteps) or defaults
     doser::motion::PumpConfig pumps[doser::kMaxPumps];
     doser::hwconfig::load(pumps);
 
-    // I²C: RTC + EEPROM (absence does not abort startup)
-    doser::rtc::init();
-    doser::eeprom::init();
+    if (powered) {
+        // I²C: RTC + EEPROM (absence does not abort startup)
+        doser::rtc::init();
+        doser::eeprom::init();
 
-    const esp_err_t err = doser::motion::init(pumps, doser::hwconfig::fitted_mask());
-    if (err != ESP_OK) ESP_LOGE(TAG, "Pump hardware not ready: %s", esp_err_to_name(err));
+        const esp_err_t err = doser::motion::init(pumps, doser::hwconfig::fitted_mask());
+        if (err != ESP_OK) ESP_LOGE(TAG, "Pump hardware not ready: %s", esp_err_to_name(err));
+    }
 
     // Dosing engine: load settings (NVS) and run state (EEPROM)
     if (doser::dosing::init() != ESP_OK) ESP_LOGE(TAG, "Dosing engine not ready");
@@ -274,8 +326,9 @@ extern "C" void app_main(void) {
     // event history on the LittleFS partition
     if (doser::history::init() != ESP_OK) ESP_LOGE(TAG, "History not available");
 
-    // 4. Pumps, RTC (drivers stay off until a move starts)
-    init_hardware();
+    // 4. 24 V supply (board v1.1), pumps, RTC (drivers stay off until a move starts)
+    const bool powered = check_supply();
+    init_hardware(powered);
 
     // 5. Network and time
     lgal::net::EthConfig eth{};
@@ -286,6 +339,7 @@ extern "C" void app_main(void) {
     eth.cs = doser::pins::kEthCs;
     eth.int_gpio = doser::pins::kEthInt;
     eth.clock_mhz = CONFIG_LGAL_ETH_SPI_CLOCK_MHZ;
+    eth.enabled = powered;
     ESP_ERROR_CHECK(lgal::net::init(eth));
     lgal::captive::start();
     init_time();
@@ -298,6 +352,9 @@ extern "C" void app_main(void) {
         // Factory state: setup AP permanently open until the setup
         // wizard has been completed.
         lgal::net::start_setup_ap(false);
+    } else if (!powered) {
+        // without Ethernet: reachable also without configured Wi-Fi
+        lgal::net::start_setup_ap(true);
     }
 
     // 6. Web server, system API, dosing and hardware test, OTA
@@ -327,7 +384,7 @@ extern "C" void app_main(void) {
         return true;
     });
     lgal::ota::set_lock_hook([](bool locked) {
-        doser::motion::lock(locked);
+        doser::motion::lock(locked, doser::motion::LockBy::Ota);
     });
     lgal::ota::set_change_hook(doser::mqtt_ha::update_changed);
     lgal::ota::register_handlers(lgal::http::handle());
@@ -351,6 +408,7 @@ extern "C" void app_main(void) {
              doser::hwconfig::board_rev() % 10u, LGAL_BOARD_MODEL);
 
     while (true) {
+        watch_supply();
         update_status_led();
         vTaskDelay(pdMS_TO_TICKS(500));
     }

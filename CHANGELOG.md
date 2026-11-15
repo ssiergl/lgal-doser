@@ -22,6 +22,10 @@ mock; the test on the finished hardware is still pending.
   (`provision.py --pumps`) that a factory reset restores.
 - Board selected at build time: pins and pump count per circuit board, first board `d5v1`
   (LGAL Doser 5, board v1.0); the model is shown in the web UI and in Home Assistant.
+- Board revision from provisioning (`provision.py --board-rev`); on board v1.1 the firmware
+  measures the 24 V supply: without it the board peripherals stay off instead of the device
+  boot-looping on USB power, below 20 V no new doses start, and the device restarts on its own
+  when the supply is back.
 - Firmware for the module variants N8R8, N16R8 and N32R8.
 
 ### Dosing

@@ -463,6 +463,20 @@ static void test_events() {
     CHECK(count_events(Kind::Mode) == modes && count_events(Kind::Settings) == others + 2);
 }
 
+static void test_supply() {
+    // no 24 V: due slots of pump 5 are skipped (not delayed) with the reason
+    const uint64_t b = total(4);
+    dosing::set_start_guard([]() -> const char* { return "supply_missing"; });
+    sim::run_until(sim::utc() + 86400);
+    const auto st = scheduler::status(4);
+    CHECK(total(4) == b && st.skipped > 0 && !st.delayed);
+    CHECK_STR(st.last_skip_reason, "supply_missing");
+    CHECK(is_code(sim::last_event(history::Kind::Skip, 5), "supply_missing"));
+    dosing::set_start_guard(nullptr);
+    sim::run_until(sim::utc() + 86400);
+    CHECK(total(4) > b);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -495,6 +509,8 @@ int main(int argc, char**) {
     test_not_fitted();
     std::printf("Scheduler: history events\n");
     test_events();
+    std::printf("Scheduler: 24 V supply missing\n");
+    test_supply();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

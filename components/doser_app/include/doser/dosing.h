@@ -38,7 +38,7 @@ struct Status {
     float rpm;               // main move
     uint32_t prime_ms;       // priming: duration so far
     // last finished job
-    const char* last_result;  // "success", "aborted", "fault", "locked", nullptr
+    const char* last_result;  // "success", "aborted", "fault", "locked", start guard reason, nullptr
     Activity last_activity;
     uint32_t last_target_ul;
     uint32_t last_done_ul;
@@ -56,6 +56,12 @@ struct Status {
 };
 
 esp_err_t init();  // after motion::init and eeprom::init
+
+// Start guard of the device (24 V supply, doser/supply.h): returns the reason
+// code that blocks every new job ("supply_missing", "supply_low") or nullptr.
+// A job that ends with a fault while it blocks reports that reason.
+// nullptr (default) = no guard.
+void set_start_guard(const char* (*guard)());
 
 // Dosing (amount in µl, speed tier 0..2 or -1 = pump setting).
 // "collision_lock": a lock time to another pump is running; *retry_at is the

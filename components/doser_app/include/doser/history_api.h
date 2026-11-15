@@ -20,7 +20,8 @@
 // codes: results (success, aborted, fault, locked, heartbeat_lost, ...), skip
 //        reasons (missed, daily_limit, delay_timeout, ...),
 //        container/calibration/tube changes (set, refilled) and alarms
-//        (container_low, tube_worn, rtc_fault); unknown: other
+//        (container_low, tube_worn, rtc_fault, supply_missing, supply_low);
+//        unknown: other
 
 #include "esp_err.h"
 #include "esp_http_server.h"

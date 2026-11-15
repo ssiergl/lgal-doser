@@ -594,6 +594,26 @@ idf.py coredump-info -c coredump.elf
 | Monitoring | every 100 ms while running: SG_RESULT, DRV_STATUS (short circuit/over-temperature → stop). In turn every second: driver present, GSTAT. |
 | Clock | The DS3231 stores UTC. Start: time from the RTC. NTP sets the RTC, phase-exact to the start of the second and only from 0.5 s deviation. In between, the firmware measures the deviation at the second edge on every NTP sync; after at least one day this gives the drift in ppm, which corrects the aging offset (about 0.1 ppm per step). Without a time server there is no reference: then the aging offset is set by hand in engineering; with a time server the firmware rejects a manual value (409 `ntp_active`). If the clock module had lost the time at start (oscillator stopped although the firmware had set the clock before), `rtc_lost` in `/api/v1/system/time` reports it: check the backup battery. Without NTP hourly sync from the RTC. POSIX time zone (`CET-1CEST,M3.5.0,M10.5.0/3`) and NTP server (default `pool.ntp.org`, empty = off) configurable via `/api/v1/system/time`, stored in NVS. |
 | EEPROM | AT24C32 at 0x57 (address pins A0–A2 open) with page writes + ACK polling. From M2 the run state of the dosing (see below). At boot the log lists every I²C address that answers. |
+| 24 V sense | Board v1.1 only (`provision.py --board-rev 1.1`; on v1.0 GPIO 6 floats and is never touched): GPIO 6 (ADC1, 12 dB, calibrated, mean of 16 samples) × 11. See [24 V supply](#24-v-supply-board-v11). |
+
+### 24 V supply (board v1.1)
+
+The ESP is powered from 24 V through the R-78E5.0, the board 3.3 V rail (drivers, W5500, clock
+module) through the R-78E3.3. On USB power alone the rail is only back-fed through the I/O pins:
+the modules then misbehave and the I²C bus times out. With the sense input the firmware checks
+the supply before it touches them (`doser/supply.h`, thresholds in `doser/supply_core.h`,
+host-tested):
+
+| Supply | State | Behaviour |
+|---|---|---|
+| below 12 V | `missing` | at start: TMC2209, W5500 and DS3231/EEPROM are not initialised, EN is released (input) so it does not back-feed the rail; Wi-Fi, web UI and OTA run, the setup Wi-Fi opens for 30 min (also with a finished setup), the run state lives in NVS. Critical alarm `supply_missing`, every dose start → 409 `supply_missing`, scheduled doses are skipped with that reason. While running: pumps stop at once (lock), EN released, the job ends with `supply_missing`. |
+| 12–20 V | `low` | normal start, warning `supply_low`; running doses finish, new ones → 409 `supply_low` (scheduled: skipped) |
+| from 20 V | `ok` | normal operation |
+
+Hysteresis 0.5 V on both thresholds; at runtime a change needs 3 readings in a row (every
+0.5 s). When the supply comes back after it was missing (at start or later), the device restarts
+on its own (not during an update), so the peripherals start cleanly. Without the board revision
+(`board_rev` missing = v1.0) none of this runs and the device behaves as before.
 
 Defaults per pump (changeable in the engineering menu, stored in NVS): 600 mA run current,
 0 mA holding current, 16 microsteps, 200 full steps/rev (step angle 1.8°), ramp 600 rpm per s,
@@ -683,12 +703,12 @@ the history too; the engineering menu deletes it on its own and starts the amoun
 
 | `kind` | Content |
 |---|---|
-| `dose`, `prime`, `calib_run` | target and actual amount, result (`success`, `aborted`, `fault`, `locked`, `heartbeat_lost`, `max_duration`), trigger (`schedule`, `manual`, `api`, `boost`, `mqtt`) |
-| `skip` | skipped dose with reason (`missed`, `daily_limit`, `delay_timeout`, …); after a power cut one entry with `count` |
+| `dose`, `prime`, `calib_run` | target and actual amount, result (`success`, `aborted`, `fault`, `locked`, `supply_missing`, `heartbeat_lost`, `max_duration`), trigger (`schedule`, `manual`, `api`, `boost`, `mqtt`) |
+| `skip` | skipped dose with reason (`missed`, `daily_limit`, `delay_timeout`, `supply_missing`, `supply_low`, …); after a power cut one entry with `count` |
 | `container` | container set or refilled (`remaining_ml`, `capacity_ml`) |
 | `calibration` | applied calibration (`ul_per_rev`, `measured_ml`, `target_ml`) |
 | `tube` | tube counter set (`hours`) |
-| `alarm` | start of an alarm: `container_low`, `tube_worn`, `rtc_fault` (pump 0 = device); driver faults and daily limit are already in as result or skipped dose |
+| `alarm` | start of an alarm: `container_low`, `tube_worn`, `rtc_fault`, `supply_missing`, `supply_low` (pump 0 = device); driver faults and daily limit are already in as result or skipped dose |
 | `alarm_end` | end of an alarm, same codes |
 | `boost` | `started` (`total_ml`, `days` or `doses`), `cancelled` (by hand, `done_ml` so far), `finished` (by itself: all doses given or period over, `done_ml`) |
 | `mode` | mode changed (`mode`: `auto`, `manual_only`, `disabled`) |
@@ -820,12 +840,12 @@ LED states, highest priority first:
 
 | Colour | Meaning |
 |---|---|
-| red, fast blinking | alarm: a scheduled dose skipped today because of the daily limit, last run with driver fault, clock module not answering |
+| red, fast blinking | alarm: a scheduled dose skipped today because of the daily limit, last run with driver fault, clock module not answering, no 24 V supply (board v1.1) |
 | magenta/white | firmware update running |
 | violet pulsing | calibration or priming |
 | cyan pulsing | pump running |
 | orange pulsing | setup Wi-Fi on |
-| yellow, slow blinking | warning: container almost empty (lasts fewer days than the alarm threshold, default 4), tube life reached, no network, no valid time |
+| yellow, slow blinking | warning: container almost empty (lasts fewer days than the alarm threshold, default 4), tube life reached, no network, no valid time, 24 V supply below 20 V (board v1.1) |
 | green / turquoise | ready, connected via LAN / Wi-Fi |
 | white fading in | start |
 

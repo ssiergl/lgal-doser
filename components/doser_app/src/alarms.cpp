@@ -11,8 +11,8 @@ bool worn(const Pump& p) { return p.tube_percent >= 100.0f; }
 
 Output evaluate(const Input& in) {
     Output o;
-    o.critical = !in.rtc_ok;
-    o.warning = !in.clock_valid;
+    o.critical = !in.rtc_ok || in.supply_missing;
+    o.warning = !in.clock_valid || in.supply_low;
     for (const Pump& p : in.pumps) {
         if (!p.active) continue;
         if (p.fault || p.limit_hit_today) o.critical = true;
@@ -23,6 +23,8 @@ Output evaluate(const Input& in) {
 
 uint16_t conditions(const Input& in) {
     uint16_t m = in.rtc_ok ? 0 : uint16_t(1u << kRtcBit);
+    if (in.supply_missing) m |= uint16_t(1u << kSupplyMissingBit);
+    if (in.supply_low) m |= uint16_t(1u << kSupplyLowBit);
     for (int i = 0; i < kMaxPumps; ++i) {
         const Pump& p = in.pumps[i];
         if (!p.active) continue;

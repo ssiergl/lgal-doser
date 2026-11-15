@@ -173,6 +173,14 @@ $CXX \
 
 echo
 $CXX \
+    -I components/doser_hal/include \
+    tests/host/test_supply.cpp \
+    components/doser_hal/src/supply_core.cpp \
+    -o "$OUT/supply"
+"$OUT/supply"
+
+echo
+$CXX \
     -I components/doser_app/include \
     -I components/doser_hal/include \
     tests/host/test_rtc_trim.cpp \

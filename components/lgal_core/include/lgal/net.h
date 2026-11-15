@@ -21,6 +21,7 @@ struct EthConfig {
     spi_host_device_t spi_host;
     gpio_num_t mosi, miso, sclk, cs, int_gpio;
     int clock_mhz;
+    bool enabled = true;  // false: the W5500 is not touched (its supply is off), as if missing
 };
 
 // Initializes netif, event loop, Ethernet, Wi-Fi and mDNS and applies the

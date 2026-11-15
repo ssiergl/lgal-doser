@@ -76,4 +76,11 @@ constexpr gpio_num_t kLedBlue = GPIO_NUM_45;  // strapping pin, only drive after
 // Button reset/setup, active low (strapping pin GPIO0)
 constexpr gpio_num_t kButton = GPIO_NUM_0;
 
+// 24 V sense from board v1.1 on (hwconfig::board_rev() >= kSupplySenseRev):
+// +24 V - 100k (R15) - GPIO6 (ADC1_CH5) - 10k (R16) - GND, 100 nF (C16).
+// Board v1.0 leaves GPIO6 open; the firmware does not touch it there.
+constexpr gpio_num_t kSupplySense = GPIO_NUM_6;
+constexpr uint8_t kSupplySenseRev = 11;
+constexpr uint32_t kSupplyDivider = 11;  // (100k + 10k) / 10k
+
 }  // namespace doser::pins

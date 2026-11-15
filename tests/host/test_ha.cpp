@@ -198,6 +198,11 @@ static void test_states() {
     write_device_state(j3, ds);
     CHECK(std::string(j3.c_str()) ==
           R"({"critical":true,"warning":false,"conditions":["rtc_fault","pump1_container_low","pump5_tube_worn"]})");
+    ds.conditions = uint16_t((1u << alarms::kSupplyMissingBit) | (1u << alarms::kSupplyLowBit));
+    lgal::Json j3b;
+    write_device_state(j3b, ds);
+    CHECK(std::string(j3b.c_str()) ==
+          R"({"critical":true,"warning":false,"conditions":["supply_missing","supply_low"]})");
 
     UpdateState u;
     u.installed = "0.1.0";

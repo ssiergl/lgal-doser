@@ -113,6 +113,9 @@ int tier_or_default(const Pump& p, int tier) {
     return (tier >= 0 && tier < dose::kTiers) ? tier : p.set.speed_tier;
 }
 
+const char* (*s_guard)() = nullptr;
+const char* guard_reason() { return s_guard ? s_guard() : nullptr; }
+
 const char* map_motion_err(esp_err_t e) {
     switch (e) {
         case ESP_OK: return nullptr;
@@ -139,6 +142,7 @@ const char* precheck(int i) {
     if (!hwconfig::fitted(i)) return "pump_not_fitted";
     if (p.set.mode == dose::Mode::Disabled) return "pump_disabled";
     if (p.job.act != Activity::Idle || motion::status(i).running) return "pump_busy";
+    if (const char* e = guard_reason()) return e;
     if (motion::locked()) return "locked";
     return nullptr;
 }
@@ -187,7 +191,8 @@ void refund(Pump& p, uint32_t ul) {
 void finish(int i, bool fault) {
     Pump& p = s_p[i];
     Job& j = p.job;
-    const char* result = fault ? (motion::locked() ? "locked" : "fault")
+    const char* blocked = fault ? guard_reason() : nullptr;
+    const char* result = fault ? (blocked ? blocked : motion::locked() ? "locked" : "fault")
                          : j.aborted ? "aborted"
                          : (j.act == Activity::Priming && j.reason) ? j.reason
                                                                     : "success";
@@ -354,6 +359,8 @@ const char* trigger_str(Trigger t) {
         default: return "manual";
     }
 }
+
+void set_start_guard(const char* (*guard)()) { s_guard = guard; }
 
 esp_err_t init() {
     if (s_mx) return ESP_OK;

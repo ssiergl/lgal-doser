@@ -43,6 +43,18 @@ void safe_init() {
     ESP_LOGI(TAG, "Drivers disabled (EN=HIGH), STEP pins LOW");
 }
 
+void release_driver_enable() {
+    gpio_config_t en{};
+    en.pin_bit_mask = 1ULL << pins::kDriverEnable;
+    en.mode = GPIO_MODE_INPUT;
+    en.pull_up_en = GPIO_PULLUP_DISABLE;
+    en.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    en.intr_type = GPIO_INTR_DISABLE;
+    gpio_config(&en);
+    s_enabled = false;
+    ESP_LOGI(TAG, "EN released (board without 24 V)");
+}
+
 void set_drivers_enabled(bool enabled) {
     gpio_set_level(pins::kDriverEnable, enabled ? 0 : 1);
     s_enabled = enabled;

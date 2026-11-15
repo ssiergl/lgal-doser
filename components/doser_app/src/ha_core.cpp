@@ -231,6 +231,8 @@ void write_update_state(lgal::Json& j, const UpdateState& s) {
 void write_device_state(lgal::Json& j, const DeviceState& s) {
     j.obj().kv("critical", s.critical).kv("warning", s.warning).arr("conditions");
     if (s.conditions & (1u << alarms::kRtcBit)) j.v("rtc_fault");
+    if (s.conditions & (1u << alarms::kSupplyMissingBit)) j.v("supply_missing");
+    if (s.conditions & (1u << alarms::kSupplyLowBit)) j.v("supply_low");
     for (int p = 0; p < kPumps; ++p)
         for (int c = 0; c < alarms::kConds; ++c) {
             const auto cond = static_cast<alarms::Cond>(c);

@@ -294,12 +294,12 @@ The LED always shows the most important state:
 
 | LED | Meaning |
 |---|---|
-| red, fast blinking | alarm (daily limit, driver fault, clock module) |
+| red, fast blinking | alarm (daily limit, driver fault, clock module, no 24 V supply) |
 | magenta/white | firmware update running |
 | violet pulsing | calibrating or filling the tube |
 | cyan pulsing | a pump is running |
 | orange pulsing | setup Wi-Fi on |
-| yellow, slow blinking | warning (container almost empty, tube, no network, no time) |
+| yellow, slow blinking | warning (container almost empty, tube, no network, no time, 24 V supply too low) |
 | green / turquoise | ready, connected via LAN / Wi-Fi |
 | white fading in | start |
 

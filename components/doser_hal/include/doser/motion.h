@@ -68,8 +68,10 @@ void stop(int pump, bool immediate);
 void stop_all(bool immediate);
 bool any_running();
 
-// OTA lock: true = stop everything immediately, EN off, no new moves.
-void lock(bool locked);
+// Lock: true = stop everything immediately, EN off, no new moves. Each
+// reason locks on its own; the pumps are free when no reason is left.
+enum class LockBy : uint8_t { Ota = 1, Supply = 2 };
+void lock(bool locked, LockBy by = LockBy::Ota);
 bool locked();
 
 PumpStatus status(int pump);

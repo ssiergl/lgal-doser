@@ -1,5 +1,6 @@
 #include "doser/motion.h"
 
+#include <atomic>
 #include <cinttypes>
 #include <cstdlib>
 
@@ -53,7 +54,7 @@ Pump s_pump[kN];
 SemaphoreHandle_t s_mutex = nullptr;
 SemaphoreHandle_t s_ready = nullptr;
 esp_err_t s_init_err = ESP_OK;
-volatile bool s_locked = false;
+std::atomic<uint8_t> s_locks{0};  // LockBy bits
 int64_t s_last_busy_us = 0;
 
 struct Lock {
@@ -278,7 +279,7 @@ esp_err_t run(int pump, const Move& move) {
     auto* ch = step::channel(pump);
     if (!ch) return ESP_ERR_INVALID_STATE;
     Lock l;
-    if (s_locked) return ESP_ERR_INVALID_STATE;
+    if (s_locks) return ESP_ERR_INVALID_STATE;
     Pump& p = s_pump[pump];
     if (!p.fitted) return ESP_ERR_NOT_FOUND;
     if (ch->busy()) return ESP_ERR_INVALID_STATE;
@@ -337,17 +338,18 @@ void stop_all(bool immediate) {
 
 bool any_running() { return any_busy(); }
 
-void lock(bool locked) {
+void lock(bool locked, LockBy by) {
+    const auto bit = static_cast<uint8_t>(by);
     if (locked) {
-        s_locked = true;
+        s_locks |= bit;
         stop_all(true);
         set_drivers_enabled(false);
     } else {
-        s_locked = false;
+        s_locks &= static_cast<uint8_t>(~bit);
     }
 }
 
-bool locked() { return s_locked; }
+bool locked() { return s_locks != 0; }
 
 bool drivers_enabled() { return doser::drivers_enabled(); }
 

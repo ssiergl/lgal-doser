@@ -25,6 +25,29 @@ static alarms::Output eval_one(const alarms::Pump& p, bool rtc_ok = true, bool c
     return alarms::evaluate(in);
 }
 
+static void test_supply() {
+    std::printf("Alarms: 24 V supply\n");
+    alarms::Input in;
+    in.supply_missing = true;
+    auto o = alarms::evaluate(in);
+    CHECK(o.critical && !o.warning);
+    CHECK(alarms::conditions(in) == (1u << alarms::kSupplyMissingBit));
+    in = {};
+    in.supply_low = true;
+    o = alarms::evaluate(in);
+    CHECK(!o.critical && o.warning);
+    CHECK(alarms::conditions(in) == (1u << alarms::kSupplyLowBit));
+    // device bits stay clear of the pump bits
+    in = {};
+    for (auto& p : in.pumps) {
+        p.tracked = true;
+        p.remaining_days = 0.0f;
+        p.tube_percent = 100.0f;
+    }
+    const uint16_t pumps = alarms::conditions(in);
+    CHECK(!(pumps & (1u << alarms::kSupplyMissingBit | 1u << alarms::kSupplyLowBit | 1u << alarms::kRtcBit)));
+}
+
 static void test_alarms() {
     std::printf("Alarms\n");
     alarms::Pump p;
@@ -148,6 +171,7 @@ static void test_conditions() {
 
 int main() {
     test_alarms();
+    test_supply();
     test_conditions();
     test_night();
     std::printf("%d checks, %d failures\n", g_checks, g_fail);

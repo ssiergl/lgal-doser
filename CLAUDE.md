@@ -127,7 +127,8 @@ Please check how many independent hardware clocks (RMT/MCPWM/LEDC) the ESP32-S3 
   ADC at 12 dB attenuation ≈ 34 V). Purpose: the firmware can tell that the board has no 24 V
   (e.g. only USB power, where the modules are back-fed through the I/O pins) and skip the
   peripherals instead of boot-looping. Board v1.0 has no divider, GPIO 6 floats there; the
-  firmware must only use the input when it knows the board is v1.1.
+  firmware must only use the input when it knows the board is v1.1 (`provision.py --board-rev
+  1.1`, see `docs/technical.md`).
 - **RGB light:** common anode on 5 V, the channels are switched to GND through NPN transistors:
   GPIO HIGH = colour on. PWM for mixed colours and brightness.
 - **Button (GPIO 0):** hold 3 s = setup mode (access point), hold 10 s = factory reset. Pressed at

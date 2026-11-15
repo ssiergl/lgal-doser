@@ -8,6 +8,8 @@ idf_component_register(
         "src/stepgen.cpp"
         "src/motion.cpp"
         "src/i2c_devices.cpp"
+        "src/supply_core.cpp"
+        "src/supply.cpp"
     INCLUDE_DIRS "include"
     REQUIRES
         esp_driver_gpio
@@ -18,6 +20,7 @@ idf_component_register(
         esp_driver_pcnt
         esp_driver_gptimer
         esp_driver_i2c
+        esp_adc
         esp_timer
         log
     PRIV_REQUIRES

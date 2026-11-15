@@ -738,10 +738,12 @@ esp_err_t init(const EthConfig& eth) {
     ESP_LOGI(TAG, "Mode %s, LAN %s, Wi-Fi %s", netcfg::mode_name(s_cfg.mode), s_cfg.lan.dhcp ? "DHCP" : "static",
              netcfg::wlan_configured(s_cfg) ? (s_cfg.wlan.dhcp ? "DHCP" : "static") : "not configured");
 
-    err = init_ethernet(eth);
+    err = eth.enabled ? init_ethernet(eth) : ESP_ERR_INVALID_STATE;
     if (err == ESP_OK) {
         update([](Status& s) { s.eth_present = true; });
         ESP_LOGI(TAG, "Ethernet (W5500) ready");
+    } else if (!eth.enabled) {
+        ESP_LOGW(TAG, "Ethernet off (no supply)");
     } else {
         ESP_LOGE(TAG, "Ethernet unavailable: %s", esp_err_to_name(err));
     }
