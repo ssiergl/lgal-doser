@@ -510,10 +510,28 @@
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "priority": 2147483647,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 0.5,
+        "track_width": 0.3,
         "tuning_profile": "",
-        "via_diameter": 0.9,
-        "via_drill": 0.45,
+        "via_diameter": 0.7,
+        "via_drill": 0.35,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.25,
+        "diff_pair_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "Motor",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 1,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.8,
+        "tuning_profile": "",
+        "via_diameter": 1.0,
+        "via_drill": 0.5,
         "wire_width": 6
       },
       {
@@ -544,12 +562,12 @@
         "microvia_drill": 0.1,
         "name": "Supply",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
-        "priority": 1,
+        "priority": 2,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 1.0,
+        "track_width": 0.8,
         "tuning_profile": "",
-        "via_diameter": 1.2,
-        "via_drill": 0.6,
+        "via_diameter": 1.0,
+        "via_drill": 0.5,
         "wire_width": 6
       }
     ],
@@ -561,23 +579,27 @@
     "netclass_patterns": [
       {
         "netclass": "Power",
-        "pattern": "+24V"
+        "pattern": "/+24V"
       },
       {
         "netclass": "Power",
-        "pattern": "VIN_*"
+        "pattern": "/VIN_*"
       },
       {
-        "netclass": "Power",
-        "pattern": "M*_*"
-      },
-      {
-        "netclass": "Supply",
-        "pattern": "+3V3"
+        "netclass": "Motor",
+        "pattern": "/M?_*"
       },
       {
         "netclass": "Supply",
-        "pattern": "5V_ESP"
+        "pattern": "/+3V3"
+      },
+      {
+        "netclass": "Supply",
+        "pattern": "/+5V"
+      },
+      {
+        "netclass": "Supply",
+        "pattern": "/5V_ESP"
       },
       {
         "netclass": "Supply",

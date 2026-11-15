@@ -40,7 +40,7 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
 
 ## Open points
 
-- Target depth (and maximum length) – from a placement study or the planned enclosure.
+- ~~Target depth (and maximum length).~~ 166.5 × 54 mm, see step 3.
 - ~~Pinout of the RTC cable connector.~~ Same as J16: 3.3 V, SDA, SCL, GND.
 - New enclosure for v1.1 in `d5v1/enclosure/` (the narrower board does not fit the v1.0 one).
 
@@ -63,5 +63,19 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
      kit between its socket rows; the ESP footprint courtyard covers only the socket strips and
      the antenna end. Height limit there: 8 mm (kit PCB about 9.5 mm above the board).
    - Five M3 mounting holes: three in the front row, two in the rear row.
-   Next: routing (4 layers, GND plane), silkscreen, DRC with parity.
-4. BOM v1.1 (renumber the items), Gerber/placement files after review.
+   Confirmed by the user 2026-11-16: height under the ESP kit, vertical pump plugs, button and
+   mounting holes as placed.
+4. ~~Routing, silkscreen, DRC.~~ Done 2026-11-16, autorouted with Freerouting 2.5:
+   - Layers: F.Cu and B.Cu signals with GND fill, In1.Cu solid GND, In2.Cu +3V3 plane. All parts
+     are through-hole, so every GND and +3V3 pin connects to its plane directly.
+   - Net classes: +24V / VIN_* 1.5 mm, motor lines and +5V / 5V_ESP 0.8 mm, signals 0.3 mm,
+     vias 0.7 / 0.35 mm.
+   - No copper fill under the ESP antenna (x < 104.6 mm on all layers); the only tracks there are
+     two short stubs at the antenna-end pins of the kit (GND, 3V3).
+   - Mounting holes: `MountingHole_3.2mm_M3`. Silkscreen: pump numbers 1–5 next to the plugs,
+     connector names, "LGAL Doser 5 / d5v1 v1.1" (under the ESP kit and on the bottom side),
+     "PUMP 1" … "PUMP 5" on the bottom side.
+   - DRC: 0 errors, 0 unconnected. Remaining warnings: the SW1 footprint outline crosses its own
+     pads (as in v1.0), the ESP kit outline overhangs the edge (antenna, intended), and the
+     schematic parity reports the TMC2209 symbol pins 17/18 that have no pad (as in v1.0).
+5. BOM v1.1 (renumber the items), Gerber/placement files after review.
