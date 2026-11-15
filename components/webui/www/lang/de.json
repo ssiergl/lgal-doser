@@ -600,7 +600,7 @@
   "cal.dlg.fill": "Der Schlauch muss bis zum Ende mit Flüssigkeit gefüllt sein, Luft verfälscht die Messung. Falls nicht: Knopf halten, bis Flüssigkeit austritt (in ein Glas oder zurück in den Behälter).",
   "cal.dlg.q2": "2 · Schlauchende in den Messbecher",
   "cal.dlg.cup": "Messbecher leeren und das Schlauchende hineinhalten. Die Pumpe fördert dann etwa {ml} ml.",
-  "cal.dlg.ok": "Gefüllt – starten",
+  "cal.dlg.ok": "Starten",
   "cal.target": "Zielmenge",
   "cal.start": "Kalibrierung starten",
   "cal.running": "Kalibrierung läuft … {done} ml",

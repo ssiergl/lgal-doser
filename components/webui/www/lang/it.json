@@ -605,7 +605,7 @@
   "cal.dlg.fill": "Il tubo deve essere pieno di liquido fino all’estremità, l’aria falsa la misura. Altrimenti: tieni premuto il pulsante finché esce il liquido (in un bicchiere o di nuovo nella tanica).",
   "cal.dlg.q2": "2 · Estremità del tubo nel cilindro graduato",
   "cal.dlg.cup": "Svuota il cilindro graduato e tienici dentro l’estremità del tubo. Poi la pompa eroga circa {ml} ml.",
-  "cal.dlg.ok": "Pieno – avvia",
+  "cal.dlg.ok": "Avvia",
   "cal.target": "Quantità obiettivo",
   "cal.start": "Avvia la calibrazione",
   "cal.running": "Calibrazione in corso … {done} ml",

@@ -605,7 +605,7 @@
   "cal.dlg.fill": "De slang moet tot het uiteinde met vloeistof gevuld zijn, lucht vertekent de meting. Zo niet: houd de knop ingedrukt tot er vloeistof uitkomt (in een glas of terug in de voorraadfles).",
   "cal.dlg.q2": "2 · Slanguiteinde in het maatglas",
   "cal.dlg.cup": "Leeg het maatglas en houd het slanguiteinde erin. Daarna geeft de pomp ongeveer {ml} ml af.",
-  "cal.dlg.ok": "Gevuld – starten",
+  "cal.dlg.ok": "Starten",
   "cal.target": "Doelhoeveelheid",
   "cal.start": "Kalibratie starten",
   "cal.running": "Kalibratie loopt … {done} ml",

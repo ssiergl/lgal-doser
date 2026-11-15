@@ -605,7 +605,7 @@
   "cal.dlg.fill": "Hortum ucuna kadar sıvıyla dolu olmalı, hava ölçümü bozar. Değilse: sıvı gelene kadar düğmeyi basılı tutun (bir bardağa veya kaba geri).",
   "cal.dlg.q2": "2 · Hortum ucu dereceli silindirde",
   "cal.dlg.cup": "Dereceli silindiri boşaltın ve hortum ucunu içinde tutun. Ardından pompa yaklaşık {ml} ml verir.",
-  "cal.dlg.ok": "Dolu – başlat",
+  "cal.dlg.ok": "Başlat",
   "cal.target": "Hedef miktar",
   "cal.start": "Kalibrasyonu başlat",
   "cal.running": "Kalibrasyon sürüyor … {done} ml",

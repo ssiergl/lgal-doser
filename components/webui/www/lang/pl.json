@@ -605,7 +605,7 @@
   "cal.dlg.fill": "Wężyk musi być wypełniony płynem do samego końca, powietrze zafałszowuje pomiar. Jeśli nie: przytrzymaj przycisk, aż wypłynie płyn (do szklanki lub z powrotem do pojemnika).",
   "cal.dlg.q2": "2 · Koniec wężyka w cylindrze miarowym",
   "cal.dlg.cup": "Opróżnij cylinder miarowy i trzymaj w nim koniec wężyka. Potem pompa podaje ok. {ml} ml.",
-  "cal.dlg.ok": "Napełniony – start",
+  "cal.dlg.ok": "Start",
   "cal.target": "Ilość docelowa",
   "cal.start": "Rozpocznij kalibrację",
   "cal.running": "Kalibracja trwa … {done} ml",

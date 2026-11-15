@@ -605,7 +605,7 @@
   "cal.dlg.fill": "Le tuyau doit être rempli de liquide jusqu’au bout, l’air fausse la mesure. Sinon : maintenez le bouton jusqu’à ce que du liquide sorte (dans un verre ou de retour dans le réservoir).",
   "cal.dlg.q2": "2 · Bout du tuyau dans le verre doseur",
   "cal.dlg.cup": "Videz le verre doseur et tenez-y le bout du tuyau. La pompe délivre ensuite environ {ml} ml.",
-  "cal.dlg.ok": "Rempli – démarrer",
+  "cal.dlg.ok": "Démarrer",
   "cal.target": "Quantité cible",
   "cal.start": "Démarrer l’étalonnage",
   "cal.running": "Étalonnage en cours … {done} ml",

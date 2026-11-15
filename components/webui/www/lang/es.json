@@ -605,7 +605,7 @@
   "cal.dlg.fill": "El tubo debe estar lleno de líquido hasta el extremo; el aire falsea la medición. Si no: mantenga pulsado el botón hasta que salga líquido (en un vaso o de vuelta al recipiente).",
   "cal.dlg.q2": "2 · Extremo del tubo en la probeta",
   "cal.dlg.cup": "Vacíe la probeta y sujete en ella el extremo del tubo. Después la bomba entrega unos {ml} ml.",
-  "cal.dlg.ok": "Lleno – iniciar",
+  "cal.dlg.ok": "Iniciar",
   "cal.target": "Cantidad objetivo",
   "cal.start": "Iniciar calibración",
   "cal.running": "Calibrando … {done} ml",
