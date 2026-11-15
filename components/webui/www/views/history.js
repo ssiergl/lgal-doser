@@ -264,7 +264,7 @@ function EventsCard({ pump }) {
         <option value="">${t('hi.all')}</option>
         ${kKinds.map(k => html`<option value=${k}>${t('hk.' + k)}</option>`)}
       </select>
-      <${Seg} value=${f.days} onChange=${v => set({ days: v })} options=${[7, 30, 60].map(n => [n, t('hi.days', { n })])}/>
+      <${Seg} value=${f.days} onChange=${v => set({ days: v })} options=${kRanges.map(n => [n, t('hi.days', { n })])}/>
     </div>
     ${err && html`<p class="msg err">${errText(err)}</p>`}
     ${!list ? html`<p class="mut">…</p>` : !list.length ? html`<p class="mut">${t('hi.none')}</p>` : html`
