@@ -116,6 +116,8 @@ Please check how many independent hardware clocks (RMT/MCPWM/LEDC) the ESP32-S3 
   main connection, Wi-Fi optional as a fallback. The antenna sits at the edge of the enclosure.
 - **RTC:** DS3231 on I²C, address 0x68 (EEPROM AT24C32 at 0x57). Synchronise the time via NTP,
   RTC as the fallback without network. Backup battery LIR2032, or CR2032 without charging diode.
+  Board v1.0: the module sits on socket J10 (SCL, SDA, VCC, GND). Board v1.1: the module is
+  connected by cable to J10, a JST-XH 4-pin with the same pin order as J16.
 - **I²C expansion:** connector J16 (3.3 V, SDA, SCL, GND) for later extensions, e.g. a display.
 - **J11–J15 (board v1.0 only):** 5× JST-XH 3-pin (3.3 V / signal / GND) on GPIO 7, 15–18, on
   the board for later extensions; fitting them is optional. Board v1.1 has no J11–J15, the pins

@@ -5049,6 +5049,26 @@
 		(at 157.48 137.16)
 		(uuid "ff8fd90a-2883-4c4a-b983-7861ca87298c")
 	)
+	(label "I2C_SCL"
+		(at 213.36 111.76 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "700cb7b1-fb5a-4429-858a-22491a6f7dba")
+	)
+	(label "+3V3"
+		(at 213.36 106.68 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "b980b0f6-bdf7-4455-b2b8-27836f9c27ad")
+	)
 	(label "UART_B"
 		(at 40.64 55.88 180)
 		(effects
@@ -5379,16 +5399,6 @@
 		)
 		(uuid "23e1f2e0-91a0-4578-b2e7-ebfef340055a")
 	)
-	(label "+3V3"
-		(at 213.36 111.76 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "242e3f6a-5837-49e6-b63a-813367f437b8")
-	)
 	(label "GND"
 		(at 186.69 58.42 270)
 		(effects
@@ -5498,16 +5508,6 @@
 			(justify left bottom)
 		)
 		(uuid "39ccd8f0-bbd2-4bac-a2e9-ffec895a7d65")
-	)
-	(label "I2C_SCL"
-		(at 213.36 106.68 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "3a8ec951-05a1-4f36-8033-98759bd1d900")
 	)
 	(label "+24V"
 		(at 177.8 171.45 90)
@@ -8362,7 +8362,7 @@
 				)
 			)
 		)
-		(property "Value" "RTC-Modul flach (SCL,SDA,VCC,GND)"
+		(property "Value" "RTC (cable)"
 			(at 218.44 116.84 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8372,7 +8372,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical"
+		(property "Footprint" "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical"
 			(at 218.44 109.22 0)
 			(hide yes)
 			(show_name no)
