@@ -7414,7 +7414,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 3, UART A)"
+		(property "Value" "TMC2209 (addr. 3, UART A)"
 			(at 190.5 167.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7715,7 +7715,7 @@
 				)
 			)
 		)
-		(property "Value" "Mentor 2660.8302 RGB, gem. Anode (Pinfolge prüfen)"
+		(property "Value" "Mentor 2660.8302 RGB, common anode (check pin order)"
 			(at 160.02 127 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7889,7 +7889,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 0, UART B)"
+		(property "Value" "TMC2209 (addr. 0, UART B)"
 			(at 241.3 167.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8273,7 +8273,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 4"
+		(property "Value" "Pump 4"
 			(at 190.5 198.12 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8792,7 +8792,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 0, UART A)"
+		(property "Value" "TMC2209 (addr. 0, UART A)"
 			(at 38.1 167.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9176,7 +9176,7 @@
 				)
 			)
 		)
-		(property "Value" "3,15A T (TR5)"
+		(property "Value" "3.15A T (TR5)"
 			(at 143.51 25.4 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9768,7 +9768,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 2, UART A)"
+		(property "Value" "TMC2209 (addr. 2, UART A)"
 			(at 139.7 167.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10145,7 +10145,7 @@
 				)
 			)
 		)
-		(property "Value" "24V IN (Hohlbuchse 5,5x2,5)"
+		(property "Value" "24V IN (barrel jack 5.5x2.5)"
 			(at 128.27 25.4 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10748,7 +10748,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 5"
+		(property "Value" "Pump 5"
 			(at 241.3 198.12 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11088,7 +11088,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 3"
+		(property "Value" "Pump 3"
 			(at 139.7 198.12 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11345,7 +11345,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 1"
+		(property "Value" "Pump 1"
 			(at 38.1 198.12 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11517,7 +11517,7 @@
 				)
 			)
 		)
-		(property "Value" "I2C Erweiterung"
+		(property "Value" "I2C extension"
 			(at 233.68 116.84 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11943,7 +11943,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 1, UART A)"
+		(property "Value" "TMC2209 (addr. 1, UART A)"
 			(at 88.9 167.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12242,7 +12242,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 2"
+		(property "Value" "Pump 2"
 			(at 88.9 198.12 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12331,7 +12331,7 @@
 				)
 			)
 		)
-		(property "Value" "USR-ES1 Reihe A (G,G,MO,SCK,CS,INT)"
+		(property "Value" "USR-ES1 row A (G,G,MO,SCK,CS,INT)"
 			(at 180.34 92.71 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12422,7 +12422,7 @@
 				)
 			)
 		)
-		(property "Value" "USR-ES1 Reihe B (G,V,V,NC,RST,MI)"
+		(property "Value" "USR-ES1 row B (G,V,V,NC,RST,MI)"
 			(at 203.2 92.71 0)
 			(show_name no)
 			(do_not_autoplace no)
