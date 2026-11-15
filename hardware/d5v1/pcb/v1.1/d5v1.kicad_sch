@@ -5769,7 +5769,7 @@
 		)
 		(uuid "5e17e246-c312-4b98-b825-f0bd77c3efac")
 	)
-	(label "STEP1"
+	(label "STEP5"
 		(at 40.64 45.72 180)
 		(effects
 			(font
@@ -5949,7 +5949,7 @@
 		)
 		(uuid "6d33edb3-c9bc-468a-95bb-268ba0a7a4c0")
 	)
-	(label "STEP2"
+	(label "STEP4"
 		(at 40.64 48.26 180)
 		(effects
 			(font
@@ -6049,7 +6049,7 @@
 		)
 		(uuid "75f7e13d-b3fe-42a0-8643-027e6117d935")
 	)
-	(label "STEP5"
+	(label "STEP1"
 		(at 86.36 68.58 0)
 		(effects
 			(font
@@ -7059,7 +7059,7 @@
 		)
 		(uuid "f969949a-3d46-451c-955e-4418ad523378")
 	)
-	(label "STEP4"
+	(label "STEP2"
 		(at 86.36 71.12 0)
 		(effects
 			(font
@@ -12602,7 +12602,7 @@
 		)
 		(uuid "bb2870ad-be92-41f3-9c45-b7bfa02a7b8e")
 	)
-	(label "STEP5"
+	(label "STEP1"
 		(at 20.32 142.23999999999998 180)
 		(effects
 			(font
@@ -12612,7 +12612,7 @@
 		)
 		(uuid "02972576-ae88-457d-9319-4c6df850dc5a")
 	)
-	(label "STEP4"
+	(label "STEP2"
 		(at 71.12 142.23999999999998 180)
 		(effects
 			(font
@@ -12622,7 +12622,7 @@
 		)
 		(uuid "a3da5f29-9e23-4bd7-8c73-99214e84945a")
 	)
-	(label "STEP2"
+	(label "STEP4"
 		(at 172.72 142.23999999999998 180)
 		(effects
 			(font
@@ -12632,7 +12632,7 @@
 		)
 		(uuid "f19ad084-70d1-4eab-aa3f-24d3ace80f13")
 	)
-	(label "STEP1"
+	(label "STEP5"
 		(at 223.52 142.23999999999998 180)
 		(effects
 			(font
