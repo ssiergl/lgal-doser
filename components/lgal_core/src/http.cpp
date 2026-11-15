@@ -32,11 +32,14 @@ constexpr int kOtherSockets = 3;
 static_assert(kMaxOpenSockets + 2 + kOtherSockets <= CONFIG_LWIP_MAX_SOCKETS,
               "CONFIG_LWIP_MAX_SOCKETS too small for the HTTP server");
 
-// Browsers asking for a page get a redirect to the login page, API clients JSON
+// Browsers asking for a page get a redirect to the login page, API clients JSON.
+// Chrome's Accept header for a page is 135 characters long. A longer header is
+// cut to the buffer (ESP_ERR_HTTPD_RESULT_TRUNC), but browsers put text/html
+// first, so the start is enough.
 bool wants_html(httpd_req_t* req) {
-    char accept[128];
-    return httpd_req_get_hdr_value_str(req, "Accept", accept, sizeof(accept)) == ESP_OK &&
-           std::strstr(accept, "text/html") != nullptr;
+    char accept[160];
+    const esp_err_t err = httpd_req_get_hdr_value_str(req, "Accept", accept, sizeof(accept));
+    return (err == ESP_OK || err == ESP_ERR_HTTPD_RESULT_TRUNC) && std::strstr(accept, "text/html") != nullptr;
 }
 
 void redirect_login(httpd_req_t* req, bool engineering) {

@@ -79,6 +79,7 @@ i18n.add({
 en:{
  'page.title':'LG Aquatic Life – Sign in','title':'Sign in','user':'User','pw':'Password','login.btn':'Sign in',
  'login.first':'Password saved. Sign in with it once now – your browser can remember it. Then the setup goes on.',
+ 'login.required':'You are not signed in. Sign in to open this page.',
  'login.wait':'Too many attempts – please wait {s} s.',
  'rec.title':'Forgot password','rec.hint':'You are connected through the setup Wi-Fi. With the device password from the label you can set a new admin password. Schedules and calibration are kept.',
  'rec.device':'Device password (label)','rec.btn':'Set new password',
@@ -257,6 +258,9 @@ const $=id=>document.getElementById(id);
 const P=new URLSearchParams(location.search);
 // only local paths as target (no open redirect)
 const next=(n=>{try{const u=new URL(n,location.origin);if(n.startsWith('/')&&u.origin===location.origin&&!u.pathname.startsWith('/login'))return u.pathname+u.search+u.hash}catch(e){}return'/'})(P.get('next')||'/');
+// The server never sees the #/route of a web UI page; the browser keeps it
+// through the redirect, so it is on this page and goes back with the target.
+const target=next==='/'&&location.hash.startsWith('#/')?'/'+location.hash:next;
 let S=null;
 async function api(method,path,body){
   const o={method,cache:'no-store'};if(body!==undefined){o.body=JSON.stringify(body);o.headers={'Content-Type':'application/json'}}
@@ -266,7 +270,7 @@ async function api(method,path,body){
 function msg(id,txt,ok){const m=$(id);m.className='msg '+(ok?'ok':'err');m.textContent=txt}
 function errMsg(id,e){const j=e.body&&e.body.error;msg(id,j&&j.retry_after_s?t('login.wait',{s:j.retry_after_s}):e.message)}
 function same(a,b,id){if($(a).value!==$(b).value){msg(id,t('pw.mismatch'));return false}return true}
-const go=()=>location.replace(next);
+const go=()=>location.replace(target);
 
 async function load(){
   S=await api('GET','/api/v1/auth/status');
@@ -274,7 +278,8 @@ async function load(){
   if(S.logged_in&&S.via==='session')return go();
   $('dev').textContent=S.device||'';
   $('c_login').hidden=false;$('c_recover').hidden=!S.recovery;
-  $('l_hint').textContent=t('login.first');$('l_hint').hidden=P.get('first')!=='1';
+  // first sign-in after the setup, else sent here from a page: not signed in (any more)
+  const first=P.get('first')==='1';
   $('l_pw').focus();
 }
 $('f_login').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/login',{password:$('l_pw').value}).then(()=>{$('l_pw').value='';load()}).catch(e=>errMsg('l_msg',e))};
