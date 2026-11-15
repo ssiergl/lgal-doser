@@ -7,7 +7,7 @@ be fitted on this board, see the [build guide](../../docs/build-guide.md#5-flash
 
 | Folder | Content |
 |---|---|
-| [pcb/](pcb/) | circuit board: [bill of materials](pcb/bom.csv), further files after the hardware test |
+| [pcb/](pcb/) | circuit board: KiCad project and [bill of materials](pcb/bom.csv), manufacturing files after the hardware test |
 | [enclosure/](enclosure/) | enclosure and mechanical parts (to follow) |
 
 Pin assignment and fixed circuit: [CLAUDE.md](../../CLAUDE.md). Assembly, modules and device

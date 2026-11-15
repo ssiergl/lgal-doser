@@ -1,0 +1,13 @@
+# KiCad local and generated files
+*-backups/
+.mcp-backups/
+_autosave-*
+~*.lck
+*.kicad_prl
+fp-info-cache
+*.dsn
+*.ses
+*.rules
+*.rpt
+*_drc_violations.json
+*.erc

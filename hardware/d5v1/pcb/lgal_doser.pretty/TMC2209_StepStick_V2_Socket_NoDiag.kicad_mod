@@ -1,0 +1,180 @@
+(footprint "TMC2209_StepStick_V2_Socket_NoDiag"
+  (version 20241229)
+  (generator "kicad-mcp")
+  (generator_version "9.0")
+  (layer "F.Cu")
+  (descr "TMC2209 StepStick V2.0 (Ulegqin/MKS-Layout), 2x 1x8 Buchsenleiste 7mm, Reihenabstand 12.7mm, ohne DIAG-Pad")
+  (tags "TMC2209 StepStick socket")
+
+  (property "Reference" "REF**" (at 0 11.5 0)
+    (layer "F.SilkS")
+    (uuid "1ba675f6-fd0c-4711-81d1-d20820ef8711")
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (property "Value" "TMC2209_StepStick_V2_Socket_NoDiag" (at 0 0 0)
+    (layer "F.Fab")
+    (uuid "91d702c0-7dc3-4540-9d33-03c84a4e635d")
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (property "Datasheet" "" (at 0 0 0)
+    (layer "F.Fab")
+    (uuid "8ffd33b3-f8ef-484f-bb1c-f7f0fab24e0f")
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+
+  (fp_rect
+    (start -7.75 -10.5)
+    (end 7.75 10.5)
+    (stroke (width 0.05) (type default))
+    (fill none)
+    (layer "F.CrtYd")
+    (uuid "72d7b3a8-f7cd-4112-bc9b-31f777a48ba8")
+  )
+
+  (fp_rect
+    (start -7.6 -10.1)
+    (end 7.6 10.1)
+    (stroke (width 0.12) (type default))
+    (fill none)
+    (layer "F.SilkS")
+    (uuid "35adb712-5bd3-49d8-bc54-04f243727717")
+  )
+
+  (fp_rect
+    (start -7.5 -10)
+    (end 7.5 10)
+    (stroke (width 0.1) (type default))
+    (fill none)
+    (layer "F.Fab")
+    (uuid "736831bb-104f-43de-82d8-0182fc0b6be6")
+  )
+
+  (pad "16" thru_hole rect
+    (at -6.35 -8.89)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "df5dbd45-8190-4a47-b3ce-21486bc67d87")
+  )
+
+  (pad "15" thru_hole rect
+    (at -6.35 -6.35)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "229e0078-de72-4894-a108-49a060ca37f2")
+  )
+
+  (pad "14" thru_hole rect
+    (at -6.35 -3.81)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "c91c7b3f-a33a-4ae4-b6e3-d5769915d1e6")
+  )
+
+  (pad "11" thru_hole rect
+    (at -6.35 -1.27)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "8bf09139-17c1-45db-96f3-46924240b0c1")
+  )
+
+  (pad "12" thru_hole rect
+    (at -6.35 1.27)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "75fb4233-267f-40fd-94d8-1070ebe45ad3")
+  )
+
+  (pad "13" thru_hole rect
+    (at -6.35 3.81)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "5a9b8635-e8e8-4b8c-b476-6a605cf70795")
+  )
+
+  (pad "10" thru_hole rect
+    (at -6.35 6.35)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "bcdc3b1e-d1dd-4af3-868c-8e0c31d7f8cc")
+  )
+
+  (pad "9" thru_hole rect
+    (at -6.35 8.89)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "9e495c84-a2b0-44a6-acf4-d1e4a7236e76")
+  )
+
+  (pad "8" thru_hole rect
+    (at 6.35 -8.89)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "e51dae64-620c-463a-8c39-47165244e680")
+  )
+
+  (pad "7" thru_hole rect
+    (at 6.35 -6.35)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "b8427554-7e04-4aac-a944-0e83c63cc965")
+  )
+
+  (pad "3" thru_hole rect
+    (at 6.35 -3.81)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "371c62b4-5047-4fa0-9bbb-7fb8733274d6")
+  )
+
+  (pad "4" thru_hole rect
+    (at 6.35 -1.27)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "c9d17241-5b64-4b03-a7ac-aef0714a4ab6")
+  )
+
+  (pad "5" thru_hole rect
+    (at 6.35 1.27)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "985ad49d-8336-4673-a546-16a7e53943c4")
+  )
+
+  (pad "6" thru_hole rect
+    (at 6.35 3.81)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "b57bcbc7-31be-4673-8c8f-681243fbdbfb")
+  )
+
+  (pad "2" thru_hole rect
+    (at 6.35 6.35)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "2feadf5c-d080-44a2-80d4-192136e3792d")
+  )
+
+  (pad "1" thru_hole rect
+    (at 6.35 8.89)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+    (uuid "a9650648-5707-43eb-b1fd-5c2cdfcc7a41")
+  )
+
+)

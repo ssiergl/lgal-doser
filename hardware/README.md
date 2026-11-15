@@ -5,7 +5,7 @@ firmware uses: the release files of a version are called `lgal_doser-<board ID>-
 
 | Board ID | Device | Pumps | Board | Status |
 |---|---|---|---|---|
-| [d5v1](d5v1/) | LGAL Doser 5 | 5 | v1.0 (11/2026) | designed, bill of materials published; other files follow after the hardware test |
+| [d5v1](d5v1/) | LGAL Doser 5 | 5 | v1.0 (11/2026) | designed, KiCad project and bill of materials published; manufacturing files follow after the hardware test |
 
 Each version folder holds:
 
