@@ -248,13 +248,8 @@ void push_task(void*) {
         last_sent = now;
 
         const auto ts = timesync::status();
-        Json head;
-        head.obj().kv("type", "status").kv("seq", int64_t(++seq)).kv("utc", ts.utc).kv("time_valid", ts.valid);
         Push* p = new Push;
-        p->text = head.str();  // "{...}" without the closing brace
-        p->text.pop_back();
-        if (body.str().size() > 2) p->text += ',';
-        p->text.append(body.str(), 1, std::string::npos);
+        p->text = status_message(++seq, ts.utc, ts.valid, body.str());
         if (httpd_queue_work(s_server, send_work, p) != ESP_OK) delete p;
     }
 }

@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace lgal::ws {
 
@@ -16,5 +17,9 @@ bool origin_allowed(const char* origin, const char* host);
 
 // FNV-1a 32 bit, change detection of the status message
 uint32_t fnv1a(const char* s, size_t len);
+
+// The status push: {"type":"status","seq":..,"utc":..,"time_valid":..} plus
+// the members of body, a complete JSON object from the status writer.
+std::string status_message(uint32_t seq, int64_t utc, bool time_valid, const std::string& body);
 
 }  // namespace lgal::ws

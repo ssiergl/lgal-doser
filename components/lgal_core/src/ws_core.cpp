@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "lgal/json.h"
+
 namespace lgal::ws {
 
 namespace {
@@ -31,6 +33,17 @@ uint32_t fnv1a(const char* s, size_t len) {
         h *= 16777619u;
     }
     return h;
+}
+
+std::string status_message(uint32_t seq, int64_t utc, bool time_valid, const std::string& body) {
+    Json head;
+    head.obj().kv("type", "status").kv("seq", int64_t(seq)).kv("utc", utc).kv("time_valid", time_valid).end();
+    std::string text = head.str();
+    if (body.size() > 2 && body.front() == '{' && body.back() == '}') {
+        text.back() = ',';  // the head's closing brace, body brings its own
+        text.append(body, 1, std::string::npos);
+    }
+    return text;
 }
 
 }  // namespace lgal::ws

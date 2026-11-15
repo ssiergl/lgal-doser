@@ -85,6 +85,8 @@ $CXX \
     -I components/lgal_core/include \
     tests/host/test_ws.cpp \
     components/lgal_core/src/ws_core.cpp \
+    components/lgal_core/src/json.cpp \
+    components/lgal_core/src/json_reader.cpp \
     -o "$OUT/ws"
 "$OUT/ws"
 
