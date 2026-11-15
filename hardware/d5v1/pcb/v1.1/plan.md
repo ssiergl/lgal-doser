@@ -52,5 +52,16 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
    Schematic values are in English. Supply review (6): no other circuit change needed; the
    +24 V sense input (7) was added on the user's request.
    The PCB of v1.1 is still the v1.0 layout and is updated from the schematic in step 3.
-3. Placement study with depth/length options for the user; then layout, routing, DRC with parity.
+3. ~~Placement study with depth/length options for the user.~~ Agreed 2026-11-16: two rows,
+   through-hole only, pump plugs on the front edge, 24 V and Ethernet on the rear edge.
+   Placed 2026-11-16: **166.5 × 54 mm** (v1.0: 224 × 75 mm; depth −28 %, area −46 %).
+   - Front row, pump 1 on the left (top view = view from the front): driver rotated with its
+     motor pins to the front, 100 µF beside it, 100 nF and pump plug in front.
+   - Rear row: ESP32-S3 dev kit (antenna overhangs the left edge by 2.3 mm), USR-ES1 with the
+     RJ45 at the rear edge, 24 V jack at the rear edge, supply, LED header J9, J10 (RTC), J16.
+   - Small parts (UART and pull-up resistors, LED drivers, sense divider) sit under the ESP dev
+     kit between its socket rows; the ESP footprint courtyard covers only the socket strips and
+     the antenna end. Height limit there: 8 mm (kit PCB about 9.5 mm above the board).
+   - Five M3 mounting holes: three in the front row, two in the rear row.
+   Next: routing (4 layers, GND plane), silkscreen, DRC with parity.
 4. BOM v1.1 (renumber the items), Gerber/placement files after review.
