@@ -319,6 +319,7 @@ offers firmware upload, restart and log.
 | Problem | Possible cause and remedy |
 |---|---|
 | Device unreachable | LED blinking yellow = no network: check cable, router, Wi-Fi. Use the IP address from the router instead of `….local`. |
+| "No 24 V supply" (LED red) | Board v1.1 only: the power supply is not connected or has failed; pumps, LAN and clock module are off, the device opens its setup Wi-Fi. Connect the power supply, the device restarts by itself. "Too low" = check the power supply (24 V). |
 | Pump does not dose as planned | Mode "automatic"? Valid time? Daily limit or lock time? The history (pro) names the reason of every skipped dose. |
 | Amount is wrong | Tube primed? Calibrate again; always after a tube change. An old tube delivers less. |
 | Pump hums but does not turn | Tube stuck or pump head blocked; set the pump to "off" and check. |

@@ -310,6 +310,10 @@ def pumps_post(h, path, q):
         note("boost", n, "started", total_ml=ml, **({"days": days} if days else {"doses": doses}))
         return h.send(200, {"status": "ok"})
     num = lambda k: float(q[k])
+    # 24 V supply (MOCK_BOARD_REV=1.1, MOCK_SUPPLY): every start is blocked like on the device
+    sup = sys_mock.supply_state()
+    starts = path == "/api/v1/pumps/dose" or (path in ("/api/v1/pumps/prime", "/api/v1/pumps/calibrate") and q.get("action") == "start")
+    if starts and sup in ("missing", "low"): return err(h, "supply_" + sup, status=409)
     if path == "/api/v1/pumps/prime":  # prime() takes the lock itself
         e = prime(None, {"pump": n, "action": q.get("action")})
         return err(h, e, status=409) if e else h.send(200, {"status": "ok"})

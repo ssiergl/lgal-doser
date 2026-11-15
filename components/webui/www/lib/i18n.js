@@ -89,6 +89,8 @@ add({
     'err.pump_disabled': 'Pump is disabled',
     'err.pump_manual_only': 'Pump is set to manual only',
     'err.locked': 'Pumps are locked (update in progress)',
+    'err.supply_missing': 'No 24 V supply',
+    'err.supply_low': '24 V supply too low',
     'err.daily_limit': 'Daily limit would be exceeded',
     'err.time_invalid': 'No valid time',
     'err.driver_unavailable': 'Driver not reachable',

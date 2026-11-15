@@ -241,6 +241,7 @@ void update_status_led() {
         log_alarm_changes(conditions);
         log_boot(ts);
         doser::mqtt_ha::set_alarms(al.critical, al.warning, conditions);
+        if (doser::supply::present()) doser::mqtt_ha::set_supply(doser::supply::millivolts() / 1000.0f);
     }
     lgal::led::set(State::Critical, al.critical);
     lgal::led::set(State::SetupAp, ns.ap_active);
@@ -374,6 +375,16 @@ extern "C" void app_main(void) {
     doser::backup_api::register_handlers(lgal::http::handle());
     doser::engineering::register_handlers(lgal::http::handle());
     lgal::sysapi::add_link("app", "Web interface", "/");
+    // board revision and 24 V supply (board v1.1) for the web UI
+    lgal::sysapi::add_info([](lgal::Json& j) {
+        const uint8_t rev = doser::hwconfig::board_rev();
+        char b[8];
+        snprintf(b, sizeof(b), "%u.%u", rev / 10u, rev % 10u);
+        j.kv("board_rev", b);
+        if (!doser::supply::present()) return;
+        j.obj("supply").kv("state", doser::supply::state_name(doser::supply::state()));
+        j.kv("volts", doser::supply::millivolts() / 1000.0, 1).end();
+    });
     lgal::sysapi::add_link("setup", "Setup wizard", "/setup");
 
     lgal::ota::set_guard([](std::string& reason) {

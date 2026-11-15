@@ -3,7 +3,8 @@
 //   GET    /                        home page (set_home_page, e.g. the web UI), otherwise
 //                                   the maintenance page; factory state -> /setup
 //   GET    /recovery                maintenance/emergency page (in the firmware image)
-//   GET    /api/v1/system/info      version, partition, OTA status, network, memory
+//   GET    /api/v1/system/info      version, partition, OTA status, network, memory,
+//                                   device-specific keys (add_info)
 //   GET    /api/v1/system/log       RAM log (text)
 //   POST   /api/v1/system/reboot    reboot
 //   GET    /api/v1/system/coredump  last core dump (ELF), 404 if none
@@ -21,6 +22,7 @@
 #include "esp_err.h"
 #include "esp_http_server.h"
 #include "esp_system.h"
+#include "lgal/json.h"
 
 namespace lgal::sysapi {
 
@@ -32,6 +34,9 @@ const char* reset_reason_str(esp_reset_reason_t r);
 // Link to a device-specific page, shown on the maintenance page.
 // id: fixed key the page uses to translate the name; name: English.
 void add_link(const char* id, const char* name, const char* path);
+// Device-specific keys of /api/v1/system/info: write() adds them to the
+// top-level object (an open lgal::Json object), on every request.
+void add_info(void (*write)(Json& j));
 // Page for "/" (called after the setup check and login)
 void set_home_page(esp_err_t (*send)(httpd_req_t* req));
 

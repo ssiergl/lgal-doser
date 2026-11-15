@@ -33,7 +33,8 @@ add({
     'hc.driver_unavailable': 'driver not reachable', 'hc.time_invalid': 'no valid time', 'hc.dose_too_small': 'dose too small',
     'hc.dose_too_large': 'dose too large', 'hc.pump_busy': 'pump busy', 'hc.collision_lock': 'lock time',
     'hc.container_low': 'container almost empty', 'hc.tube_worn': 'replace the tube',
-    'hc.rtc_fault': 'clock module does not answer', 'hc.set': 'changed', 'hc.refilled': 'refilled', 'hc.other': 'other',
+    'hc.rtc_fault': 'clock module does not answer', 'hc.supply_missing': 'no 24 V supply', 'hc.supply_low': '24 V supply too low',
+    'hc.set': 'changed', 'hc.refilled': 'refilled', 'hc.other': 'other',
     'hk.boost': 'Boost', 'hk.mode': 'Mode', 'hk.schedule': 'Schedule', 'hk.settings': 'Settings', 'hk.locks': 'Lock rules',
     'hk.alarm_end': 'Alarm over', 'hk.system': 'System',
     'hc.started': 'started', 'hc.cancelled': 'cancelled', 'hc.finished': 'finished', 'hc.cleared': 'deleted',
@@ -52,7 +53,7 @@ const kRanges = [7, 14, 30, 60];
 const kKinds = ['dose', 'skip', 'boost', 'prime', 'calib_run', 'container', 'calibration', 'tube', 'mode', 'schedule',
   'settings', 'locks', 'alarm', 'alarm_end', 'system'];
 const kPage = 50;
-const kBad = ['aborted', 'fault', 'locked', 'heartbeat_lost', 'max_duration', 'rtc_fault', 'daily_limit'];
+const kBad = ['aborted', 'fault', 'locked', 'heartbeat_lost', 'max_duration', 'rtc_fault', 'daily_limit', 'supply_missing', 'supply_low'];
 
 // "2026-11-07" -> "Fr., 07.11." in the UI language (calendar date, no time zone shift)
 function dayLabel(date, opts = { weekday: 'short', day: '2-digit', month: '2-digit' }) {

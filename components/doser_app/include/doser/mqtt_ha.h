@@ -14,6 +14,9 @@ void init();
 
 // Alarm state for "<base>/state" (main.cpp, from the status LED evaluation)
 void set_alarms(bool critical, bool warning, uint16_t conditions);
+// 24 V supply in V for "<base>/state" (board with sense input); sent again
+// from a change of 0.2 V on
+void set_supply(float volts);
 
 // Update check or progress changed: "<base>/update" is sent soon (any task)
 void update_changed();

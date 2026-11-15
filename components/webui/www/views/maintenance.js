@@ -14,6 +14,7 @@ import { ask, Seg, Toggle, useMsg } from '../lib/ui.js';
 add({
   en: {
     'mt.title': 'Maintenance', 'mt.device': 'Device', 'mt.license': 'License', 'mt.license.v': 'GPLv3 or later', 'mt.third': 'third-party software', 'mt.fw': 'Firmware', 'mt.model': 'Model', 'mt.slot': 'Slot', 'mt.built': 'Built',
+    'mt.supply': 'Supply', 'mt.supply.low': 'too low', 'mt.supply.missing': 'missing',
     'mt.host': 'Address', 'mt.mac': 'MAC', 'mt.uptime': 'Running for', 'mt.reset': 'Last restart', 'mt.mem': 'Memory free / lowest',
     'mt.psram': 'PSRAM free', 'mt.rolledback': 'The last update did not start – the device went back to the previous firmware ({p} is marked invalid).',
     'mt.uptime.v': '{d} d {h} h {m} min', 'mt.uptime.h': '{h} h {m} min',
@@ -131,11 +132,12 @@ function uptime(s) {
 }
 
 function InfoCard({ info, pro }) {
-  const f = info.firmware, s = info.system, d = info.device;
+  const f = info.firmware, s = info.system, d = info.device, sup = info.supply;
   return html`<section class="card"><h2>${t('mt.device')}</h2>
     ${f.last_invalid_partition && html`<p class="msg err">${t('mt.rolledback', { p: f.last_invalid_partition })}</p>`}
     <dl class="stats">
-      ${d.model && html`<dt>${t('mt.model')}</dt><dd>${d.model}${pro && d.board ? html`<br/><span class="mut small">${d.board}</span>` : ''}</dd>`}
+      ${d.model && html`<dt>${t('mt.model')}</dt><dd>${d.model}${pro && d.board ? html`<br/><span class="mut small">${d.board}${info.board_rev ? ' · v' + info.board_rev : ''}</span>` : ''}</dd>`}
+      ${sup && html`<dt>${t('mt.supply')}</dt><dd class=${sup.state === 'ok' ? '' : sup.state === 'low' ? 'warn' : 'err'}>${num(sup.volts, 1)} V${sup.state !== 'ok' ? ' · ' + t('mt.supply.' + sup.state) : ''}</dd>`}
       <dt>${t('mt.fw')}</dt><dd>${f.version}</dd>
       ${pro && html`<dt>${t('mt.slot')}</dt><dd>${f.partition} · ${f.ota_state}</dd>`}
       <dt>${t('mt.built')}</dt><dd>${f.built}${pro && html`<br/><span class="mut small">IDF ${f.idf}</span>`}</dd>

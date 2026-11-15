@@ -2,7 +2,7 @@
 import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from './lib/html.js';
-import { add, initLang, ready, t, useLang } from './lib/i18n.js';
+import { add, initLang, num, ready, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
 import { drawReef } from './lib/reef.js';
 import { start, useStore } from './lib/store.js';
@@ -22,6 +22,8 @@ add({
     'live.on': 'Live', 'live.off': 'Connecting …',
     'notime': 'The device has no valid time – schedules and daily limits are paused.',
     'nortc': 'The clock module does not answer – after a power cut the time is lost until the network is back.',
+    'nosupply': 'No 24 V supply – pumps, LAN and clock module are off. Connect the power supply; the device then restarts by itself.',
+    'lowsupply': 'The 24 V supply is too low ({v} V) – no new doses start.',
     'offline': 'No connection to the device ({e}).',
     'notfound': 'Page not found',
   },
@@ -96,10 +98,15 @@ function Footer() {
 
 function Banners() {
   const s = useStore();
+  // 24 V supply, only on a board with sense input (v1.1)
+  const sup = s.info && s.info.supply;
+  const noSupply = sup && sup.state === 'missing';
   return html`
     ${s.error && s.error.code === 'network' && html`<div class="banner err">${t('offline', { e: s.error.message })}</div>`}
+    ${noSupply && html`<div class="banner err">${t('nosupply')}</div>`}
+    ${sup && sup.state === 'low' && html`<div class="banner">${t('lowsupply', { v: num(sup.volts, 1) })}</div>`}
     ${!s.timeValid && html`<div class="banner">${t('notime')}</div>`}
-    ${s.info && s.info.time && s.info.time.rtc_ok === false && html`<div class="banner err">${t('nortc')}</div>`}`;
+    ${!noSupply && s.info && s.info.time && s.info.time.rtc_ok === false && html`<div class="banner err">${t('nortc')}</div>`}`;
 }
 
 function App() {

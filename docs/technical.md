@@ -104,7 +104,8 @@ ID reads d = doser, number of pumps, v = circuit board version.
 Revisions of a circuit board keep the board ID, the pins and the firmware image. The device
 learns its revision from the factory partition (`provision.py --board-rev`, missing = 1.0,
 `doser::hwconfig::board_rev()`); a newer revision only switches on inputs the older one does
-not have. The serial banner, the start log and `/api/v1/hw/status` show it.
+not have. The serial banner, the start log, `/api/v1/hw/status` and `/api/v1/system/info`
+(`board_rev`, in the web UI maintenance card, pro view) show it.
 
 A board consists of two files:
 
@@ -408,7 +409,9 @@ schedules, history, network, sign-in, MQTT, backup and engineering menu, plus se
 (`/setup`), sign-in page and emergency page (`/recovery`). Test values: admin password
 `test-admin-pw`, engineering key `test-eng-key`. It starts signed in; after signing out it
 locks like the device: pages redirect to the sign-in, API calls answer 401. The state is lost
-on exit.
+on exit. Environment: `MOCK_FACTORY=1` starts in factory state; `MOCK_BOARD_REV=1.1` simulates
+board v1.1 with 24 V sense, `MOCK_SUPPLY=<volts>` its supply (default 24.1; below 20 V doses
+answer `supply_low`, below 12 V `supply_missing`).
 
 ## OTA update
 
@@ -521,7 +524,7 @@ the sign-in, setup and `/recovery` pages and in the settings of the web UI.
 | POST | `/api/v1/auth/recover` | `{"device_password","new"}`, only from the setup Wi-Fi |
 | GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | list API keys / create `{"name"}` (after the initial setup) / delete |
 | POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` unlock / lock |
-| GET | `/api/v1/system/info` | model and board, version, partition, OTA status, network, memory, time, language, links |
+| GET | `/api/v1/system/info` | model and board, version, partition, OTA status, network, memory, time, language, links; `board_rev` (`"1.1"`) and on a board with 24 V sense `supply` (`{"state":"ok"\|"low"\|"missing","volts"}`) |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | UI language |
 | GET / PUT | `/api/v1/system/led` | shown state (`shown`) and night mode / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (missing fields stay, 400 `invalid_param` with `field`) |
 | GET / PUT | `/api/v1/system/time` | time, source, time zone, NTP server / `{"timezone"?,"ntp_server"?,"utc"?}` or instead of `utc` `"local":"2026-11-10T18:30"` (local time of the device; everything checked before anything is applied; 400 `invalid_param` with `field`) |
@@ -614,6 +617,10 @@ Hysteresis 0.5 V on both thresholds; at runtime a change needs 3 readings in a r
 0.5 s). When the supply comes back after it was missing (at start or later), the device restarts
 on its own (not during an update), so the peripherals start cleanly. Without the board revision
 (`board_rev` missing = v1.0) none of this runs and the device behaves as before.
+
+The web UI shows the supply in the maintenance card ("Supply 24.1 V") and a banner while it is
+missing or low; `/api/v1/system/info` has it as `supply`, MQTT as `supply_v` in `<base>/state`
+with a diagnostic sensor "Supply voltage" in Home Assistant (board v1.1 only).
 
 Defaults per pump (changeable in the engineering menu, stored in NVS): 600 mA run current,
 0 mA holding current, 16 microsteps, 200 full steps/rev (step angle 1.8°), ramp 600 rpm per s,
@@ -750,7 +757,7 @@ the broker. Client ID and Home Assistant IDs depend on the MAC and never change:
 | Topic | Content |
 |---|---|
 | `<base>/status` | `online` / `offline` (last will) |
-| `<base>/state` | `{"critical","warning","conditions":["pump1_container_low","rtc_fault",…]}` |
+| `<base>/state` | `{"critical","warning","conditions":["pump1_container_low","rtc_fault","supply_missing",…]}`, on board v1.1 also `"supply_v"` (24 V supply in V, sent again from a change of 0.2 V) |
 | `<base>/pump/<n>/state` | `{"activity","total_ml","planned_ml","remaining_ml","days","next","schedule","amount_ml","tube_h","last"}` – on change, otherwise every 5 min |
 | `<base>/event` | every history event on its own (QoS 1), fields as `GET /api/v1/history` plus `"replay"`; see below |
 | `<base>/pump/<n>/dose/set` | `PRESS` = configured amount, or amount in ml (`2.5`) – only with control |
@@ -764,7 +771,8 @@ the broker. Client ID and Home Assistant IDs depend on the MAC and never change:
 **Home Assistant discovery** (on by default): a device "LGAL Doser XXXX" by device discovery
 (`homeassistant/device/lgal_doser_xxxx/config`) with per pump status, total dosed
 (`total_increasing`, Home Assistant builds the daily values), planned today, stock, range in
-days, next dose and tube operating hours (diagnostic); plus alarm and warning of the device and – with an update source – the update
+days, next dose and tube operating hours (diagnostic); plus alarm and warning of the device, on board v1.1 the
+supply voltage (diagnostic) and – with an update source – the update
 entity "Firmware" (installed and newer version, link to the release, progress). Names follow the
 device language and the pump names. With **control**, a schedule switch, dose amount and "Dose"
 per pump, "Stop all" and "Install" on the update entity are added (the latter also locked while a

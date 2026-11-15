@@ -27,14 +27,15 @@ struct Names {
     const char* warning;
     const char* stop;
     const char* firmware;
+    const char* supply;
 };
 constexpr Names kDe = {"Pumpe %d",       "Status",       "Dosiert gesamt", "Geplant heute", "Vorrat",
                        "Reicht noch",    "Nächste Dosierung", "Schlauch-Betriebsstunden",
                        "Zeitplan",       "Dosiermenge",  "Dosieren",       "Alarm",         "Warnung",
-                       "Alle stoppen",   "Firmware"};
+                       "Alle stoppen",   "Firmware",     "Versorgungsspannung"};
 constexpr Names kEn = {"Pump %d",   "State",      "Total dosed", "Planned today",   "Container", "Days left",
                        "Next dose", "Tube hours", "Schedule", "Dose amount", "Dose",
-                       "Alarm",     "Warning",    "Stop all", "Firmware"};
+                       "Alarm",     "Warning",    "Stop all", "Firmware", "Supply voltage"};
 
 double ml(int64_t ul) { return static_cast<double>(ul) / 1000.0; }
 
@@ -176,6 +177,13 @@ void write_discovery(lgal::Json& j, const DeviceInfo& d) {
         j.kv("state_topic", state).kv("value_template", "{{ 'ON' if value_json.warning else 'OFF' }}");
         j.kv("device_class", "problem").end();
     }
+    // only with a sense input: board v1.0 keeps its discovery as it was
+    if (d.supply && w.open("supply", "sensor", true)) {
+        w.name("", n.supply);
+        j.kv("state_topic", state).kv("value_template", "{{ value_json.supply_v }}");
+        j.kv("unit_of_measurement", "V").kv("device_class", "voltage").kv("state_class", "measurement");
+        j.kv("entity_category", "diagnostic").kv("suggested_display_precision", 1).end();
+    }
     if (w.open("stop", "button", d.control)) {
         w.name("", n.stop);
         j.kv("command_topic", d.base + "/stop/set").kv("payload_press", "PRESS").kv("icon", "mdi:stop-circle").end();
@@ -241,7 +249,9 @@ void write_device_state(lgal::Json& j, const DeviceState& s) {
             std::snprintf(b, sizeof(b), "pump%d_%s", p + 1, alarms::cond_code(cond));
             j.v(b);
         }
-    j.end().end();
+    j.end();
+    if (s.supply_v >= 0.0f) j.kv("supply_v", static_cast<double>(s.supply_v), 1);
+    j.end();
 }
 
 bool parse_ml(const char* s, int len, uint32_t* ul) {

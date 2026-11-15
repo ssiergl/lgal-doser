@@ -155,6 +155,24 @@ static void test_discovery() {
     stubs = 0;
     for (int i = 0; i < c3.size(); ++i) stubs += c3.value_at(i).size() == 1;
     CHECK(stubs == 10);  // pump 3: all 10
+
+    // board v1.1: 24 V supply as diagnostic sensor (without it no entity at all, see above)
+    d.supply = true;
+    Doc sp;
+    {
+        lgal::Json j;
+        write_discovery(j, d);
+        sp.text = j.c_str();
+    }
+    CHECK(sp.parse());
+    const auto c4 = sp.r.root()["components"];
+    CHECK(c4.size() == 5 * 10 + 5);
+    const auto sup = c4["lgal_doser_eeff_supply"];
+    CHECK(str(sup["platform"]) == "sensor" && str(sup["unique_id"]) == "lgal_doser_eeff_supply");
+    CHECK(str(sup["state_topic"]) == "lgal-doser-eeff/state");
+    CHECK(str(sup["value_template"]) == "{{ value_json.supply_v }}");
+    CHECK(str(sup["unit_of_measurement"]) == "V" && str(sup["device_class"]) == "voltage");
+    CHECK(str(sup["entity_category"]) == "diagnostic" && str(sup["name"]) == "Versorgungsspannung");
 }
 
 static void test_states() {
@@ -203,6 +221,12 @@ static void test_states() {
     write_device_state(j3b, ds);
     CHECK(std::string(j3b.c_str()) ==
           R"({"critical":true,"warning":false,"conditions":["supply_missing","supply_low"]})");
+    ds.critical = false;
+    ds.conditions = 0;
+    ds.supply_v = 23.94f;
+    lgal::Json j3c;
+    write_device_state(j3c, ds);
+    CHECK(std::string(j3c.c_str()) == R"({"critical":false,"warning":false,"conditions":[],"supply_v":23.9})");
 
     UpdateState u;
     u.installed = "0.1.0";

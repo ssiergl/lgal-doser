@@ -27,6 +27,16 @@ MAX_KEYS = 4
 ENGKEY = "test-eng-key"
 ENG = {"until": 0}
 SYS = {"coredump": True, "boot": time.time(), "down_until": 0, "version": "0.5.0-dev", "partition": "ota_0", "invalid": None}
+# MOCK_BOARD_REV=1.1: board with 24 V sense; MOCK_SUPPLY=<volts> (default 24.1) sets the
+# measured supply: below 12 V "missing" (dosing answers supply_missing), below 20 V "low"
+BOARD_REV = os.environ.get("MOCK_BOARD_REV", "1.0")
+SUPPLY_V = float(os.environ.get("MOCK_SUPPLY", "24.1")) if BOARD_REV >= "1.1" else None
+
+def supply_state():
+    """None without sense input, else "ok" / "low" / "missing" (doser/supply_core.h)"""
+    if SUPPLY_V is None: return None
+    return "missing" if SUPPLY_V < 12 else "low" if SUPPLY_V < 20 else "ok"
+
 LINKS = [{"id": "app", "name": "Web interface", "path": "/"},
          {"id": "setup", "name": "Setup wizard", "path": "/setup"}]
 
@@ -76,7 +86,8 @@ def info_json():
             "system": {"uptime_s": int(max(0, time.time() - SYS["boot"])) + 2 * 86400 + 3 * 3600, "reset_reason": "SW", "heap_free": 182000,
                        "heap_min_free": 151000, "heap_largest_block": 98000, "psram_free": 8200000, "coredump": SYS["coredump"]},
             "network": {"active": "lan", "eth_present": True, "eth_link": True, "eth_ip": "192.168.1.50", "wlan": "off", "wlan_ip": None, "ap_active": False, "ap_clients": 0},
-            "time": time_json(), "language": "de", "languages": LANGUAGES, "device_name": DEVICE["name"], "links": LINKS}
+            "time": time_json(), "language": "de", "languages": LANGUAGES, "device_name": DEVICE["name"], "links": LINKS,
+            "board_rev": BOARD_REV, **({"supply": {"state": supply_state(), "volts": SUPPLY_V}} if SUPPLY_V is not None else {})}
 IPRE = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
 
 # URL update: a ".bin" address downloads 1.6 MB in 6 s and restarts, anything else gets HTTP 404 after 2 s

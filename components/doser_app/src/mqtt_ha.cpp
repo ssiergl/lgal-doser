@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <cinttypes>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -13,6 +14,7 @@
 #include "doser/history_json.h"
 #include "doser/hwconfig.h"
 #include "doser/scheduler.h"
+#include "doser/supply.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -158,6 +160,7 @@ ha::DeviceInfo device_info(const lgal::mqttcfg::Config& c) {
     d.german = std::strcmp(lgal::settings::language(), "de") == 0;
     d.control = c.control;
     d.update_source = !lgal::ota::settings().source.empty();
+    d.supply = supply::present();
     for (int p = 0; p < ha::kPumps; ++p) {
         d.unfitted[p] = !hwconfig::fitted(p);
         d.pump_names[p] = dosing::settings(p).name;
@@ -369,6 +372,14 @@ void set_alarms(bool critical, bool warning, uint16_t conditions) {
     s_alarms.critical = critical;
     s_alarms.warning = warning;
     s_alarms.conditions = conditions;
+    portEXIT_CRITICAL(&s_mux);
+    if (changed && s_task) xTaskNotifyGive(s_task);
+}
+
+void set_supply(float volts) {
+    portENTER_CRITICAL(&s_mux);
+    const bool changed = std::fabs(s_alarms.supply_v - volts) >= 0.2f;
+    if (changed) s_alarms.supply_v = volts;
     portEXIT_CRITICAL(&s_mux);
     if (changed && s_task) xTaskNotifyGive(s_task);
 }

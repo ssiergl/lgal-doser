@@ -4,7 +4,7 @@
 //
 // Topics below the base topic <b>:
 //   <b>/status                online | offline (retained, last will)
-//   <b>/state                 {"critical","warning","conditions":[...]}
+//   <b>/state                 {"critical","warning","conditions":[...],"supply_v"?}
 //   <b>/pump/<n>/state        {"activity","total_ml","planned_ml","remaining_ml",
 //                              "days","next","schedule","amount_ml","tube_h","last"}
 //   <b>/update                {"installed_version","latest_version","release_url"?,
@@ -39,6 +39,7 @@ struct DeviceInfo {
     bool german = false;  // entity names in German
     bool control = false;
     bool update_source = false;   // firmware update entity (update source set)
+    bool supply = false;          // 24 V sense input (board v1.1): diagnostic voltage sensor
     bool unfitted[kPumps] = {};   // channel population: pumps that are not fitted are removed
     std::string pump_names[kPumps];  // "" = "Pumpe n" / "Pump n"
 };
@@ -66,6 +67,7 @@ struct DeviceState {
     bool critical = false;
     bool warning = false;
     uint16_t conditions = 0;  // alarms::conditions() bits
+    float supply_v = -1.0f;   // 24 V supply in V, < 0 = no sense input (key left out)
 };
 void write_device_state(lgal::Json& j, const DeviceState& s);
 

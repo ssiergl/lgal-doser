@@ -46,6 +46,7 @@ struct Link {
     std::string id, name, path;
 };
 std::vector<Link> s_links;
+std::vector<void (*)(Json&)> s_info;
 
 }  // namespace
 
@@ -190,6 +191,7 @@ esp_err_t get_info(httpd_req_t* req) {
     extra.arr("links");
     for (const auto& l : s_links) extra.obj().kv("id", l.id).kv("name", l.name).kv("path", l.path).end();
     extra.end();
+    for (auto write : s_info) write(extra);
     std::string out(buf);
     out.pop_back();  // closing bracket
     out += ',';
@@ -486,6 +488,7 @@ void reg(httpd_handle_t s, const char* uri, httpd_method_t m, esp_err_t (*h)(htt
 }  // namespace
 
 void add_link(const char* id, const char* name, const char* path) { s_links.push_back({id, name, path}); }
+void add_info(void (*write)(Json& j)) { s_info.push_back(write); }
 
 void set_home_page(esp_err_t (*send)(httpd_req_t* req)) { s_home = send; }
 
