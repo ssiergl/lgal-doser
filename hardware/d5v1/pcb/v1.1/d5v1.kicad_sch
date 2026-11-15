@@ -5014,10 +5014,6 @@
 		(uuid "9df38dae-da7c-43d6-931c-5e81437ab1d3")
 	)
 	(no_connect
-		(at 40.64 58.42)
-		(uuid "a5a197ca-06e9-4b9c-b8e1-932afbf9c6df")
-	)
-	(no_connect
 		(at 40.64 38.1)
 		(uuid "b2b13af2-54ff-4963-ba51-748cc3ea4ede")
 	)
@@ -5048,6 +5044,76 @@
 	(no_connect
 		(at 157.48 137.16)
 		(uuid "ff8fd90a-2883-4c4a-b983-7861ca87298c")
+	)
+	(label "VSENSE_24V"
+		(at 71.12 107.95 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "1ffe4cae-a841-4741-81ef-762f3e5e274a")
+	)
+	(label "VSENSE_24V"
+		(at 55.88 107.95 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "912b4bf6-ec51-419a-8a59-a8d296ab68ab")
+	)
+	(label "VSENSE_24V"
+		(at 40.64 58.42 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "61c1ef27-9a4c-4da1-b48a-3ed50b89506a")
+	)
+	(label "GND"
+		(at 71.12 115.57 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "79eaa861-fd81-44ff-bf4e-8de1464ad293")
+	)
+	(label "GND"
+		(at 55.88 115.57 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "9ba26960-1877-4ab2-b6a9-69b46bebb582")
+	)
+	(label "VSENSE_24V"
+		(at 25.4 115.57 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "64a044bd-f1b9-40d3-8f0b-ad1cd83802d6")
+	)
+	(label "+24V"
+		(at 25.4 107.95 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "2aa0dc1c-4608-48b7-9708-35443fa928b9")
 	)
 	(label "I2C_SCL"
 		(at 213.36 111.76 180)
@@ -10382,6 +10448,89 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 55.88 111.76 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "33563fd4-889b-401f-b199-0adc8e430df7")
+		(property "Reference" "R16"
+			(at 53.34 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 58.42 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+			(at 54.102 111.76 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 55.88 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 55.88 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "57f1e3d5-23ed-4706-965d-50358faec886")
+		)
+		(pin "2"
+			(uuid "81bf24d4-b780-46a8-baa9-63c49f3bb460")
+		)
+		(instances
+			(project "d5v1"
+				(path "/34df5dc6-c403-44a7-9903-52ebff7a820a"
+					(reference "R16")
+					(unit 1)
+				)
+				(path "/f1c78bce-b94c-49ab-9f5d-51ce58431554"
+					(reference "R16")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Converter_DCDC:R-78E3.3-0.5")
 		(at 186.69 50.8 0)
 		(unit 1)
@@ -11062,6 +11211,91 @@
 				)
 				(path "/f1c78bce-b94c-49ab-9f5d-51ce58431554"
 					(reference "C15")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 71.12 111.76 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "41629541-f774-4e3c-b0d5-df85297e1c0d")
+		(property "Reference" "C16"
+			(at 68.58 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "100nF"
+			(at 73.66 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
+			(at 72.085 107.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 71.12 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 71.12 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1100d319-8bd1-4af6-a979-540e70c07b20")
+		)
+		(pin "2"
+			(uuid "563b38f5-2602-428c-86c8-cfc4a28bdbd8")
+		)
+		(instances
+			(project "d5v1"
+				(path "/34df5dc6-c403-44a7-9903-52ebff7a820a"
+					(reference "C16")
+					(unit 1)
+				)
+				(path "/f1c78bce-b94c-49ab-9f5d-51ce58431554"
+					(reference "C16")
 					(unit 1)
 				)
 			)
@@ -11837,6 +12071,89 @@
 				)
 				(path "/f1c78bce-b94c-49ab-9f5d-51ce58431554"
 					(reference "R1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 25.4 111.76 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "62503743-8a1b-49d6-981f-9b1f17c11664")
+		(property "Reference" "R15"
+			(at 22.86 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100k"
+			(at 27.94 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+			(at 23.622 111.76 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 25.4 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 25.4 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c973c98e-1fe7-429d-839e-294e284ce223")
+		)
+		(pin "2"
+			(uuid "deb93abd-de70-419d-82ec-f7ee01844755")
+		)
+		(instances
+			(project "d5v1"
+				(path "/34df5dc6-c403-44a7-9903-52ebff7a820a"
+					(reference "R15")
+					(unit 1)
+				)
+				(path "/f1c78bce-b94c-49ab-9f5d-51ce58431554"
+					(reference "R15")
 					(unit 1)
 				)
 			)

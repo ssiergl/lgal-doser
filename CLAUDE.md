@@ -59,7 +59,7 @@ rollback on a failed start).
 | 16 | J13 (v1.0) / free (v1.1) | – | not used by the firmware |
 | 17 | J14 (v1.0) / free (v1.1) | – | not used by the firmware |
 | 18 | J15 (v1.0) / free (v1.1) | – | not used by the firmware |
-| 6 | free | – | |
+| 6 | 24 V sense (v1.1) / free (v1.0) | in | ADC1_CH5. v1.1: divider +24 V – 100 kΩ (R15) – GPIO 6 – 10 kΩ (R16) – GND, 100 nF (C16); 24.0 V ≈ 2.18 V at the pin (factor 11). v1.0: not connected, floating |
 | 3, 46 | free | – | strapping pins, limited use only |
 | 35–37 | taken | – | octal PSRAM, do not use |
 
@@ -122,6 +122,12 @@ Please check how many independent hardware clocks (RMT/MCPWM/LEDC) the ESP32-S3 
 - **J11–J15 (board v1.0 only):** 5× JST-XH 3-pin (3.3 V / signal / GND) on GPIO 7, 15–18, on
   the board for later extensions; fitting them is optional. Board v1.1 has no J11–J15, the pins
   are free. The firmware does not use the pins and leaves them unconfigured.
+- **24 V sense (board v1.1 only):** GPIO 6 measures the 24 V supply through a 100 kΩ / 10 kΩ
+  divider after the reverse-polarity protection (factor 11, ≈ 2.18 V at 24 V, full scale of the
+  ADC at 12 dB attenuation ≈ 34 V). Purpose: the firmware can tell that the board has no 24 V
+  (e.g. only USB power, where the modules are back-fed through the I/O pins) and skip the
+  peripherals instead of boot-looping. Board v1.0 has no divider, GPIO 6 floats there; the
+  firmware must only use the input when it knows the board is v1.1.
 - **RGB light:** common anode on 5 V, the channels are switched to GND through NPN transistors:
   GPIO HIGH = colour on. PWM for mixed colours and brightness.
 - **Button (GPIO 0):** hold 3 s = setup mode (access point), hold 10 s = factory reset. Pressed at

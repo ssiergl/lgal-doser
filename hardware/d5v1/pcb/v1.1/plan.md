@@ -19,6 +19,7 @@ possible** (v1.0: 224 × 75 mm, pump connectors in a row along the 224 mm side).
 | 4 | Keep the I²C extension J16 for a later display. | none |
 | 5 | Net names: `STEPn` = pump n (v1.0 has them reversed: `STEP1` drives pump 5); J11–J15 nets gone. | none (names only) |
 | 6 | Supply review: ESP 3V3 stays separate from the board +3V3 (as on v1.0); check the USB-only back-feed through the ESP I/O pins and USB 5 V vs. `5V_ESP`/D3. Results are reported before anything is changed. | possibly section 1 (supply) |
+| 7 | 24 V sense on GPIO 6: +24 V – 100 kΩ (R15) – GPIO 6 – 10 kΩ (R16) – GND, 100 nF (C16). Added 2026-11-16 after the supply review. | Pin table GPIO 6, section 4. **Firmware impact:** new ADC input on v1.1 only; the firmware needs to know the board version (v1.0: GPIO 6 floats). |
 
 **GPIO changes:** allowed if they make the layout clearly smaller, but each one changes the
 firmware pin map. Then the board can no longer share the firmware build with v1.0 and needs a
@@ -48,8 +49,8 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
 1. ~~Move v1.0 to `pcb/v1.0/`, copy it to `pcb/v1.1/` as the starting point.~~ Done.
 2. ~~Schematic changes 1–5, ERC, pin-table check, root `CLAUDE.md`.~~ Done 2026-11-16: the
    netlist differs from v1.0 only by these changes; ERC as v1.0 (one harmless warning).
-   Schematic values are in English. Supply review (6): no circuit change needed; an optional
-   +24 V sense input is up to the user.
+   Schematic values are in English. Supply review (6): no other circuit change needed; the
+   +24 V sense input (7) was added on the user's request.
    The PCB of v1.1 is still the v1.0 layout and is updated from the schematic in step 3.
 3. Placement study with depth/length options for the user; then layout, routing, DRC with parity.
 4. BOM v1.1 (renumber the items), Gerber/placement files after review.
