@@ -5125,20 +5125,12 @@
 		(uuid "42aa4e23-afda-4b42-bc9c-5b0a1750c253")
 	)
 	(no_connect
-		(at 40.64 55.88)
-		(uuid "452fca39-6e5f-4386-be35-bca358ee59ce")
-	)
-	(no_connect
 		(at 86.36 88.9)
 		(uuid "4d4132b9-b3cd-44e1-9cff-bd52bc20e8b8")
 	)
 	(no_connect
 		(at 86.36 43.18)
 		(uuid "5d6162e5-26dc-4da4-b9f3-ac25db4dd652")
-	)
-	(no_connect
-		(at 40.64 53.34)
-		(uuid "613c23fe-5075-476b-8e2b-655108e4f140")
 	)
 	(no_connect
 		(at 157.48 139.7)
@@ -5223,6 +5215,26 @@
 	(no_connect
 		(at 157.48 137.16)
 		(uuid "ff8fd90a-2883-4c4a-b983-7861ca87298c")
+	)
+	(label "UART_B"
+		(at 40.64 55.88 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "033534b2-5a58-4fa5-9f22-08d5442e1b63")
+	)
+	(label "UART_A"
+		(at 40.64 53.34 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "482db371-d6c6-4c59-9be1-dffdfeb19f95")
 	)
 	(label "QR_B"
 		(at 116.84 113.03 270)

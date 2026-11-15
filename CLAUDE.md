@@ -1,6 +1,7 @@
 # LGAL Doser – firmware project
 
-Dosing system for aquariums ("LG Aquatic Life"). First device: board v1.0 – 11/2026 with five pumps.
+Dosing system for aquariums ("LG Aquatic Life"). First device: board v1.0 – 11/2026 with five pumps;
+board v1.1 (in design) keeps the pin assignment, differences are noted where they apply.
 This file describes the **finished hardware**. Pin assignment and circuit are fixed and must
 not be questioned by the firmware. If something is unclear, ask – do not guess.
 
@@ -85,7 +86,8 @@ Pump numbering = labels on enclosure and board: seen from the front, pump 1 is o
   `uart_set_pin(UART_NUM_1, 38, 4, …)` and `uart_set_pin(UART_NUM_2, 39, 5, …)`. RX also hears
   the request: its echo comes back and must be discarded. Baud rate e.g. 115200.
   Board v1.0 only routes TX; its RX lines are added as two wires (rework, see
-  `hardware/d5v1/pcb/README.md`). The board ID stays `d5v1`.
+  `hardware/d5v1/pcb/README.md`). Board v1.1 routes the RX lines on the board. Both versions
+  have the board ID `d5v1`.
 - **DIR is hard-wired to GND.** The direction of rotation can only be switched through the
   register `GCONF.shaft`.
 - **DIAG is not connected.** Stall detection (StallGuard) only by reading `SG_RESULT` /
