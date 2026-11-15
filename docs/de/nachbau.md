@@ -113,6 +113,10 @@ Kombination aus Netzteil, Wasser und Salz:
 
 ### TMC2209-Treiber
 
+- **UART-Umbau (Platine v1.0):** pro Treiber-Bus einen Draht von GPIO 4 (Bus A) und GPIO 5
+  (Bus B) an die PDN_UART-Leitung der Treiber legen, siehe
+  [Platine](../../hardware/d5v1/pcb/README.md#rework-rx-lines-of-the-driver-uart) (englisch). Ohne
+  diese Drähte bekommt die Firmware keine Antworten von den Treibern.
 - Die Treiber werden ausschließlich per UART konfiguriert. Ein Poti oder VREF muss nicht
   eingestellt werden, Jumper für Mikroschritte gibt es nicht: Die Adressen 0–3 (Bus A) und 0
   (Bus B) sind auf der Platine fest verdrahtet.
