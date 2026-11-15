@@ -40,12 +40,16 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
 ## Open points
 
 - Target depth (and maximum length) – from a placement study or the planned enclosure.
-- Pinout of the RTC cable connector.
+- ~~Pinout of the RTC cable connector.~~ Same as J16: 3.3 V, SDA, SCL, GND.
 - New enclosure for v1.1 in `d5v1/enclosure/` (the narrower board does not fit the v1.0 one).
 
 ## Steps
 
-1. Move v1.0 to `pcb/v1.0/`, copy it to `pcb/v1.1/` as the starting point.
-2. Schematic changes 1–5 (+ 6 after the review), ERC, pin-table check, root `CLAUDE.md`.
+1. ~~Move v1.0 to `pcb/v1.0/`, copy it to `pcb/v1.1/` as the starting point.~~ Done.
+2. ~~Schematic changes 1–5, ERC, pin-table check, root `CLAUDE.md`.~~ Done 2026-11-16: the
+   netlist differs from v1.0 only by these changes; ERC as v1.0 (one harmless warning).
+   Schematic values are in English. Supply review (6): no circuit change needed; an optional
+   +24 V sense input is up to the user.
+   The PCB of v1.1 is still the v1.0 layout and is updated from the schematic in step 3.
 3. Placement study with depth/length options for the user; then layout, routing, DRC with parity.
-4. BOM v1.1, Gerber/placement files after review.
+4. BOM v1.1 (renumber the items), Gerber/placement files after review.
