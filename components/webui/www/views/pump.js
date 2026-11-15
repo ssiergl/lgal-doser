@@ -300,13 +300,15 @@ function CalibCard({ p, pro }) {
       ${pro && html`<div class="form-row"><label>${t('cal.target')}<${Amount} value=${target} onInput=${setTarget} placeholder=${num(cal.target_ml, 2)}/></label></div>`}
       <button class="sec" onClick=${open} disabled=${p.activity !== 'idle' || p.mode === 'disabled'}>${t('cal.start')}</button>`;
   }
+  // the dialog sits next to the card, not in it: the card's backdrop-filter would make it the
+  // containing block of the fixed overlay and let later cards paint over it
   return html`<section class=${'card' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('cal.title')}</h2>
     <p class=${cal.calibrated ? 'small' : 'small warn'}>${cal.calibrated
       ? t('cal.ok', { v: num(cal.ml_per_rev, 3) }) + (when ? ' ' + t('cal.when', { d: when }) : '') : t('cal.none')}</p>
     ${body}
     ${msg.node}
-    ${dlg && html`<${CalibDialog} p=${p} ml=${dlg.v ?? cal.target_ml} onStart=${start} onClose=${() => setDlg(null)}/>`}
-  </section>`;
+  </section>
+  ${dlg && html`<${CalibDialog} p=${p} ml=${dlg.v ?? cal.target_ml} onStart=${start} onClose=${() => setDlg(null)}/>`}`;
 }
 
 function UsageCard({ p, pro }) {
