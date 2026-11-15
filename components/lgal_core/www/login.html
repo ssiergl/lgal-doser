@@ -90,6 +90,7 @@ en:{
 de:{
  'page.title':'LG Aquatic Life – Anmeldung','title':'Anmelden','user':'Benutzer','pw':'Passwort','login.btn':'Anmelden',
  'login.first':'Passwort gespeichert. Melde dich jetzt einmal damit an – dein Browser kann es sich dabei merken. Danach geht die Einrichtung weiter.',
+ 'login.required':'Du bist nicht angemeldet. Melde dich an, um diese Seite zu öffnen.',
  'login.wait':'Zu viele Versuche – bitte {s} s warten.',
  'rec.title':'Passwort vergessen','rec.hint':'Du bist über das Setup-WLAN verbunden. Mit dem Geräte-Passwort vom Typenschild kannst du ein neues Admin-Passwort setzen. Zeitpläne und Kalibrierung bleiben erhalten.',
  'rec.device':'Geräte-Passwort (Typenschild)','rec.btn':'Neues Passwort setzen',
@@ -104,6 +105,7 @@ fr: {
   "pw": "Mot de passe",
   "login.btn": "Se connecter",
   "login.first": "Mot de passe enregistré. Connectez-vous une fois maintenant avec lui – votre navigateur peut le retenir. Ensuite la configuration continue.",
+  "login.required": "Vous n’êtes pas connecté. Connectez-vous pour ouvrir cette page.",
   "login.wait": "Trop de tentatives – veuillez patienter {s} s.",
   "rec.title": "Mot de passe oublié",
   "rec.hint": "Vous êtes connecté via le Wi-Fi de configuration. Avec le mot de passe de l’appareil indiqué sur l’étiquette, vous pouvez définir un nouveau mot de passe administrateur. Les programmes et l’étalonnage sont conservés.",
@@ -126,6 +128,7 @@ es: {
   "pw": "Contraseña",
   "login.btn": "Iniciar sesión",
   "login.first": "Contraseña guardada. Inicie sesión con ella una vez ahora – su navegador puede recordarla. Después continúa la configuración.",
+  "login.required": "No ha iniciado sesión. Inicie sesión para abrir esta página.",
   "login.wait": "Demasiados intentos – espere {s} s.",
   "rec.title": "Contraseña olvidada",
   "rec.hint": "Está conectado a través del Wi-Fi de configuración. Con la contraseña del dispositivo de la etiqueta puede establecer una nueva contraseña de administrador. Los programas y la calibración se conservan.",
@@ -148,6 +151,7 @@ it: {
   "pw": "Password",
   "login.btn": "Accedi",
   "login.first": "Password salvata. Accedi ora una volta con essa – il browser può memorizzarla. Poi la configurazione prosegue.",
+  "login.required": "Non hai effettuato l’accesso. Accedi per aprire questa pagina.",
   "login.wait": "Troppi tentativi – attendere {s} s.",
   "rec.title": "Password dimenticata",
   "rec.hint": "Sei connesso tramite il Wi-Fi di configurazione. Con la password del dispositivo riportata sull’etichetta puoi impostare una nuova password di amministratore. Programmi e calibrazione restano invariati.",
@@ -170,6 +174,7 @@ nl: {
   "pw": "Wachtwoord",
   "login.btn": "Aanmelden",
   "login.first": "Wachtwoord opgeslagen. Meld je er nu één keer mee aan – je browser kan het onthouden. Daarna gaat de installatie verder.",
+  "login.required": "Je bent niet aangemeld. Meld je aan om deze pagina te openen.",
   "login.wait": "Te veel pogingen – wacht {s} s.",
   "rec.title": "Wachtwoord vergeten",
   "rec.hint": "Je bent verbonden via de installatie-wifi. Met het apparaatwachtwoord van het typeplaatje kun je een nieuw beheerderswachtwoord instellen. Schema’s en kalibratie blijven behouden.",
@@ -192,6 +197,7 @@ pl: {
   "pw": "Hasło",
   "login.btn": "Zaloguj",
   "login.first": "Hasło zapisane. Zaloguj się nim teraz raz – przeglądarka może je zapamiętać. Potem konfiguracja będzie kontynuowana.",
+  "login.required": "Nie jesteś zalogowany. Zaloguj się, aby otworzyć tę stronę.",
   "login.wait": "Zbyt wiele prób – poczekaj {s} s.",
   "rec.title": "Nie pamiętam hasła",
   "rec.hint": "Jesteś połączony przez Wi-Fi konfiguracyjne. Hasłem urządzenia z tabliczki znamionowej możesz ustawić nowe hasło administratora. Harmonogramy i kalibracja zostają zachowane.",
@@ -214,6 +220,7 @@ tr: {
   "pw": "Parola",
   "login.btn": "Oturum aç",
   "login.first": "Parola kaydedildi. Şimdi onunla bir kez oturum açın – tarayıcınız parolayı hatırlayabilir. Ardından kurulum devam eder.",
+  "login.required": "Oturum açmadınız. Bu sayfayı açmak için oturum açın.",
   "login.wait": "Çok fazla deneme – {s} sn bekleyin.",
   "rec.title": "Parolamı unuttum",
   "rec.hint": "Kurulum Wi-Fi'ı üzerinden bağlısınız. Tip etiketindeki cihaz parolasıyla yeni bir yönetici parolası belirleyebilirsiniz. Programlar ve kalibrasyon korunur.",
@@ -236,6 +243,7 @@ zh: {
   "pw": "密码",
   "login.btn": "登录",
   "login.first": "密码已保存。现在请用它登录一次 – 浏览器可以记住它。之后设置将继续。",
+  "login.required": "您尚未登录。请登录以打开此页面。",
   "login.wait": "尝试次数过多 – 请等待 {s} 秒。",
   "rec.title": "忘记密码",
   "rec.hint": "您已通过设置 Wi-Fi 连接。使用铭牌上的设备密码可以设置新的管理员密码。计划和校准将保留。",
@@ -280,6 +288,7 @@ async function load(){
   $('c_login').hidden=false;$('c_recover').hidden=!S.recovery;
   // first sign-in after the setup, else sent here from a page: not signed in (any more)
   const first=P.get('first')==='1';
+  $('l_hint').textContent=t(first?'login.first':'login.required');$('l_hint').hidden=!first&&!P.has('next');
   $('l_pw').focus();
 }
 $('f_login').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/login',{password:$('l_pw').value}).then(()=>{$('l_pw').value='';load()}).catch(e=>errMsg('l_msg',e))};
