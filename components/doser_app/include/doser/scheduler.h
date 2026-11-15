@@ -53,6 +53,8 @@ void boost_stop(int pump, history::Source source = history::Source::Manual);
 // *retry_at; Queue -> *queued = true, started as soon as the lock ends.
 const char* manual_dose(int pump, uint32_t ul, dosing::Trigger trigger, int tier, int64_t* retry_at, bool* queued);
 void cancel_queued(int pump);
+// Resets the count of skipped slots of today (history cleared)
+void clear_skipped();
 
 struct Status {
     bool clock_valid;

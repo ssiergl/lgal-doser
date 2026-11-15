@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 
+#include "doser/dosing.h"
 #include "doser/event_source.h"
 #include "doser/history.h"
 #include "doser/history_json.h"
@@ -164,6 +165,10 @@ esp_err_t delete_history(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     if (history::clear() != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", "History not available");
+    // "Today" on the pages comes from the dosing ledger and the skip counter: start them
+    // again too, so that nothing refers to the cleared history any more
+    dosing::clear_today();
+    scheduler::clear_skipped();
     note_system(req, "cleared");  // the first entry of the new history
     return http::send_json(req, "{\"status\":\"ok\"}");
 }

@@ -4,6 +4,7 @@ import random, time
 KEEP = 60  # maximum retention
 SET = {"keep": KEEP}
 EV = []  # newest last
+ON_CLEAR = []  # callbacks of the other modules (amounts of today), like the firmware
 
 def _add(utc, kind, pump, source, code, target=0.0, done=0.0, **extra):
     e = {"utc": int(utc), "local": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(utc)), "kind": kind, "pump": pump, "code": code}
@@ -161,7 +162,9 @@ def route(h, method, path, q, eng_ok):
         h.send(200, {"keep_days": SET["keep"], "min_days": 1, "max_days": KEEP}); return True
     if path == "/api/v1/history" and method == "DELETE":
         if not eng_ok(): _err(h, "engineering_locked", status=403); return True
-        EV.clear(); h.send(200, {"status": "ok"}); return True
+        EV.clear()
+        for f in ON_CLEAR: f()
+        h.send(200, {"status": "ok"}); return True
     if method != "GET": return False
     if path == "/api/v1/history":
         ev = _filter(q)

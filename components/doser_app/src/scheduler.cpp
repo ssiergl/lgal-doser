@@ -569,6 +569,19 @@ int64_t to_local(int64_t utc) {
     return tz::to_local(s_zone, utc);
 }
 
+void clear_skipped() {
+    if (!s_mx) return;
+    Guard g;
+    for (int p = 0; p < kN; ++p) {
+        PumpRt& r = s_rt[p];
+        if (!r.run.skipped && !r.last_skip_at) continue;
+        r.run.skipped = 0;
+        r.last_skip_reason = nullptr;
+        r.last_skip_at = 0;
+        save(p);
+    }
+}
+
 Status status(int pump) {
     Status s{};
     if (!valid_pump(pump)) return s;

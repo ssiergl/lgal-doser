@@ -77,6 +77,8 @@ void calibrate_cancel(int pump);
 
 // Soft stop of the running job (retraction is still executed)
 void stop(int pump);
+// Resets the amounts pumped today (history cleared); the daily limit counts from zero again
+void clear_today();
 void stop_all();
 
 // Records a mode change (history "mode") and any other change ("settings";

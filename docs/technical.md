@@ -548,7 +548,7 @@ the sign-in, setup and `/recovery` pages and in the settings of the web UI.
 | GET | `/api/v1/history.csv?…` | the same filters as a CSV download, without limit |
 | GET | `/api/v1/history/daily?days=14` | dosed amount, number of doses and skipped doses per local day and pump (1–60 days, oldest first; empty without a valid time) |
 | GET / POST | `/api/v1/history/settings?keep_days=30` | retention `keep_days` (1–60, 60 by default); changing only with engineering unlock |
-| DELETE | `/api/v1/history` | delete the history (engineering) |
+| DELETE | `/api/v1/history` | delete the history and reset today's amounts and skipped doses (engineering) |
 | GET | `/api/v1/backup?secrets=0\|1` | backup of the whole configuration (engineering, see [Backup](#backup-m6)) |
 | POST | `/api/v1/backup?parts=system,network,pumps,engineering,mqtt,auth` | restore a backup (engineering); everything checked first, then the chosen parts applied; 409 `pump_busy` while a pump runs |
 | GET / PUT | `/api/v1/mqtt` | MQTT settings (without password, `password_set`), base topic and port in use, `name_topic` (base topic with the current host name), connection status `disabled\|connecting\|connected` with the last error, CA info; PUT partial, leave out the password = keep, `""` = delete |
@@ -671,7 +671,8 @@ menu, 1–60 days, 60 by default, part of the backup) are deleted hourly, after 
 a minute. Writing goes through a queue in its own task – dosing and schedule never wait for the
 flash. Without a valid time nothing is recorded. At around 240 doses a day that is about 6 KB
 per day, 60 days ≈ 350 KB (storage 1.75 MB on N8R8, 5.75 MB on N16R8). A factory reset deletes
-the history too; the engineering menu deletes it on its own.
+the history too; the engineering menu deletes it on its own and starts the amounts of today
+(and with them the daily limit) and the count of skipped doses of today again.
 
 | `kind` | Content |
 |---|---|

@@ -246,6 +246,13 @@ static void test_limit_and_mode() {
     CHECK(total(2) == b + 1000);
     auto st = scheduler::status(2);
     CHECK(st.skipped == 1 && std::strcmp(st.last_skip_reason, "daily_limit") == 0);
+    // clearing the history starts today's counters again (and the daily limit with them)
+    CHECK(dosing::status(2).used_today_ul == 1000);
+    dosing::clear_today();
+    scheduler::clear_skipped();
+    CHECK(dosing::status(2).used_today_ul == 0);
+    st = scheduler::status(2);
+    CHECK(st.skipped == 0 && !st.last_skip_reason && st.last_skip_at == 0);
     // validation now knows the limit
     CHECK_STR(scheduler::set_schedule(2, spread(600, 720, 2, 2000)), "exceeds_daily_limit");
     // manual only: slots pass silently

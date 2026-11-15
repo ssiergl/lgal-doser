@@ -409,6 +409,8 @@ def prime(cid, m):
 
 import eng_mock, sys_mock
 sys_mock.LANG_SET = lambda code: LANG.update(v=code)
+import hist_mock
+hist_mock.ON_CLEAR.append(lambda: USED.__setitem__(slice(None), [0.0] * len(USED)))  # history cleared
 from urllib.parse import urlsplit as _us, parse_qsl as _pq
 
 def sysr(h, method, body=None):

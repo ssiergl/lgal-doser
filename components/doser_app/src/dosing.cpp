@@ -612,6 +612,17 @@ const char* set_container(int pump, int64_t remaining_ul, int64_t capacity_ul) {
     return nullptr;
 }
 
+void clear_today() {
+    if (!s_mx) return;
+    Guard g;
+    for (int i = 0; i < kN; ++i) {
+        Pump& p = s_p[i];
+        p.st.ledger.clear();
+        dosing_store::save_state(i, p.st);
+    }
+    ESP_LOGW(TAG, "Amounts of today cleared");
+}
+
 const char* set_tube_hours(int pump, uint32_t hours) {
     if (!valid_pump(pump) || hours > 100000) return "invalid_param";
     Guard g;
