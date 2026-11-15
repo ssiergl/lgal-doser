@@ -31,7 +31,7 @@ add({
     'cal.dlg.title': 'Calibrate pump {n}', 'cal.dlg.q1': '1 · Is the tube filled?',
     'cal.dlg.fill': 'The tube must be filled with liquid up to its end, air falsifies the measurement. If not: hold the button until liquid comes out (into a glass or back into the container).',
     'cal.dlg.q2': '2 · Tube end into the measuring cup', 'cal.dlg.cup': 'Empty the measuring cup and hold the tube end into it. The pump then delivers about {ml} ml.',
-    'cal.dlg.ok': 'Filled – start', 'cal.target': 'Target amount',
+    'cal.dlg.ok': 'Start', 'cal.target': 'Target amount',
     'cal.start': 'Start calibration', 'cal.running': 'Calibration running … {done} ml',
     'cal.measured': 'Measured amount', 'cal.ask': 'The pump should have delivered {ml} ml. How much is in the cup?',
     'cal.apply': 'Apply', 'cal.discard': 'Discard', 'cal.done': 'New calibration saved',
