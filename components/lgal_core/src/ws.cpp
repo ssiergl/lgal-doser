@@ -1,5 +1,6 @@
 #include "lgal/ws.h"
 
+#include <atomic>
 #include <cstring>
 #include <string>
 
@@ -25,6 +26,7 @@ constexpr int kTokens = 32;
 struct Client {
     int fd = -1;
     auth::Principal who;
+    bool failed = false;  // a send failed, the close is queued: no further sends
 };
 
 struct Route {
@@ -37,6 +39,7 @@ SemaphoreHandle_t s_mx = nullptr;
 TaskHandle_t s_task = nullptr;
 Client s_clients[kMaxClients];
 bool s_new_client = false;  // send the status right away
+std::atomic<bool> s_push_queued{false};  // a push waits in the HTTP server queue
 StatusWriter s_writer = nullptr;
 Route s_routes[kMaxTypes];
 CloseHandler s_close[kMaxCloseHandlers];
@@ -179,10 +182,11 @@ struct Push {
 // HTTP server task: send to all open WebSocket clients
 void send_work(void* arg) {
     Push* p = static_cast<Push*>(arg);
+    s_push_queued = false;
     int fds[kMaxClients];
     {
         Guard g;
-        for (int i = 0; i < kMaxClients; ++i) fds[i] = s_clients[i].fd;
+        for (int i = 0; i < kMaxClients; ++i) fds[i] = s_clients[i].failed ? -1 : s_clients[i].fd;
     }
     httpd_ws_frame_t f{};
     f.type = HTTPD_WS_TYPE_TEXT;
@@ -192,7 +196,14 @@ void send_work(void* arg) {
     for (int fd : fds) {
         if (fd < 0 || httpd_ws_get_fd_info(s_server, fd) != HTTPD_WS_CLIENT_WEBSOCKET) continue;
         if (httpd_ws_send_frame_async(s_server, fd, &f) != ESP_OK) {
+            // A client that stopped reading (tab in the background, phone asleep) blocks each send
+            // for send_wait_timeout. Mark it so that pushes queued before the close skip it.
             ESP_LOGW(TAG, "Send to fd %d failed, closing", fd);
+            {
+                Guard g;
+                const int i = find_fd(fd);
+                if (i >= 0) s_clients[i].failed = true;
+            }
             httpd_sess_trigger_close(s_server, fd);
         }
     }
@@ -244,13 +255,26 @@ void push_task(void*) {
         body.end();
         const uint32_t h = fnv1a(body.c_str(), body.str().size());
         if (!fresh && h == last_hash && now - last_sent < kKeepaliveMs) continue;
+        // one push at a time: the HTTP server may be blocked by a slow client, and its work
+        // queue is shared with closing sockets. The change is sent with the next check.
+        if (s_push_queued) {
+            if (fresh) {
+                Guard g;
+                s_new_client = true;
+            }
+            continue;
+        }
         last_hash = h;
         last_sent = now;
 
         const auto ts = timesync::status();
         Push* p = new Push;
         p->text = status_message(++seq, ts.utc, ts.valid, body.str());
-        if (httpd_queue_work(s_server, send_work, p) != ESP_OK) delete p;
+        s_push_queued = true;
+        if (httpd_queue_work(s_server, send_work, p) != ESP_OK) {
+            s_push_queued = false;
+            delete p;
+        }
     }
 }
 }  // namespace
