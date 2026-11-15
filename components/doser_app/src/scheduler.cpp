@@ -105,6 +105,16 @@ uint32_t take_boost(int p, int64_t slot_utc) {
     return share;
 }
 
+// Counts n skipped slots for the local day of now; a new day starts the count again.
+void count_skips(PumpRt& r, int n, int64_t now) {
+    const int32_t day = local_day(now);
+    if (r.run.skip_day != day) {
+        r.run.skip_day = day;
+        r.run.skipped = 0;
+    }
+    r.run.skipped += n;
+}
+
 void log_skip(int p, const char* reason, uint32_t ul, int count, int64_t now) {
     history::Event e;
     e.utc = static_cast<uint32_t>(now);
@@ -121,7 +131,7 @@ void skip(int p, const char* reason, const sched::Due& d, int64_t now) {
     PumpRt& r = s_rt[p];
     r.run.cursor = sched::cursor_of(d);
     pass_boost(p, d.utc, 1);
-    ++r.run.skipped;
+    count_skips(r, 1, now);
     r.last_skip_reason = reason;
     r.last_skip_at = now;
     save(p);
@@ -290,7 +300,7 @@ void process(int p, int64_t now) {
         if (n) {
             r.run.cursor = c;
             pass_boost(p, c.utc, n);
-            r.run.skipped += n;
+            count_skips(r, n, now);
             r.last_skip_reason = "missed";
             r.last_skip_at = now;
             save(p);
@@ -577,7 +587,6 @@ Status status(int pump) {
     s.queued = r.queued;
     s.queued_ul = r.q_ul;
     s.queued_since = r.q_since;
-    s.skipped = r.run.skipped;
     s.last_skip_reason = r.last_skip_reason;
     s.last_skip_at = r.last_skip_at;
     s.last_run_at = r.last_run_at;
@@ -586,6 +595,7 @@ Status status(int pump) {
     if (!ts.valid) return s;
     refresh_zone();
     const int32_t day = local_day(ts.utc);
+    s.skipped = r.run.skip_day == day ? r.run.skipped : 0;
     s.boost_active = sched::boost_active(r.run.boost, ts.utc);
     sched::Due d;
     const sched::Cursor from = open_from(r, ts.utc);

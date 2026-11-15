@@ -193,10 +193,11 @@ static void test_power_loss() {
     const uint64_t b0 = total(0);
     sim::run_for(3);
     auto s0 = scheduler::status(0);
-    CHECK(s0.skipped == 2 && std::strcmp(s0.last_skip_reason, "missed") == 0 && total(0) == b0);
+    // the counter covers today only: Monday's delay timeout no longer counts
+    CHECK(s0.skipped == 1 && std::strcmp(s0.last_skip_reason, "missed") == 0 && total(0) == b0);
     auto* e = sim::last_event(history::Kind::Skip, 1);
     CHECK(e && std::strcmp(history::code_str(e->code), "missed") == 0);
-    CHECK(scheduler::status(1).skipped == 2);
+    CHECK(scheduler::status(1).skipped == 1);
     CHECK(s0.next_utc == local(11, 11, 8, 0));
     // pump 1 catches up slots up to 3 h old
     auto p0 = scheduler::schedule(0);
@@ -206,19 +207,19 @@ static void test_power_loss() {
     sim::set_utc(local(11, 11, 9, 0));  // off again until Wednesday 9:00
     sim::run_for(10);
     CHECK(total(0) == b0 + 1000);                // 08:00 caught up at 09:00
-    CHECK(scheduler::status(0).skipped == 2);
-    CHECK(scheduler::status(1).skipped == 3);    // pump 2: skip_missed
+    CHECK(scheduler::status(0).skipped == 0);    // nothing skipped on Wednesday
+    CHECK(scheduler::status(1).skipped == 1);    // pump 2: skip_missed
     // long outage: 5 days, skipped at once
     const int saves = store::run_saves[1];
     sim::set_utc(local(11, 16, 12, 0));
     sim::run_for(3);
-    CHECK(scheduler::status(1).skipped == 3 + 5);
+    CHECK(scheduler::status(1).skipped == 5);  // counted on the day they are found
     CHECK(store::run_saves[1] - saves == 1);  // one write for all skipped slots
     // idle hours without due slots write nothing (the policy window moves along)
     const int idle = store::run_saves[1];
     sim::run_for(3 * 3600);
     CHECK(store::run_saves[1] == idle);
-    CHECK(scheduler::status(0).skipped == 2 + 5);  // 3 h window: nothing to catch up
+    CHECK(scheduler::status(0).skipped == 5);  // 3 h window: nothing to catch up
 }
 
 static void test_schedule_change() {
@@ -253,7 +254,7 @@ static void test_limit_and_mode() {
     CHECK(dosing::set_settings(2, set) == nullptr);
     sim::run_until(local(11, 18, 12, 1));
     st = scheduler::status(2);
-    CHECK(total(2) == b + 1000 && st.skipped == 1);
+    CHECK(total(2) == b + 1000 && st.skipped == 0);  // yesterday's skip is not today's
     CHECK(st.planned_today_ul == 0 && st.remaining_days < 0);
     set.mode = dose::Mode::Auto;
     CHECK(dosing::set_settings(2, set) == nullptr);

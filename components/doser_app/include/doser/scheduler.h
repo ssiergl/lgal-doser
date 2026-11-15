@@ -71,7 +71,7 @@ struct Status {
     uint32_t queued_ul;
     int64_t queued_since;
     // statistics
-    uint32_t skipped;
+    uint32_t skipped;  // slots skipped today
     const char* last_skip_reason;  // "missed", "daily_limit", "delay_timeout", ...
     int64_t last_skip_at;
     int64_t last_run_at;

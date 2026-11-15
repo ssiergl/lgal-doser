@@ -250,8 +250,8 @@ void boost_recount(Boost& b, int slots);
 struct RunState {
     Cursor cursor;
     Boost boost;
-    uint32_t skipped = 0;  // slots skipped since the counter was reset (statistics)
-    uint32_t reserved = 0;
+    uint32_t skipped = 0;   // slots skipped on skip_day
+    int32_t skip_day = 0;   // local day number of the counter (older records: 0)
 };
 static_assert(sizeof(RunState) == 48);
 
