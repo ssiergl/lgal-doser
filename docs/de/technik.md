@@ -597,7 +597,7 @@ idf.py coredump-info -c coredump.elf
 | EN | gemeinsam: an, sobald eine Pumpe fährt; 0,5 s nach der letzten Fahrt aus (außer Haltestrom > 0). |
 | Überwachung | alle 100 ms während der Fahrt: SG_RESULT, DRV_STATUS (Kurzschluss/Übertemperatur → Stopp). Reihum jede Sekunde: Treiber vorhanden, GSTAT. |
 | Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach, und zwar phasengenau zum Sekundenbeginn und erst ab 0,5 s Abweichung. Dazwischen misst die Firmware bei jedem NTP-Abgleich die Abweichung an der Sekundenflanke; nach mindestens einem Tag ergibt das die Drift in ppm, die den Aging-Offset korrigiert (etwa 0,1 ppm pro Schritt). Ohne Zeitserver gibt es keine Referenz: dann wird der Aging-Offset im Engineering von Hand gesetzt, mit Zeitserver lehnt die Firmware einen Handwert ab (409 `ntp_active`). Hatte das Uhrenmodul beim Start die Zeit verloren (Oszillator stand, obwohl die Firmware die Uhr schon einmal gestellt hatte), meldet `rtc_lost` in `/api/v1/system/time`: Pufferbatterie prüfen. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`) und NTP-Server (Standard `pool.ntp.org`, leer = aus) über `/api/v1/system/time` einstellbar, gespeichert in NVS. |
-| EEPROM | AT24C32 mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). |
+| EEPROM | AT24C32 auf 0x57 (Adresspins A0–A2 offen) mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). Beim Start listet das Log alle I²C-Adressen, die antworten. |
 
 Standardwerte pro Pumpe (im Engineering-Menü änderbar, in NVS gespeichert): 600 mA Laufstrom,
 0 mA Haltestrom, 16 Mikroschritte, 200 Vollschritte/U (Schrittwinkel 1,8°),
