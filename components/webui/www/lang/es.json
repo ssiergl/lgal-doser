@@ -156,7 +156,6 @@
   "hi.title": "Historial",
   "hi.daily": "Dosificado por día",
   "hi.days": "{n} días",
-  "hi.sum": "{s} ml en total · ⌀ {a} ml/día",
   "hi.hover": "Señale o toque el gráfico para ver los valores de un día.",
   "hi.bar": "Barras",
   "hi.line": "Línea",

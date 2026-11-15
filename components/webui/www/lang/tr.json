@@ -156,7 +156,6 @@
   "hi.title": "Geçmiş",
   "hi.daily": "Günlük dozlanan",
   "hi.days": "{n} gün",
-  "hi.sum": "Toplam {s} ml · ⌀ {a} ml/gün",
   "hi.hover": "Günün değerlerini görmek için grafiğin üzerine gelin veya dokunun.",
   "hi.bar": "Çubuk",
   "hi.line": "Çizgi",

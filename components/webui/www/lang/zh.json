@@ -156,7 +156,6 @@
   "hi.title": "历史",
   "hi.daily": "每日投加量",
   "hi.days": "{n} 天",
-  "hi.sum": "总计 {s} ml · ⌀ {a} ml/天",
   "hi.hover": "指向或轻触图表以查看当日数值。",
   "hi.bar": "柱状",
   "hi.line": "折线",

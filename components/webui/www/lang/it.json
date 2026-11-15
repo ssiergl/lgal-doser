@@ -156,7 +156,6 @@
   "hi.title": "Cronologia",
   "hi.daily": "Dosato al giorno",
   "hi.days": "{n} giorni",
-  "hi.sum": "{s} ml in totale · ⌀ {a} ml/giorno",
   "hi.hover": "Punta o tocca il grafico per vedere i valori di un giorno.",
   "hi.bar": "Barre",
   "hi.line": "Linea",

@@ -151,7 +151,6 @@
   "hi.title": "Verlauf",
   "hi.daily": "Dosiert pro Tag",
   "hi.days": "{n} Tage",
-  "hi.sum": "Gesamt {s} ml · ⌀ {a} ml/Tag",
   "hi.hover": "Auf das Diagramm zeigen oder tippen für die Werte eines Tages.",
   "hi.bar": "Balken",
   "hi.line": "Linie",
