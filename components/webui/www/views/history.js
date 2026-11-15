@@ -164,7 +164,7 @@ function DayChart({ n, name, days, today, kind }) {
 function DailyCard() {
   const s = useStore();
   const [range, setRange] = useState(14);
-  const [kind, setKind] = useState(load('lgal.hichart', 'line') === 'bar' ? 'bar' : 'line');
+  const [kind, setKind] = useState(load('lgal.hichart', 'bar') === 'line' ? 'line' : 'bar');
   const pickKind = k => { setKind(k); save('lgal.hichart', k); };
   const [D, setD] = useState(null);
   useEffect(() => {
