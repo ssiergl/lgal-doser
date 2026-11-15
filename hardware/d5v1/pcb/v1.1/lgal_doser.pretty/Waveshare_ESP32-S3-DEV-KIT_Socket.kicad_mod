@@ -3,7 +3,7 @@
   (generator "kicad-mcp")
   (generator_version "9.0")
   (layer "F.Cu")
-  (descr "Waveshare ESP32-S3-DEV-KIT-N16R8, gesteckt auf 2x 1x22 Buchsenleisten, Reihenabstand 22.86mm, Antenne bei +X")
+  (descr "Waveshare ESP32-S3-DEV-KIT-N16R8 plugged into 2x 1x22 socket strips (7 mm), row spacing 22.86 mm, antenna at +X. Courtyard: socket strips and antenna end only; parts up to 8 mm high may sit under the module between the rows.")
   (tags "ESP32-S3 DevKit Waveshare socket")
 
   (property "Reference" "REF**" (at 0 -14.5 0)
@@ -23,12 +23,28 @@
   )
 
   (fp_rect
-    (start -32 -13)
-    (end 31.85 13)
+    (start -28.2 -13.2)
+    (end 20.5 -9.65)
     (stroke (width 0.05) (type default))
     (fill none)
     (layer "F.CrtYd")
-    (uuid "b0cdd84a-ba24-44d5-8492-05a99b967327")
+    (uuid "5e230b1e-848c-4bb7-814b-d738d462f1d7")
+  )
+  (fp_rect
+    (start -28.2 9.65)
+    (end 20.5 13.2)
+    (stroke (width 0.05) (type default))
+    (fill none)
+    (layer "F.CrtYd")
+    (uuid "3f9339bf-fd75-47a1-a81d-44379c2194e2")
+  )
+  (fp_rect
+    (start 20.5 -13.2)
+    (end 32 13.2)
+    (stroke (width 0.05) (type default))
+    (fill none)
+    (layer "F.CrtYd")
+    (uuid "c7b3204d-96af-4cc5-8dc5-1f53801df355")
   )
 
   (fp_rect
