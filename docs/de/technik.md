@@ -102,6 +102,12 @@ genau ein Board gebaut; Board und Modulvariante (unten) lassen sich frei kombini
 Ohne Angabe baut `idf.py build` das Board `d5v1`; ein anderes Board:
 `idf.py -DBOARD=<id> build`. Die ID liest sich d = Doser, Pumpenzahl, v = Platinenversion.
 
+Revisionen einer Platine behalten Board-ID, Pins und Firmware-Image. Das Gerät erfährt seine
+Revision aus der Werkspartition (`provision.py --board-rev`, fehlt = 1.0,
+`doser::hwconfig::board_rev()`); eine neuere Revision schaltet nur Eingänge zu, die die ältere
+nicht hat. Serielles Banner, Start-Log, `/api/v1/hw/status` und `/api/v1/system/info`
+(`board_rev`, in der Weboberfläche auf der Wartungskarte, Profi-Ansicht) zeigen sie.
+
 Ein Board besteht aus zwei Dateien:
 
 - `boards/<id>.cmake` setzt `LGAL_BOARD_MODEL` (Modellname in Weboberfläche,
@@ -219,7 +225,8 @@ also öffentlich sein. Werksreset und OTA-Updates lassen `fctry` unangetastet.
 
    Sind weniger Pumpen eingebaut, als das Board hat, speichert `--pumps 1,2,3` zusätzlich die
    Werks-Bestückung: die Pumpen, die bei Auslieferung und nach jedem Werksreset bestückt sind
-   (ohne Angabe: alle Pumpen des Boards). Erneutes Provisionieren (z. B. nach einem
+   (ohne Angabe: alle Pumpen des Boards). `--board-rev 1.1` speichert die Revision der
+   Platine (Standard 1.0, siehe [Boards](#boards)). Erneutes Provisionieren (z. B. nach einem
    Komplett-Flash) braucht dieselben Werte.
 
    **Geräte-Passwort aufs Etikett** (z. B. Aufkleber ins Gehäuse), den Engineering-Schlüssel
@@ -411,7 +418,10 @@ Kalibrieren, Zeitpläne, Verlauf, Netzwerk, Anmeldung, MQTT, Datensicherung und 
 dazu Einrichtungsassistent (`/setup`), Anmeldeseite und Notfallseite (`/recovery`).
 Testwerte: Admin-Passwort `test-admin-pw`, Engineering-Schlüssel `test-eng-key`. Er startet
 angemeldet; nach dem Abmelden sperrt er wie das Gerät: Seiten leiten zur Anmeldung um,
-API-Aufrufe antworten 401. Der Zustand geht beim Beenden verloren.
+API-Aufrufe antworten 401. Der Zustand geht beim Beenden verloren. Umgebung: `MOCK_FACTORY=1`
+startet im Werkszustand; `MOCK_BOARD_REV=1.1` simuliert Platine v1.1 mit 24-V-Messung,
+`MOCK_SUPPLY=<Volt>` deren Versorgung (Standard 24.1; unter 20 V antworten Dosierungen
+`supply_low`, unter 12 V `supply_missing`).
 
 ## OTA-Update
 
@@ -525,7 +535,7 @@ der Weboberfläche.
 | POST | `/api/v1/auth/recover` | `{"device_password","new"}`, nur aus dem Setup-WLAN |
 | GET / POST / DELETE | `/api/v1/auth/keys[?slot=1]` | API-Keys auflisten / `{"name"}` anlegen (nach der Ersteinrichtung) / löschen |
 | POST / DELETE | `/api/v1/auth/engineering` | `{"key"}` freischalten / sperren |
-| GET | `/api/v1/system/info` | Modell und Board, Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links |
+| GET | `/api/v1/system/info` | Modell und Board, Version, Partition, OTA-Status, Netz, Speicher, Zeit, Sprache, Links; `board_rev` (`"1.1"`) und auf einer Platine mit 24-V-Messung `supply` (`{"state":"ok"\|"low"\|"missing","volts"}`) |
 | GET / POST | `/api/v1/system/language?lang=en\|de` | Sprache der Oberfläche |
 | GET / PUT | `/api/v1/system/led` | angezeigter Zustand (`shown`) und Nachtmodus / `{"night":{"enabled","start":"22:00","end":"07:00","brightness":0..100}}` (fehlende Felder bleiben, 400 `invalid_param` mit `field`) |
 | GET / PUT | `/api/v1/system/time` | Uhrzeit, Quelle, Zeitzone, NTP-Server / `{"timezone"?,"ntp_server"?,"utc"?}` oder statt `utc` `"local":"2026-11-10T18:30"` (Ortszeit des Geräts; alles geprüft, bevor etwas übernommen wird; 400 `invalid_param` mit `field`) |
@@ -572,7 +582,7 @@ der Weboberfläche.
 | GET / POST | `/api/v1/engineering/scheduler?…` | Super-Admin: `grid_min` (Teiler von 1440, ≤ 60), `max_delay_min` |
 | GET | `/api/v1/engineering/telemetry` | Super-Admin: Laufzeit, Neustartgrund, Chip-Temperatur, Heap (frei, Minimum, größter Block, Fragmentierung), PSRAM, NVS-Einträge, LittleFS und Historie |
 | POST | `/api/v1/engineering/reset?what=network` | Super-Admin: Netzwerkeinstellungen zurücksetzen (gilt nach 1 s); den Werksreset gibt es nur in der Wartung mit Admin-Passwort |
-| GET | `/api/v1/hw/status` | Board (`id`, `model`, `pumps`), Treiber und Pumpen des Boards, RTC, EEPROM, UART-Statistik; Bestückung `fitted` (jetzt), `fitted_next` (nach dem nächsten Neustart) und `fitted_factory` (Werks-Bestückung, `provision.py --pumps`) |
+| GET | `/api/v1/hw/status` | Board (`id`, `rev`, `model`, `pumps`), Treiber und Pumpen des Boards, RTC, EEPROM, UART-Statistik; Bestückung `fitted` (jetzt), `fitted_next` (nach dem nächsten Neustart) und `fitted_factory` (Werks-Bestückung, `provision.py --pumps`) |
 | POST | `/api/v1/hw/channels?pumps=1,2,3,4` | Bestückung speichern (mindestens eine Pumpe), wirkt nach einem Neustart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |
@@ -598,6 +608,32 @@ idf.py coredump-info -c coredump.elf
 | Überwachung | alle 100 ms während der Fahrt: SG_RESULT, DRV_STATUS (Kurzschluss/Übertemperatur → Stopp). Reihum jede Sekunde: Treiber vorhanden, GSTAT. |
 | Uhr | DS3231 speichert UTC. Start: Zeit aus RTC. NTP stellt die RTC nach, und zwar phasengenau zum Sekundenbeginn und erst ab 0,5 s Abweichung. Dazwischen misst die Firmware bei jedem NTP-Abgleich die Abweichung an der Sekundenflanke; nach mindestens einem Tag ergibt das die Drift in ppm, die den Aging-Offset korrigiert (etwa 0,1 ppm pro Schritt). Ohne Zeitserver gibt es keine Referenz: dann wird der Aging-Offset im Engineering von Hand gesetzt, mit Zeitserver lehnt die Firmware einen Handwert ab (409 `ntp_active`). Hatte das Uhrenmodul beim Start die Zeit verloren (Oszillator stand, obwohl die Firmware die Uhr schon einmal gestellt hatte), meldet `rtc_lost` in `/api/v1/system/time`: Pufferbatterie prüfen. Ohne NTP stündlicher Abgleich aus der RTC. Zeitzone POSIX (`CET-1CEST,M3.5.0,M10.5.0/3`) und NTP-Server (Standard `pool.ntp.org`, leer = aus) über `/api/v1/system/time` einstellbar, gespeichert in NVS. |
 | EEPROM | AT24C32 auf 0x57 (Adresspins A0–A2 offen) mit Seitenschreiben + ACK-Polling. Ab M2 Laufzustand der Dosierung (siehe unten). Beim Start listet das Log alle I²C-Adressen, die antworten. |
+| 24-V-Messung | Nur Platine v1.1 (`provision.py --board-rev 1.1`; auf v1.0 ist GPIO 6 offen und wird nie angefasst): GPIO 6 (ADC1, 12 dB, kalibriert, Mittel aus 16 Messungen) × 11. Siehe [24-V-Versorgung](#24-v-versorgung-platine-v11). |
+
+### 24-V-Versorgung (Platine v1.1)
+
+Der ESP hängt über den R-78E5.0 an 24 V, die 3,3-V-Schiene der Platine (Treiber, W5500,
+Uhrenmodul) über den R-78E3.3. Nur über USB versorgt, wird die Schiene bloß über die I/O-Pins
+rückgespeist: Die Module spielen dann verrückt und der I²C-Bus läuft in Timeouts. Mit dem
+Messeingang prüft die Firmware die Versorgung, bevor sie sie anfasst (`doser/supply.h`,
+Schwellen in `doser/supply_core.h`, auf dem Host getestet):
+
+| Versorgung | Zustand | Verhalten |
+|---|---|---|
+| unter 12 V | `missing` | beim Start: TMC2209, W5500 und DS3231/EEPROM werden nicht initialisiert, EN wird freigegeben (Eingang), damit es die Schiene nicht rückspeist; WLAN, Weboberfläche und OTA laufen, das Einrichtungs-WLAN öffnet für 30 min (auch bei abgeschlossener Einrichtung), der Laufzustand liegt in NVS. Kritischer Alarm `supply_missing`, jeder Dosierstart → 409 `supply_missing`, geplante Dosen werden mit diesem Grund ausgelassen. Im Betrieb: Pumpen stoppen sofort (Sperre), EN freigegeben, der Auftrag endet mit `supply_missing`. |
+| 12–20 V | `low` | normaler Start, Warnung `supply_low`; laufende Dosierungen laufen zu Ende, neue → 409 `supply_low` (geplante: ausgelassen) |
+| ab 20 V | `ok` | normaler Betrieb |
+
+Hysterese 0,5 V an beiden Schwellen; im Betrieb braucht ein Wechsel 3 Messungen in Folge (alle
+0,5 s). Kommt die Versorgung zurück, nachdem sie gefehlt hat (beim Start oder später), startet
+das Gerät von selbst neu (nicht während eines Updates), damit die Peripherie sauber anläuft.
+Ohne Platinenrevision (`board_rev` fehlt = v1.0) läuft nichts davon, das Gerät verhält sich wie
+bisher.
+
+Die Weboberfläche zeigt die Versorgung auf der Wartungskarte („Versorgung 24,1 V“) und ein
+Banner, solange sie fehlt oder zu niedrig ist; `/api/v1/system/info` hat sie als `supply`, MQTT
+als `supply_v` in `<basis>/state` mit dem Diagnose-Sensor „Versorgungsspannung“ in Home
+Assistant (nur Platine v1.1).
 
 Standardwerte pro Pumpe (im Engineering-Menü änderbar, in NVS gespeichert): 600 mA Laufstrom,
 0 mA Haltestrom, 16 Mikroschritte, 200 Vollschritte/U (Schrittwinkel 1,8°),
@@ -690,12 +726,12 @@ zurück.
 
 | `kind` | Inhalt |
 |---|---|
-| `dose`, `prime`, `calib_run` | Ziel- und Ist-Menge, Ergebnis (`success`, `aborted`, `fault`, `locked`, `heartbeat_lost`, `max_duration`), Auslöser (`schedule`, `manual`, `api`, `boost`, `mqtt`) |
-| `skip` | ausgelassene Dosis mit Grund (`missed`, `daily_limit`, `delay_timeout`, …); nach einem Stromausfall ein Eintrag mit `count` |
+| `dose`, `prime`, `calib_run` | Ziel- und Ist-Menge, Ergebnis (`success`, `aborted`, `fault`, `locked`, `supply_missing`, `heartbeat_lost`, `max_duration`), Auslöser (`schedule`, `manual`, `api`, `boost`, `mqtt`) |
+| `skip` | ausgelassene Dosis mit Grund (`missed`, `daily_limit`, `delay_timeout`, `supply_missing`, `supply_low`, …); nach einem Stromausfall ein Eintrag mit `count` |
 | `container` | Behälter gesetzt oder nachgefüllt (`remaining_ml`, `capacity_ml`) |
 | `calibration` | übernommene Kalibrierung (`ul_per_rev`, `measured_ml`, `target_ml`) |
 | `tube` | Schlauchzähler gesetzt (`hours`) |
-| `alarm` | Beginn eines Alarms: `container_low`, `tube_worn`, `rtc_fault` (Pumpe 0 = Gerät); Treiberfehler und Tageslimit stehen schon als Ergebnis bzw. ausgelassene Dosis drin |
+| `alarm` | Beginn eines Alarms: `container_low`, `tube_worn`, `rtc_fault`, `supply_missing`, `supply_low` (Pumpe 0 = Gerät); Treiberfehler und Tageslimit stehen schon als Ergebnis bzw. ausgelassene Dosis drin |
 | `alarm_end` | Ende eines Alarms, gleiche Codes |
 | `boost` | `started` (`total_ml`, `days` oder `doses`), `cancelled` (von Hand, `done_ml` bis dahin), `finished` (von selbst: alle Dosen gegeben oder Zeitraum vorbei, `done_ml`) |
 | `mode` | Betriebsart geändert (`mode`: `auto`, `manual_only`, `disabled`) |
@@ -737,7 +773,7 @@ Nachrichten unter dem alten. Client-ID und Home-Assistant-IDs hängen an der MAC
 | Topic | Inhalt |
 |---|---|
 | `<basis>/status` | `online` / `offline` (Last Will) |
-| `<basis>/state` | `{"critical","warning","conditions":["pump1_container_low","rtc_fault",…]}` |
+| `<basis>/state` | `{"critical","warning","conditions":["pump1_container_low","rtc_fault","supply_missing",…]}`, auf Platine v1.1 zusätzlich `"supply_v"` (24-V-Versorgung in V, erneut ab 0,2 V Änderung) |
 | `<basis>/pump/<n>/state` | `{"activity","total_ml","planned_ml","remaining_ml","days","next","schedule","amount_ml","tube_h","last"}` – bei Änderung, sonst alle 5 min |
 | `<basis>/event` | jedes Verlaufs-Ereignis einzeln (QoS 1), Felder wie `GET /api/v1/history` plus `"replay"`; siehe unten |
 | `<basis>/pump/<n>/dose/set` | `PRESS` = eingestellte Menge, oder Menge in ml (`2.5`) – nur mit Steuerung |
@@ -752,7 +788,7 @@ Nachrichten unter dem alten. Client-ID und Home-Assistant-IDs hängen an der MAC
 (`homeassistant/device/lgal_doser_xxxx/config`) mit je Pumpe Status, dosiert gesamt
 (`total_increasing`, Tageswerte bildet Home Assistant), geplant heute, Vorrat, Reichweite in
 Tagen, nächste Dosierung und Schlauch-Betriebsstunden (Diagnose); dazu Alarm und
-Warnung des Geräts sowie – mit Update-Quelle – die Update-Entität „Firmware“ (installierte und
+Warnung des Geräts, auf Platine v1.1 die Versorgungsspannung (Diagnose) sowie – mit Update-Quelle – die Update-Entität „Firmware“ (installierte und
 neuere Version, Link zum Release, Fortschritt). Namen folgen der Gerätesprache und den Pumpennamen. Mit **Steuerung**
 kommen je Pumpe Zeitplan-Schalter, Dosiermenge und „Dosieren“, „Alle stoppen“ sowie
 „Installieren“ an der Update-Entität hinzu (auch dann gesperrt, solange eine Pumpe läuft); ohne
@@ -829,12 +865,12 @@ LED-Zustände, höchste Priorität zuerst:
 
 | Farbe | Bedeutung |
 |---|---|
-| Rot, schnell blinkend | Alarm: heute eine geplante Dosis wegen Tageslimit ausgelassen, letzter Lauf mit Treiberfehler, Uhrenmodul antwortet nicht |
+| Rot, schnell blinkend | Alarm: heute eine geplante Dosis wegen Tageslimit ausgelassen, letzter Lauf mit Treiberfehler, Uhrenmodul antwortet nicht, keine 24-V-Versorgung (Platine v1.1) |
 | Magenta/Weiß | Firmware-Update läuft |
 | Violett pulsierend | Kalibrierung oder Entlüften |
 | Cyan pulsierend | Pumpe läuft |
 | Orange pulsierend | Setup-WLAN an |
-| Gelb, langsam blinkend | Warnung: Behälter fast leer (reicht weniger Tage als die Alarmschwelle, Standard 4), Schlauch-Lebensdauer erreicht, kein Netz, keine gültige Uhrzeit |
+| Gelb, langsam blinkend | Warnung: Behälter fast leer (reicht weniger Tage als die Alarmschwelle, Standard 4), Schlauch-Lebensdauer erreicht, kein Netz, keine gültige Uhrzeit, 24-V-Versorgung unter 20 V (Platine v1.1) |
 | Grün / Türkis | bereit, per LAN / WLAN verbunden |
 | Weiß aufblendend | Start |
 

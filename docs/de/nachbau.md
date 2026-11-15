@@ -158,7 +158,8 @@ Engineering-Schlüssel ableitet. Dafür gibt es zwei Wege:
    ```
 
    Sind weniger Pumpen eingebaut, z. B. `--pumps 1,2,3` anhängen: Das Gerät startet dann mit
-   genau diesen Pumpen, auch nach einem Werksreset.
+   genau diesen Pumpen, auch nach einem Werksreset. Für Platine v1.1 `--board-rev 1.1`
+   anhängen; ohne behandelt die Firmware die Platine als v1.0.
 
    Die Werte lassen sich später jederzeit aus der MAC-Adresse neu berechnen
    (`tools/ap_password.py <MAC> --engineering`).

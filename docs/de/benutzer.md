@@ -304,12 +304,12 @@ Die LED zeigt immer den wichtigsten Zustand:
 
 | LED | Bedeutung |
 |---|---|
-| rot, schnell blinkend | Alarm (Tageslimit, Treiberfehler, Uhrenmodul) |
+| rot, schnell blinkend | Alarm (Tageslimit, Treiberfehler, Uhrenmodul, keine 24-V-Versorgung) |
 | magenta/weiß | Firmware-Update läuft |
 | violett pulsierend | Kalibrieren oder Schlauch füllen |
 | cyan pulsierend | eine Pumpe läuft |
 | orange pulsierend | Setup-WLAN an |
-| gelb, langsam blinkend | Warnung (Behälter fast leer, Schlauch, kein Netz, keine Uhrzeit) |
+| gelb, langsam blinkend | Warnung (Behälter fast leer, Schlauch, kein Netz, keine Uhrzeit, 24-V-Versorgung zu niedrig) |
 | grün / türkis | bereit, per LAN / WLAN verbunden |
 | weiß aufblendend | Start |
 
@@ -329,6 +329,7 @@ bietet Firmware-Upload, Neustart und Log.
 | Problem | Mögliche Ursache und Abhilfe |
 |---|---|
 | Gerät nicht erreichbar | LED gelb blinkend = kein Netz: Kabel, Router, WLAN prüfen. Statt `….local` die IP-Adresse aus dem Router verwenden. |
+| „Keine 24-V-Versorgung“ (LED rot) | Nur Platine v1.1: Das Netzteil ist nicht angeschlossen oder ausgefallen; Pumpen, LAN und Uhrenmodul sind aus, das Gerät öffnet sein Einrichtungs-WLAN. Netzteil anschließen, das Gerät startet von selbst neu. „Zu niedrig“ = Netzteil prüfen (24 V). |
 | Pumpe dosiert nicht nach Plan | Betrieb „automatisch“? Gültige Uhrzeit? Tageslimit oder Sperrzeit? Der Verlauf (Profi) nennt den Grund jeder ausgelassenen Dosis. |
 | Menge stimmt nicht | Schlauch gefüllt? Neu kalibrieren; nach einem Schlauchwechsel immer. Alter Schlauch fördert weniger. |
 | Pumpe brummt, dreht aber nicht | Schlauch klemmt oder Pumpenkopf blockiert; Pumpe auf „aus“, prüfen. |
