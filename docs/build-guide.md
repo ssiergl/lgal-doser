@@ -113,6 +113,10 @@ supply, water and salt:
 
 ### TMC2209 drivers
 
+- **UART rework (board v1.0):** add one wire per driver bus from GPIO 4 (bus A) and GPIO 5
+  (bus B) to the PDN_UART line of the drivers, see
+  [circuit board](../hardware/d5v1/pcb/README.md#rework-rx-lines-of-the-driver-uart). Without
+  these wires the firmware gets no replies from the drivers.
 - The drivers are configured only over UART. No potentiometer or VREF needs to be set, and there
   are no jumpers for microsteps: the addresses 0–3 (bus A) and 0 (bus B) are hard-wired on the
   board.

@@ -84,6 +84,8 @@ Pump numbering = labels on enclosure and board: seen from the front, pump 1 is o
   TX = GPIO 39, RX = GPIO 5. TX is a normal UART output (push-pull, not open drain), e.g.
   `uart_set_pin(UART_NUM_1, 38, 4, …)` and `uart_set_pin(UART_NUM_2, 39, 5, …)`. RX also hears
   the request: its echo comes back and must be discarded. Baud rate e.g. 115200.
+  Board v1.0 only routes TX; its RX lines are added as two wires (rework, see
+  `hardware/d5v1/pcb/README.md`). The board ID stays `d5v1`.
 - **DIR is hard-wired to GND.** The direction of rotation can only be switched through the
   register `GCONF.shaft`.
 - **DIAG is not connected.** Stall detection (StallGuard) only by reading `SG_RESULT` /
