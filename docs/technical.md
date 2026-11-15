@@ -586,7 +586,7 @@ idf.py coredump-info -c coredump.elf
 | EN | shared: on as soon as a pump runs; off 0.5 s after the last run (unless holding current > 0). |
 | Monitoring | every 100 ms while running: SG_RESULT, DRV_STATUS (short circuit/over-temperature → stop). In turn every second: driver present, GSTAT. |
 | Clock | The DS3231 stores UTC. Start: time from the RTC. NTP sets the RTC, phase-exact to the start of the second and only from 0.5 s deviation. In between, the firmware measures the deviation at the second edge on every NTP sync; after at least one day this gives the drift in ppm, which corrects the aging offset (about 0.1 ppm per step). Without a time server there is no reference: then the aging offset is set by hand in engineering; with a time server the firmware rejects a manual value (409 `ntp_active`). If the clock module had lost the time at start (oscillator stopped although the firmware had set the clock before), `rtc_lost` in `/api/v1/system/time` reports it: check the backup battery. Without NTP hourly sync from the RTC. POSIX time zone (`CET-1CEST,M3.5.0,M10.5.0/3`) and NTP server (default `pool.ntp.org`, empty = off) configurable via `/api/v1/system/time`, stored in NVS. |
-| EEPROM | AT24C32 with page writes + ACK polling. From M2 the run state of the dosing (see below). |
+| EEPROM | AT24C32 at 0x57 (address pins A0–A2 open) with page writes + ACK polling. From M2 the run state of the dosing (see below). At boot the log lists every I²C address that answers. |
 
 Defaults per pump (changeable in the engineering menu, stored in NVS): 600 mA run current,
 0 mA holding current, 16 microsteps, 200 full steps/rev (step angle 1.8°), ramp 600 rpm per s,

@@ -11,8 +11,9 @@
 #include "esp_err.h"
 
 namespace doser::i2c {
-esp_err_t init();
+esp_err_t init();  // logs a bus scan once
 bool probe(uint8_t addr);
+void scan();  // logs every address that answers
 }  // namespace doser::i2c
 
 namespace doser::rtc {

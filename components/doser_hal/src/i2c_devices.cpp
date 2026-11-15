@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstdio>
 #include <cstring>
 
 #include "doser/civil_time.h"
@@ -64,7 +65,30 @@ esp_err_t init() {
     bc.clk_source = I2C_CLK_SRC_DEFAULT;
     bc.glitch_ignore_cnt = 7;
     bc.flags.enable_internal_pullup = 0;  // 4.7 kΩ external
-    return i2c_new_master_bus(&bc, &s_bus);
+    ESP_RETURN_ON_ERROR(i2c_new_master_bus(&bc, &s_bus), TAG, "bus");
+    scan();
+    return ESP_OK;
+}
+
+void scan() {
+    // Lists every address that answers, for diagnosis (e.g. an EEPROM whose address pins are
+    // bridged differently). Short timeout: a hanging bus must not hold up the boot.
+    constexpr int kScanTimeoutMs = 5;
+    char list[16 * 5 + 1] = "";
+    size_t len = 0;
+    int found = 0;
+    for (uint8_t a = 0x08; a <= 0x77; ++a) {
+        const esp_err_t e = i2c_master_probe(s_bus, a, kScanTimeoutMs);
+        if (e == ESP_ERR_TIMEOUT) {
+            ESP_LOGW(TAG, "Bus scan stopped at 0x%02x: bus does not respond", a);
+            return;
+        }
+        if (e != ESP_OK) continue;
+        ++found;
+        if (len + 5 < sizeof(list)) len += snprintf(list + len, sizeof(list) - len, " 0x%02x", a);
+    }
+    if (found) ESP_LOGI(TAG, "Bus scan: %d device(s) at%s", found, list);
+    else ESP_LOGW(TAG, "Bus scan: no devices");
 }
 
 bool probe(uint8_t addr) { return s_bus && i2c_master_probe(s_bus, addr, kTimeoutMs) == ESP_OK; }
