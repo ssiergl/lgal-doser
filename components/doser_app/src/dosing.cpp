@@ -198,8 +198,11 @@ void finish(int i, bool fault) {
     p.last_target = j.target_ul;
     p.last_done = j.done_ul;
     p.last_at = now_utc();
-    ESP_LOGI(TAG, "Pump %d: %s %s, %" PRIu32 " of %" PRIu32 " ul", i + 1, activity_str(j.act), result, j.done_ul,
-             j.target_ul);
+    if (j.target_ul)
+        ESP_LOGI(TAG, "Pump %d: %s %s, %" PRIu32 " of %" PRIu32 " ul", i + 1, activity_str(j.act), result,
+                 j.done_ul, j.target_ul);
+    else  // priming has no target amount
+        ESP_LOGI(TAG, "Pump %d: %s %s, %" PRIu32 " ul", i + 1, activity_str(j.act), result, j.done_ul);
     const auto kind = j.act == Activity::Priming       ? history::Kind::Prime
                       : j.act == Activity::Calibrating ? history::Kind::CalibRun
                                                        : history::Kind::Dose;
