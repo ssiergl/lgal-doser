@@ -53,7 +53,6 @@ pump_cut     = 30.3;
 pump_cut_rot = 22;      // as in the drawing (from the back), counter-clockwise
 pump_hole_d  = 3.5;
 pump_holes   = [[-15.5, 15.5], [17.5, 8.5], [-17.5, -8.5], [15.5, -15.5]];  // as in the drawing (from the back)
-pump_num_size = 2.5;    // engraved pump numbers under the heads
 
 // ---------- Removable front plate ----------
 // The threads of the Kamoer mounting plates (42 x 41.9 x 7 mm) are blind holes in their front
@@ -314,9 +313,6 @@ module front_plate() {
         for (px = pump_x) pump_cutout(px);
         // status light
         translate([led_x, 0.5, led_z]) rotate([90,0,0]) cylinder(d = led_d, h = front_t + 1);
-        // pump numbers under the heads (1 = left seen from the front)
-        for (i = [0:4]) translate([pump_x[i], oy0 + 0.6, 1.2]) rotate([90,0,0])
-            linear_extrude(1) text(str(i + 1), size = pump_num_size, halign = "center", font = "Liberation Sans:style=Bold");
         // inserts for the lid screws
         for (c = cols_plate) translate([c[0], c[1], z_top - ins_h]) cylinder(d = ins_d, h = ins_h + 1);
     }

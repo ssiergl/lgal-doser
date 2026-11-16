@@ -192,8 +192,8 @@ Details and background: [technical docs, first start-up](technical.md#first-star
 1. Power off. Plug in ESP board, StepSticks (the right way round, with heat sink), Ethernet and
    RTC module (with battery).
 2. Fit board, pumps, button and LED into the enclosure.
-3. **Connect the pumps:** seen from the front, pump 1 is the left one; the numbers on enclosure
-   and board must match.
+3. **Connect the pumps:** seen from the front, pump 1 is the left one; plug each pump into the
+   plug with its number on the board (the v1.0 enclosure also shows the numbers under the heads).
 4. Stick in the rating plate, plug in the LAN cable, the power supply last.
 
 ## 7. Start-up and test
