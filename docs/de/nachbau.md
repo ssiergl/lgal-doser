@@ -6,9 +6,10 @@ Diese Anleitung beschreibt, wie man die Dosierpumpe selbst aufbaut: Teile, elekt
 Sicherheit, Firmware aufspielen, Inbetriebnahme und Test. Sie richtet sich an Bastler, die
 löten, mit einem Multimeter messen und ein Python-Skript auf der Kommandozeile starten können.
 
-> **Stand:** Platine v1.0 (11/2026) ist entworfen, Firmware fertig. Der Test der Firmware auf
-> der echten Hardware steht noch aus, Platinen- und Gehäusedaten folgen danach in
-> [`hardware/`](../../hardware/). Die Stückliste der Platine liegt dort bereits.
+> **Stand:** Platine v1.0 (11/2026) ist gebaut, Firmware fertig. Der Test der Firmware auf der
+> echten Hardware steht noch aus. KiCad-Projekt, Stückliste, Gerber-Daten und Gehäuse
+> (OpenSCAD-Quelle und STL-Dateien) der Platinen v1.0 und v1.1 liegen in
+> [`hardware/`](../../hardware/); v1.1 ist noch nicht gebaut.
 
 > **Dosierfehler können Tiere töten.** Ein selbst gebautes Gerät erst ausgiebig ohne Tiere
 > testen (Abschnitt [Probelauf](#8-probelauf-ohne-tiere)). Nachbau und Betrieb auf eigene
@@ -59,7 +60,7 @@ hat sie für spätere Erweiterungen, die Firmware nutzt sie nicht.
 | 9 | 5 | Schlauchpumpe mit Schrittmotor | Kamoer KPHM100-ST | 24 V, 1,0 A, 200 Vollschritte/U, ohne Getriebe; Kabel mit JST-XH-Stecker 4-polig |
 | 10 | 1 | Netzteil 24 V DC, Schutzkleinspannung (SELV) | Mean Well GST60A24-P1M (24 V / 2,5 A / 60 W) | Hohlstecker 5,5 × 2,5 mm, Plus innen |
 | 11 | 1 | Netzkabel C13 (Kaltgerätekabel) | – | für das Netzteil |
-| 12 | 1 | Gehäuse | Druckdaten in [`hardware/d5v1/enclosure/`](../../hardware/d5v1/enclosure/) (folgen) | |
+| 12 | 1 | Gehäuse | STL-Dateien in [`hardware/d5v1/enclosure/`](../../hardware/d5v1/enclosure/), je Platinenversion | |
 | 13 | – | Pumpenschlauch BPT 3 × 5 mm als Ersatz, Dosierschläuche, Rückschlagventile, Halter am Becken | – | Rückschlagventil oder Schlauchende über dem Wasserspiegel |
 | 14 | 1 | Aufkleber für das Typenschild | – | Geräte-Passwort und Name des Setup-WLANs |
 
