@@ -6,9 +6,10 @@ This guide describes how to build the dosing pump yourself: parts, electrical sa
 the firmware, start-up and test. It is meant for makers who can solder, measure with a
 multimeter and start a Python script on the command line.
 
-> **Status:** circuit board v1.0 (11/2026) is designed, the firmware is complete. Testing the
-> firmware on the real hardware is still pending; board and enclosure files follow afterwards in
-> [`hardware/`](../hardware/). The bill of materials of the board is already there.
+> **Status:** circuit board v1.0 (11/2026) is built, the firmware is complete. Testing the
+> firmware on the real hardware is still pending. KiCad project, bill of materials, Gerber files
+> and enclosure (OpenSCAD source and STL files) of boards v1.0 and v1.1 are in
+> [`hardware/`](../hardware/); v1.1 is not yet built.
 
 > **Dosing errors can kill animals.** Test a self-built device extensively without animals first
 > (section [Test run](#8-test-run-without-animals)). Building and operating it is at your own
@@ -59,7 +60,7 @@ them for later extensions, the firmware does not use them.
 | 9 | 5 | Peristaltic pump with stepper motor | Kamoer KPHM100-ST | 24 V, 1.0 A, 200 full steps/rev, no gearbox; cable with JST-XH 4-pin plug |
 | 10 | 1 | Power supply 24 V DC, safety extra-low voltage (SELV) | Mean Well GST60A24-P1M (24 V / 2.5 A / 60 W) | barrel plug 5.5 × 2.5 mm, centre positive |
 | 11 | 1 | Mains cable C13 | – | for the power supply |
-| 12 | 1 | Enclosure | print files in [`hardware/d5v1/enclosure/`](../hardware/d5v1/enclosure/) (to follow) | |
+| 12 | 1 | Enclosure | STL files in [`hardware/d5v1/enclosure/`](../hardware/d5v1/enclosure/), one per board version | |
 | 13 | – | Spare pump tube BPT 3 × 5 mm, dosing tubes, check valves, holders at the tank | – | check valve or tube end above the water level |
 | 14 | 1 | Sticker for the rating plate | – | device password and setup Wi-Fi name |
 

@@ -86,10 +86,6 @@ screwed on with nine M3 countersunk screws. Barrel jack and RJ45 point into a sl
 of the back, open to the back and to the bottom. The button is pressed with a paper clip through
 a hole in the lid (TPU plug), the status light sits in the front right of pump 5.
 
-Parts printed from the earlier version of these files have five unused holes in the left side wall and
-ventilation slots in the right side wall and the back. The source and the STL files here have a
-closed wall instead; the lid and the plug are unchanged.
-
 ## Notes for your own enclosure
 
 - Seen from the front, pump 1 is the left one; the pump labels must match the board.
