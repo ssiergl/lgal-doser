@@ -1,6 +1,6 @@
 # Board d5v1 v1.1 – revision plan
 
-Agreed with the user on 2026-11-15. Board v1.0 (11/2026) stays frozen as ordered: files in this folder
+Agreed with the user on 2026-11-15. Board v1.0 (11/2026) stays frozen: files in this folder
 (they move to `v1.0/` when v1.1 starts); it has no git tag of its own.
 
 ## Goal

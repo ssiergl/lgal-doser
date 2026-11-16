@@ -65,8 +65,8 @@ German versions of the README and the guides are in [README.de.md](README.de.md)
 ## Project status
 
 The firmware is complete (milestones M0–M6) and tested with host tests, fuzzers and a device
-mock. The circuit board (v1.0, 11/2026) is designed; testing the firmware on the real hardware
-is still pending. Until then: **not yet suitable for use on an aquarium with animals.**
+mock. Circuit board v1.0 (11/2026) is built, v1.1 is designed; testing the firmware on the real
+hardware is still pending. Until then: **not yet suitable for use on an aquarium with animals.**
 
 You can try the web UI in the browser without a device:
 

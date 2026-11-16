@@ -1,23 +1,24 @@
 # Hardware
 
-Design files of the LGAL Doser, one folder per version. The folder name is the board ID the
-firmware uses: the release files of a version are called `lgal_doser-<board ID>-<module>.bin`.
+Design files of the LGAL Doser, one folder per board ID. The board ID is the one the firmware
+uses: the release files are called `lgal_doser-<board ID>-<module>.bin`. Board versions with the
+same pin assignment share the board ID and the firmware build.
 
 | Board ID | Device | Pumps | Board | Status |
 |---|---|---|---|---|
-| [d5v1](d5v1/) | LGAL Doser 5 | 5 | v1.0 (11/2026) | designed, KiCad project and bill of materials published; manufacturing files follow after the hardware test |
+| [d5v1](d5v1/) | LGAL Doser 5 | 5 | v1.0 (11/2026), v1.1 | v1.0 built, v1.1 designed. KiCad projects, bills of materials, schematic PDFs, Gerber and drill files and enclosures of both are published |
 
-Each version folder holds:
+Each board ID folder holds:
 
 | Folder | Content |
 |---|---|
-| `pcb/` | schematic, PCB layout, Gerber and drill data, bill of materials, placement data |
-| `enclosure/` | enclosure and mechanical parts: STL, STEP, 3MF and CAD source files |
+| `pcb/` | schematic (KiCad and PDF), PCB layout, Gerber and drill data, bill of materials |
+| `enclosure/` | enclosure and mechanical parts: OpenSCAD source and STL files |
 
 Both hold one subfolder per board version (`v1.0/`, `v1.1/`, …).
 
-A new board revision gets its own folder (e.g. `d5v2`). If it keeps the enclosure of an earlier
-version, its README points there instead of copying the files.
+A changed pin assignment gets a new board ID and folder (e.g. `d5v2`). If it keeps the
+enclosure of an earlier version, its README points there instead of copying the files.
 
 Pin assignment and fixed circuit: [CLAUDE.md](../CLAUDE.md). Assembly and parts list:
 [build guide](../docs/build-guide.md).

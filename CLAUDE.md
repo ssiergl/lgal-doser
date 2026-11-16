@@ -1,7 +1,7 @@
 # LGAL Doser – firmware project
 
 Dosing system for aquariums ("LG Aquatic Life"). First device: board v1.0 – 11/2026 with five pumps;
-board v1.1 (in design) keeps the pin assignment, differences are noted where they apply.
+board v1.1 keeps the pin assignment, differences are noted where they apply.
 This file describes the **finished hardware**. Pin assignment and circuit are fixed and must
 not be questioned by the firmware. If something is unclear, ask – do not guess.
 

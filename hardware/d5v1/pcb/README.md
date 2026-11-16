@@ -5,8 +5,8 @@ assignment and run the same firmware build.
 
 | Version | Folder | Status |
 |---|---|---|
-| v1.0 (11/2026) | [`v1.0/`](v1.0/) | ordered and built; needs two rework wires, see [below](#rework-rx-lines-of-the-driver-uart) |
-| v1.1 | [`v1.1/`](v1.1/) | designed, not yet ordered; [Gerber and drill files](v1.1/gerber/) exported, see the [revision plan](v1.1/plan.md) |
+| v1.0 (11/2026) | [`v1.0/`](v1.0/) | built; needs two rework wires, see [below](#rework-rx-lines-of-the-driver-uart) |
+| v1.1 | [`v1.1/`](v1.1/) | [Gerber and drill files](v1.1/gerber/), see the [revision plan](v1.1/plan.md) |
 
 Each version folder holds:
 
@@ -18,12 +18,11 @@ Each version folder holds:
 | `d5v1-schematic.pdf` | schematic for reading without KiCad |
 | `gerber/` | Gerber and drill files for the board maker |
 
-**Status v1.0:** the KiCad project (exactly as ordered, 4 layers), the
-[bill of materials](v1.0/bom.csv), the [schematic PDF](v1.0/d5v1-schematic.pdf) and the [Gerber and drill files](v1.0/gerber/) as sent to the board maker on
-2026-11-05 are published (renamed from the old project name to `d5v1-*`; the drawing is
-unchanged and matches the layout in `v1.0/`, plotted with "subtract soldermask from
-silkscreen"). Ordered at JLCPCB: 4 layers, 1.6 mm, no specified stackup, 1 oz outer and 0.5 oz
-inner copper, HASL. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
+**Status v1.0:** the KiCad project (4 layers), the [bill of materials](v1.0/bom.csv), the
+[schematic PDF](v1.0/d5v1-schematic.pdf) and the [Gerber and drill files](v1.0/gerber/) are
+published (renamed from the old project name to `d5v1-*`; the drawing matches the layout in
+`v1.0/`, plotted with "subtract soldermask from silkscreen"). Manufacturing options for both
+versions: 4 layers, 1.6 mm, no specified stackup, 1 oz outer and 0.5 oz inner copper, HASL. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
 supply and other device parts are listed in the [build guide](../../../docs/build-guide.md#1-parts-list).
 
 The ESP32-S3 pin assignment and the circuit (UART addresses of the drivers, pull-ups, LED

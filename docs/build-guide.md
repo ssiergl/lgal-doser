@@ -36,8 +36,8 @@ parts from other makers fit as well.
 The circuit board LGAL Doser v1.0 carries 72 through-hole parts (resistors, capacitors, diodes,
 transistors, regulators, fuse, connectors and socket strips). The complete list with references,
 values, footprints and example part numbers is in
-[`hardware/d5v1/pcb/v1.0/bom.csv`](../hardware/d5v1/pcb/v1.0/bom.csv); the manufacturing data of the board follows in
-[`hardware/d5v1/pcb/`](../hardware/d5v1/pcb/).
+[`hardware/d5v1/pcb/v1.0/bom.csv`](../hardware/d5v1/pcb/v1.0/bom.csv); the Gerber and drill files are in
+[`hardware/d5v1/pcb/v1.0/gerber/`](../hardware/d5v1/pcb/v1.0/gerber/).
 
 On the board, among others: the 24 V input with barrel jack (5.5 × 2.5 mm, centre positive),
 fuse 3.15 A slow-blow, reverse-polarity protection and overvoltage protection, the regulators
@@ -49,7 +49,7 @@ them for later extensions, the firmware does not use them.
 
 | Item | Qty | Part | Type / example | Note |
 |---|---|---|---|---|
-| 1 | 1 | Circuit board LGAL Doser v1.0 | with the parts from [`bom.csv`](../hardware/d5v1/pcb/v1.0/bom.csv) | manufacturing data to follow |
+| 1 | 1 | Circuit board LGAL Doser v1.0 | with the parts from [`bom.csv`](../hardware/d5v1/pcb/v1.0/bom.csv) | [Gerber files](../hardware/d5v1/pcb/v1.0/gerber/) |
 | 2 | 1 | ESP32-S3 board (U1) | Waveshare ESP32-S3-DEV-KIT-N16R8 | 16 MB flash, 8 MB PSRAM; flash before plugging in, the USB socket is not reachable in the enclosure. For N8R8 and N32R8 see the [technical docs](technical.md#module-variants) |
 | 3 | 5 | Stepper driver TMC2209 StepStick (U4–U8) | e.g. Ulegqin TMC2209 V2.0, with heat sink | orientation: EN on the square pad (marked "EN"); check the sense resistor (see [below](#tmc2209-drivers)) |
 | 4 | 1 | Ethernet module W5500 | USR-ES1 (e.g. Joy-IT SBC-USR-ES1) | check the row spacing of 20.32 mm |
