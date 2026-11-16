@@ -170,7 +170,7 @@
 				)
 			)
 		)
-		(property "Value" "RTC-Modul flach (SCL,SDA,VCC,GND)"
+		(property "Value" "RTC module, flat (SCL,SDA,VCC,GND)"
 			(at 0 10.39 0)
 			(layer "F.Fab")
 			(uuid "649a14ae-732b-4d2a-a031-08c3f7e37902")
@@ -444,7 +444,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 2"
+		(property "Value" "Pump 2"
 			(at 3.75 4.6 0)
 			(layer "F.Fab")
 			(uuid "b3462b22-f27c-4bda-889a-4fba3d8423f1")
@@ -1000,7 +1000,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 3, UART A)"
+		(property "Value" "TMC2209 (addr. 3, UART A)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "515e4123-9727-4320-a01f-b482a774b24b")
@@ -1436,7 +1436,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 0, UART A)"
+		(property "Value" "TMC2209 (addr. 0, UART A)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "c7c4558b-0168-4d4b-899f-45e0e9519d33")
@@ -1664,7 +1664,7 @@
 				)
 			)
 		)
-		(property "Value" "Füllstand 4"
+		(property "Value" "Reserved 4"
 			(at 2.5 4.6 0)
 			(layer "F.Fab")
 			(uuid "6bfde7da-8601-4fb6-b2b2-64f7386d9185")
@@ -5147,7 +5147,7 @@
 				)
 			)
 		)
-		(property "Value" "Füllstand 5"
+		(property "Value" "Reserved 5"
 			(at 2.5 4.6 0)
 			(layer "F.Fab")
 			(uuid "6ee6fbf0-e201-4f25-9976-9a36f40986b3")
@@ -5429,7 +5429,7 @@
 				)
 			)
 		)
-		(property "Value" "I2C Erweiterung"
+		(property "Value" "I2C extension"
 			(at 3.75 4.6 0)
 			(layer "F.Fab")
 			(uuid "01516753-852b-4a8a-a0aa-6143364d1f2b")
@@ -5720,7 +5720,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 1"
+		(property "Value" "Pump 1"
 			(at 3.75 4.6 0)
 			(layer "F.Fab")
 			(uuid "d81a5fbf-8f60-423d-8f57-2d1e54b551d4")
@@ -7814,7 +7814,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 4"
+		(property "Value" "Pump 4"
 			(at 3.75 4.6 0)
 			(layer "F.Fab")
 			(uuid "7af251c8-e292-41d3-9015-bf22610ca821")
@@ -9455,7 +9455,7 @@
 				)
 			)
 		)
-		(property "Value" "USR-ES1 Reihe B (G,V,V,NC,RST,MI)"
+		(property "Value" "USR-ES1 row B (G,V,V,NC,RST,MI)"
 			(at 0 15.47 180)
 			(layer "F.Fab")
 			(uuid "c068e3b4-3c85-411a-bd4f-27997f8863e6")
@@ -9746,7 +9746,7 @@
 				)
 			)
 		)
-		(property "Value" "USR-ES1 Reihe A (G,G,MO,SCK,CS,INT)"
+		(property "Value" "USR-ES1 row A (G,G,MO,SCK,CS,INT)"
 			(at 0 15.47 180)
 			(layer "F.Fab")
 			(uuid "daa8695d-0949-4c96-98a2-a54844998844")
@@ -10830,7 +10830,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 1, UART A)"
+		(property "Value" "TMC2209 (addr. 1, UART A)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "20e5eeb9-5143-4012-b3a1-a8d422180b7e")
@@ -13431,7 +13431,7 @@
 				)
 			)
 		)
-		(property "Value" "Füllstand 2"
+		(property "Value" "Reserved 2"
 			(at 2.5 4.6 0)
 			(layer "F.Fab")
 			(uuid "95d0ae24-8111-4d8a-bf11-efbc111e4413")
@@ -13713,7 +13713,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 0, UART B)"
+		(property "Value" "TMC2209 (addr. 0, UART B)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "3978806a-68af-4c62-90b6-fd07d1fd6730")
@@ -13941,7 +13941,7 @@
 				)
 			)
 		)
-		(property "Value" "Füllstand 3"
+		(property "Value" "Reserved 3"
 			(at 2.5 4.6 0)
 			(layer "F.Fab")
 			(uuid "a7aefeaf-3093-4b63-bca5-578e3c22f6d8")
@@ -19853,7 +19853,7 @@
 				)
 			)
 		)
-		(property "Value" "3,15A T (TR5)"
+		(property "Value" "3.15A T (TR5)"
 			(at 2.39 7.43 0)
 			(layer "F.Fab")
 			(uuid "0e991632-ecc8-45e6-a07f-acd31ea2e589")
@@ -20945,7 +20945,7 @@
 				)
 			)
 		)
-		(property "Value" "TMC2209 (Adr. 2, UART A)"
+		(property "Value" "TMC2209 (addr. 2, UART A)"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(uuid "a21c8325-69fc-4aeb-a07a-d376d303fa4d")
@@ -21592,7 +21592,7 @@
 				)
 			)
 		)
-		(property "Value" "24V IN (Hohlbuchse 5,5x2,5)"
+		(property "Value" "24V IN (barrel jack 5.5x2.5)"
 			(at -6.2 -5.5 90)
 			(layer "F.Fab")
 			(uuid "6cf0471b-85ff-436c-8d42-223b9ef33491")
@@ -24446,7 +24446,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 5"
+		(property "Value" "Pump 5"
 			(at 3.75 4.6 0)
 			(layer "F.Fab")
 			(uuid "183a22a1-df16-4d86-be1b-7e7722dcc789")
@@ -24737,7 +24737,7 @@
 				)
 			)
 		)
-		(property "Value" "Pumpe 3"
+		(property "Value" "Pump 3"
 			(at 3.75 4.6 0)
 			(layer "F.Fab")
 			(uuid "c40609d9-cbfa-46cd-9e99-872c658ed194")
@@ -27830,7 +27830,7 @@
 				)
 			)
 		)
-		(property "Value" "Füllstand 1"
+		(property "Value" "Reserved 1"
 			(at 2.5 4.6 0)
 			(layer "F.Fab")
 			(uuid "74c82379-6e60-414a-825e-df86c65ac009")
@@ -28112,7 +28112,7 @@
 				)
 			)
 		)
-		(property "Value" "Mentor 2660.8302 RGB, gem. Anode (Pinfolge prüfen)"
+		(property "Value" "Mentor 2660.8302 RGB, common anode (check pin order)"
 			(at 1.27 4.92 0)
 			(layer "F.Fab")
 			(uuid "c7c75cd3-79fa-4487-8af8-a34a846149f3")
