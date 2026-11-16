@@ -31,7 +31,7 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
 Third concept, agreed 2026-11-16 together with the new enclosure (replaces the two-row layout
 of commit 8f85c67a and the upright main board with a separate I/O board):
 
-- Enclosure about 282 × 89 × 65 mm (depth without the pump heads). The pumps sit low, their tube
+- Enclosure about 282 × 90 × 65 mm (depth without the pump heads). The pumps sit low, their tube
   nipples (22 mm, pointing down) overhang the bottom by about 8 mm like on market dosers.
 - **One board, upright 6 mm behind the motors, components facing the back wall**, about
   205 × 50 mm. The gap leaves room for the solder joints and the motor cables.
@@ -114,7 +114,7 @@ of commit 8f85c67a and the upright main board with a separate I/O board):
      notch (intended), the SW1 footprint outline crosses its own pads and the schematic parity
      reports the TMC2209 symbol pins 17/18 without a pad (both as in v1.0).
 7. ~~Enclosure for the upright board.~~ Designed 2026-11-16 as OpenSCAD source
-   [`enclosure_v1.1.scad`](../../enclosure/enclosure_v1.1.scad), about 282 × 89 × 65 mm: guide
+   [`enclosure_v1.1.scad`](../../enclosure/enclosure_v1.1.scad), about 282 × 90 × 65 mm: guide
    slots and lid tabs instead of screws, niche behind pump 3, RTC module in a pocket at the left
    side wall, DIN clips symmetric. Renders cleanly; no collisions with the motors, the board and
    its parts (also while sliding in) and the RTC module. Not yet printed, see the

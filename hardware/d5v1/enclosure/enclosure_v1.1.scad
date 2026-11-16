@@ -66,7 +66,7 @@ mb_xl  = mb_xr - 205;          // KiCad x 305
 mb_z0  = floor_t + 4;          // bottom edge on support blocks, 4 mm above the floor (water)
 mb_z1  = mb_z0 + 50;           // top edge
 mb_y   = motor_len + 6;        // solder side; 6 mm behind the motors for solder joints and cables
-comp_h = 25;                   // components on the back side (drivers with heat sink)
+comp_h = 26;                   // components on the back side (drivers with heat sink 25 mm)
 in_y1  = mb_y + pcb_t + comp_h + 1;
 function MB(p) = [mb_xr - (p[0] - 100), mb_z1 - (p[1] - 100)];
 notch_x0 = MB([207.5, 0])[0];  notch_x1 = MB([167.5, 0])[0];

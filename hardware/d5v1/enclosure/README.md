@@ -19,7 +19,7 @@ board.
 
 ## Enclosure for board v1.1
 
-About **282 × 89 × 65 mm** (width × depth × height, depth without the pump heads). Two parts:
+About **282 × 90 × 65 mm** (width × depth × height, depth without the pump heads). Two parts:
 the base with the front panel and a smooth lid without openings, so devices can be stacked.
 Export a part with `part = "base"`, `"lid"` or `"plug"`; `"assembly"` shows everything with the
 board and pumps as a preview.
