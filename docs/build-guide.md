@@ -56,7 +56,7 @@ them for later extensions, the firmware does not use them.
 | 5 | 1 | Clock module DS3231 with AT24C32 EEPROM | any DS3231 module | mounted flat; solder a straight 1 × 4 pin header to its 4-pin row |
 | 6 | 1 | Pin header 1 × 4, 2.54 mm, straight | – | for the clock module |
 | 7 | 1 | Backup battery for the clock module | LIR2032 (3.6 V, rechargeable) | a CR2032 **only after removing the charging diode** on the module, see [safety](#3-electrical-safety) |
-| 8 | 1 | RGB light, common anode, with plug | Mentor 2660.8302 | check the pin assignment of the plug before connecting |
+| 8 | 1 | RGB light, common anode, with plug | Mentor 2660.8302 | check the pin assignment of the plug before connecting; in the enclosure for board v1.1 its cable is too short, add a 2 × 2 extension (2.54 mm, socket to pins, about 10 cm) |
 | 9 | 5 | Peristaltic pump with stepper motor | Kamoer KPHM100-ST | 24 V, 1.0 A, 200 full steps/rev, no gearbox; cable with JST-XH 4-pin plug |
 | 10 | 1 | Power supply 24 V DC, safety extra-low voltage (SELV) | Mean Well GST60A24-P1M (24 V / 2.5 A / 60 W) | barrel plug 5.5 × 2.5 mm, centre positive |
 | 11 | 1 | Mains cable C13 | – | for the power supply |

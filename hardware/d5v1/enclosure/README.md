@@ -42,7 +42,9 @@ board and pumps as a preview.
   stands upside down in two rails at the left side wall (seen from the front), battery towards
   the wall. Its angled pin headers point down, so the plug and the cable to J10 hang below it;
   the lid holds its top edge (0.3 mm play).
-- **Status light** (Mentor 2660.8302, 8 mm hole) in the front under pump 3.
+- **Status light** (Mentor 2660.8302, 8 mm hole, pressed in) in the front under pump 3. Its cable
+  (about 85 mm without the plug) does not reach J9 behind pumps 1 and 2: add a 2 × 2 extension
+  (2.54 mm, socket to pins, about 10 cm) and run it under the bottom edge of the board.
 - **DIN rail:** two clips (35 × 47 mm, holes 20 mm apart) at the back, symmetric to the niche,
   M3 countersunk from the inside (flush), nuts on the clips.
 - **Floor:** a drain funnel under each pump right behind the front.
