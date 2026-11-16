@@ -50,7 +50,7 @@ of commit 8f85c67a and the upright main board with a separate I/O board):
   wall. The lid has no hole and stays stackable.
 - The DS3231 RTC module stands in a pocket at the left side wall (seen from the front), held
   at its corners, cable to J10.
-- Status light in the front panel under pump 3.
+- Status light in the removable front plate under pump 3.
 - Silkscreen in English, no "FÜLLSTAND", no "5CH". Clean DRC with schematic parity.
 
 ## Open points
@@ -116,7 +116,7 @@ of commit 8f85c67a and the upright main board with a separate I/O board):
 7. ~~Enclosure for the upright board.~~ Designed 2026-11-16 as OpenSCAD source
    [`enclosure_v1.1.scad`](../../enclosure/enclosure_v1.1.scad), about 282 × 90 × 65 mm: guide
    slots and lid tabs instead of screws, niche behind pump 3, RTC module in a pocket at the left
-   side wall, DIN clips symmetric. Renders cleanly; no collisions with the motors, the board and
+   side wall, DIN clips symmetric, removable front plate that carries the pumps. Renders cleanly; no collisions with the motors, the board and
    its parts (also while sliding in) and the RTC module. Not yet printed, see the
    [enclosure README](../../enclosure/README.md).
 8. ~~Gerber and drill files.~~ Exported 2026-11-16 to [`gerber/`](gerber/) (4 copper layers, mask,

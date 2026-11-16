@@ -12,7 +12,9 @@
 //   - DS3231 RTC module upside down in a pocket at the left side wall, held only at its corners
 //   - printable: walls, ribs, lips and tabs are at least 2 mm thick
 //   - status light in the front under pump 3, narrow side margins, no level sensors
-//  Two parts: base (with front) + lid (smooth, no openings, stackable).
+//   - removable front plate: the pumps are screwed to it on the bench, then it slides in from
+//     the top; it covers the whole front, the joint is a seam on the sides and the bottom
+//  Three parts: base, front plate (with the pumps) + lid (smooth, no openings, stackable).
 //  Material: PA12 (MJF), M3 heat-set inserts for the lid screws.
 //
 //  Coordinates (OpenSCAD, right-handed):
@@ -21,7 +23,7 @@
 //   Z = 0 at the outside of the floor
 //  Board (KiCad top view = view from the back): X = mb_xr - (x - 100), Z = mb_z1 - (y - 100)
 //
-//  Output:  part = "base" | "lid" | "plug" | "assembly"
+//  Output:  part = "base" | "plate" | "lid" | "plug" | "assembly"
 //  Rendered with OpenSCAD 2026.10.11 (manifold backend), checked for collisions against the
 //  board, its parts (also while sliding in) and the motors; not yet printed.
 // =====================================================================
@@ -52,6 +54,21 @@ pump_cut_rot = 22;      // as in the drawing (from the back), counter-clockwise
 pump_hole_d  = 3.5;
 pump_holes   = [[-15.5, 15.5], [17.5, 8.5], [-17.5, -8.5], [15.5, -15.5]];  // as in the drawing (from the back)
 pump_num_size = 2.5;    // engraved pump numbers under the heads
+
+// ---------- Removable front plate ----------
+// The threads of the Kamoer mounting plates (42 x 41.9 x 7 mm) are blind holes in their front
+// face, and the screws go in from the front beside the head; in the enclosure the lower ones
+// cannot be reached. So the pumps are screwed to the front plate on the bench, and the plate
+// with the pumps then slides in from the top. It covers the whole front including the ends of
+// the side walls and the floor, so the joint is a seam on the sides and the bottom, not on the
+// front. Legs on its back edges carry a groove that slides over a tongue on the inside of each
+// side wall and on the floor; the lid holds it down and is screwed into two columns on it.
+fp_clr  = 0.2;          // clearance in the joint
+leg_t   = 4;            // thickness of the legs (side legs in X, bottom leg in Z)
+leg_d   = 7;            // depth of the legs behind the plate
+tg_h    = 1.5;          // how far the tongues stand out of the side walls and the floor
+tg_y    = [2.5, 4.5];   // tongues behind the plate (front and back web of the groove >= 2 mm)
+led_gap = 9;            // half width of the gap in the bottom leg and the floor tongue at the status light
 
 // ---------- Inside ----------
 side_margin = 7.5;                               // margin beside the outer pumps
@@ -146,10 +163,11 @@ csk_d = 6.6;                                // countersunk head M3 (90 degrees)
 // ---------- Lid screws: 6 columns ----------
 col_w = 7;
 cx0 = in_x0 + col_w/2;  cx1 = in_x1 - col_w/2;
-cols = [[cx0, col_w/2], [cx1, col_w/2],
-        [(pump_x[1] + pump_x[2]) / 2, col_w/2],      // between pump 2 and 3
-        [(pump_x[2] + pump_x[3]) / 2, col_w/2],      // between pump 3 and 4
-        [cx0, in_y1 - col_w/2], [cx1, in_y1 - col_w/2]];
+cols_base  = [[cx0, leg_d + fp_clr + col_w/2], [cx1, leg_d + fp_clr + col_w/2],   // behind the side legs
+              [cx0, in_y1 - col_w/2], [cx1, in_y1 - col_w/2]];
+cols_plate = [[(pump_x[1] + pump_x[2]) / 2, col_w/2],      // on the front plate, between pump 2 and 3
+              [(pump_x[2] + pump_x[3]) / 2, col_w/2]];     // between pump 3 and 4
+cols = concat(cols_base, cols_plate);
 
 // ---------- DIN rail clip (35 x 47 mm, holes 3.2 mm, 20 mm apart) ----------
 // M3 countersunk from the inside (flush with the inner wall, behind the components), nut on
@@ -159,14 +177,14 @@ din_z = [height - 38, height - 18];
 din_d = 3.4;
 
 // ---------- Floor ----------
-drain_y  = 8;                                    // right behind the front, under each motor
+drain_y  = 12;                                   // right behind the bottom leg of the front plate, under each motor
 drain_d_out = 3;  drain_d_in = 8;
 // Rubber feet: the tube nipples overhang the bottom by ~8 mm, so feet of at least 10 mm,
 // or the device stands at the edge of a shelf.
 foot_d = 10.5;  foot_h = 1;
 foot_in = 7.5;                                   // centre from the outside edges, in the corners
 feet = [for (x = [in_x0 - wall + foot_in, in_x1 + wall - foot_in],
-             y = [-front_t + foot_in, in_y1 + wall - foot_in]) [x, y]];
+             y = [foot_in, in_y1 + wall - foot_in]) [x, y]];   // the front ones behind the seam
 
 // =====================================================================
 ox0 = in_x0 - wall;   ox1 = in_x1 + wall;
@@ -256,6 +274,54 @@ module rtc_forks() {
     }
 }
 
+// ---------- Front plate and its joint ----------
+module front_cut() box(ox0 - 1, oy0 - 1, -1, ox1 + 1, 0, z_top + 1);   // the front plate part of the shell
+function side_x(s) = s > 0 ? in_x0 : in_x1;                         // inner face of the left / right wall
+module fp_legs() {
+    for (s = [1, -1]) let(xw = side_x(s))
+        box(min(xw + s * fp_clr, xw + s * (fp_clr + leg_t)), -0.01, floor_t,
+            max(xw + s * fp_clr, xw + s * (fp_clr + leg_t)), leg_d, z_top);
+    difference() {
+        box(in_x0 + fp_clr, -0.01, floor_t, in_x1 - fp_clr, leg_d, floor_t + leg_t);
+        box(led_x - led_gap, -1, floor_t - 1, led_x + led_gap, leg_d + 1, floor_t + leg_t + 1);
+    }
+    for (c = cols_plate) box(c[0] - col_w/2, -0.01, floor_t + leg_t - 0.01, c[0] + col_w/2, col_w, z_top);
+}
+module fp_grooves() {   // open at the bottom, so the plate slides down over the tongues
+    for (s = [1, -1]) let(xw = side_x(s))
+        box(min(xw - s, xw + s * (tg_h + 0.3)), tg_y[0] - fp_clr, floor_t - 1,
+            max(xw - s, xw + s * (tg_h + 0.3)), tg_y[1] + fp_clr, z_top + 1);
+    box(in_x0 - 1, tg_y[0] - fp_clr, floor_t - 1, in_x1 + 1, tg_y[1] + fp_clr, floor_t + tg_h + 0.3);
+}
+module tongues() {
+    for (s = [1, -1]) let(xw = side_x(s))
+        box(min(xw - s * 0.01, xw + s * tg_h), tg_y[0], floor_t - 0.01,
+            max(xw - s * 0.01, xw + s * tg_h), tg_y[1], z_top);
+    difference() {
+        box(in_x0 - 0.01, tg_y[0], floor_t - 0.01, in_x1 + 0.01, tg_y[1], floor_t + tg_h);
+        box(led_x - led_gap, tg_y[0] - 1, floor_t - 1, led_x + led_gap, tg_y[1] + 1, floor_t + tg_h + 1);
+    }
+}
+
+module front_plate() {
+    difference() {
+        union() {
+            intersection() { shell(); front_cut(); }
+            fp_legs();
+        }
+        fp_grooves();
+        // pumps
+        for (px = pump_x) pump_cutout(px);
+        // status light
+        translate([led_x, 0.5, led_z]) rotate([90,0,0]) cylinder(d = led_d, h = front_t + 1);
+        // pump numbers under the heads (1 = left seen from the front)
+        for (i = [0:4]) translate([pump_x[i], oy0 + 0.6, 1.2]) rotate([90,0,0])
+            linear_extrude(1) text(str(i + 1), size = pump_num_size, halign = "center", font = "Liberation Sans:style=Bold");
+        // inserts for the lid screws
+        for (c = cols_plate) translate([c[0], c[1], z_top - ins_h]) cylinder(d = ins_d, h = ins_h + 1);
+    }
+}
+
 module niche_walls() {
     // front, sides and ceiling; they pass through the notch of the board
     box(n_x0 - nw, n_y0 - nw, 0, n_x1 + nw, n_y0, n_ztop);
@@ -271,7 +337,8 @@ module niche_walls() {
 module base() {
     difference() {
         union() {
-            difference() { shell(); box(in_x0, 0, floor_t, in_x1, in_y1, z_top + 1); }
+            difference() { shell(); box(in_x0, 0, floor_t, in_x1, in_y1, z_top + 1); front_cut(); }
+            tongues();
             guide(mb_xl, 1);
             guide(mb_xr, -1);
             for (x = sup_x) box(x - sup_l/2, mb_y - 1, 0.5, x + sup_l/2, mb_y + pcb_t + 1, mb_z0);
@@ -280,23 +347,16 @@ module base() {
             // guide tube for the button
             translate([btn[0], btn_tube_y, btn[1]]) rotate([-90,0,0]) cylinder(d = btn_tube_d, h = in_y1 - btn_tube_y + 0.01);
             // lid screw columns
-            for (c = cols)
+            for (c = cols_base)
                 box(c[0] - col_w/2, c[1] - col_w/2, 0, c[0] + col_w/2, c[1] + col_w/2, z_top);
         }
-        // pumps
-        for (px = pump_x) pump_cutout(px);
-        // status light
-        translate([led_x, 0.5, led_z]) rotate([90,0,0]) cylinder(d = led_d, h = front_t + 1);
-        // pump numbers under the heads (1 = left seen from the front)
-        for (i = [0:4]) translate([pump_x[i], oy0 + 0.6, 1.2]) rotate([90,0,0])
-            linear_extrude(1) text(str(i + 1), size = pump_num_size, halign = "center", font = "Liberation Sans:style=Bold");
         // niche, open to the back and to the bottom
         box(n_x0, n_y0, -1, n_x1, oy1 + 1, n_z1);
         // button: pin hole through back wall and tube, counterbore for the plug
         translate([btn[0], btn_tube_y - 1, btn[1]]) rotate([-90,0,0]) cylinder(d = btn_hole_d, h = oy1 - btn_tube_y + 2);
         translate([btn[0], oy1 - btn_cb_h, btn[1]]) rotate([-90,0,0]) cylinder(d = btn_cb_d, h = btn_cb_h + 1);
         // inserts for the lid screws
-        for (c = cols) translate([c[0], c[1], z_top - ins_h]) cylinder(d = ins_d, h = ins_h + 1);
+        for (c = cols_base) translate([c[0], c[1], z_top - ins_h]) cylinder(d = ins_d, h = ins_h + 1);
         // DIN rail clip: M3 countersunk from the inside
         for (x = din_x, z = din_z) {
             translate([x, in_y1 - 1, z]) rotate([-90,0,0]) cylinder(d = din_d, h = wall + 2);
@@ -372,10 +432,12 @@ module pumps_preview() {
 }
 
 if (part == "base") base();
+else if (part == "plate") translate([0, 0, front_t]) rotate([90,0,0]) front_plate();   // front face down
 else if (part == "plug") translate([0,0,btn_cb_h]) rotate([180,0,0]) plug();
 else if (part == "lid") translate([0, 0, -z_top]) lid();
 else if (part == "assembly") {
     color("dimgray") base();
+    color("slategray") front_plate();
     color("gray", 0.5) translate([0, 0, 25]) lid();
     boards_preview();
     pumps_preview();
