@@ -38,10 +38,12 @@ board and pumps as a preview.
   rail the cables hang straight down; standing, they leave to the back (angled plugs fit best).
 - **Button:** pressed with a paper clip through a 3 mm hole in the back wall below the DIN rail;
   a guide tube leads the clip to the button, a TPU plug (`part = "plug"`) closes the hole.
-- **RTC module** (DS3231 + AT24C32, the common 38 × 22 mm module with CR2032/LIR2032 holder)
-  stands upside down in two rails at the left side wall (seen from the front), battery towards
-  the wall. Its angled pin headers point down, so the plug and the cable to J10 hang below it;
-  the lid holds its top edge (0.3 mm play).
+- **RTC module** (DS3231 + AT24C32, ZS-042 type, about 38.3 × 21.7 mm, battery holder 8 mm
+  high) stands upright in a pocket at the left side wall (seen from the front), battery holder
+  towards the wall, the 6-pin angled header at the bottom. Both long edges carry parts in the
+  middle, so only its corners are held: it stands in two short channels at the bottom corners,
+  and two forks on the lid catch the top corners. No screws. The plug of its cable hangs below
+  it; the cable runs through an opening at the bottom of the left guide rib to J10.
 - **Status light** (Mentor 2660.8302, 8 mm hole, pressed in) in the front under pump 3. Its cable
   (about 85 mm without the plug) does not reach J9 behind pumps 1 and 2: add a 2 × 2 extension
   (2.54 mm, socket to pins, about 10 cm) and run it under the bottom edge of the board.
@@ -68,15 +70,17 @@ so the parts print on FDM as well as MJF and nothing thin breaks off.
 | DIN rail clip 35 × 47 mm | 2 | |
 | rubber foot Ø 10 mm, at least 10 mm high | 4 | only when standing |
 
-Assembly order: DIN clips, pumps from the front, RTC module into its rails, then the board from
-the top with the motor cables over its top edge; plug in the cables, close the lid.
+Assembly order: DIN clips, pumps from the front, RTC module with its cable plugged in into its
+pocket (cable through the rib opening), then the board from the top with the motor cables over
+its top edge; plug in the cables, close the lid.
 
 ### To check on the first print
 
 - Fit of the board in the guide slots (`slot_clr`) and of the lid tabs on its top edge.
 - Cut-outs for the barrel jack and the RJ45 in the niche ceiling against the assembled board
   (position of the RJ45 on the USR-ES1).
-- Rails against the RTC module actually used (`rtc_*`) and room for its plug below it.
+- RTC pocket against the module actually used (`rtc_*`): corner channels, lid forks, room for
+  its plug below it and the cable opening in the rib.
 - Height of the button guide tube against the Multimec button (`btn_h`).
 - Room for the motor cables over the top edge of the board and in the gap behind the motors.
 

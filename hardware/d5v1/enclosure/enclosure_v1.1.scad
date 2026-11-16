@@ -9,7 +9,7 @@
 //   - barrel jack and RJ45 point down into a niche behind pump 3 that is open to the back
 //     and to the bottom; the niche passes through the notch of the board
 //   - reset/setup button pressed with a paper clip through the back wall
-//   - DS3231 RTC module upside down in rails at the left side wall, held by the lid
+//   - DS3231 RTC module upside down in a pocket at the left side wall, held only at its corners
 //   - printable: walls, ribs, lips and tabs are at least 2 mm thick
 //   - status light in the front under pump 3, narrow side margins, no level sensors
 //  Two parts: base (with front) + lid (smooth, no openings, stackable).
@@ -109,16 +109,29 @@ btn_tube_d = 7;                // 2 mm wall around the pin hole
 btn_tube_y = comp_y + btn_h + 3;     // tube ends ~3 mm above the plunger
 plug_fit = 0.15;               // oversize of the plug (press fit in TPU)
 
-// ---------- RTC module (DS3231 + AT24C32, common 38 x 22 mm module) ----------
-// Stands upside down in two rails at the left side wall, battery towards the wall: its angled pin
-// headers point down, so the plug and the cable to J10 hang below it. The lid holds its top edge.
-// Check the rails against the module on the first print.
-rtc_x  = in_x0 + 6;            // centre of its board
-rtc_y  = [53, 75];             // board edges
-rtc_l  = 38;
-rtc_z0 = z_top - 0.3 - rtc_l;  // the board stands on the slot bottom, 0.3 mm under the lid
-rtc_t  = 1.6;
-rtc_grip = 1.5;                // the rails hold 1.5 mm of each edge
+// ---------- RTC module (DS3231 + AT24C32, ZS-042 type, measured about 38.3 x 21.7 mm) ----------
+// Stands upright in a pocket at the left side wall, battery holder towards the wall, the 6-pin
+// angled header at the bottom: its pins and the plug of the cable to J10 point down. Both long
+// edges carry parts in the middle (IC leads about 1 mm from the edge, the battery holder
+// overhangs one edge by about 1 mm), so the module is held only at its four corners: it stands in
+// two short channels at the bottom corners, and two forks on the lid catch the top corners. Two
+// webs from the side wall close the pocket at the front and the back. Check on the first print.
+rtc_w     = 22;                // board width (measured about 21.7)
+rtc_l     = 38.5;              // board length (measured about 38.3)
+rtc_t     = 1.6;
+rtc_bat   = 8;                 // battery holder below the board (measured 8 mm at the spring)
+rtc_bat_w = 23;                // battery holder width, overhangs one long edge by about 1 mm
+rtc_chip  = 4.5;               // highest part on the chip side: the bent pins of the header
+rtc_xb    = in_x0 + rtc_bat + 1;    // battery side of its board (1 mm air to the side wall)
+rtc_xc    = rtc_xb + rtc_t;         // chip side of its board
+rtc_yc    = 64.8;              // centre of its board (holder clear of the lid screw column)
+rtc_z0    = z_top - 0.5 - rtc_l;    // stands on the channel floors, 0.5 mm under the lid
+rtc_clr   = 0.3;               // clearance around the board
+rtc_grip  = 1.5;               // channels and forks hold 1.5 mm of each corner
+rtc_hold  = 5;                 // height of the channels and forks
+rtc_xo    = rtc_xc + rtc_clr + 2;   // outside of the channels (2 mm lips)
+rtc_cable_y = [61, 77];        // opening in the left guide rib for the cable to J10 (behind the board)
+rtc_cable_h = 10;
 
 // ---------- Status light in the front, under pump 3 ----------
 led_x = pump_x[2];
@@ -202,17 +215,44 @@ module guide(xe, s) {
     }
 }
 
-// rails for the RTC module at the left side wall
-module rtc_rails() {
-    for (i = [0, 1]) {
-        e = rtc_y[i];  s = i == 0 ? 1 : -1;            // s: direction into the module
+// pocket for the RTC module at the left side wall: two webs, channels at the bottom corners
+function rtc_eb(s) = rtc_yc - s * (rtc_bat_w/2 + 1);       // web face beside the battery holder
+function rtc_ep(s) = rtc_yc - s * (rtc_w/2 + rtc_clr);     // web face at the board
+module rtc_pocket() {
+    for (s = [1, -1]) {
+        eb = rtc_eb(s);  ep = rtc_ep(s);  eg = ep + s * (rtc_clr + rtc_grip);
+        // webs: wider beside the battery holder, narrower at the board and the chip side
+        // (the front one stops short of the motor of pump 1)
+        box(in_x0 - 0.01, min(eb, eb - s * 2), 0.5, s == 1 ? pump_x[0] - motor_w/2 : rtc_xb + 0.5, max(eb, eb - s * 2), z_top);
+        box(rtc_xb, min(ep, ep - s * 2), 0.5, rtc_xo, max(ep, ep - s * 2), z_top);
+        // channel at the bottom corner, with a 45 degree support under it and a lead-in at the top
         difference() {
-            box(in_x0 - 0.01, min(e - s * 2, e + s * rtc_grip), 0.5, rtc_x + rtc_t/2 + 0.2 + 2, max(e - s * 2, e + s * rtc_grip), z_top);
-            box(rtc_x - rtc_t/2 - 0.2, min(e - s * 0.3, e + s * (rtc_grip + 1)), rtc_z0,
-                rtc_x + rtc_t/2 + 0.2, max(e - s * 0.3, e + s * (rtc_grip + 1)), z_top + 1);
-            // room for the parts on the module beside the edge
-            box(in_x0 - 0.01, min(e + s * 0.6, e + s * (rtc_grip + 1)), rtc_z0,
-                rtc_x - rtc_t/2 - 0.2, max(e + s * 0.6, e + s * (rtc_grip + 1)), z_top + 1);
+            union() {
+                box(rtc_xb - rtc_clr - 2, min(eb, eg), rtc_z0 - 2, rtc_xo, max(eb, eg), rtc_z0 + rtc_hold);
+                hull() {
+                    box(rtc_xb - rtc_clr - 2, min(eb, eg), rtc_z0 - 2, rtc_xo, max(eb, eg), rtc_z0 - 1.99);
+                    box(rtc_xb - rtc_clr - 2, min(eb, eb + s * 0.01), rtc_z0 - 2 - abs(eg - eb), rtc_xo, max(eb, eb + s * 0.01), rtc_z0 - 1.99);
+                }
+            }
+            box(rtc_xb - rtc_clr, min(ep - s, eg + s), rtc_z0, rtc_xc + rtc_clr, max(ep - s, eg + s), z_top);
+            hull() {
+                box(rtc_xb - rtc_clr, min(ep - s, eg + s), rtc_z0 + rtc_hold - 1.5, rtc_xc + rtc_clr, max(ep - s, eg + s), rtc_z0 + rtc_hold - 1.49);
+                box(rtc_xb - rtc_clr - 1, min(ep - s, eg + s), rtc_z0 + rtc_hold, rtc_xc + rtc_clr + 1, max(ep - s, eg + s), rtc_z0 + rtc_hold + 0.01);
+            }
+        }
+    }
+}
+// forks on the lid that catch the top corners of the RTC module
+module rtc_forks() {
+    for (s = [1, -1]) {
+        ep = rtc_ep(s) + s * 0.2;  eg = rtc_ep(s) + s * (rtc_clr + rtc_grip);
+        difference() {
+            box(rtc_xb - rtc_clr - 2, min(ep, eg), z_top - rtc_hold, rtc_xo, max(ep, eg), z_top + 0.01);
+            box(rtc_xb - rtc_clr, min(ep - s, eg + s), z_top - rtc_hold - 1, rtc_xc + rtc_clr, max(ep - s, eg + s), z_top + 1);
+            hull() {
+                box(rtc_xb - rtc_clr, min(ep - s, eg + s), z_top - rtc_hold + 1.5, rtc_xc + rtc_clr, max(ep - s, eg + s), z_top - rtc_hold + 1.51);
+                box(rtc_xb - rtc_clr - 1, min(ep - s, eg + s), z_top - rtc_hold - 0.01, rtc_xc + rtc_clr + 1, max(ep - s, eg + s), z_top - rtc_hold);
+            }
         }
     }
 }
@@ -237,7 +277,7 @@ module base() {
             guide(mb_xr, -1);
             for (x = sup_x) box(x - sup_l/2, mb_y - 1, 0.5, x + sup_l/2, mb_y + pcb_t + 1, mb_z0);
             niche_walls();
-            rtc_rails();
+            rtc_pocket();
             // guide tube for the button
             translate([btn[0], btn_tube_y, btn[1]]) rotate([-90,0,0]) cylinder(d = btn_tube_d, h = in_y1 - btn_tube_y + 0.01);
             // lid screw columns
@@ -264,6 +304,8 @@ module base() {
             translate([x, in_y1 - 0.01, z]) rotate([-90,0,0])
                 cylinder(d1 = csk_d, d2 = scr_d, h = (csk_d - scr_d)/2);
         }
+        // cable opening for the RTC cable at the bottom of the left guide rib, behind the board
+        box(mb_xl - slot_clr - rib_t - 0.1, rtc_cable_y[0], floor_t, mb_xl - slot_clr + 0.01, rtc_cable_y[1], floor_t + rtc_cable_h);
         // drain funnel under each pump
         for (px = pump_x) translate([px, drain_y, -0.01])
             cylinder(d1 = drain_d_out, d2 = drain_d_in, h = floor_t + 0.02);
@@ -281,6 +323,7 @@ module lid() {
             }
             // tabs on the top edge of the board, in front of its components
             for (x = tab_x) box(x - tab_w/2, mb_y - 2.5, mb_z1 + 0.2, x + tab_w/2, mb_y + pcb_t - 0.1, z_top + 0.01);
+            rtc_forks();
         }
         // countersunk screws
         for (c = cols) {
@@ -303,6 +346,12 @@ module board_plate() {
         box(notch_x0, mb_y - 1, mb_z0 - 1, notch_x1, mb_y + pcb_t + 1, notch_z1);
     }
 }
+module rtc_module() {   // board, battery holder (23 mm, centre 23.5 mm from the header end), header and plug
+    box(rtc_xb, rtc_yc - rtc_w/2, rtc_z0, rtc_xc, rtc_yc + rtc_w/2, rtc_z0 + rtc_l);
+    translate([rtc_xb - rtc_bat, rtc_yc + 0.5, rtc_z0 + 23.5]) rotate([0,90,0]) cylinder(d = rtc_bat_w, h = rtc_bat);
+    box(rtc_xc, rtc_yc - rtc_w/2 + 2.2, rtc_z0, rtc_xc + rtc_chip, rtc_yc + rtc_w/2 - 3.8, rtc_z0 + 2.7);
+    box(rtc_xc + 2.4, rtc_yc - rtc_w/2 + 2.2, rtc_z0 - 20, rtc_xc + 5, rtc_yc + rtc_w/2 - 3.8, rtc_z0);
+}
 module boards_preview() {
     color("green", 0.7) board_plate();
     // space of the components (25 mm towards the back wall), barrel jack and USR-ES1
@@ -313,7 +362,7 @@ module boards_preview() {
     color("black", 0.8) box(MB([203, 0])[0], comp_y, MB([0, 128.5])[1], MB([193.5, 0])[0], comp_y + 11, MB([0, 114])[1]);
     color("silver", 0.8) box(MB([192.2, 0])[0], comp_y + 8.5, MB([0, 128.5])[1], MB([169.2, 0])[0], comp_y + 24, MB([0, 100.1])[1]);
     // RTC module
-    color("blue", 0.7) box(rtc_x - rtc_t/2, rtc_y[0], rtc_z0, rtc_x + rtc_t/2, rtc_y[1], rtc_z0 + rtc_l);
+    color("blue", 0.7) rtc_module();
 }
 module pumps_preview() {
     for (px = pump_x) color("silver", 0.7) {
