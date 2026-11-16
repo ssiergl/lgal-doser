@@ -6,7 +6,7 @@ assignment and run the same firmware build.
 | Version | Folder | Status |
 |---|---|---|
 | v1.0 (11/2026) | [`v1.0/`](v1.0/) | ordered and built; needs two rework wires, see [below](#rework-rx-lines-of-the-driver-uart) |
-| v1.1 | [`v1.1/`](v1.1/) | in design, see the [revision plan](v1.1/plan.md) |
+| v1.1 | [`v1.1/`](v1.1/) | designed, not yet ordered; [Gerber and drill files](v1.1/gerber/) exported, see the [revision plan](v1.1/plan.md) |
 
 Each version folder holds:
 

@@ -119,4 +119,6 @@ of commit 8f85c67a and the upright main board with a separate I/O board):
    side wall, DIN clips symmetric. Renders cleanly; no collisions with the motors, the board and
    its parts (also while sliding in) and the RTC module. Not yet printed, see the
    [enclosure README](../../enclosure/README.md).
-8. Gerber/placement files after review.
+8. ~~Gerber and drill files.~~ Exported 2026-11-16 to [`gerber/`](gerber/) (4 copper layers, mask,
+   silkscreen with soldermask subtracted, outline, PTH/NPTH drill files with maps), stackup
+   1.6 mm. Only through-hole parts, so no paste layers and no placement file.
