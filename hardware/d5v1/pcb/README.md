@@ -15,14 +15,15 @@ Each version folder holds:
 | `d5v1.kicad_pro`, `d5v1.kicad_sch`, `d5v1.kicad_pcb` | KiCad 10 project: schematic and layout for editing |
 | `lgal_doser.kicad_sym`, `lgal_doser.pretty/` | project symbol and footprint library (ESP32-S3 socket, TMC2209 StepStick socket, Multimec 3F button), registered with project-relative paths in `sym-lib-table` and `fp-lib-table` |
 | `bom.csv` | bill of materials: all parts with reference, value, footprint and example part number |
-| schematic (PDF), `gerber/`, placement data (CSV) | for reading the circuit, PCB manufacturing and assembly |
+| `d5v1-schematic.pdf` | schematic for reading without KiCad |
+| `gerber/` | Gerber and drill files for the board maker |
 
 **Status v1.0:** the KiCad project (exactly as ordered, 4 layers), the
-[bill of materials](v1.0/bom.csv) and the [Gerber and drill files](v1.0/gerber/) as sent to the
-board maker on 2026-11-05 are published (renamed from the old project name to `d5v1-*`; the
-drawing is unchanged and matches the layout in `v1.0/`, plotted with "subtract soldermask from
+[bill of materials](v1.0/bom.csv), the [schematic PDF](v1.0/d5v1-schematic.pdf) and the [Gerber and drill files](v1.0/gerber/) as sent to the board maker on
+2026-11-05 are published (renamed from the old project name to `d5v1-*`; the drawing is
+unchanged and matches the layout in `v1.0/`, plotted with "subtract soldermask from
 silkscreen"). Ordered at JLCPCB: 4 layers, 1.6 mm, no specified stackup, 1 oz outer and 0.5 oz
-inner copper, HASL. The PDF follows after the hardware test. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
+inner copper, HASL. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
 supply and other device parts are listed in the [build guide](../../../docs/build-guide.md#1-parts-list).
 
 The ESP32-S3 pin assignment and the circuit (UART addresses of the drivers, pull-ups, LED
