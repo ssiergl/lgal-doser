@@ -169,9 +169,12 @@ cols_plate = [[(pump_x[1] + pump_x[2]) / 2, col_w/2],      // on the front plate
 cols = concat(cols_base, cols_plate);
 
 // ---------- DIN rail clip (35 x 47 mm, holes 3.2 mm, 20 mm apart) ----------
-// M3 countersunk from the inside (flush with the inner wall, behind the components), nut on
-// the clip; the clips sit symmetric to the niche and end flush with the top of the lid.
-din_x = [150 - 60, 150 + 60];
+// M3 screws through the clips, M3 nut with washer on the inside. The upper holes are at the
+// height of the drivers (heat sinks 25 mm, only 2 mm from the back wall), so the holes sit in
+// the gaps between the drivers of pumps 2/3 and 4/5 (about 11 mm wide, 2 mm beside the washer);
+// therefore the clips are not quite symmetric. They end flush with the top of the lid.
+din_x = [94, 197.3];
+din_nut = [7, 4];               // room for washer (7 mm) and nut on the inside: diameter, height
 din_z = [height - 38, height - 18];
 din_d = 3.4;
 
@@ -353,12 +356,9 @@ module base() {
         translate([btn[0], oy1 - btn_cb_h, btn[1]]) rotate([-90,0,0]) cylinder(d = btn_cb_d, h = btn_cb_h + 1);
         // inserts for the lid screws
         for (c = cols_base) translate([c[0], c[1], z_top - ins_h]) cylinder(d = ins_d, h = ins_h + 1);
-        // DIN rail clip: M3 countersunk from the inside
-        for (x = din_x, z = din_z) {
+        // DIN rail clip: M3 through holes, nut and washer on the inside
+        for (x = din_x, z = din_z)
             translate([x, in_y1 - 1, z]) rotate([-90,0,0]) cylinder(d = din_d, h = wall + 2);
-            translate([x, in_y1 - 0.01, z]) rotate([-90,0,0])
-                cylinder(d1 = csk_d, d2 = scr_d, h = (csk_d - scr_d)/2);
-        }
         // cable opening for the RTC cable at the bottom of the left guide rib, behind the board
         box(mb_xl - slot_clr - rib_t - 0.1, rtc_cable_y[0], floor_t, mb_xl - slot_clr + 0.01, rtc_cable_y[1], floor_t + rtc_cable_h);
         // drain funnel under each pump

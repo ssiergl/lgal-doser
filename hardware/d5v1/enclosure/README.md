@@ -56,8 +56,10 @@ devices can be stacked. Export a part with `part = "base"`, `"plate"`, `"lid"` o
 - **Status light** (Mentor 2660.8302, 8 mm hole, pressed in) in the front plate under pump 3. Its cable
   (about 85 mm without the plug) does not reach J9 behind pumps 1 and 2: add a 2 × 2 extension
   (2.54 mm, socket to pins, about 10 cm) and run it under the bottom edge of the board.
-- **DIN rail:** two clips (35 × 47 mm, holes 20 mm apart) at the back, symmetric to the niche,
-  M3 countersunk from the inside (flush), nuts on the clips.
+- **DIN rail:** two clips (35 × 47 mm, holes 20 mm apart) at the back, M3 screws through the
+  clips, nut and washer on the inside. The holes sit in the gaps between the drivers of pumps
+  2/3 and 4/5, where the heat sinks leave room for the nuts, so the clips are not quite
+  symmetric to the niche.
 - **Floor:** a drain funnel under each pump right behind the bottom leg of the front plate.
 
 ### Print and parts
@@ -76,7 +78,7 @@ so the parts print on FDM as well as MJF and nothing thin breaks off.
 |---|---|---|
 | heat-set insert M3 × 5.7 (e.g. ruthex RX-M3x5.7) | 6 | lid screw columns (4 in the base, 2 on the front plate) |
 | M3 × 8 countersunk (ISO 10642) | 6 | lid |
-| M3 countersunk (length to suit the clip) + M3 nut | 4 | DIN rail clips |
+| M3 screw (length to suit the clip) + M3 nut + washer | 4 | DIN rail clips, nut and washer inside |
 | DIN rail clip 35 × 47 mm | 2 | |
 | rubber foot Ø 10 mm, at least 10 mm high | 4 | only when standing |
 
