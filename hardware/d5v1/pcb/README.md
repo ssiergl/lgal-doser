@@ -17,9 +17,12 @@ Each version folder holds:
 | `bom.csv` | bill of materials: all parts with reference, value, footprint and example part number |
 | schematic (PDF), `gerber/`, placement data (CSV) | for reading the circuit, PCB manufacturing and assembly |
 
-**Status v1.0:** the KiCad project (exactly as ordered, 4 layers) and the
-[bill of materials](v1.0/bom.csv) are published; the PDF, Gerber and placement files follow after
-the hardware test. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
+**Status v1.0:** the KiCad project (exactly as ordered, 4 layers), the
+[bill of materials](v1.0/bom.csv) and the [Gerber and drill files](v1.0/gerber/) as sent to the
+board maker on 2026-11-05 are published (renamed from the old project name to `d5v1-*`; the
+drawing is unchanged and matches the layout in `v1.0/`, plotted with "subtract soldermask from
+silkscreen"). Ordered at JLCPCB: 4 layers, 1.6 mm, no specified stackup, 1 oz outer and 0.5 oz
+inner copper, HASL. The PDF follows after the hardware test. The quantities in `bom.csv` are for one device; plug-in modules, pumps, power
 supply and other device parts are listed in the [build guide](../../../docs/build-guide.md#1-parts-list).
 
 The ESP32-S3 pin assignment and the circuit (UART addresses of the drivers, pull-ups, LED
