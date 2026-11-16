@@ -35,7 +35,8 @@ devices can be stacked. Export a part with `part = "base"`, `"plate"`, `"lid"` o
   in their front face, and the lower screws cannot be reached in a fixed front. So the pumps are
   screwed to the front plate on the bench, and the plate with the pumps slides in from the top.
   It covers the whole front including the ends of the side walls and the floor: from the front
-  there is no joint, only a seam on the sides 2.5 mm behind the front and on the bottom. Legs
+  there is no joint, only a seam on the sides 4 mm behind the front (where the rounded corners
+  end) and on the bottom. Legs
   on its back edges carry a groove that slides over a tongue on the inside of each side wall and
   on the floor; the lid holds it down and is screwed into two columns on the plate. A pump can
   be changed by taking out the plate without removing the board.
@@ -72,7 +73,10 @@ devices can be stacked. Export a part with `part = "base"`, `"plate"`, `"lid"` o
 ### Print and parts
 
 All walls, ribs, lips and tabs are at least 2 mm thick (floor 3 mm, lid and outer walls 2.5 mm),
-so the parts print on FDM as well as MJF and nothing thin breaks off.
+so the parts print on FDM as well as MJF and nothing thin breaks off. No edge is thinner than
+0.8 mm (checked for MJF): the lead-ins of the board slots keep 1.2 mm at the top, the drain
+funnels start with a short straight hole, and the seam of the front plate lies where the rounded
+corners end.
 
 | Part | Print | Note |
 |---|---|---|

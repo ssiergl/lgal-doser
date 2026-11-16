@@ -94,6 +94,7 @@ slot_clr = 0.2;                // clearance at the edge and on each side of the 
 lip_t    = 2;                  // lips in front of and behind the board
 rib_t    = 2;                  // rib behind the board edge, joined to the back wall
 lead_in  = 3;                  // chamfer at the top of the slots
+lead_lip = 1.2;                 // the lips keep 1.2 mm at their top edge (MJF: walls >= 0.8 mm)
 // support blocks under the bottom edge (the slots have their bottom at the same height)
 sup_x = [70, 105, 190, 215];
 sup_l = 8;
@@ -180,7 +181,7 @@ din_d = 3.4;
 
 // ---------- Floor ----------
 drain_y  = 12;                                   // right behind the bottom leg of the front plate, under each motor
-drain_d_out = 3;  drain_d_in = 8;
+drain_d_out = 3;  drain_d_in = 8;  drain_h = 1;   // straight part at the bottom, no sharp rim
 // Rubber feet: the tube nipples overhang the bottom by ~8 mm, so feet of at least 10 mm,
 // or the device stands at the edge of a shelf.
 foot_d = 10.5;  foot_h = 1;
@@ -230,8 +231,8 @@ module guide(xe, s) {
         hull() {
             box(min(xe - s * slot_clr, xe + s * (slot_d + 1)), mb_y - slot_clr, z_top - lead_in,
                 max(xe - s * slot_clr, xe + s * (slot_d + 1)), mb_y + pcb_t + slot_clr, z_top - lead_in + 0.01);
-            box(min(xe - s * slot_clr, xe + s * (slot_d + 1)), ya + 0.4, z_top,
-                max(xe - s * slot_clr, xe + s * (slot_d + 1)), yb - 0.4, z_top + 0.01);
+            box(min(xe - s * slot_clr, xe + s * (slot_d + 1)), ya + lead_lip, z_top,
+                max(xe - s * slot_clr, xe + s * (slot_d + 1)), yb - lead_lip, z_top + 0.01);
         }
     }
 }
@@ -277,7 +278,14 @@ module rtc_forks() {
 }
 
 // ---------- Front plate and its joint ----------
-module front_cut() box(ox0 - 1, oy0 - 1, -1, ox1 + 1, 0, z_top + 1);   // the front plate part of the shell
+// the front plate part of the shell: the front and, at the side walls, the rounded corners up to
+// where they end (y = oy0 + corner_r), so the seam lies on the flat side face and neither part
+// gets a thin wedge along it
+module front_cut() {
+    box(ox0 - 1, oy0 - 1, -1, ox1 + 1, 0, z_top + 1);
+    box(ox0 - 1, oy0 - 1, -1, in_x0, oy0 + corner_r, z_top + 1);
+    box(in_x1, oy0 - 1, -1, ox1 + 1, oy0 + corner_r, z_top + 1);
+}
 function side_x(s) = s > 0 ? in_x0 : in_x1;                         // inner face of the left / right wall
 module fp_legs() {
     for (s = [1, -1]) let(xw = side_x(s))
@@ -362,8 +370,10 @@ module base() {
         // cable opening for the RTC cable at the bottom of the left guide rib, behind the board
         box(mb_xl - slot_clr - rib_t - 0.1, rtc_cable_y[0], floor_t, mb_xl - slot_clr + 0.01, rtc_cable_y[1], floor_t + rtc_cable_h);
         // drain funnel under each pump
-        for (px = pump_x) translate([px, drain_y, -0.01])
-            cylinder(d1 = drain_d_out, d2 = drain_d_in, h = floor_t + 0.02);
+        for (px = pump_x) translate([px, drain_y, -0.01]) {
+            cylinder(d = drain_d_out, h = drain_h + 0.02);
+            translate([0, 0, drain_h]) cylinder(d1 = drain_d_out, d2 = drain_d_in, h = floor_t - drain_h + 0.02);
+        }
         // rubber feet
         for (f = feet) translate([f[0], f[1], -0.01]) cylinder(d = foot_d, h = foot_h);
     }
