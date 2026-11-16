@@ -56,7 +56,7 @@ hat sie für spätere Erweiterungen, die Firmware nutzt sie nicht.
 | 5 | 1 | Uhrmodul DS3231 mit AT24C32-EEPROM | beliebiges DS3231-Modul | flach montiert; eine gerade Stiftleiste 1 × 4 an seine 4er-Lochreihe löten |
 | 6 | 1 | Stiftleiste 1 × 4, 2,54 mm, gerade | – | für das Uhrmodul |
 | 7 | 1 | Pufferbatterie für das Uhrmodul | LIR2032 (3,6 V, Akku) | eine CR2032 **nur nach Auslöten der Ladediode** am Modul, siehe [Sicherheit](#3-elektrische-sicherheit) |
-| 8 | 1 | RGB-Leuchte, gemeinsame Anode, mit Stecker | Mentor 2660.8302 | Steckerbelegung vor dem Anschließen prüfen |
+| 8 | 1 | RGB-Leuchte, gemeinsame Anode, mit Stecker | Mentor 2660.8302 | Steckerbelegung vor dem Anschließen prüfen; im Gehäuse für Platine v1.1 ist ihr Kabel zu kurz, dazu eine 2 × 2-Verlängerung (2,54 mm, Buchse auf Stifte, etwa 10 cm) |
 | 9 | 5 | Schlauchpumpe mit Schrittmotor | Kamoer KPHM100-ST | 24 V, 1,0 A, 200 Vollschritte/U, ohne Getriebe; Kabel mit JST-XH-Stecker 4-polig |
 | 10 | 1 | Netzteil 24 V DC, Schutzkleinspannung (SELV) | Mean Well GST60A24-P1M (24 V / 2,5 A / 60 W) | Hohlstecker 5,5 × 2,5 mm, Plus innen |
 | 11 | 1 | Netzkabel C13 (Kaltgerätekabel) | – | für das Netzteil |
