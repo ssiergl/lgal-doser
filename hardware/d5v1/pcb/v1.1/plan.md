@@ -20,6 +20,7 @@ possible** (v1.0: 224 × 75 mm, pump connectors in a row along the 224 mm side).
 | 5 | Net names: `STEPn` = pump n (v1.0 has them reversed: `STEP1` drives pump 5); J11–J15 nets gone. | none (names only) |
 | 6 | Supply review: ESP 3V3 stays separate from the board +3V3 (as on v1.0); check the USB-only back-feed through the ESP I/O pins and USB 5 V vs. `5V_ESP`/D3. Results are reported before anything is changed. | possibly section 1 (supply) |
 | 7 | 24 V sense on GPIO 6: +24 V – 100 kΩ (R15) – GPIO 6 – 10 kΩ (R16) – GND, 100 nF (C16). Added 2026-11-16 after the supply review. | Pin table GPIO 6, section 4. **Firmware impact:** new ADC input on v1.1 only; the firmware needs to know the board version (v1.0: GPIO 6 floats). |
+| 8 | Tried 2026-11-16 and dropped again the same day: a separate I/O board (barrel jack, input protection, USR-ES1, button). Everything stays on one board; the schematic is the one of step 2. | none |
 
 **GPIO changes:** allowed if they make the layout clearly smaller, but each one changes the
 firmware pin map. Then the board can no longer share the firmware build with v1.0 and needs a
@@ -27,22 +28,34 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
 
 ## Layout
 
-- Re-place everything for minimum depth: TMC2209 StepSticks may be rotated, ESP32-S3 dev kit,
-  USR-ES1 and supply placed beside the drivers instead of in front of them.
-- Keep: ESP antenna at a board edge without copper underneath, Ethernet module and 24 V jack
-  reachable from outside, button SW1 reachable with a paper clip through the lid, LED header J9,
-  pump connectors J2–J6 in pump order (pump 1 on the left seen from the front).
-- Driver cooling: keep room for StepStick heatsinks and airflow.
-- Silkscreen in English: "LGAL Doser 5", "v1.1 – <date>", "PUMP 1" … "PUMP 5", no "FÜLLSTAND",
-  no "5CH".
-- Clean DRC: replace the `MountingHole_3.2mm` footprint (gone in KiCad 10), fix silkscreen
-  overlaps, PCB net names in sync with the schematic, zones refilled before export.
+Third concept, agreed 2026-11-16 together with the new enclosure (replaces the two-row layout
+of commit 8f85c67a and the upright main board with a separate I/O board):
+
+- Enclosure about 282 × 87 × 65 mm (depth without the pump heads). The pumps sit low, their tube
+  nipples (22 mm, pointing down) overhang the bottom by about 8 mm like on market dosers.
+- **One board, upright behind the motors, components facing the back wall**, about 205 × 50 mm.
+  The motor cables (single wires) run over the top edge of the board to the pump plugs J2–J6 on
+  the component side at the top edge. Pump 1 is on the left seen from the front, so in the
+  KiCad top view (= view from the back) it is on the right.
+- **U shape:** barrel jack J1 and the RJ45 of the USR-ES1 sit in a notch in the middle of the
+  bottom edge and point down into a niche in the back of the enclosure, centred behind pump 3,
+  open to the back and to the bottom (like the slot of v1.0).
+- The board slides in from the top into guide slots at its left and right edge (no screws);
+  2.5 mm along both side edges stay free of parts and tracks. The lid holds it down.
+- The ESP32-S3 dev kit sits fully on the board (no overhang in a guide slot), no copper under the
+  antenna.
+- The button faces the back wall and is pressed with a paper clip through a hole in the back
+  wall. The lid has no hole and stays stackable.
+- The DS3231 RTC module stands in rails at the left side wall (seen from the front), cable
+  to J10.
+- Status light in the front panel under pump 3.
+- Silkscreen in English, no "FÜLLSTAND", no "5CH". Clean DRC with schematic parity.
 
 ## Open points
 
-- ~~Target depth (and maximum length).~~ 166.5 × 54 mm, see step 3.
+- ~~Target depth (and maximum length).~~ 205 × 50 mm (U shape), see step 6.
 - ~~Pinout of the RTC cable connector.~~ Same as J16: 3.3 V, SDA, SCL, GND.
-- New enclosure for v1.1 in `d5v1/enclosure/` (the narrower board does not fit the v1.0 one).
+- ~~New enclosure for v1.1 in `d5v1/enclosure/`.~~ See step 7.
 
 ## Steps
 
@@ -78,4 +91,25 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
    - DRC: 0 errors, 0 unconnected. Remaining warnings: the SW1 footprint outline crosses its own
      pads (as in v1.0), the ESP kit outline overhangs the edge (antenna, intended), and the
      schematic parity reports the TMC2209 symbol pins 17/18 that have no pad (as in v1.0).
-5. BOM v1.1 (renumber the items), Gerber/placement files after review.
+5. ~~BOM v1.1 (renumber the items).~~ Done 2026-11-16.
+6. ~~U-shaped upright layout of the one board.~~ Done 2026-11-16, **205 × 50 mm**, notch
+   40 × 23 mm, 4 layers, autorouted with Freerouting 2.5 (same layer stack and net classes as
+   step 4). Top view = view from the back (the components face the back wall), so pump 1 is on
+   the right:
+   - Top row: pump plugs J2–J6 at the top edge with their 100 nF beside them, below them the
+     five drivers with their 100 µF to the left (pitch 32.5 mm); pumps 5 and 4 left of the
+     notch, pumps 3, 2 and 1 right of it.
+   - Above the notch: USR-ES1 on J7/J8 (RJ45 1.5 mm into the notch) and the barrel jack J1
+     (opening 1.5 mm into the notch), R11 above J1. The notch is centred behind pump 3.
+   - Bottom left: ESP32-S3 dev kit, fully on the board, antenna at the left edge (no copper fill
+     and no tracks under it except the two short stubs at its end pins), the small parts between
+     its socket rows as in step 3.
+   - Bottom right: input protection (F1, Q1, R1, D1, D2, C1) and R15 next to C1, regulators
+     U2/U3 with C2–C4, D3, I²C pull-ups, J9 (LED), J10 (RTC), J16 (I²C), SW1 with C15.
+   - No mounting holes; 2.5 mm along both side edges are free of parts and tracks for the
+     guide slots of the enclosure.
+   - DRC: 0 errors, 0 unconnected. Remaining warnings: the barrel jack outline reaches into the
+     notch (intended), the SW1 footprint outline crosses its own pads and the schematic parity
+     reports the TMC2209 symbol pins 17/18 without a pad (both as in v1.0).
+7. Enclosure for the upright board.
+8. Gerber/placement files after review.
