@@ -31,17 +31,19 @@ new board ID (see `hardware/CLAUDE.md`). Every proposed GPIO change is put to th
 Third concept, agreed 2026-11-16 together with the new enclosure (replaces the two-row layout
 of commit 8f85c67a and the upright main board with a separate I/O board):
 
-- Enclosure about 282 × 87 × 65 mm (depth without the pump heads). The pumps sit low, their tube
+- Enclosure about 282 × 89 × 65 mm (depth without the pump heads). The pumps sit low, their tube
   nipples (22 mm, pointing down) overhang the bottom by about 8 mm like on market dosers.
-- **One board, upright behind the motors, components facing the back wall**, about 205 × 50 mm.
+- **One board, upright 6 mm behind the motors, components facing the back wall**, about
+  205 × 50 mm. The gap leaves room for the solder joints and the motor cables.
   The motor cables (single wires) run over the top edge of the board to the pump plugs J2–J6 on
   the component side at the top edge. Pump 1 is on the left seen from the front, so in the
   KiCad top view (= view from the back) it is on the right.
 - **U shape:** barrel jack J1 and the RJ45 of the USR-ES1 sit in a notch in the middle of the
   bottom edge and point down into a niche in the back of the enclosure, centred behind pump 3,
   open to the back and to the bottom (like the slot of v1.0).
-- The board slides in from the top into guide slots at its left and right edge (no screws);
-  2.5 mm along both side edges stay free of parts and tracks. The lid holds it down.
+- The board slides in from the top into guide slots at its left and right edge (no screws)
+  and stands on blocks 4 mm above the floor; 2.5 mm along both side edges stay free of parts
+  and tracks. The lid holds it down.
 - The ESP32-S3 dev kit sits fully on the board (no overhang in a guide slot), no copper under the
   antenna.
 - The button faces the back wall and is pressed with a paper clip through a hole in the back
@@ -111,5 +113,10 @@ of commit 8f85c67a and the upright main board with a separate I/O board):
    - DRC: 0 errors, 0 unconnected. Remaining warnings: the barrel jack outline reaches into the
      notch (intended), the SW1 footprint outline crosses its own pads and the schematic parity
      reports the TMC2209 symbol pins 17/18 without a pad (both as in v1.0).
-7. Enclosure for the upright board.
+7. ~~Enclosure for the upright board.~~ Designed 2026-11-16 as OpenSCAD source
+   [`enclosure_v1.1.scad`](../../enclosure/enclosure_v1.1.scad), about 282 × 89 × 65 mm: guide
+   slots and lid tabs instead of screws, niche behind pump 3, RTC module in rails at the left
+   side wall, DIN clips symmetric. Renders cleanly; no collisions with the motors, the board and
+   its parts (also while sliding in) and the RTC module. Not yet printed, see the
+   [enclosure README](../../enclosure/README.md).
 8. Gerber/placement files after review.
