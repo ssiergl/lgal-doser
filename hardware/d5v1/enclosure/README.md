@@ -4,11 +4,15 @@ This folder holds the files for the enclosure and mechanical parts of the LGAL D
 
 | File | Purpose |
 |---|---|
-| [`enclosure_v1.1.scad`](enclosure_v1.1.scad) | OpenSCAD source of the enclosure for board v1.1 |
-| `*.stl` / `*.3mf` | print files, one file per part, in print orientation (not yet published) |
+| [`enclosure_v1.0.scad`](enclosure_v1.0.scad) | OpenSCAD source of the enclosure for board v1.0 (flat board) |
+| [`enclosure_v1.1.scad`](enclosure_v1.1.scad) | OpenSCAD source of the enclosure for board v1.1 (upright board) |
+| `enclosure_v1.x_base.stl`, `_lid.stl`, `_plug.stl` | print files, one file per part, in print orientation, exported from the source |
 | `*.step` | exchange format for adapting in other CAD programs (not yet published) |
 
-**Status:** the v1.1 enclosure renders without errors in OpenSCAD 2026.10.11 (manifold
+The STL files are exported with OpenSCAD 2026.10.11 (manifold backend, binary STL), e.g.
+`openscad --backend=manifold -D 'part="base"' -o enclosure_v1.1_base.stl enclosure_v1.1.scad`.
+
+**Status:** the v1.0 enclosure is the one designed for the first devices (see below). The v1.1 enclosure renders without errors in OpenSCAD 2026.10.11 (manifold
 backend). It does not collide with the motors, the board, the outlines of its parts (also while
 the board slides in) and the RTC module. It is not yet printed or checked against the assembled
 board.
@@ -73,6 +77,18 @@ the top with the motor cables over its top edge; plug in the cables, close the l
 - Rails against the RTC module actually used (`rtc_*`) and room for its plug below it.
 - Height of the button guide tube against the Multimec button (`btn_h`).
 - Room for the motor cables over the top edge of the board and in the gap behind the motors.
+
+## Enclosure for board v1.0
+
+The enclosure of the first devices: the board lies flat 12 mm above the floor behind the pumps
+and is screwed onto five domes with heat-set inserts. Base with front panel and a smooth lid,
+screwed on with nine M3 countersunk screws. Barrel jack and RJ45 point into a slot in the middle
+of the back, open to the back and to the bottom. The button is pressed with a paper clip through
+a hole in the lid (TPU plug), the status light sits in the front right of pump 5.
+
+Parts printed from the earlier version of these files have five unused holes in the left side wall and
+ventilation slots in the right side wall and the back. The source and the STL files here have a
+closed wall instead; the lid and the plug are unchanged.
 
 ## Notes for your own enclosure
 
