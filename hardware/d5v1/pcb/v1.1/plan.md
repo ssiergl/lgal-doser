@@ -57,7 +57,7 @@ of commit 8f85c67a and the upright main board with a separate I/O board):
 
 - ~~Target depth (and maximum length).~~ 205 × 50 mm (U shape), see step 6.
 - ~~Pinout of the RTC cable connector.~~ Same as J16: 3.3 V, SDA, SCL, GND.
-- ~~New enclosure for v1.1 in `d5v1/enclosure/`.~~ See step 7.
+- ~~New enclosure for v1.1 in `d5v1/enclosure/v1.1/`.~~ See step 7.
 
 ## Steps
 
@@ -114,7 +114,7 @@ of commit 8f85c67a and the upright main board with a separate I/O board):
      notch (intended), the SW1 footprint outline crosses its own pads and the schematic parity
      reports the TMC2209 symbol pins 17/18 without a pad (both as in v1.0).
 7. ~~Enclosure for the upright board.~~ Designed 2026-11-16 as OpenSCAD source
-   [`enclosure_v1.1.scad`](../../enclosure/enclosure_v1.1.scad), about 282 × 90 × 65 mm: guide
+   [`enclosure_v1.1.scad`](../../enclosure/v1.1/enclosure_v1.1.scad), about 282 × 90 × 65 mm: guide
    slots and lid tabs instead of screws, niche behind pump 3, RTC module in a pocket at the left
    side wall, DIN clips symmetric, removable front plate that carries the pumps. Renders cleanly; no collisions with the motors, the board and
    its parts (also while sliding in) and the RTC module. Not yet printed, see the

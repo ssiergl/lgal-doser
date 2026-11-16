@@ -1,16 +1,23 @@
 # d5v1 – enclosure
 
-This folder holds the files for the enclosure and mechanical parts of the LGAL Doser 5:
+This folder holds the enclosure and mechanical parts of the LGAL Doser 5, one folder per board
+version, like the [circuit boards](../pcb/):
+
+| Version | Folder | Board |
+|---|---|---|
+| v1.0 | [`v1.0/`](v1.0/) | board v1.0 (flat board) |
+| v1.1 | [`v1.1/`](v1.1/) | board v1.1 (upright board) |
+
+Each version folder holds:
 
 | File | Purpose |
 |---|---|
-| [`enclosure_v1.0.scad`](enclosure_v1.0.scad) | OpenSCAD source of the enclosure for board v1.0 (flat board) |
-| [`enclosure_v1.1.scad`](enclosure_v1.1.scad) | OpenSCAD source of the enclosure for board v1.1 (upright board) |
-| `enclosure_v1.x_base.stl`, `_lid.stl`, `_plug.stl` (v1.1 also `_plate.stl`) | print files, one file per part, in print orientation, exported from the source |
+| `enclosure_v1.x.scad` | OpenSCAD source |
+| `enclosure_v1.x_base.stl`, `_lid.stl`, `_plug.stl` (v1.1 also `_plate.stl`) | print files, one file per part, in print orientation, exported from the source; the version stays in the name so downloaded files can be told apart |
 | `*.step` | exchange format for adapting in other CAD programs (not yet published) |
 
-The STL files are exported with OpenSCAD 2026.10.11 (manifold backend, binary STL), e.g.
-`openscad --backend=manifold -D 'part="base"' -o enclosure_v1.1_base.stl enclosure_v1.1.scad`.
+The STL files are exported with OpenSCAD 2026.10.11 (manifold backend, binary STL), e.g. in
+`v1.1/`: `openscad --backend=manifold -D 'part="base"' -o enclosure_v1.1_base.stl enclosure_v1.1.scad`.
 
 **Status:** the v1.0 enclosure is the one designed for the first devices (see below). The v1.1 enclosure renders without errors in OpenSCAD 2026.10.11 (manifold
 backend). It does not collide with the motors, the board, the outlines of its parts (also while

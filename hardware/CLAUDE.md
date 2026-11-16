@@ -31,7 +31,8 @@ firmware is written against. Read it first.
   `hw-d5v1-v1.1`); only documentation (README, BOM notes,
   rework instructions) may change afterwards. Work on a new version starts from a copy.
 - Board versions with the same firmware pin map share the board ID and live side by side in
-  `<board ID>/pcb/v<version>/` (e.g. `d5v1/pcb/v1.0/`, `d5v1/pcb/v1.1/`).
+  `<board ID>/pcb/v<version>/` (e.g. `d5v1/pcb/v1.0/`, `d5v1/pcb/v1.1/`); their enclosures in
+  `<board ID>/enclosure/v<version>/`.
 - A change of the firmware pin map (any GPIO the firmware uses, UART addresses, LED or EN
   polarity) needs a new board ID and folder (`d5v2`, …), because the firmware selects its pin map
   by board ID. Ask the user before such a change.

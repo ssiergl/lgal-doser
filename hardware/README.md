@@ -14,6 +14,8 @@ Each version folder holds:
 | `pcb/` | schematic, PCB layout, Gerber and drill data, bill of materials, placement data |
 | `enclosure/` | enclosure and mechanical parts: STL, STEP, 3MF and CAD source files |
 
+Both hold one subfolder per board version (`v1.0/`, `v1.1/`, …).
+
 A new board revision gets its own folder (e.g. `d5v2`). If it keeps the enclosure of an earlier
 version, its README points there instead of copying the files.
 
