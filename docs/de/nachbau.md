@@ -192,8 +192,8 @@ Einzelheiten und Hintergründe: [technische Doku, Erstinbetriebnahme](technik.md
 1. Spannung aus. ESP-Board, StepSticks (richtig herum, mit Kühlkörper), Ethernet- und RTC-Modul
    (mit Batterie) einstecken.
 2. Platine, Pumpen, Taster und LED ins Gehäuse setzen.
-3. **Pumpen anschließen:** Pumpe 1 ist von vorne gesehen die linke, die Nummern auf Gehäuse und
-   Platine müssen übereinstimmen.
+3. **Pumpen anschließen:** Pumpe 1 ist von vorne gesehen die linke; jede Pumpe in den Stecker mit
+   ihrer Nummer auf der Platine stecken (das Gehäuse v1.0 zeigt die Nummern auch unter den Köpfen).
 4. Typenschild einkleben, LAN-Kabel einstecken, zuletzt das Netzteil.
 
 ## 7. Inbetriebnahme und Test
