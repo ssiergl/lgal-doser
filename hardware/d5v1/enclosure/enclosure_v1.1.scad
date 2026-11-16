@@ -114,8 +114,9 @@ plug_fit = 0.15;               // oversize of the plug (press fit in TPU)
 // angled header at the bottom: its pins and the plug of the cable to J10 point down. Both long
 // edges carry parts in the middle (IC leads about 1 mm from the edge, the battery holder
 // overhangs one edge by about 1 mm), so the module is held only at its four corners: it stands in
-// two short channels at the bottom corners, and two forks on the lid catch the top corners. Two
-// webs from the side wall close the pocket at the front and the back. Check on the first print.
+// two short channels at the bottom corners, and two forks on the lid catch the top corners; both
+// also stop the board sideways. Two flat webs from the side wall close the pocket at the front and
+// the back, the back one flush with the lid screw column. Check on the first print.
 rtc_w     = 22;                // board width (measured about 21.7)
 rtc_l     = 38.5;              // board length (measured about 38.3)
 rtc_t     = 1.6;
@@ -124,7 +125,7 @@ rtc_bat_w = 23;                // battery holder width, overhangs one long edge 
 rtc_chip  = 4.5;               // highest part on the chip side: the bent pins of the header
 rtc_xb    = in_x0 + rtc_bat + 1;    // battery side of its board (1 mm air to the side wall)
 rtc_xc    = rtc_xb + rtc_t;         // chip side of its board
-rtc_yc    = 64.8;              // centre of its board (holder clear of the lid screw column)
+rtc_yc    = in_y1 - 7 - rtc_bat_w/2 - 1;   // centre of its board: back web flush with the lid screw column
 rtc_z0    = z_top - 0.5 - rtc_l;    // stands on the channel floors, 0.5 mm under the lid
 rtc_clr   = 0.3;               // clearance around the board
 rtc_grip  = 1.5;               // channels and forks hold 1.5 mm of each corner
@@ -221,10 +222,8 @@ function rtc_ep(s) = rtc_yc - s * (rtc_w/2 + rtc_clr);     // web face at the bo
 module rtc_pocket() {
     for (s = [1, -1]) {
         eb = rtc_eb(s);  ep = rtc_ep(s);  eg = ep + s * (rtc_clr + rtc_grip);
-        // webs: wider beside the battery holder, narrower at the board and the chip side
-        // (the front one stops short of the motor of pump 1)
-        box(in_x0 - 0.01, min(eb, eb - s * 2), 0.5, s == 1 ? pump_x[0] - motor_w/2 : rtc_xb + 0.5, max(eb, eb - s * 2), z_top);
-        box(rtc_xb, min(ep, ep - s * 2), 0.5, rtc_xo, max(ep, ep - s * 2), z_top);
+        // flat web from the side wall to the outside of the channels (room for the battery holder)
+        box(in_x0 - 0.01, min(eb, eb - s * 2), 0.5, rtc_xo, max(eb, eb - s * 2), z_top);
         // channel at the bottom corner, with a 45 degree support under it and a lead-in at the top
         difference() {
             union() {
@@ -234,10 +233,10 @@ module rtc_pocket() {
                     box(rtc_xb - rtc_clr - 2, min(eb, eb + s * 0.01), rtc_z0 - 2 - abs(eg - eb), rtc_xo, max(eb, eb + s * 0.01), rtc_z0 - 1.99);
                 }
             }
-            box(rtc_xb - rtc_clr, min(ep - s, eg + s), rtc_z0, rtc_xc + rtc_clr, max(ep - s, eg + s), z_top);
+            box(rtc_xb - rtc_clr, min(ep, eg + s), rtc_z0, rtc_xc + rtc_clr, max(ep, eg + s), z_top);
             hull() {
-                box(rtc_xb - rtc_clr, min(ep - s, eg + s), rtc_z0 + rtc_hold - 1.5, rtc_xc + rtc_clr, max(ep - s, eg + s), rtc_z0 + rtc_hold - 1.49);
-                box(rtc_xb - rtc_clr - 1, min(ep - s, eg + s), rtc_z0 + rtc_hold, rtc_xc + rtc_clr + 1, max(ep - s, eg + s), rtc_z0 + rtc_hold + 0.01);
+                box(rtc_xb - rtc_clr, min(ep, eg + s), rtc_z0 + rtc_hold - 1.5, rtc_xc + rtc_clr, max(ep, eg + s), rtc_z0 + rtc_hold - 1.49);
+                box(rtc_xb - rtc_clr - 1, min(ep, eg + s), rtc_z0 + rtc_hold, rtc_xc + rtc_clr + 1, max(ep, eg + s), rtc_z0 + rtc_hold + 0.01);
             }
         }
     }
@@ -245,13 +244,13 @@ module rtc_pocket() {
 // forks on the lid that catch the top corners of the RTC module
 module rtc_forks() {
     for (s = [1, -1]) {
-        ep = rtc_ep(s) + s * 0.2;  eg = rtc_ep(s) + s * (rtc_clr + rtc_grip);
+        e0 = rtc_eb(s) + s * 0.2;  ep = rtc_ep(s);  eg = ep + s * (rtc_clr + rtc_grip);
         difference() {
-            box(rtc_xb - rtc_clr - 2, min(ep, eg), z_top - rtc_hold, rtc_xo, max(ep, eg), z_top + 0.01);
-            box(rtc_xb - rtc_clr, min(ep - s, eg + s), z_top - rtc_hold - 1, rtc_xc + rtc_clr, max(ep - s, eg + s), z_top + 1);
+            box(rtc_xb - rtc_clr - 2, min(e0, eg), z_top - rtc_hold, rtc_xo, max(e0, eg), z_top + 0.01);
+            box(rtc_xb - rtc_clr, min(ep, eg + s), z_top - rtc_hold - 1, rtc_xc + rtc_clr, max(ep, eg + s), z_top + 1);
             hull() {
-                box(rtc_xb - rtc_clr, min(ep - s, eg + s), z_top - rtc_hold + 1.5, rtc_xc + rtc_clr, max(ep - s, eg + s), z_top - rtc_hold + 1.51);
-                box(rtc_xb - rtc_clr - 1, min(ep - s, eg + s), z_top - rtc_hold - 0.01, rtc_xc + rtc_clr + 1, max(ep - s, eg + s), z_top - rtc_hold);
+                box(rtc_xb - rtc_clr, min(ep, eg + s), z_top - rtc_hold + 1.5, rtc_xc + rtc_clr, max(ep, eg + s), z_top - rtc_hold + 1.51);
+                box(rtc_xb - rtc_clr - 1, min(ep, eg + s), z_top - rtc_hold - 0.01, rtc_xc + rtc_clr + 1, max(ep, eg + s), z_top - rtc_hold);
             }
         }
     }
