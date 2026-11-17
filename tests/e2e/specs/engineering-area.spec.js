@@ -3,7 +3,7 @@
 
 // The unlocked engineering area: every form checks its values, saves them and fills itself again
 // from the device. Each test puts back what it changed and locks the area again.
-import { expect, test, unlockEngineering } from './fixtures.js';
+import { engineeringKey, expect, open, test, unlockEngineering } from './fixtures.js';
 
 const card = (page, title) => page.locator('form.card, section.card')
   .filter({ has: page.getByRole('heading', { name: title, level: 2, exact: true }) });
@@ -94,6 +94,77 @@ test('channel population: at least one pump, asks before the restart', async ({ 
   await ask.getByRole('button', { name: 'Cancel' }).click();
   await expect(ask).toBeHidden();
   expect((await hw(page)).fitted_next).toEqual([1, 2, 3, 4, 5]);  // nothing saved
+});
+
+test.describe('with a restart', () => {
+  // While the device restarts, requests fail and the live connection drops
+  test.use({ allowErrors: /ERR_|WebSocket|network connection was lost|Connection terminated unexpectedly|Could not connect|Load failed|access control checks/ });
+
+  test('channel population: saved, the device restarts, the pump is gone everywhere', async ({ page, cleanup }) => {
+    test.slow();
+    await unlock(page, cleanup);
+    // all five back, with a restart of its own (the change takes effect only then)
+    cleanup(async () => {
+      await page.request.post('/api/v1/auth/engineering', { data: { key: engineeringKey } });
+      await page.request.post('/api/v1/hw/channels?pumps=1,2,3,4,5');
+      await page.request.post('/api/v1/system/reboot');
+      await expect.poll(async () => (await page.request.get('/api/v1/system/language').catch(() => null))?.ok() ?? false,
+        { timeout: 30_000 }).toBe(true);
+      await page.request.post('/api/v1/auth/engineering', { data: { key: engineeringKey } });  // the restart locked it
+      expect((await hw(page)).fitted).toEqual([1, 2, 3, 4, 5]);
+      await page.request.delete('/api/v1/auth/engineering');
+    });
+    const c = card(page, 'Channel population');
+    await c.getByRole('switch').nth(4).uncheck();
+    await c.getByRole('button', { name: 'Save and restart' }).click();
+    const ask = page.getByRole('alertdialog');
+    await expect(ask).toContainText('Save the channel population and restart the device?');
+    await ask.getByRole('button', { name: 'Save and restart' }).click();
+    await expect(c.getByRole('status')).toHaveText(/^Waiting for the device/, { timeout: 15_000 });
+    // the page reloads; the restart locks the engineering area
+    await expect(page.getByText('The engineering area is locked.')).toBeVisible({ timeout: 30_000 });
+
+    await open(page, '#/');
+    await expect(page.locator('a.pump-card')).toHaveCount(4);
+    await page.goto('/#/pump/5');  // no heading on this page
+    await expect(page.getByText('Pump 5 is not fitted.')).toBeVisible();
+    await page.goto('/#/pump/9');
+    await expect(page.getByText('There is no pump 9.')).toBeVisible();
+  });
+});
+
+test('clock module without a time server: the aging offset is set by hand', async ({ page, cleanup }) => {
+  cleanup(() => page.request.post('/mock/time'));
+  expect((await page.request.put('/api/v1/system/time', { data: { ntp_server: '' } })).ok()).toBe(true);
+  await unlock(page, cleanup);
+  // after the unlock, so it runs before the area is locked again (cleanups run in reverse order)
+  cleanup(() => page.request.post('/api/v1/hw/rtc/aging?offset=0'));
+  const c = card(page, 'Clock module (DS3231)');
+  await expect(c.getByText('No time server: the aging offset is set by hand here.')).toBeVisible();
+  const aging = c.getByRole('textbox', { name: /^Aging offset/ });
+  await expect(c.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+  await aging.fill('200');
+  await c.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(c.getByRole('status')).toHaveText(/^Please check: Aging offset \(−?-?128 … 127\)$/);
+  await aging.fill('-12');
+  await save(c);
+  expect((await hw(page)).rtc.aging).toBe(-12);
+  await expect(c.locator('dd').filter({ hasText: /^-12$/ })).toBeVisible();
+});
+
+test('history kept longer; EEPROM self test', async ({ page, cleanup }) => {
+  const before = (await get(page, '/api/v1/history/settings')).keep_days;
+  const longer = before < 60 ? 60 : 59;
+  await unlock(page, cleanup);
+  cleanup(() => page.request.post(`/api/v1/history/settings?keep_days=${before}`));  // while unlocked
+  const hist = card(page, 'History');
+  await hist.getByRole('textbox', { name: /^Keep events for/ }).fill(String(longer));
+  await save(hist);
+  expect((await get(page, '/api/v1/history/settings')).keep_days).toBe(longer);
+
+  const tel = card(page, 'System telemetry');
+  await tel.getByRole('button', { name: 'Run test' }).click();
+  await expect(tel.getByRole('status')).toHaveText('EEPROM self test passed.');
 });
 
 test('limits, container thresholds and history: checked and saved', async ({ page, cleanup }) => {
