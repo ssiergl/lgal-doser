@@ -30,10 +30,34 @@ test('@factory setup wizard from the factory state', async ({ page }) => {
   await expect(page).toHaveURL(/\/setup/);
   await expect(page.locator('#stepno')).toHaveText('Step 3 of 5');
   await expect(page.locator('#next')).toBeEnabled();
+
+  // Wi-Fi: search, pick a network, a wrong and then a right password (the mock refuses "wrongpass1")
+  await expect(page.locator('#scan')).toBeHidden();  // LAN is the default
+  await page.getByRole('radio', { name: 'Wi-Fi' }).check();
+  await page.locator('#scan').click();
+  await page.locator('#nets').getByRole('button', { name: /HomeNet-Guest/ }).click();
+  await expect(page.locator('#ssid')).toHaveValue('HomeNet-Guest');
+  await expect(page.locator('#nets button')).toHaveCount(0);
+  await page.locator('#wpw').fill('wrongpass1');
+  await page.locator('#wtest').click();
+  await expect(page.locator('#net_msg')).toHaveText('Connection failed: wrong password', { timeout: 10_000 });
+  await page.locator('#wpw').fill('guest-pass-1');
+  await page.locator('#wtest').click();
+  await expect(page.locator('#net_msg')).toHaveText('Connected and saved.', { timeout: 10_000 });
+  expect((await (await page.request.get('/api/v1/net/settings')).json()).wlan).toMatchObject({ ssid: 'HomeNet-Guest', password_set: true });
   await page.locator('#next').click();
+
+  // time: an own POSIX zone and time server
   await expect(page.locator('#stepno')).toHaveText('Step 4 of 5');
+  await expect(page.locator('#timest')).toContainText('Device time');  // loaded, it no longer resets the list
+  await expect(page.locator('#tzc')).toBeHidden();
+  await page.locator('#tz').selectOption({ label: 'Other (POSIX string) …' });
+  await page.locator('#tzc').fill('EST5EDT,M3.2.0,M11.1.0');
+  await page.locator('#ntp').fill('time.example.org');
   await page.locator('#next').click();
   await expect(page.locator('#stepno')).toHaveText('Step 5 of 5');
+  expect(await (await page.request.get('/api/v1/system/time')).json())
+    .toMatchObject({ timezone: 'EST5EDT,M3.2.0,M11.1.0', ntp_server: 'time.example.org' });
   await page.locator('#next').click();
   await expect(page.locator('#done_ok')).toBeVisible();
 
