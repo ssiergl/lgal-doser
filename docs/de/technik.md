@@ -24,6 +24,7 @@ tools/                  provision.py, ap_password.py, ota_upload.py, release.sh,
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
+tests/i18n/, tools/, size/, lint/  Übersetzungen, Python-Werkzeuge, Image-Größe, ESLint und cppcheck (siehe Prüfungen)
 partitions*.csv         endgültige Partitionstabellen je Flash-Größe (nur per USB änderbar!)
 boards/                 Board-Definitionen (Modellname je Board; Pins in components/doser_hal/include/doser/boards/)
 variants/               Konfiguration je Modulvariante (N8R8, N16R8, N32R8)
@@ -92,6 +93,18 @@ Nach Änderungen an `sdkconfig.defaults` muss `sdkconfig` neu erzeugt werden
 beim Bauen geprüft.
 
 Beide Test-Skripte nehmen mit `HOST_CXX=clang++` einen anderen Compiler (die CI nutzt das).
+
+#### Prüfungen
+
+Die CI führt außerdem diese Prüfungen aus; lokal aus dem Repository-Wurzelverzeichnis:
+
+| Prüfung | Befehl | Schlägt fehl, wenn |
+|---|---|---|
+| Übersetzungen | `python3 tests/i18n/check_translations.py` | einer `lang/*.json` ein Schlüssel fehlt, sie einen unbekannten hat oder andere Platzhalter (`{n}` …) als Englisch; der Code `t('…')` mit einem Schlüssel aufruft, den Englisch nicht definiert |
+| Python-Werkzeuge | `python3 -m pytest tests/tools` | Manifest, Beta-Kanal, Release-Text, Passwörter oder Provisionierungswerte falsch sind; Passwörter und Versionsreihenfolge werden gegen dieselben Werte geprüft wie in den Host-Tests der Firmware |
+| Image-Größe | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | das App-Image mehr als 85 % seines OTA-Slots belegt (ein zu großes Image lässt sich nicht per OTA einspielen, und die Slot-Größe lässt sich per OTA nicht ändern) |
+| ESLint | `npm ci --prefix tests/lint`, dann `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | die Weboberfläche einen undefinierten Namen, eine unbenutzte Variable oder einen anderen Fehler enthält, vor dem ESLint warnt (ohne Build-Schritt fände ihn sonst niemand) |
+| cppcheck | `tests/lint/cppcheck.sh` (braucht cppcheck) | die Firmware-Quellen einen Befund zu Warnungen, Performance oder Portabilität haben; geprüfte Fehlalarme stehen mit Begründung in `tests/lint/cppcheck-suppressions.txt` |
 
 ### Boards
 
