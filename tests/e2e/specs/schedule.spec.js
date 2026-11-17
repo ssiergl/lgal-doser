@@ -115,6 +115,10 @@ test('export a schedule and import it into another pump', async ({ page, cleanup
   expect(doc).toMatchObject({ format: 'lgal-doser-schedule', version: 1, pump: 3, name: 'Magnesium' });
   expect(doc.schedule.kind).toBe('times');
 
+  // pump 5 allows 5 ml a day, the plan of pump 3 has 7.5 ml on its dosing days (Mon, Wed, Fri, Sat)
+  const limit = (await (await page.request.get('/api/v1/pumps')).json()).pumps[4].daily.limit_ml;
+  cleanup(() => page.request.post(`/api/v1/pumps/settings?pump=5&daily_limit_ml=${limit}`));
+  await page.request.post('/api/v1/pumps/settings?pump=5&daily_limit_ml=0');
   await page.goto('/#/pump/5');
   const restore = cleanup(await keep(page, 5));
   // cancelling changes nothing
