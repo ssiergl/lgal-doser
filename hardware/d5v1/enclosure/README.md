@@ -17,7 +17,6 @@ Each version folder holds:
 |---|---|
 | `enclosure_v1.x.scad` | OpenSCAD source |
 | `enclosure_v1.x_base.stl`, `_lid.stl`, `_plug.stl` (v1.1 also `_plate.stl`) | print files, one file per part, in print orientation, exported from the source; the version stays in the name so downloaded files can be told apart |
-| `*.step` | exchange format for adapting in other CAD programs (not yet published) |
 
 The STL files are exported with OpenSCAD 2026.10.11 (manifold backend, binary STL), e.g. in
 `v1.1/`: `openscad --backend=manifold -D 'part="base"' -o enclosure_v1.1_base.stl enclosure_v1.1.scad`.
