@@ -158,7 +158,7 @@ label.field input[type=text] { max-width: 320px; }
 .detail .running { margin-top: 12px; }
 .detail .running .row { justify-content: space-between; gap: 8px; }
 button.hold {
-  width: 100%; background: color-mix(in srgb, var(--svc) 18%, var(--card)); color: var(--svc);
+  width: 100%; background: color-mix(in srgb, var(--svc) 14%, var(--card)); color: var(--svc);
   border: 1px solid color-mix(in srgb, var(--svc) 45%, transparent); user-select: none; -webkit-user-select: none; touch-action: none;
 }
 button.hold.held { background: var(--svc); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--svc) 30%, transparent); }
