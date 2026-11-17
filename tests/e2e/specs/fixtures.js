@@ -46,6 +46,9 @@ export async function open(page, hash = '#/') {
   await expect(page.locator('main h1').first()).toBeVisible();
 }
 
+// The second button of the view switch in the header (its label depends on the language)
 export async function proMode(page) {
-  await page.getByRole('banner').getByRole('button', { name: 'Pro' }).click();
+  const pro = page.locator('header .seg button').nth(1);
+  await pro.click();
+  await expect(pro).toHaveClass(/on/);
 }
