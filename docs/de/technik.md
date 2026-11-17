@@ -20,7 +20,7 @@ components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitpla
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL, siehe TRADEMARKS.md) und web/, das gemeinsame Design der Seiten (GPL)
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
@@ -159,8 +159,8 @@ es beim Upload ab (`wrong_variant`). N32R8 ist nur gebaut, nicht auf Hardware ge
 `tools/release.sh` baut jedes Board (`boards/`) in jeder Variante nach `dist/`: je Board und
 Variante das App-Image `lgal_doser-<B>-<V>.bin` (OTA, z. B. `lgal_doser-d5v1-N16R8.bin`) und
 `lgal_doser-<B>-<V>-full.bin` (Bootloader, Partitionstabelle, OTA-Daten und App für den
-ersten USB-Flash ab Adresse 0x0), dazu `manifest.json` (`tools/make_manifest.py`), `LICENSE`
-und `THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` baut nur
+ersten USB-Flash ab Adresse 0x0) und die SBOM `lgal_doser-<B>-<V>.spdx.json` (siehe unten),
+dazu `manifest.json` (`tools/make_manifest.py`), `LICENSE` und `THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` baut nur
 einen Teil. Die CI baut dieselben Kombinationen (Matrix in `.github/workflows/ci.yml`: ein
 neues Board dort ergänzen).
 
@@ -178,6 +178,32 @@ dessen Überschrift die Version nennt (ein Release-Kandidat `0.2.0-rc.1` nimmt d
 `0.2.0`, z. B. `## Unreleased – 0.2.0`), als Zusammenfassung in Stichpunkten, danach jeder Commit
 seit dem vorigen Versions-Tag, eingeklappt unter „All changes“, und ein Link auf den vollständigen
 Vergleich. Den Changelog-Abschnitt also vor dem Taggen aktuell halten.
+
+#### SBOM
+
+Jedes Release enthält je Board und Variante eine Software-Stückliste,
+`lgal_doser-<B>-<V>.spdx.json` (SPDX 2.2 JSON): jedes Paket, das im Image steckt, mit Version,
+Lieferant, Lizenz und, soweit bekannt, CPE und Package-URL – ESP-IDF und seine Teile, die
+verwalteten Komponenten, Preact und htm sowie die eigenen Komponenten. `tools/sbom.py` erzeugt
+sie mit Espressifs [esp-idf-sbom](https://github.com/espressif/esp-idf-sbom) aus der
+`project_description.json` des Builds:
+
+```bash
+pip install esp-idf-sbom==1.5.0
+python tools/sbom.py build-d5v1-N16R8 lgal_doser-d5v1-N16R8.spdx.json
+```
+
+Die `sbom.yml`-Dateien beschreiben, was esp-idf-sbom nicht wissen kann: das Projekt und jede
+eigene Komponente (Lieferant, GPL-3.0-or-later), `components/webui/sbom_preact.yml` und
+`sbom_htm.yml` die eingebundenen Bibliotheken. Nach einem Update von Preact oder htm dort
+ebenfalls die Version anheben. Die CI erzeugt die SBOM jedes Builds, ein ungültiges `sbom.yml`
+fällt also vor einem Release auf.
+
+Bekannte Schwachstellen der Pakete (NVD, über CPE) listet:
+
+```bash
+esp-idf-sbom check lgal_doser-d5v1-N16R8.spdx.json
+```
 
 Für den [Beta-Kanal](#ota-update) aktualisiert jedes Release zusätzlich das Vorab-Release
 `channel-beta` (beim ersten Release angelegt): Es enthält nur eine `manifest.json`, die die
