@@ -67,9 +67,7 @@ Pinbelegung und Schaltung: [CLAUDE.md](CLAUDE.md).
 ## Projektstand
 
 Die Firmware ist vollständig umgesetzt (Meilensteine M0–M6) und mit Host-Tests, Fuzzern und
-einem Geräte-Mock geprüft. Platine v1.0 (11/2026) ist gebaut, v1.1 ist entworfen; der Test der
-Firmware auf der echten Hardware steht noch aus. Bis dahin gilt: **noch nicht für den Einsatz
-an einem Aquarium mit Tieren geeignet.**
+einem Geräte-Mock geprüft. Platine v1.0 (11/2026) ist gebaut, v1.1 ist entworfen.
 
 Ohne Gerät lässt sich die Weboberfläche im Browser ausprobieren:
 
