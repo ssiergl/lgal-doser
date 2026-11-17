@@ -41,3 +41,9 @@ jobs:
         run: |
           . "$IDF_PATH/export.sh"
           idf.py -B "build-${{ matrix.board }}-${{ matrix.variant }}" -DBOARD=${{ matrix.board }} -DVARIANT=${{ matrix.variant }} build
+      - name: SBOM ${{ matrix.board }} ${{ matrix.variant }}
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          pip install -q esp-idf-sbom==1.5.0
+          python tools/sbom.py "build-${{ matrix.board }}-${{ matrix.variant }}" sbom.spdx.json

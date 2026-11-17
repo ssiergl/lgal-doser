@@ -6,6 +6,7 @@
 #   lgal_doser-<B>-<V>.bin       app image: OTA update and update manifest
 #   lgal_doser-<B>-<V>-full.bin  bootloader, partition table, OTA data and app
 #                                in one file, for the first USB flash at 0x0
+#   lgal_doser-<B>-<V>.spdx.json SBOM of the build, SPDX 2.2 JSON (tools/sbom.py)
 #   manifest.json                update manifest (tools/make_manifest.py)
 #   LICENSE, THIRD-PARTY-NOTICES.txt
 #
@@ -14,7 +15,9 @@
 #   NOTES=https://…/releases/tag/v0.2.0 tools/release.sh
 #
 # Needs the ESP-IDF environment (export.sh). Each build uses its own
-# directory build-<B>-<V>/ with its own sdkconfig.
+# directory build-<B>-<V>/ with its own sdkconfig. The SBOM needs esp-idf-sbom
+# (pip install esp-idf-sbom==1.5.0); without it a local run leaves the SBOM out, in
+# GitHub Actions it fails.
 set -eu
 cd "$(dirname "$0")/.."
 BOARDS="${BOARDS:-$(for f in boards/*.cmake; do basename "$f" .cmake; done)}"
@@ -30,6 +33,11 @@ for b in $BOARDS; do
         grep -q "^CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=" "build-$b-$v/sdkconfig"
         cp "build-$b-$v/lgal_doser.bin" "dist/lgal_doser-$b-$v.bin"
         idf.py -B "build-$b-$v" -DBOARD="$b" -DVARIANT="$v" merge-bin -o "$PWD/dist/lgal_doser-$b-$v-full.bin"
+        if [ -n "${GITHUB_ACTIONS:-}" ] || python -c "import esp_idf_sbom" 2>/dev/null; then
+            python tools/sbom.py "build-$b-$v" "dist/lgal_doser-$b-$v.spdx.json"
+        else
+            echo "esp-idf-sbom not installed: no SBOM for $b $v"
+        fi
         BUILDS="$BUILDS $b-$v"
     done
 done
