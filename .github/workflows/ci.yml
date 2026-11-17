@@ -27,7 +27,7 @@ jobs:
         run: HOST_CXX=clang++ sh tests/fuzz/run.sh 20000 1
   firmware:
     runs-on: ubuntu-24.04
-    container: espressif/idf:v6.0.3
+    container: espressif/idf:v6.1.1
     strategy:
       matrix:
         board: [d5v1]  # one entry per boards/<id>.cmake

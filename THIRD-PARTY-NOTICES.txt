@@ -25,11 +25,11 @@ its own license; all of them allow use in a GPLv3 program. The full license
 texts follow the list.
 
 
-- ESP-IDF (framework, drivers, Wi-Fi/PHY libraries) v6.0.3
+- ESP-IDF (framework, drivers, Wi-Fi/PHY libraries) v6.1.1
   License: Apache-2.0
   Copyright: Espressif Systems (Shanghai) CO LTD
 
-- Mbed TLS (in ESP-IDF) v6.0.3
+- Mbed TLS (in ESP-IDF) v6.1.1
   License: Apache-2.0
   Copyright: ARM Limited and the Mbed TLS contributors
 
@@ -57,31 +57,31 @@ texts follow the list.
   License: BSD-3-Clause
   Copyright: Stephen Robinson
 
-- FreeRTOS kernel (in ESP-IDF) v6.0.3
+- FreeRTOS kernel (in ESP-IDF) v6.1.1
   License: MIT
   Copyright: Amazon.com, Inc. or its affiliates
 
-- lwIP TCP/IP stack (in ESP-IDF) v6.0.3
+- lwIP TCP/IP stack (in ESP-IDF) v6.1.1
   License: BSD-3-Clause
   Copyright: Swedish Institute of Computer Science
 
-- wpa_supplicant (in ESP-IDF) v6.0.3
+- wpa_supplicant (in ESP-IDF) v6.1.1
   License: BSD-3-Clause
   Copyright: Jouni Malinen and contributors
 
-- TLSF allocator (in ESP-IDF) v6.0.3
+- TLSF allocator (in ESP-IDF) v6.1.1
   License: BSD-3-Clause
   Copyright: Matthew Conte
 
-- HTTP parser (in ESP-IDF) v6.0.3
+- HTTP parser (in ESP-IDF) v6.1.1
   License: MIT
   Copyright: Igor Sysoev, Joyent, Inc. and other Node contributors
 
-- Xtensa HAL headers (in ESP-IDF) v6.0.3
+- Xtensa HAL headers (in ESP-IDF) v6.1.1
   License: MIT
   Copyright: Tensilica Inc.
 
-- Picolibc C library (in ESP-IDF toolchain) v6.0.3
+- Picolibc C library (in ESP-IDF toolchain) v6.1.1
   License: BSD and others, see below
   Copyright: Keith Packard, The Newlib Project and others
 

@@ -74,7 +74,7 @@ Pin assignment and circuit are fixed, see [CLAUDE.md](../CLAUDE.md).
 - Soldering station, solder, desoldering braid
 - Multimeter (voltage, continuity)
 - USB cable for the ESP board and a computer with Python 3 (for `esptool` and the scripts); to
-  build the firmware yourself, ESP-IDF v6.0.3 (see [technical docs](technical.md#toolchain))
+  build the firmware yourself, ESP-IDF v6.1.1 (see [technical docs](technical.md#toolchain))
 - Measuring cup or syringe with 0.1 ml graduation for calibration
 - 3D printer for the enclosure (or your own enclosure)
 

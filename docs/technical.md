@@ -10,7 +10,7 @@ Firmware of the "LG Aquatic Life" dosing pump (first device: ESP32-S3-DEV-KIT-N1
 Project overview: [README](../README.md); fixed hardware (pin assignment, circuit):
 [CLAUDE.md](../CLAUDE.md).
 
-Framework: **ESP-IDF v6.0.3**, C++ (gnu++2b), FreeRTOS.
+Framework: **ESP-IDF v6.1.1**, C++ (gnu++2b), FreeRTOS.
 
 ## Structure
 
@@ -36,7 +36,7 @@ hardware/               enclosure and circuit board files per version, e.g. d5v1
 ## Toolchain
 
 ```bash
-git clone -b v6.0.3 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.0.3
+git clone -b v6.1.1 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.1.1
 ```
 
 This repository with the brand submodule (`brand/`, the logo and the shared web design):
@@ -49,13 +49,13 @@ In an existing checkout: `git submodule update --init`; a newer logo or design w
 `git submodule update --remote brand` and a commit.
 
 ```bash
-~/esp/esp-idf-v6.0.3/install.sh esp32s3 && brew install cmake ninja
+~/esp/esp-idf-v6.1.1/install.sh esp32s3 && brew install cmake ninja
 ```
 
 In every new shell:
 
 ```bash
-source ~/esp/esp-idf-v6.0.3/export.sh
+source ~/esp/esp-idf-v6.1.1/export.sh
 ```
 
 Build:
@@ -208,7 +208,7 @@ is out, leaves it as it is. Devices on the beta channel read
 
 `.github/workflows/ci.yml` runs the host tests under both sanitizers, a short fuzz run and the
 build of all three variants on every push to `main` and every pull request (in the
-`espressif/idf:v6.0.3` container).
+`espressif/idf:v6.1.1` container).
 
 ## First start-up (once over USB, before installation)
 

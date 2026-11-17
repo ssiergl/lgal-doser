@@ -9,7 +9,7 @@ The texts are copied from the local ESP-IDF tree ($IDF_PATH), the managed
 components and the vendored web libraries, so nothing is typed by hand.
 Run it again after an ESP-IDF or component update and commit the result:
 
-  source ~/esp/esp-idf-v6.0.3/export.sh   # sets IDF_PATH
+  source ~/esp/esp-idf-v6.1.1/export.sh   # sets IDF_PATH
   python3 tools/third_party_notices.py
 
 The build embeds the file into the web UI (components/webui/CMakeLists.txt).

@@ -84,7 +84,7 @@ def device_json():
 
 def info_json():
     return {"device": {"vendor": "LG Aquatic Life", "model": "LGAL Doser 5", "board": "d5v1", "hostname": hostname(), "mac": "AA:BB:CC:00:11:22", "setup_completed": True},
-            "firmware": {"project": "lgal_doser", "version": SYS["version"], "idf": "v6.0.3", "built": "Nov  7 2026 10:00:00",
+            "firmware": {"project": "lgal_doser", "version": SYS["version"], "idf": "v6.1.1", "built": "Nov  7 2026 10:00:00",
                          "partition": SYS["partition"], "ota_state": "VALID", "last_invalid_partition": SYS["invalid"]},
             "system": {"uptime_s": int(max(0, time.time() - SYS["boot"])) + 2 * 86400 + 3 * 3600, "reset_reason": "SW", "heap_free": 182000,
                        "heap_min_free": 151000, "heap_largest_block": 98000, "psram_free": 8200000, "coredump": SYS["coredump"]},
