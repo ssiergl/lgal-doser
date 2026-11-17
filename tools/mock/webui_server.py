@@ -12,7 +12,7 @@
 # only: admin password "test-admin-pw", engineering key "test-eng-key".
 # Modules: sys_mock (time, network, auth, system), hist_mock (history, backup),
 # mqtt_mock (MQTT), eng_mock (engineering, hardware test endpoints).
-import base64, hashlib, json, os, socket, struct, sys, threading, time
+import base64, hashlib, itertools, json, os, socket, struct, sys, threading, time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -215,6 +215,7 @@ def put_locks(h, body):
     return h.send(200, LOCKS)
 
 CLIENTS = {}  # id -> socket
+CIDS = itertools.count(1)  # client ids, never reused
 LOG = []
 
 def log(*a):
@@ -546,10 +547,11 @@ class H(BaseHTTPRequestHandler):
         acc = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
         self.send_response(101); self.send_header("Upgrade", "websocket"); self.send_header("Connection", "Upgrade")
         self.send_header("Sec-WebSocket-Accept", acc); self.end_headers(); self.wfile.flush()
-        s = self.connection; cid = id(s) % 1000
-        with LOCK: CLIENTS[cid] = s
+        s = self.connection
+        hello = frame(json.dumps(dict(type="status", seq=0, utc=int(time.time()), time_valid=True, **live())))
+        # under the lock: the pusher must not write into the middle of this frame
+        with LOCK: cid = next(CIDS); CLIENTS[cid] = s; s.sendall(hello)
         log("client", cid, "connected")
-        s.sendall(frame(json.dumps(dict(type="status", seq=0, utc=int(time.time()), time_valid=True, **live()))))
         try:
             while True:
                 b0, b1 = recv_exact(s, 2); op = b0 & 15; n = b1 & 127
