@@ -15,9 +15,10 @@ const value = re => {
 };
 export const adminPassword = value(/AUTH = \{"password": "([^"]+)"/);
 export const labelPassword = value(/LABEL_PW = "([^"]+)"/);
+export const engineeringKey = value(/ENGKEY = "([^"]+)"/);
 
 // Errors the device answers on purpose: the engineering API without a key, a wrong password
-const expected = url => /\/api\/v1\/engineering\/|\/api\/v1\/auth\/(login|claim|engineering)/.test(url);
+const expected = url => /\/api\/v1\/(engineering|hw)\/|\/api\/v1\/auth\/(login|claim|engineering)/.test(url);
 
 export const test = base.extend({
   // "signedIn: false" for pages without the app (factory mock)
@@ -68,4 +69,13 @@ export async function proMode(page) {
   const pro = page.locator('header .seg button').nth(1);
   await pro.click();
   await expect(pro).toHaveClass(/on/);
+}
+
+// Unlocks the engineering area through the page like a technician; locks it again after the test
+export async function unlockEngineering(page, cleanup) {
+  cleanup(() => page.request.delete('/api/v1/auth/engineering'));
+  await open(page, '#/engineering');
+  await page.getByRole('textbox', { name: 'Engineering key' }).fill(engineeringKey);
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  await expect(page.getByRole('heading', { name: 'A · Mechanics', level: 2 })).toBeVisible();
 }
