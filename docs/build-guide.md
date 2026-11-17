@@ -84,8 +84,8 @@ The dosing pump itself only works with **24 V DC**. The danger lies in the combi
 supply, water and salt:
 
 - **Power supply:** use only a finished, certified power supply with CE marking and safety
-  extra-low voltage (SELV), short-circuit and overload proof. Never build or open the mains side
-  (230 V) yourself.
+  extra-low voltage (SELV), short-circuit and overload proof, 24 V with at least 2.5 A (60 W),
+  e.g. the one in the parts list. Never build or open the mains side (230 V) yourself.
 - **Fusing:** in addition to the protection in the power supply, the board has a fuse in the
   24 V input (F1, 3.15 A slow-blow, TR5), so that a fault on the board (e.g. a defective driver)
   cannot start a fire. Replace it only with the same value, never bridge it. Reverse-polarity

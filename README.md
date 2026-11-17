@@ -48,7 +48,7 @@ Assistant as well. Firmware, circuit board and enclosure are open in this reposi
 | Network | USR-ES1 (W5500) for LAN, Wi-Fi in the ESP32-S3 |
 | Clock | DS3231 with backup battery |
 | Controls | RGB status light, button |
-| Supply | 24 V external |
+| Supply | 24 V external, power supply with at least 2.5 A (60 W) |
 
 Pin assignment and circuit: [CLAUDE.md](CLAUDE.md).
 
