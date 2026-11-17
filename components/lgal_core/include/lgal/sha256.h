@@ -23,7 +23,7 @@ public:
 private:
     void block(const uint8_t* p);
     uint32_t h_[8];
-    uint8_t buf_[64];
+    uint8_t buf_[64] = {};
     uint64_t total_ = 0;
     size_t used_ = 0;
 };

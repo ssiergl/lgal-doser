@@ -199,7 +199,7 @@ private:
     esp_ota_handle_t handle_ = 0;
     bool begun_ = false, ended_ = false;
     size_t head_fill_ = 0;
-    uint8_t head_[kHeaderLen];
+    uint8_t head_[kHeaderLen] = {};
 };
 
 void finish(bool ok) {

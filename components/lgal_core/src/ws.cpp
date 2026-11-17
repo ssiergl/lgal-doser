@@ -186,7 +186,7 @@ struct Push {
 void send_work(void* arg) {
     Push* p = static_cast<Push*>(arg);
     s_push_queued = false;
-    int fds[kMaxClients];
+    int fds[kMaxClients] = {};
     {
         Guard g;
         for (int i = 0; i < kMaxClients; ++i) fds[i] = s_clients[i].failed ? -1 : s_clients[i].fd;
@@ -214,7 +214,7 @@ void send_work(void* arg) {
 }
 
 void recheck_logins() {
-    int fds[kMaxClients];
+    int fds[kMaxClients] = {};
     auth::Principal who[kMaxClients];
     {
         Guard g;
