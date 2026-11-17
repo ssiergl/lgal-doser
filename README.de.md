@@ -50,7 +50,7 @@ Home Assistant. Firmware, Platine und Gehäuse liegen offen in diesem Repository
 | Netzwerk | USR-ES1 (W5500) für LAN, WLAN im ESP32-S3 |
 | Uhr | DS3231 mit Pufferbatterie |
 | Bedienung | RGB-Statusleuchte, Taster |
-| Versorgung | 24 V extern |
+| Versorgung | 24 V extern, Netzteil mit mindestens 2,5 A (60 W) |
 
 Pinbelegung und Schaltung: [CLAUDE.md](CLAUDE.md).
 

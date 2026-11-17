@@ -84,8 +84,8 @@ Die Dosierpumpe selbst arbeitet nur mit **24 V Gleichspannung**. Gefährlich ist
 Kombination aus Netzteil, Wasser und Salz:
 
 - **Netzteil:** nur ein fertiges, geprüftes Netzteil mit CE-Kennzeichnung und
-  Schutzkleinspannung (SELV) verwenden, kurzschluss- und überlastfest. Die Netzseite
-  (230 V) nie selbst bauen oder öffnen.
+  Schutzkleinspannung (SELV) verwenden, kurzschluss- und überlastfest, 24 V mit mindestens
+  2,5 A (60 W), z. B. das aus der Stückliste. Die Netzseite (230 V) nie selbst bauen oder öffnen.
 - **Absicherung:** Zusätzlich zum Schutz im Netzteil hat die Platine eine Sicherung im
   24-V-Eingang (F1, 3,15 A träge, TR5), damit ein Fehler auf der Platine (z. B. ein defekter
   Treiber) keinen Brand auslösen kann. Nur durch denselben Wert ersetzen, nie überbrücken.
