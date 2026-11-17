@@ -13,7 +13,7 @@ import { add, decimalSep, errText, getLang, num, t } from '../lib/i18n.js';
 import { hm, hourLabel, setMode } from '../lib/prefs.js';
 import { pumpName } from '../lib/pumps.js';
 import { reloadSched } from '../lib/store.js';
-import { Amount, Seg, ask, parseNum, useMsg } from '../lib/ui.js';
+import { Amount, Seg, ask, parseNum, useChange, useMsg } from '../lib/ui.js';
 
 const WD = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const kMaxTimes = 24;
@@ -259,7 +259,7 @@ function SimpleEditor({ pump, s, onSaved, limit }) {
     };
   };
   const [f, setF] = useState(init);
-  useEffect(() => { setF(init()); setReplace(false); }, [s]);
+  useChange(() => { setF(init()); setReplace(false); }, [s]);
   const { msg, busy, save } = useSave(pump, onSaved);
   const set = patch => setF(prev => ({ ...prev, ...patch }));
 

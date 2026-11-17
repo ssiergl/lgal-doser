@@ -19,6 +19,17 @@ export function parseNum(s) {
   return /^\d+(\.\d+)?$/.test(v) ? Number(v) : NaN;
 }
 
+// Runs fn when one of deps changes, but not on the first render: a form fills its draft in
+// useState already. An effect runs only after the page is drawn; on a slow phone that can be after
+// the first key press, and filling the draft again would throw the input away.
+export function useChange(fn, deps) {
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    fn();
+  }, deps);
+}
+
 // Message line under a form: {ok, text} or an error
 export function useMsg() {
   const [m, set] = useState(null);

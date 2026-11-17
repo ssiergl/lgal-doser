@@ -17,7 +17,7 @@ import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { hourCycle } from '../lib/prefs.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
 import { reloadPumps, useStore } from '../lib/store.js';
-import { Seg, Toggle, ask, useMsg } from '../lib/ui.js';
+import { Seg, Toggle, ask, useChange, useMsg } from '../lib/ui.js';
 import { BackupSection } from './backup.js';
 import { EngUnlock, lockEngineering } from './engineering.js';
 import { UpdateSourceCard, UrlUpdateCard, waitForDevice } from './maintenance.js';
@@ -214,7 +214,7 @@ function DriverCard({ hw, pumps, fit, reload }) {
   const [all, setAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useEffect(() => { setD(drvOf(hw.pumps[n - 1].config)); }, [n]);
+  useChange(() => { setD(drvOf(hw.pumps[n - 1].config)); }, [n]);
   const set = x => setD(o => ({ ...o, ...x }));
   const base = drvOf(p.config);
   const q = changed(kDrv, d, base);
