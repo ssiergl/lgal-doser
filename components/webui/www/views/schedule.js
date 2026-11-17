@@ -40,6 +40,7 @@ add({
     'sc.kind.hint.times': 'Fixed times, each with its own amount.',
 
     'sc.ml.total': 'Amount per day', 'sc.t.add': 'Add time', 'sc.t.del': 'Remove time', 'sc.t.sum': '{n} times · {ml} ml per day',
+    'sc.t.time': 'Time {n}', 'sc.t.ml': 'Amount {n} in ml', 'sc.pl.window': 'Catch-up window in minutes',
     'sc.days': 'Days', 'sc.d.daily': 'Daily', 'sc.d.weekdays': 'Weekdays', 'sc.d.interval': 'Every N days',
     'sc.d.every': 'Every', 'sc.d.days': 'days', 'sc.d.anchor': 'starting', 'sc.d.everyN': 'every {n} days',
     'sc.wd.mon': 'Mon', 'sc.wd.tue': 'Tue', 'sc.wd.wed': 'Wed', 'sc.wd.thu': 'Thu', 'sc.wd.fri': 'Fri', 'sc.wd.sat': 'Sat', 'sc.wd.sun': 'Sun',
@@ -214,8 +215,8 @@ function DayBar({ slots, nowMin }) {
 // ---------------------------------------------------------------------------
 // Shared form pieces
 
-function TimeInput({ value, onInput, grid }) {
-  return html`<input type="time" step=${grid * 60} value=${value} onInput=${e => onInput(e.target.value)}/>`;
+function TimeInput({ value, onInput, grid, label }) {
+  return html`<input type="time" step=${grid * 60} aria-label=${label} value=${value} onInput=${e => onInput(e.target.value)}/>`;
 }
 
 function Preview({ slots, err, grid }) {
@@ -322,8 +323,8 @@ function TimesList({ d, grid, set }) {
   const sum = d.times.reduce((a, x) => a + (parseNum(x.ml) > 0 ? ul(parseNum(x.ml)) : 0), 0);
   return html`<div class="tlist">
     ${d.times.map((x, i) => html`<div class="trow" key=${i}>
-      <${TimeInput} value=${x.time} grid=${grid} onInput=${v => setRow(i, { time: v })}/>
-      <${Amount} value=${x.ml} onInput=${v => setRow(i, { ml: v })}/>
+      <${TimeInput} value=${x.time} grid=${grid} label=${t('sc.t.time', { n: i + 1 })} onInput=${v => setRow(i, { time: v })}/>
+      <${Amount} value=${x.ml} label=${t('sc.t.ml', { n: i + 1 })} onInput=${v => setRow(i, { ml: v })}/>
       <button type="button" class="ghost" title=${t('sc.t.del')} aria-label=${t('sc.t.del')}
         onClick=${() => set({ times: d.times.filter((_, k) => k !== i) })}>✕</button>
     </div>`)}
@@ -391,7 +392,7 @@ function ProEditor({ pump, s, draft: d, setDraft, onSaved, today, limit }) {
           <${Seg} value=${d.power_loss} onChange=${v => set({ power_loss: v })}
             options=${[['skip_missed', t('sc.pl.skip_missed')], ['catch_up_window', t('sc.pl.catch_up_window')]]}/>
           <span class="mut small">${t('sc.pl.hint.' + d.power_loss)}</span>
-          ${d.power_loss === 'catch_up_window' && html`<${Amount} value=${d.catch_up} onInput=${v => set({ catch_up: v })} unit="min"/>`}
+          ${d.power_loss === 'catch_up_window' && html`<${Amount} value=${d.catch_up} onInput=${v => set({ catch_up: v })} unit="min" label=${t('sc.pl.window')}/>`}
         </div>
       </div>
       ${d.kind === 'times' && errShown && html`<p class="msg err">${localError(ex, grid)}</p>`}
