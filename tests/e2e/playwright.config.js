@@ -37,7 +37,9 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     locale: 'en-GB',
   },
-  webServer: [mock(8771), mock(8772, 'MOCK_FACTORY=1')],
+  // 8773/8774: board v1.1 without 24 V supply (USB power only) and with a supply that is too low
+  webServer: [mock(8771), mock(8772, 'MOCK_FACTORY=1'),
+    mock(8773, 'MOCK_BOARD_REV=1.1 MOCK_SUPPLY=8'), mock(8774, 'MOCK_BOARD_REV=1.1 MOCK_SUPPLY=18')],
   // Chromium runs everything; WebKit (Safari, and every browser on an iPhone) runs the same flows
   // except the axe checks (they do not depend on the engine) and the one-time factory setup.
   // @phone tests run only at phone size.
