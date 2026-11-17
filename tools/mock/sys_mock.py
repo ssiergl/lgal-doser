@@ -110,9 +110,10 @@ def reset_firmware(rolledback=False):
 
 _TIME0 = dict(TIME)
 def reset_time():
-    """Tests (POST /mock/time): time zone, time server and clock as at start (10 min ahead)"""
+    """Tests (POST /mock/time): time zone, time server and clock as at start (10 min ahead, last
+    time server sync 3 h ago)"""
     global OFFSET
-    TIME.clear(); TIME.update(_TIME0); OFFSET = 600
+    TIME.clear(); TIME.update(_TIME0, last_ntp=time.time() - 3 * 3600); OFFSET = 600
 
 def ver_key(v):
     m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?", v or "")

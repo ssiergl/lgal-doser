@@ -11,11 +11,15 @@ const card = page => page.locator('form.card')
   .filter({ has: page.getByRole('heading', { name: 'Time', level: 2, exact: true }) });
 const stat = (c, name) => c.locator('dt', { hasText: new RegExp(`^${name}$`) }).locator('xpath=following-sibling::dd[1]');
 const message = c => c.locator(':scope > [role=status]');
-const reset = (page, cleanup) => cleanup(() => page.request.post('/mock/time'));
+// Before (the last sync is 3 h before the reset) and after the test
+async function reset(page, cleanup) {
+  await page.request.post('/mock/time');
+  cleanup(() => page.request.post('/mock/time'));
+}
 const saved = async page => (await (await page.request.get('/api/v1/system/time')).json());
 
 test('a clock that is off is shown and taken from the browser', async ({ page, cleanup }) => {
-  reset(page, cleanup);
+  await reset(page, cleanup);
   await open(page, '#/settings');
   const c = card(page);
   await expect(stat(c, 'Device time')).toHaveText(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})? CET$/);
@@ -33,7 +37,7 @@ test.describe('in a browser in London', () => {
   test.use({ timezoneId: 'Europe/London' });
 
   test('time zone: suggested from the browser, own POSIX string', async ({ page, cleanup }) => {
-    reset(page, cleanup);
+    await reset(page, cleanup);
     await open(page, '#/settings');
     const c = card(page);
     const zone = c.getByRole('combobox', { name: 'Time zone' });
@@ -62,7 +66,7 @@ test.describe('in a browser in London', () => {
 });
 
 test('pro view: time server, without one the time is set by hand', async ({ page, cleanup }) => {
-  reset(page, cleanup);
+  await reset(page, cleanup);
   await open(page, '#/settings');
   await proMode(page);
   const c = card(page);
