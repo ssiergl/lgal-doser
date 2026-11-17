@@ -137,3 +137,43 @@ test('export a schedule and import it into another pump', async ({ page, cleanup
   await pick(page, bad);
   await expect(io(page).locator('.msg.err')).toHaveText('This file is not a schedule export.');
 });
+
+test('spread to single times: the doses of the plan become the times', async ({ page }) => {
+  await open(page, '#/pump/1');
+  await proMode(page);
+  const s = await scheduleOf(page, 1);
+  expect(s.kind).toBe('spread');
+  const f = form(page);
+  await f.getByRole('radio', { name: 'Single times' }).click();
+  const slots = s.today.slots;
+  expect(slots.length).toBeGreaterThan(1);
+  for (const [k, x] of slots.entries()) {
+    await expect(f.getByRole('textbox', { name: `Time ${k + 1}`, exact: true })).toHaveValue(x.time);
+    await expect(f.getByRole('textbox', { name: `Amount ${k + 1} in ml`, exact: true })).toHaveValue(String(x.ml));
+  }
+  await expect(f.getByText(`${slots.length} times · ${s.today.ml.toFixed(2)} ml per day`)).toBeVisible();
+  // nothing saved until Save
+  await f.getByRole('button', { name: 'Discard' }).click();
+  await expect(f.getByRole('radio', { name: 'Spread' })).toHaveAttribute('aria-checked', 'true');
+  expect((await scheduleOf(page, 1)).kind).toBe('spread');
+});
+
+// The device answers a plan above the daily limit with 409
+test.describe('daily limit', () => {
+  test.use({ allowErrors: /status of 409 .*\/api\/v1\/pumps\/schedule/ });
+
+  test('a plan above the daily limit is shown and not saved', async ({ page, cleanup }) => {
+    const p = (await (await page.request.get('/api/v1/pumps')).json()).pumps[1];
+    cleanup(() => page.request.post(`/api/v1/pumps/settings?pump=2&daily_limit_ml=${p.daily.limit_ml}`));
+    const s = await scheduleOf(page, 2);
+    const limit = Math.floor(s.ml / 2);
+    await page.request.post(`/api/v1/pumps/settings?pump=2&daily_limit_ml=${limit}`);
+    await open(page, '#/pump/2');
+    const f = page.locator('section, .card').filter({ has: page.getByRole('heading', { name: 'Schedule', level: 2 }) }).last();  // simple view
+    await expect(f.getByText(`Daily limit ${limit.toFixed(2)} ml – planned ${s.ml.toFixed(2)} ml`)).toBeVisible();
+    await f.getByRole('textbox', { name: 'Daily amount ml' }).fill(String(s.ml + 1));
+    await f.getByRole('button', { name: 'Save' }).click();
+    await expect(f.getByText('The planned amount exceeds the daily limit')).toBeVisible();
+    expect((await scheduleOf(page, 2)).ml).toBe(s.ml);
+  });
+});
