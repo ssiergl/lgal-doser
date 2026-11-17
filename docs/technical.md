@@ -25,6 +25,7 @@ tools/                  provision.py, ap_password.py, ota_upload.py, release.sh,
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest)
                         and simulation of dosing engine and scheduler (`tests/host/run.sh`)
 tests/fuzz/             fuzzers for all parsers of external input (`tests/fuzz/run.sh`)
+tests/i18n/, tools/, size/, lint/  translations, Python tools, image size, ESLint and cppcheck (see Checks)
 partitions*.csv         final partition tables per flash size (can only be changed over USB!)
 boards/                 board definitions (model name per board; pins in components/doser_hal/include/doser/boards/)
 variants/               configuration per module variant (N8R8, N16R8, N32R8)
@@ -91,6 +92,18 @@ After changes to `sdkconfig.defaults`, `sdkconfig` must be regenerated
 (`rm sdkconfig && idf.py build`). The IRAM options of the step clocks are checked at build time.
 
 Both test scripts take another compiler with `HOST_CXX=clang++` (the CI uses that).
+
+#### Checks
+
+The CI also runs these checks; locally from the repository root:
+
+| Check | Command | Fails when |
+|---|---|---|
+| Translations | `python3 tests/i18n/check_translations.py` | a `lang/*.json` misses a key, has an unknown one or other placeholders (`{n}` …) than English; the code calls `t('…')` with a key English does not define |
+| Python tools | `python3 -m pytest tests/tools` | manifest, beta channel, release text, passwords or provisioning values are wrong; passwords and version order are checked against the same values as the firmware's host tests |
+| Image size | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | the app image fills more than 85 % of its OTA slot (an image too large cannot be installed over the air, and the slot size cannot be changed by OTA) |
+| ESLint | `npm ci --prefix tests/lint`, then `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | the web UI uses an undefined name, has an unused variable or another error ESLint recommends against (no build step would find it) |
+| cppcheck | `tests/lint/cppcheck.sh` (needs cppcheck) | the firmware sources have a warning, performance or portability finding; findings checked and found false are listed with their reason in `tests/lint/cppcheck-suppressions.txt` |
 
 ### Boards
 

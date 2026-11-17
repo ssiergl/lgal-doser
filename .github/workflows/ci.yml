@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Host tests, a short fuzz run and the firmware of every board and module variant on
-# each push to main and each pull request.
+# Host tests, a short fuzz run, the checks (translations, Python tools, ESLint, cppcheck) and
+# the firmware of every board and module variant with its size and SBOM on each push to main
+# and each pull request.
 name: CI
 on:
   push:
