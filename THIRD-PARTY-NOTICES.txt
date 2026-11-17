@@ -89,7 +89,7 @@ texts follow the list.
   License: GPL-3.0 with GCC Runtime Library Exception
   Copyright: Free Software Foundation
 
-- joltwallet/littlefs (ESP-IDF port) 1.22.3
+- joltwallet/littlefs (ESP-IDF port) 1.23.1
   License: MIT
   Copyright: Brian Pugh
 
