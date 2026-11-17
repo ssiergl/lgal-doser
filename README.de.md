@@ -132,4 +132,8 @@ Aquarium, Einrichtung oder anderen Gegenständen.
   gebauten Geräten darf das Logo bleiben; wer eine geänderte Fassung weitergibt, ersetzt das
   Logo und verwendet einen eigenen Namen.
 
+Jede Quell- und Doku-Datei nennt oben in einem SPDX-Header Rechteinhaber und Lizenz. Dateien,
+die keinen Kommentar aufnehmen können (KiCad, Gerber, STL, PDF, JSON), richten sich nach der
+Liste oben.
+
 Copyright © 2026 Lars Greiss / LG Aquatic Life
