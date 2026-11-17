@@ -54,8 +54,8 @@ input[readonly]{color:var(--mut);background:transparent}
 
 <section class="card" id="c_login" hidden>
 <p class="hint" id="l_hint"></p>
-<form id="f_login"><label data-i18n="user"></label><input value="admin" readonly tabindex="-1" autocomplete="username">
-<label data-i18n="pw"></label><input id="l_pw" type="password" autocomplete="current-password" required>
+<form id="f_login"><label for="l_user" data-i18n="user"></label><input id="l_user" value="admin" readonly tabindex="-1" autocomplete="username">
+<label for="l_pw" data-i18n="pw"></label><input id="l_pw" type="password" autocomplete="current-password" required>
 <div class="row"><button data-i18n="login.btn"></button></div></form>
 <div class="msg" id="l_msg"></div>
 </section>
@@ -64,9 +64,9 @@ input[readonly]{color:var(--mut);background:transparent}
 <h2 data-i18n="rec.title"></h2>
 <p class="hint" data-i18n="rec.hint"></p>
 <form id="f_rec"><input value="admin" autocomplete="username" hidden>
-<label data-i18n="rec.device"></label><input id="r_dev" autocomplete="off" required>
-<label data-i18n="pw.new"></label><input id="r_pw" type="password" autocomplete="new-password" required>
-<label data-i18n="pw.repeat"></label><input id="r_pw2" type="password" autocomplete="new-password" required>
+<label for="r_dev" data-i18n="rec.device"></label><input id="r_dev" autocomplete="off" required>
+<label for="r_pw" data-i18n="pw.new"></label><input id="r_pw" type="password" autocomplete="new-password" required>
+<label for="r_pw2" data-i18n="pw.repeat"></label><input id="r_pw2" type="password" autocomplete="new-password" required>
 <div class="row"><button data-i18n="rec.btn"></button></div></form>
 <div class="msg" id="r_msg"></div>
 </section>

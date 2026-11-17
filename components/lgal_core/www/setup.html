@@ -71,9 +71,9 @@ ul{padding-left:20px}
 <div id="pw_set" hidden><p data-i18n="pw.done"></p></div>
 <form id="f_pw"><p class="hint" data-i18n="pw.hint"></p>
 <input value="admin" autocomplete="username" hidden>
-<label data-i18n="pw.device"></label><input id="pw0" maxlength="31" autocomplete="off" autocapitalize="off" spellcheck="false">
-<label data-i18n="pw.new"></label><input id="pw1" type="password" autocomplete="new-password" minlength="8" maxlength="64">
-<label data-i18n="pw.repeat"></label><input id="pw2" type="password" autocomplete="new-password" maxlength="64">
+<label for="pw0" data-i18n="pw.device"></label><input id="pw0" maxlength="31" autocomplete="off" autocapitalize="off" spellcheck="false">
+<label for="pw1" data-i18n="pw.new"></label><input id="pw1" type="password" autocomplete="new-password" minlength="8" maxlength="64">
+<label for="pw2" data-i18n="pw.repeat"></label><input id="pw2" type="password" autocomplete="new-password" maxlength="64">
 <div class="row"><span></span><button data-i18n="pw.save"></button></div>
 <p class="hint" data-i18n="pw.then"></p></form>
 <div class="msg" id="pw_msg"></div>
@@ -84,9 +84,9 @@ ul{padding-left:20px}
 <label class="opt"><input type="radio" name="via" value="lan" checked><span data-i18n="net.lan"></span></label>
 <label class="opt"><input type="radio" name="via" value="wlan"><span data-i18n="net.wlan"></span></label>
 <div id="wbox" hidden>
-<div class="row"><div><label data-i18n="net.ssid"></label><input id="ssid" maxlength="32" autocomplete="off"></div><button type="button" class="sec" id="scan" data-i18n="net.scan"></button></div>
+<div class="row"><div><label for="ssid" data-i18n="net.ssid"></label><input id="ssid" maxlength="32" autocomplete="off"></div><button type="button" class="sec" id="scan" data-i18n="net.scan"></button></div>
 <div class="nets" id="nets"></div><div class="msg" id="scan_msg"></div>
-<label data-i18n="net.password"></label><input id="wpw" type="password" maxlength="63" autocomplete="new-password">
+<label for="wpw" data-i18n="net.password"></label><input id="wpw" type="password" maxlength="63" autocomplete="new-password">
 <div class="row"><span></span><button type="button" id="wtest" data-i18n="net.connect"></button></div>
 </div>
 <div class="st" id="netst"></div>
@@ -96,9 +96,9 @@ ul{padding-left:20px}
 
 <section class="card" data-step="time">
 <h2 data-i18n="time.title"></h2>
-<label data-i18n="time.zone"></label><select id="tz"></select>
-<div id="tzc_box" hidden><label data-i18n="time.posix"></label><input id="tzc" maxlength="63" autocomplete="off" placeholder="CET-1CEST,M3.5.0,M10.5.0/3"></div>
-<label data-i18n="time.ntp"></label><input id="ntp" maxlength="63" autocomplete="off" placeholder="pool.ntp.org">
+<label for="tz" data-i18n="time.zone"></label><select id="tz"></select>
+<div id="tzc_box" hidden><label for="tzc" data-i18n="time.posix"></label><input id="tzc" maxlength="63" autocomplete="off" placeholder="CET-1CEST,M3.5.0,M10.5.0/3"></div>
+<label for="ntp" data-i18n="time.ntp"></label><input id="ntp" maxlength="63" autocomplete="off" placeholder="pool.ntp.org">
 <p class="hint" data-i18n="time.ntp.hint"></p>
 <div class="st" id="timest"></div>
 <label class="opt" id="usebr_box" hidden><input type="checkbox" id="usebr"><span data-i18n="time.browser"></span></label>
