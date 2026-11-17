@@ -400,9 +400,12 @@ def recv_exact(s, n):
         buf += c
     return buf
 
-def prime(cid, m):
-    pump, action = m.get("pump"), m.get("action")
+def prime(cid, m, reply):
+    # as dosing_api.cpp ws_prime: the reply names pump and action once the pump is valid
+    pump, action, tier = m.get("pump"), m.get("action"), m.get("tier", 0)
     if not isinstance(pump, int) or not 1 <= pump <= 5: return "invalid_param"
+    if not isinstance(tier, int) or not 0 <= tier <= 2: return "invalid_param"
+    reply.update(pump=pump, action=action if isinstance(action, str) else "")
     i = pump - 1; p = P[i]; now = time.time()
     with LOCK:
         if action == "start":
@@ -573,10 +576,17 @@ class H(BaseHTTPRequestHandler):
                 data = bytes(c ^ mask[k % 4] for k, c in enumerate(recv_exact(s, n)))
                 if op == 8: break
                 if op != 1: continue
-                m = json.loads(data); r = {"type": m.get("type")}
-                if "id" in m: r["id"] = m["id"]
-                e = prime(cid, m) if m.get("type") == "prime" else (None if m.get("type") == "ping" else "unknown_type")
-                if m.get("type") == "prime": r.update(pump=m.get("pump"), action=m.get("action"))
+                # as ws.cpp: a broken message or an unknown type gets an "error" reply without the id
+                try: m = json.loads(data)
+                except ValueError: m = None
+                t = m.get("type") if isinstance(m, dict) else None
+                if not isinstance(t, str) or t not in ("prime", "ping"):
+                    r = {"type": "error", "ok": False, "error": "unknown_type" if isinstance(t, str) else "invalid_json"}
+                    with LOCK: s.sendall(frame(json.dumps(r)))
+                    continue
+                r = {"type": t}
+                if isinstance(m.get("id"), int): r["id"] = m["id"]
+                e = prime(cid, m, r) if t == "prime" else None
                 r["ok"] = e is None
                 if e: r["error"] = e
                 with LOCK: s.sendall(frame(json.dumps(r)))
