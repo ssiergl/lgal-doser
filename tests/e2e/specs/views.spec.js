@@ -3,6 +3,9 @@
 
 import { expect, open, proMode, test } from './fixtures.js';
 
+// The reload at the end cuts off requests the settings page has just started; WebKit reports them
+test.use({ allowErrors: /due to access control checks|Load failed/ });
+
 // What only the pro view shows; the simple view must not show any of it
 const proOnly = {
   '#/pump/1': [
