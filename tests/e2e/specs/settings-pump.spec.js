@@ -75,6 +75,31 @@ test('name and operation: off greys the pump out', async ({ page, cleanup }) => 
   expect((await pumpOf(page, 1)).mode).toBe('auto');
 });
 
+test('manual only: the schedule and boosts pause, manual doses still run', async ({ page, cleanup }) => {
+  await open(page, '#/pump/1');
+  const restore = cleanup(await keep(page, 1));
+  const s = card(page, 'Settings');
+  await s.getByRole('radio', { name: 'Manual only' }).click();
+  await expect(s.getByText('Only manual doses, the schedule is paused.')).toBeVisible();
+  await saveSettings(page);
+  expect((await pumpOf(page, 1)).mode).toBe('manual_only');
+  await expect(page.getByText('The pump is set to “manual only” – the schedule is paused.')).toBeVisible();
+  await expect(card(page, 'Boost').getByText('The pump is set to “manual only” – no boost possible.')).toBeVisible();
+
+  const dose = card(page, 'Dose now');
+  await expect(dose.getByRole('button', { name: 'Dose', exact: true })).toBeEnabled();
+  await dose.getByRole('textbox').first().fill('0.5');
+  await dose.getByRole('button', { name: 'Dose', exact: true }).click();
+  await expect(dose.getByRole('status')).toHaveText('0.50 ml started');
+
+  await page.getByRole('banner').getByRole('link', { name: 'Overview' }).click();
+  const first = page.locator('a.pump-card').first();
+  await expect(first).not.toHaveClass(/dim/);
+  await expect(first.locator('.chip.warn').last()).toHaveText('Manual only');
+  await restore();
+  expect((await pumpOf(page, 1)).mode).toBe('auto');
+});
+
 test('fine-tuning (pro view) and the hint in the simple view', async ({ page, cleanup }) => {
   await open(page, '#/pump/3');
   const restore = cleanup(await keep(page, 3));
