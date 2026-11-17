@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Host tests, a short fuzz run, the checks (translations, Python tools, ESLint, cppcheck) and
-# the firmware of every board and module variant with its size and SBOM on each push to main
-# and each pull request.
+# Host tests, a short fuzz run, the checks (translations, Python tools, ESLint, cppcheck), the
+# end-to-end tests of the web UI (Playwright against the mock) and the firmware of every board
+# and module variant with its size and SBOM on each push to main and each pull request.
 name: CI
 on:
   push:
@@ -47,6 +47,34 @@ jobs:
           tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www
       - name: cppcheck (firmware)
         run: sh tests/lint/cppcheck.sh
+  e2e:
+    # the web UI in Chromium (desktop and phone size) against tools/mock/webui_server.py
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    steps:
+      - name: Install tools
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+            ca-certificates git python3 nodejs npm
+      - uses: actions/checkout@v4
+        with:
+          submodules: true  # brand/: the mock serves the logo and the shared web design from it
+      - name: Install Playwright and Chromium
+        run: |
+          npm ci --prefix tests/e2e --ignore-scripts --no-audit --no-fund
+          npx --prefix tests/e2e playwright install --with-deps chromium
+      - name: End-to-end tests (web UI)
+        run: npx --prefix tests/e2e playwright test -c tests/e2e
+      - name: Keep the report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            tests/e2e/report/
+            tests/e2e/results/
+          retention-days: 14
   firmware:
     runs-on: ubuntu-24.04
     container: espressif/idf:v6.1.1
