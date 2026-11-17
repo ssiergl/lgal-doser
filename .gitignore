@@ -13,3 +13,4 @@ factory.secret
 sdkconfig.secrets
 build-*/
 dist/
+tests/lint/node_modules/
