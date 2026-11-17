@@ -169,6 +169,22 @@ def time_json():
 def err(h, status, code, msg="x", **extra):
     return h.send(status, {"error": dict(code=code, message=msg, **extra)})
 
+# Failed sign-ins like lgal/auth_core.h Throttle (one client): 5 are free, then the wait doubles
+# from 1 s up to 300 s; a successful sign-in resets it
+THROTTLE = {"failures": 0, "until": 0}
+
+def failed():
+    THROTTLE["failures"] += 1
+    n = THROTTLE["failures"] - 6
+    if n >= 0: THROTTLE["until"] = time.time() + min(300, 1 << min(n, 9))
+
+def throttled(h):
+    wait = THROTTLE["until"] - time.time()
+    if wait <= 0: return False
+    s = max(1, int(wait + 0.999))
+    h.send(429, {"error": {"code": "too_many_attempts", "message": "Too many failed attempts", "retry_after_s": s}})
+    return True
+
 def ip_ok(s): return bool(IPRE.match(s)) and all(int(x) < 256 for x in IPRE.match(s).groups())
 
 def check_ip(part, c):
@@ -390,7 +406,9 @@ def route(h, method, path, q, body):
     if path == "/api/v1/auth/logout" and method == "POST": AUTH["session"] = False; h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/auth/login" and method == "POST":
         if not AUTH["password_set"]: err(h, 409, "password_not_set", "Choose the admin password in the setup first"); return True
-        if body.get("password") != AUTH["password"]: err(h, 403, "wrong_password", "Wrong password"); return True
+        if throttled(h): return True
+        if body.get("password") != AUTH["password"]: failed(); err(h, 403, "wrong_password", "Wrong password"); return True
+        THROTTLE.update(failures=0, until=0)
         AUTH["session"] = True; h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}); return True
     if path == "/api/v1/auth/keys":
         if method == "GET": h.send(200, {"max": MAX_KEYS, "keys": KEYS}); return True
