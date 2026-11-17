@@ -25,6 +25,7 @@ tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitz
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
 tests/i18n/, tools/, size/, lint/  Übersetzungen, Python-Werkzeuge, Image-Größe, ESLint und cppcheck (siehe Prüfungen)
+tests/e2e/              End-to-End-Tests der Weboberfläche in Chromium gegen den Mock (Playwright, siehe Prüfungen)
 partitions*.csv         endgültige Partitionstabellen je Flash-Größe (nur per USB änderbar!)
 boards/                 Board-Definitionen (Modellname je Board; Pins in components/doser_hal/include/doser/boards/)
 variants/               Konfiguration je Modulvariante (N8R8, N16R8, N32R8)
@@ -105,6 +106,14 @@ Die CI führt außerdem diese Prüfungen aus; lokal aus dem Repository-Wurzelver
 | Image-Größe | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | das App-Image mehr als 85 % seines OTA-Slots belegt (ein zu großes Image lässt sich nicht per OTA einspielen, und die Slot-Größe lässt sich per OTA nicht ändern) |
 | ESLint | `npm ci --prefix tests/lint`, dann `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | die Weboberfläche einen undefinierten Namen, eine unbenutzte Variable oder einen anderen Fehler enthält, vor dem ESLint warnt (ohne Build-Schritt fände ihn sonst niemand) |
 | cppcheck | `tests/lint/cppcheck.sh` (braucht cppcheck) | die Firmware-Quellen einen Befund zu Warnungen, Performance oder Portabilität haben; geprüfte Fehlalarme stehen mit Begründung in `tests/lint/cppcheck-suppressions.txt` |
+| End-to-End (Weboberfläche) | `npm ci --prefix tests/e2e`, einmalig `npx --prefix tests/e2e playwright install chromium`, dann `npx --prefix tests/e2e playwright test -c tests/e2e` | Anmeldung, Übersicht, Pumpenseite (Zeitplan, Dosieren, Halten zum Füllen), Dialoge (modal, Fokus, Escape), Verlauf, Einstellungen, der gesperrte Engineering-Bereich, der Einrichtungsassistent ab Werkszustand oder das Handy-Layout (kein seitliches Scrollen) in Chromium nicht funktionieren oder eine Seite einen Fehler protokolliert |
+
+Die End-to-End-Tests starten eigene Mocks auf den Ports 8771 und 8772 (den zweiten im
+Werkszustand, `MOCK_FACTORY=1`), ein Mock auf 8767 läuft also weiter. Die Test-Passwörter nehmen
+sie aus `tools/mock/sys_mock.py`. Der Mock hat einen gemeinsamen Zustand für alle Browser, daher
+laufen die Tests nacheinander, und jeder beginnt angemeldet mit Gerätesprache Englisch. Nach einem
+Fehlschlag spielt `npx --prefix tests/e2e playwright show-trace tests/e2e/results/<test>/trace.zip`
+den Lauf Schritt für Schritt ab; in der CI hängt der Bericht am Lauf.
 
 ### Boards
 
