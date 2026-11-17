@@ -245,11 +245,15 @@ function EventsCard({ pump }) {
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  // Answers can overtake each other when the filter changes quickly: only the last request counts
+  const last = useRef(0);
   const load = (offset, prev) => {
+    const n = ++last.current;
     setBusy(true);
     api('GET', '/api/v1/history?' + query({ ...f, limit: kPage, offset }))
-      .then(j => { setList(prev.concat(j.events)); setMore(j.more); setErr(null); })
-      .catch(setErr).finally(() => setBusy(false));
+      .then(j => { if (n === last.current) { setList(prev.concat(j.events)); setMore(j.more); setErr(null); } })
+      .catch(e => { if (n === last.current) setErr(e); })
+      .finally(() => { if (n === last.current) setBusy(false); });
   };
   useEffect(() => { setList(null); load(0, []); }, [f.pump, f.kind, f.days]);
   const set = patch => setF(prev => ({ ...prev, ...patch }));

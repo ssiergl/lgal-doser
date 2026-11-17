@@ -92,3 +92,25 @@ test('events: a pump from the address, CSV export with the filter', async ({ pag
   expect(lines.slice(1)).toHaveLength(2);
   for (const l of lines.slice(1)) expect(l).toMatch(/^\d+,[\d-]+ [\d:]+,alarm,2,,container_low,/);
 });
+
+test('events: a late answer does not overwrite a newer filter', async ({ page }) => {
+  await page.goto('/');
+  await proMode(page);
+  await open(page, '#/history');
+  const c = events(page);
+  await expect(c.locator('.hi-list > li')).toHaveCount(50);
+  // the alarm list answers late, after the container list
+  await page.route(/\/api\/v1\/history\?.*kind=alarm/, async route => {
+    await new Promise(r => setTimeout(r, 1500));
+    await route.continue();
+  });
+  const kind = c.getByRole('combobox', { name: 'Events' });
+  const late = page.waitForResponse(/kind=alarm/);
+  await kind.selectOption({ label: 'Alarm' });
+  await kind.selectOption({ label: 'Container' });
+  await expect(c.getByText('No events in this period.')).toBeVisible();
+  await late;
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await expect(c.getByText('No events in this period.')).toBeVisible();
+  await expect(c.locator('.hi-list > li')).toHaveCount(0);
+});
