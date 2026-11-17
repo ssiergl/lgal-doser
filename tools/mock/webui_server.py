@@ -385,7 +385,7 @@ def pumps_post(h, path, q):
             return h.send(200, {"status": "ok"})
         if path == "/api/v1/pumps/tube":
             p["tube"] = num("hours"); p["newtube"] = p["newtube"] or p["tube"] == 0; return h.send(200, {"status": "ok"})
-    return err(h, "not_found", status=404)
+    return h.no_route()
 
 def frame(text):
     b = text.encode(); n = len(b)
@@ -449,10 +449,14 @@ class H(BaseHTTPRequestHandler):
         else:
             self.send(401, {"error": {"code": "unauthorized", "message": "Login required"}})
         return True
-    def send(self, code, body, ctype="application/json"):
+    def send(self, code, body, ctype="application/json", headers=()):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code); self.send_header("Content-Type", ctype); self.send_header("Content-Length", str(len(b))); self.send_header("Cache-Control", "no-store")
+        for k, v in headers: self.send_header(k, v)
         self.end_headers(); self.wfile.write(b)
+    def no_route(self):
+        """As the device answers an unknown address; the header marks it for tests/tools/test_api_contract.py"""
+        self.send(404, {"error": {"code": "not_found", "message": "Not found"}}, headers=[("X-Mock-No-Route", "1")])
     def do_GET(self):
         if self.locked("GET"): return
         p = self.path.split("?")[0]
@@ -503,7 +507,7 @@ class H(BaseHTTPRequestHandler):
         if p == "/api/v1/pumps":
             with LOCK: return self.send(200, {"pumps": [full(i) for i in range(5)]})
         if p == "/mock/log": return self.send(200, LOG)
-        self.send(404, {"error": {"code": "not_found", "message": "x"}})
+        self.no_route()
     def do_PUT(self):
         if self.locked("PUT"): return
         n = int(self.headers.get("Content-Length", 0))
@@ -514,11 +518,11 @@ class H(BaseHTTPRequestHandler):
         if sysr(self, "PUT", body): return
         if self.path.startswith("/api/v1/pumps/schedule"): return put_sched(self, int(self.path.split("pump=")[1][0]) - 1, body)
         if self.path.startswith("/api/v1/schedule/locks"): return put_locks(self, body)
-        self.send(404, {"error": {"code": "not_found", "message": "x"}})
+        self.no_route()
     def do_DELETE(self):
         if self.locked("DELETE"): return
         if sysr(self, "DELETE"): return
-        self.send(404, {"error": {"code": "not_found", "message": "x"}})
+        self.no_route()
     def do_POST(self):
         if self.locked("POST"): return
         p = self.path
@@ -531,7 +535,9 @@ class H(BaseHTTPRequestHandler):
                 except ValueError: pb = {}
             if sysr(self, "POST", pb): return
         if p.startswith("/api/v1/system/language"):
-            LANG["v"] = p.split("lang=")[1]; return self.send(200, {"language": LANG["v"], "languages": sys_mock.LANGUAGES})
+            lang = dict(_pq(_us(p).query)).get("lang")
+            if lang not in sys_mock.LANGUAGES: return err(self, "invalid_param", "lang: unsupported language")
+            LANG["v"] = lang; return self.send(200, {"language": LANG["v"], "languages": sys_mock.LANGUAGES})
         if p.startswith("/mock/firmware"):  # tests: firmware state as at start (?rolledback=1: failed update)
             sys_mock.reset_firmware("rolledback=1" in p); return self.send(200, {"status": "ok"})
         if p.startswith("/mock/time"):  # tests: time settings and clock as at start
@@ -544,7 +550,7 @@ class H(BaseHTTPRequestHandler):
         if p.startswith("/api/v1/pumps/"):
             from urllib.parse import urlsplit, parse_qsl
             u = urlsplit(p); return pumps_post(self, u.path, dict(parse_qsl(u.query)))
-        self.send(200, {"status": "ok"})
+        self.no_route()
     def ws(self):
         origin, host = self.headers.get("Origin"), self.headers.get("Host")
         if origin is not None and origin.lower() not in ("http://" + host.lower(), "https://" + host.lower()):

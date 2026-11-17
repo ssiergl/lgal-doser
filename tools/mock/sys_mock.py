@@ -403,6 +403,8 @@ def route(h, method, path, q, body):
         AUTH.update(password=n, password_set=True, session=False)
         if body.get("language") in ("en", "de"): LANG_SET(body["language"])
         h.send(200, {"status": "ok"}); return True
+    if path == "/api/v1/auth/recover" and method == "POST":  # the mock is never reached through the setup Wi-Fi
+        err(h, 403, "recovery_unavailable", "Only via the setup Wi-Fi (hold the button for 3 s)"); return True
     if path == "/api/v1/auth/logout" and method == "POST": AUTH["session"] = False; h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/auth/login" and method == "POST":
         if not AUTH["password_set"]: err(h, 409, "password_not_set", "Choose the admin password in the setup first"); return True

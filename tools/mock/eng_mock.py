@@ -158,6 +158,11 @@ def route(h, method, path, q, eng_ok):
             r = _raw(i)
             if r["running"]: r.update(running=False, steps=r["pos"] if r["steps"] > 0 else -r["pos"])
         h.send(200, {"status": "stopped" if q.get("mode") == "hard" else "stopping"}); return True
+    if path == "/api/v1/hw/time" and method == "POST":  # set the clock by hand (timesync::set_manual)
+        v = _num(q, "utc")
+        if v is None or v != int(v) or v < 1735689600: _err(h, "invalid_param", "utc invalid"); return True
+        s = __import__("sys_mock"); s.OFFSET = v - time.time(); s.TIME.update(valid=True, source="manual")
+        h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/hw/rtc/aging" and method == "POST":
         v = _num(q, "offset")
         if v is None or not -128 <= v <= 127 or v != int(v): _err(h, "invalid_param", "offset=-128..127"); return True
