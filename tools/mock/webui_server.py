@@ -532,6 +532,10 @@ class H(BaseHTTPRequestHandler):
             if sysr(self, "POST", pb): return
         if p.startswith("/api/v1/system/language"):
             LANG["v"] = p.split("lang=")[1]; return self.send(200, {"language": LANG["v"], "languages": sys_mock.LANGUAGES})
+        if p.startswith("/mock/firmware"):  # tests: firmware state as at start (?rolledback=1: failed update)
+            sys_mock.reset_firmware("rolledback=1" in p); return self.send(200, {"status": "ok"})
+        if p.startswith("/mock/time"):  # tests: time settings and clock as at start
+            sys_mock.reset_time(); return self.send(200, {"status": "ok"})
         if p.startswith("/mock/kill"):  # drop all WebSocket connections (connection loss)
             for s in list(CLIENTS.values()):
                 try: s.shutdown(socket.SHUT_RDWR)

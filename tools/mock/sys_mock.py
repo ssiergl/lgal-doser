@@ -100,6 +100,19 @@ OTA = {"allow_http": False, "auto_check": True, "source": OTA_FACTORY, "beta": F
 # Update source: release 0.6.0 (beta channel: 0.7.0-rc.1), last checked 3 h ago; a check takes 2 s,
 # a source not ending in ".json" fails. The channel can be chosen while the source is the factory one.
 REL = {"latest": "0.6.0", "checked_at": time.time() - 3 * 3600, "checking_until": 0, "error": None}
+_FW0 = ({k: SYS[k] for k in ("coredump", "version", "partition", "invalid")}, dict(OTA), dict(REL))
+
+def reset_firmware(rolledback=False):
+    """Tests (POST /mock/firmware): back to the firmware state at start - version, update source and
+    channel, crash report; rolledback marks the other slot invalid like a failed update"""
+    SYS.update(_FW0[0], down_until=0, invalid="ota_1" if rolledback else None)
+    OTA.update(_FW0[1]); REL.update(_FW0[2])
+
+_TIME0 = dict(TIME)
+def reset_time():
+    """Tests (POST /mock/time): time zone, time server and clock as at start (10 min ahead)"""
+    global OFFSET
+    TIME.clear(); TIME.update(_TIME0); OFFSET = 600
 
 def ver_key(v):
     m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?", v or "")
