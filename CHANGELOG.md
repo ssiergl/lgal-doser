@@ -85,3 +85,5 @@ mock; the test on the finished hardware is still pending.
   failed start; update entity for Home Assistant. A device only accepts firmware for its own
   board and module variant.
 - License texts of the firmware and the third-party software on the device.
+- Software bill of materials (SBOM, SPDX 2.2 JSON) for every board and module variant with
+  each release. Built with ESP-IDF v6.1.1.
