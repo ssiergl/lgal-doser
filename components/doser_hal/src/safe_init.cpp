@@ -8,6 +8,7 @@
 #include "doser/pins.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "esp_private/esp_gpio_reserve.h"
 
 namespace doser {
 
@@ -42,6 +43,10 @@ void safe_init() {
     step.intr_type = GPIO_INTR_DISABLE;
     gpio_config(&step);
     for (auto pin : pins::kStep) gpio_set_level(pin, 0);
+    // Since ESP-IDF 6.1 gpio_config() reserves every output pin. The step clocks (RMT, MCPWM)
+    // take these pins over later and reserve them themselves; give the reservation back so they
+    // do not report a conflict. Only the bookkeeping changes, the pins stay LOW outputs.
+    esp_gpio_revoke(step_mask);
 
     ESP_LOGI(TAG, "Drivers disabled (EN=HIGH), STEP pins LOW");
 }
