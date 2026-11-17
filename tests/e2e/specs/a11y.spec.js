@@ -16,12 +16,12 @@ async function check(page, what) {
 }
 
 for (const theme of ['light', 'dark']) {
-  test(`pages are accessible (${theme})`, async ({ page }) => {
+  test(`@axe pages are accessible (${theme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: theme });
     await open(page);
     await proMode(page);
     const found = [];
-    for (const hash of ['#/', '#/pump/1', '#/pump/2', '#/pump/4', '#/history', '#/settings', '#/maintenance']) {
+    for (const hash of ['#/', '#/pump/1', '#/pump/2', '#/pump/3', '#/pump/4', '#/history', '#/settings', '#/maintenance']) {
       await page.goto('/' + hash);
       await expect(page.locator('main h1').first()).toBeVisible();
       found.push(...await check(page, hash));
@@ -42,7 +42,7 @@ for (const theme of ['light', 'dark']) {
 // The pages outside the app: sign-in, and the setup wizard of the factory mock (first step only,
 // the setup test runs through it later)
 for (const theme of ['light', 'dark']) {
-  test(`sign-in and setup are accessible (${theme})`, async ({ page }) => {
+  test(`@axe @factory sign-in and setup are accessible (${theme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: theme });
     await page.request.post('/api/v1/auth/logout');
     await page.goto('/login');

@@ -19,6 +19,12 @@ const mock = (port, env = '') => ({
   stdout: 'ignore',
 });
 
+// WebKit without a graphics card (Linux CI) cannot keep up with the endless animations of the
+// page (reef, bubbles, waves); with less motion asked for, the page stops them. It still draws a
+// frame in about a second, and every click waits for two still frames, hence more time per test.
+const webkit = { baseURL: 'http://127.0.0.1:8771', reducedMotion: 'reduce' };
+const webkitTimeout = 90_000;
+
 export default defineConfig({
   testDir: './specs',
   fullyParallel: false,
@@ -32,8 +38,13 @@ export default defineConfig({
     locale: 'en-GB',
   },
   webServer: [mock(8771), mock(8772, 'MOCK_FACTORY=1')],
+  // Chromium runs everything; WebKit (Safari, and every browser on an iPhone) runs the same flows
+  // except the axe checks (they do not depend on the engine) and the one-time factory setup.
+  // @phone tests run only at phone size.
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:8771' }, grepInvert: /@phone/ },
     { name: 'phone', use: { ...devices['Pixel 7'], baseURL: 'http://127.0.0.1:8771' }, grep: /@phone/ },
+    { name: 'safari', use: { ...devices['Desktop Safari'], ...webkit }, grepInvert: /@phone|@axe|@factory/, timeout: webkitTimeout },
+    { name: 'iphone', use: { ...devices['iPhone 15'], ...webkit }, grep: /@phone/, timeout: webkitTimeout },
   ],
 });

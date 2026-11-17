@@ -22,11 +22,16 @@ const expected = url => /\/api\/v1\/engineering\/|\/api\/v1\/auth\/(login|claim|
 export const test = base.extend({
   // "signedIn: false" for pages without the app (factory mock)
   signedIn: [true, { option: true }],
-  page: async ({ page, request, signedIn }, use, info) => {
+  // console and page errors a test causes on purpose (e.g. /401|WebSocket/)
+  allowErrors: [null, { option: true }],
+  page: async ({ page, request, signedIn, allowErrors }, use, info) => {
     const errors = [];
-    page.on('pageerror', e => errors.push(String(e)));
+    // allowErrors also covers page errors: WebKit reports a request cut off by a reload as one,
+    // even when the page catches it
+    page.on('pageerror', e => { if (!(allowErrors && allowErrors.test(String(e)))) errors.push(String(e)); });
     page.on('console', m => {
-      if (m.type() === 'error' && !expected(m.location().url)) errors.push(m.text() + ' ' + m.location().url);
+      const text = m.text() + ' ' + m.location().url;
+      if (m.type() === 'error' && !expected(m.location().url) && !(allowErrors && allowErrors.test(text))) errors.push(text);
     });
     if (signedIn) {
       expect((await request.post('/api/v1/auth/login', { data: { password: adminPassword } })).ok()).toBeTruthy();
@@ -35,6 +40,18 @@ export const test = base.extend({
     }
     await use(page);
     expect(errors, `errors on the page (${info.title})`).toEqual([]);
+  },
+  // Puts the shared mock state back. cleanup(fn) returns fn to call at the end of the test (so the
+  // test can check the result); a test that stops before (failure, timeout) gets it run after it.
+  // try/finally gets no time left after a timeout, and the next tests would start from a wrong state.
+  cleanup: async ({ page }, use) => {
+    const pending = new Set();
+    await use(fn => {
+      const once = async () => { if (pending.delete(once)) await fn(); };
+      pending.add(once);
+      return once;
+    });
+    for (const f of [...pending].reverse()) await f();
   },
 });
 export { expect };

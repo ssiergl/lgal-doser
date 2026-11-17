@@ -105,14 +105,16 @@ The CI also runs these checks; locally from the repository root:
 | Image size | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | the app image fills more than 85 % of its OTA slot (an image too large cannot be installed over the air, and the slot size cannot be changed by OTA) |
 | ESLint | `npm ci --prefix tests/lint`, then `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | the web UI uses an undefined name, has an unused variable or another error ESLint recommends against (no build step would find it) |
 | cppcheck | `tests/lint/cppcheck.sh` (needs cppcheck) | the firmware sources have a warning, performance or portability finding; findings checked and found false are listed with their reason in `tests/lint/cppcheck-suppressions.txt` |
-| End-to-end (web UI) | `npm ci --prefix tests/e2e`, once `npx --prefix tests/e2e playwright install chromium`, then `npx --prefix tests/e2e playwright test -c tests/e2e` | sign-in, overview, pump page (schedule, dose, hold to fill), dialogs (modal, focus, Escape), history, settings, the locked engineering area, the setup wizard from the factory state or the phone layout (no sideways scrolling, no clipped button in any of the 9 languages) do not work in Chromium; a page logs an error; axe-core finds a WCAG 2.1 AA problem (contrast, missing names of fields and buttons) on a page, the sign-in, the setup or a dialog, in the light or the dark theme |
+| End-to-end (web UI) | `npm ci --prefix tests/e2e`, once `npx --prefix tests/e2e playwright install chromium webkit`, then `npx --prefix tests/e2e playwright test -c tests/e2e` | in Chromium or WebKit (Safari, iPhone) one of these does not work: sign-in and an expired session (back to the same page after signing in), overview, pump page (daily amount, dose, hold to fill), the complete calibration (measure, apply, implausible value, discard), schedules (single times, weekdays, every N days, catch-up, invalid amount, export and import into another pump), boost over days and over doses, dialogs (modal, focus, Escape), history, settings, the locked engineering area, the setup wizard from the factory state, a lost live connection (reconnects by itself; priming stops), data right after loading, or the phone layout (no sideways scrolling, no clipped button in any of the 9 languages); a page logs an error; axe-core finds a WCAG 2.1 AA problem (contrast, missing names of fields and buttons) on a page, the sign-in, the setup or a dialog, in the light or the dark theme |
 
 The end-to-end tests start their own mocks on ports 8771 and 8772 (the second one in the factory
 state, `MOCK_FACTORY=1`), so a mock on 8767 keeps running. They take the test passwords from
 `tools/mock/sys_mock.py`. The mock keeps one state for all browsers, so the tests run one after
-another and each starts signed in with the device language English. After a failure
-`npx --prefix tests/e2e playwright show-trace tests/e2e/results/<test>/trace.zip` replays the run
-step by step; in the CI the report is attached to the run.
+another and each starts signed in with the device language English; what a test changes it puts back
+(the `cleanup` fixture, also after a failure or a timeout). `-c tests/e2e --project desktop` runs
+only Chromium (projects: `desktop`, `phone`, `safari`, `iphone`). After a failure `npx --prefix
+tests/e2e playwright show-trace tests/e2e/results/<test>/trace.zip` replays the run step by step; in
+the CI the report is attached to the run.
 
 ### Boards
 

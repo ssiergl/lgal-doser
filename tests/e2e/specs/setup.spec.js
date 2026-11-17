@@ -6,7 +6,7 @@ import { expect, labelPassword, test } from './fixtures.js';
 // Factory state (second mock, MOCK_FACTORY=1): runs through once, the mock then is set up
 test.use({ baseURL: 'http://127.0.0.1:8772', signedIn: false });
 
-test('setup wizard from the factory state', async ({ page }) => {
+test('@factory setup wizard from the factory state', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL(/\/setup$/);
   await page.locator('#langs').getByRole('button', { name: 'English' }).click();

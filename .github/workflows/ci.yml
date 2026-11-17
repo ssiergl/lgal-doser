@@ -48,7 +48,7 @@ jobs:
       - name: cppcheck (firmware)
         run: sh tests/lint/cppcheck.sh
   e2e:
-    # the web UI in Chromium (desktop and phone size) against tools/mock/webui_server.py
+    # the web UI in Chromium and WebKit (desktop and phone size) against tools/mock/webui_server.py
     runs-on: ubuntu-24.04
     container: debian:trixie
     steps:
@@ -60,10 +60,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true  # brand/: the mock serves the logo and the shared web design from it
-      - name: Install Playwright and Chromium
+      - name: Install Playwright, Chromium and WebKit
         run: |
           npm ci --prefix tests/e2e --ignore-scripts --no-audit --no-fund
-          npx --prefix tests/e2e playwright install --with-deps chromium
+          npx --prefix tests/e2e playwright install --with-deps chromium webkit
       - name: End-to-end tests (web UI)
         run: npx --prefix tests/e2e playwright test -c tests/e2e
       - name: Keep the report

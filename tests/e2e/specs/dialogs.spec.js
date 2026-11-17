@@ -32,9 +32,15 @@ test('calibration dialog is modal and can be cancelled', async ({ page }) => {
   await dlg.getByRole('button', { name: 'Cancel' }).click();
   await expect(dlg).toBeHidden();
 
+  // by keyboard (Safari does not focus a clicked button): focus goes back to the opener
   const trigger = page.getByRole('button', { name: 'Start calibration' });
-  await expect(trigger).toBeFocused();  // focus is back on the button that opened it
-  await trigger.click();
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(start).toBeFocused();
+  await dlg.getByRole('button', { name: 'Cancel' }).press('Enter');
+  await expect(dlg).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await page.keyboard.press('Enter');
   await expect(start).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dlg).toBeHidden();
@@ -45,7 +51,8 @@ test('confirmation: focus, Escape cancels, focus goes back', async ({ page }) =>
   await proMode(page);
   const trigger = page.locator('main').getByRole('button', { name: 'Tube replaced' });
   const hoursBefore = await page.getByRole('definition').filter({ hasText: /of \d+ h/ }).textContent();
-  await trigger.click();
+  await trigger.focus();
+  await page.keyboard.press('Enter');
   const ask = page.getByRole('alertdialog');
   await expect(ask).toContainText('Reset the tube counter of pump 3?');
   await expectModal(page, ask);
