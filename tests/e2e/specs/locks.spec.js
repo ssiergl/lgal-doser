@@ -65,3 +65,24 @@ test.describe('manual dose during a lock time', () => {
     await expect(c.getByRole('status')).toHaveText('Lock time running – the dose starts afterwards');
   });
 });
+
+// The device answers a rule that collides with the schedules with 409
+test.describe('collisions', () => {
+  test.use({ allowErrors: /status of 409 .*\/api\/v1\/schedule\/locks/ });
+
+  test('a rule that collides with the schedules is refused with the doses', async ({ page, cleanup }) => {
+    await open(page, '#/settings');
+    await proMode(page);
+    const before = await locksOf(page);
+    cleanup(() => page.request.put('/api/v1/schedule/locks', { data: before }));
+    const c = card(page);
+    await c.getByRole('button', { name: '+ Add rule' }).click();
+    const n = before.rules.length + 1;
+    await c.getByRole('combobox', { name: `Rule ${n}: first pump` }).selectOption('1');
+    await c.getByRole('combobox', { name: `Rule ${n}: second pump` }).selectOption('5');
+    await c.getByRole('textbox', { name: `Rule ${n}: lock time in minutes` }).fill('1440');  // a whole day: every dose collides
+    await c.getByRole('button', { name: 'Save' }).click();
+    await expect(c.locator('.msg.err')).toContainText(/Pump \d \d{1,2}:\d\d and pump \d \d{1,2}:\d\d: lock time 1440 min/);
+    expect(await locksOf(page)).toEqual(before);
+  });
+});
