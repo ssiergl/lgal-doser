@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Describes the firmware for the SBOM of every release (esp-idf-sbom, see tools/sbom.py and
+# docs/technical.md). The version comes from version.txt through the build.
+description: LGAL Doser firmware, dosing pump for reef aquariums
+supplier: 'Organization: LG Aquatic Life'
+license: GPL-3.0-or-later
+copyright: 2026 Lars Greiss / LG Aquatic Life
+repository: https://github.com/ssiergl/lgal-doser
+document:
+  manufacturer:
+    name: 'Organization: LG Aquatic Life'
+    url: https://github.com/ssiergl/lgal-doser

@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: preact
+version: 10.29.8
+description: Preact and preact/hooks, copied unchanged into www/vendor/
+supplier: 'Organization: Preact'
+license: MIT
+repository: https://github.com/preactjs/preact
+purl: pkg:npm/preact@{}
+cpe: cpe:2.3:a:preactjs:preact:{}:*:*:*:*:node.js:*:*

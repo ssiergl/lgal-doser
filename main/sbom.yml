@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Own code of the firmware, see the sbom.yml in the project root.
+supplier: 'Organization: LG Aquatic Life'
+license: GPL-3.0-or-later
+copyright: 2026 Lars Greiss / LG Aquatic Life
