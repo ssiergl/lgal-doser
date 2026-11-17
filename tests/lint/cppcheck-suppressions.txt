@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# cppcheck findings checked by hand and found to be false (tests/lint/cppcheck.sh).
+# Every entry names the reason; remove an entry when the code it covers is gone.
+
+# end - start of a file embedded by the linker (_binary_*_start/_end): two symbols of the same
+# object, which cppcheck cannot know
+subtractPointers:components/lgal_core/src/auth.cpp
+subtractPointers:components/lgal_core/src/setup.cpp
+subtractPointers:components/lgal_core/src/sysapi.cpp
+subtractPointers:components/webui/src/webui.cpp
+
+# Sha256::finish() feeds the one padding byte with update(&pad, 1): with len 1 the 64-byte
+# block loop never reads past it
+objectIndex:components/lgal_core/src/sha256.cpp
+
+# new (std::nothrow) UrlJob{} is checked for nullptr before use
+legacyUninitvar:components/lgal_core/src/ota.cpp
+
+# headers and libraries of ESP-IDF are not given to cppcheck
+missingInclude
+missingIncludeSystem
+# information only: cppcheck limits its branch analysis in long functions
+normalCheckLevelMaxBranches
