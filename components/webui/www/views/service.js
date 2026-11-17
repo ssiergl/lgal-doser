@@ -161,7 +161,7 @@ function PhysCard({ eng, spr, reload }) {
   const [d, setD] = useState(physOf(eng));
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useEffect(() => setD(physOf(eng)), [eng]);
+  useChange(() => setD(physOf(eng)), [eng]);
   const set = p => setD(x => ({ ...x, ...p }));
   const q = changed(kPhys, d, physOf(eng));
   const bad = invalid(kPhys, d);
@@ -269,7 +269,7 @@ function ChannelCard({ hw, pumps }) {
   const [d, setD] = useState(saved);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useEffect(() => setD(saved), [key]);
+  useChange(() => setD(saved), [key]);
   const pending = key !== (hw.fitted || kAll).join(',');  // saved, the restart is still due
   const toggle = (k, on) => setD(o => kAll.filter(x => (x === k ? on : o.includes(x))));
   const restart = () => api('POST', '/api/v1/system/reboot')
@@ -318,7 +318,7 @@ function LimitsCard({ eng, sch, reload }) {
   const [d, setD] = useState(limOf(eng, sch));
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useEffect(() => setD(limOf(eng, sch)), [eng, sch]);
+  useChange(() => setD(limOf(eng, sch)), [eng, sch]);
   const set = x => setD(o => ({ ...o, ...x }));
   const base = limOf(eng, sch);
   const qd = changed(kLim, d, base);
@@ -363,7 +363,7 @@ function ThresholdCard({ eng, reload }) {
   const [d, setD] = useState(thrOf(eng));
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useEffect(() => setD(thrOf(eng)), [eng]);
+  useChange(() => setD(thrOf(eng)), [eng]);
   const q = changed(kThr, d, thrOf(eng));
   const bad = invalid(kThr, d);
   const submit = e => {
@@ -394,7 +394,7 @@ function TubeCard({ eng, pumps, reload }) {
   const [hours, setHours] = useState(['', '', '', '', '']);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useEffect(() => setD({ tube_life_h: str(eng.tube_life_h) }), [eng]);
+  useChange(() => setD({ tube_life_h: str(eng.tube_life_h) }), [eng]);
   const q = changed([kTube], d, { tube_life_h: str(eng.tube_life_h) });
   const bad = invalid([kTube], d);
   const submit = e => {
@@ -440,7 +440,7 @@ function RtcCard({ hw, reload }) {
   const [d, setD] = useState({ aging: str(rtc.aging) });
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useEffect(() => setD({ aging: str(rtc.aging) }), [rtc.aging]);
+  useChange(() => setD({ aging: str(rtc.aging) }), [rtc.aging]);
   const bad = invalid([kAging], d);
   const submit = e => {
     e.preventDefault();

@@ -3,7 +3,7 @@
 
 // Small shared UI pieces: messages, decimal input, segmented control, switch,
 // save bar, hold button, confirmation dialog.
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { html } from './html.js';
 import { hub } from './hub.js';
 import { add, errText, t } from './i18n.js';
@@ -19,12 +19,13 @@ export function parseNum(s) {
   return /^\d+(\.\d+)?$/.test(v) ? Number(v) : NaN;
 }
 
-// Runs fn when one of deps changes, but not on the first render: a form fills its draft in
-// useState already. An effect runs only after the page is drawn; on a slow phone that can be after
-// the first key press, and filling the draft again would throw the input away.
+// Fills a form's draft again when the data behind it changes (loaded, saved). It runs right after
+// the render, before the browser handles the next key press; a plain effect runs only after the
+// page is drawn, on a slow phone after the first key press, and would throw that input away. Not on
+// the first render: the form fills its draft in useState already.
 export function useChange(fn, deps) {
   const first = useRef(true);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (first.current) { first.current = false; return; }
     fn();
   }, deps);

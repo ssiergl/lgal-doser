@@ -463,7 +463,7 @@ export function ScheduleCard({ p, pro, nowLocal }) {
     api('GET', '/api/v1/pumps/schedule?pump=' + pump).then(setS).catch(e => setS({ error: e }));
   }, [pump]);
   // Fresh draft when the saved schedule changes
-  useEffect(() => { setDraft(s && !s.error ? draftOf(s) : null); }, [s]);
+  useChange(() => { setDraft(s && !s.error ? draftOf(s) : null); }, [s]);
   const today = nowLocal ? nowLocal.slice(0, 10) : s && s.today ? s.today.date : null;
   const nowMin = nowLocal ? toMin(nowLocal.slice(11, 16)) : null;
   const grid = (s && s.grid_min) || 5;
