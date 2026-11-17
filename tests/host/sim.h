@@ -38,10 +38,13 @@ struct Motor {
     double frac = 0;
     const char* fault = nullptr;
     std::vector<int32_t> moves;  // started moves (± steps)
+    int fail_move = -1;          // the move with this index does not start (driver error)
+    esp_err_t fail_err = ESP_FAIL;
 };
 Motor motor[5];
 bool locked = false;
 int saves[5];
+esp_err_t settings_err = ESP_OK;  // saving the settings fails (storage error)
 dose::PumpState stored[5];
 std::vector<history::Event> events;  // recorded history (utc 0 = "now" on the device)
 
@@ -118,6 +121,7 @@ void reset() {
     for (auto& m : motor) m = Motor{};
     locked = false;
     time_valid = true;
+    settings_err = ESP_OK;
     events.clear();
 }
 
@@ -144,6 +148,10 @@ namespace doser::motion {
 esp_err_t run(int pump, const Move& m) {
     auto& s = sim::motor[pump];
     if (sim::locked || s.running) return ESP_ERR_INVALID_STATE;
+    if (s.fail_move == static_cast<int>(s.moves.size())) {
+        s.fail_move = -1;
+        return s.fail_err;
+    }
     if (m.sps == 0 || m.sps > PumpConfig{}.max_sps()) return ESP_ERR_INVALID_ARG;
     s.moves.push_back(m.steps);
     if (m.steps == 0) return ESP_OK;
@@ -197,7 +205,7 @@ esp_err_t save_engineering(const dose::Engineering&) { return ESP_OK; }
 // Stored settings use the global retraction, so the flows below run with it
 // (the factory default of a pump is off, see test_retract_off)
 void load_settings(int, dose::PumpSettings* p) { p->retract_mrev = -1; }
-esp_err_t save_settings(int, const dose::PumpSettings&) { return ESP_OK; }
+esp_err_t save_settings(int, const dose::PumpSettings&) { return sim::settings_err; }
 bool load_state(int, dose::PumpState*) { return false; }
 esp_err_t save_state(int pump, const dose::PumpState& s) {
     ++sim::saves[pump];

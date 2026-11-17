@@ -277,6 +277,183 @@ static void test_fault() {
     CHECK(!dosing::busy());
 }
 
+// Pump on, without a daily limit
+static void enable(int p) {
+    auto s = dosing::settings(p);
+    s.mode = dose::Mode::Auto;
+    s.daily_limit_ul = 0;
+    CHECK(dosing::set_settings(p, s) == nullptr);
+}
+
+// A move that does not start (driver missing, speed refused, ...): the
+// booking is undone, nothing runs and nothing is recorded
+static void test_start_errors() {
+    sim::reset();
+    const int p = 3;
+    enable(p);
+    sim::events.clear();
+    auto& m = sim::motor[p];
+    const auto before = dosing::status(p);
+    const struct {
+        esp_err_t err;
+        const char* code;
+    } cases[] = {{ESP_ERR_NOT_FOUND, "driver_unavailable"},
+                 {ESP_ERR_INVALID_ARG, "speed_out_of_range"},
+                 {ESP_ERR_INVALID_STATE, "pump_busy"},
+                 {ESP_FAIL, "internal_error"}};
+    for (const auto& c : cases) {
+        m.fail_move = static_cast<int>(m.moves.size());
+        m.fail_err = c.err;
+        CHECK_STR(dosing::dose(p, 1000, dosing::Trigger::Manual), c.code);
+        const auto s = dosing::status(p);
+        CHECK(s.activity == dosing::Activity::Idle);
+        CHECK(s.used_today_ul == before.used_today_ul && s.state.total_ul == before.state.total_ul);
+        CHECK(sim::stored[p].total_ul == before.state.total_ul);  // the store is set back as well
+    }
+    m.fail_move = static_cast<int>(m.moves.size());
+    m.fail_err = ESP_ERR_NOT_FOUND;
+    CHECK_STR(dosing::prime_start(p), "driver_unavailable");
+    m.fail_move = static_cast<int>(m.moves.size());
+    m.fail_err = ESP_FAIL;
+    CHECK_STR(dosing::calibrate_start(p), "internal_error");
+    CHECK(!dosing::busy() && sim::events.empty());
+}
+
+// Faults in the moves around the main move: compensation (unretract) and
+// retraction, and a following move that does not start
+static void test_fault_phases() {
+    sim::reset();
+    const int p = 3;
+    auto& m = sim::motor[p];
+    auto fault = [&](const char* why) {
+        m.fault = why;
+        m.running = false;
+    };
+    auto tick_to = [&](dosing::Phase ph) {
+        for (int i = 0; i < 500 && dosing::status(p).phase != ph; ++i) sim::tick();
+        CHECK(dosing::status(p).phase == ph);
+    };
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(p));
+    CHECK(dosing::status(p).state.retracted_mrev == 250);
+
+    // fault while compensating: nothing pumped, all credited, the position is unknown
+    auto before = dosing::status(p);
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(dosing::status(p).phase == dosing::Phase::Unretract);
+    sim::tick();
+    fault("short_circuit");
+    CHECK(sim::run_until_idle(p, 1));
+    auto s = dosing::status(p);
+    CHECK_STR(s.last_result, "fault");
+    CHECK(s.last_done_ul == 0 && s.used_today_ul == before.used_today_ul && s.state.total_ul == before.state.total_ul);
+    CHECK(s.state.retracted_mrev == 0);
+    auto* ev = sim::last_event(history::Kind::Dose, p + 1);
+    CHECK(ev && std::strcmp(history::code_str(ev->code), "fault") == 0 && ev->done_ul == 0);
+
+    // the main move does not start after the compensation
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(p));
+    before = dosing::status(p);
+    CHECK(before.state.retracted_mrev == 250);
+    m.fail_move = static_cast<int>(m.moves.size()) + 1;
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(p));
+    s = dosing::status(p);
+    CHECK_STR(s.last_result, "fault");
+    CHECK(s.used_today_ul == before.used_today_ul && s.state.retracted_mrev == 0);
+
+    // fault while retracting: the main move counts, the retraction only partly
+    before = s;
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    tick_to(dosing::Phase::Retract);
+    sim::tick();
+    CHECK(m.running && m.position > 0 && m.position < kRetract);
+    const uint32_t moved = m.position;
+    fault("overtemperature");
+    CHECK(sim::run_until_idle(p, 1));
+    s = dosing::status(p);
+    CHECK_STR(s.last_result, "fault");
+    CHECK(s.last_done_ul == 1000 && s.used_today_ul == before.used_today_ul + 1000);
+    CHECK(s.state.retracted_mrev == 250 * moved / kRetract);
+    CHECK(sim::stored[p].retracted_mrev == s.state.retracted_mrev);
+
+    // the retraction does not start: the dose is done, no retraction to compensate
+    before = s;
+    m.fail_move = static_cast<int>(m.moves.size()) + (before.state.retracted_mrev ? 2 : 1);
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(p));
+    s = dosing::status(p);
+    CHECK_STR(s.last_result, "success");
+    CHECK(s.last_done_ul == 1000 && s.state.retracted_mrev == 0);
+
+    // stopped while compensating and the way back does not start: credited, position unknown
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(p));
+    before = dosing::status(p);
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    dosing::stop(p);
+    m.fail_move = static_cast<int>(m.moves.size());
+    CHECK(sim::run_until_idle(p));
+    s = dosing::status(p);
+    CHECK_STR(s.last_result, "aborted");
+    CHECK(s.used_today_ul == before.used_today_ul && s.state.retracted_mrev == 0);
+}
+
+// The rest of the interface: stop priming, cancel and storage error of a
+// calibration, tube hours, service state, names
+static void test_interface() {
+    sim::reset();
+    const int p = 4;
+    enable(p);
+    CHECK_STR(dosing::prime_stop(7), "invalid_param");
+    CHECK_STR(dosing::prime_stop(p), "not_priming");
+    CHECK(dosing::prime_start(p) == nullptr);
+    CHECK(dosing::prime_start(p) == nullptr);  // again = heartbeat
+    CHECK(dosing::service() && dosing::busy());
+    sim::tick();
+    CHECK(dosing::prime_stop(p) == nullptr);
+    CHECK(sim::run_until_idle(p, 2));
+    CHECK_STR(dosing::status(p).last_result, "success");
+    CHECK(!dosing::service());
+    // stop_all ends every job
+    CHECK(dosing::prime_start(p) == nullptr);
+    CHECK(dosing::dose(0, 20000, dosing::Trigger::Manual) == nullptr);
+    sim::tick();
+    dosing::stop_all();
+    CHECK(sim::run_until_idle(p, 2) && sim::run_until_idle(0, 2));
+    CHECK(!dosing::busy());
+    // a cancelled calibration run cannot be applied
+    CHECK(dosing::calibrate_start(p, 5000) == nullptr);
+    CHECK(sim::run_until_idle(p));
+    CHECK(dosing::status(p).calib_pending);
+    dosing::calibrate_cancel(p);
+    dosing::calibrate_cancel(9);
+    CHECK_STR(dosing::calibrate_apply(p, 5000), "no_calibration_run");
+    // the new value cannot be saved
+    CHECK(dosing::calibrate_start(p, 5000) == nullptr);
+    CHECK(sim::run_until_idle(p));
+    sim::settings_err = ESP_FAIL;
+    CHECK_STR(dosing::calibrate_apply(p, 5000), "storage_error");
+    sim::settings_err = ESP_OK;
+    // tube hours: 0 = new tube
+    CHECK_STR(dosing::set_tube_hours(p, 100001), "invalid_param");
+    CHECK_STR(dosing::set_tube_hours(9, 1), "invalid_param");
+    CHECK(dosing::set_tube_hours(p, 12) == nullptr);
+    CHECK(sim::stored[p].tube_ms == 12 * 3600000ULL && !(sim::stored[p].flags & dose::kTubeChanged));
+    CHECK(dosing::set_tube_hours(p, 0) == nullptr);
+    CHECK(sim::stored[p].tube_ms == 0 && (sim::stored[p].flags & dose::kTubeChanged));
+    const auto* tube = sim::last_event(history::Kind::Tube, p + 1);
+    CHECK(tube && tube->value == 0);
+    // names in the API and in the log
+    CHECK_STR(dosing::activity_str(dosing::Activity::Calibrating), "calibrating");
+    CHECK_STR(dosing::activity_str(dosing::Activity::Idle), "idle");
+    CHECK_STR(dosing::phase_str(dosing::Phase::Unretract), "unretract");
+    CHECK_STR(dosing::phase_str(dosing::Phase::None), "none");
+    CHECK_STR(dosing::trigger_str(dosing::Trigger::Mqtt), "mqtt");
+    CHECK_STR(dosing::trigger_str(dosing::Trigger::Manual), "manual");
+}
+
 // Start guard of the device (24 V supply)
 static const char* g_guard = nullptr;
 
@@ -481,6 +658,12 @@ int main(int argc, char**) {
     test_calibration();
     std::printf("Driver fault and OTA lock\n");
     test_fault();
+    std::printf("Moves that do not start\n");
+    test_start_errors();
+    std::printf("Faults while compensating and retracting\n");
+    test_fault_phases();
+    std::printf("Priming stop, calibration cancel, tube hours\n");
+    test_interface();
     std::printf("Start guard (24 V supply)\n");
     test_start_guard();
     std::printf("Engineering parameters\n");
