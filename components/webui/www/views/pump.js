@@ -477,7 +477,7 @@ function SettingsCard({ p, pro }) {
         <div class="field"><span class="lbl">${t('pset.retract')}</span>
           <${Seg} value=${f.retract} onChange=${v => set({ retract: v })} options=${[['off', t('pset.retract.off')],
             ['global', t('pset.retract.def', { r: num(p.retract.global_rev, 2) })], ['own', t('pset.retract.own')]]}/>
-          ${f.retract === 'own' && html`<${Amount} value=${f.retractRev} onInput=${v => set({ retractRev: v })} unit=${t('pset.rev')}/>`}
+          ${f.retract === 'own' && html`<${Amount} value=${f.retractRev} onInput=${v => set({ retractRev: v })} unit=${t('pset.rev')} label=${t('pset.retract')}/>`}
           <span class="mut small">${t('pset.retract.hint')}</span></div>
         <label class="field">${t('pset.limit')}<${Amount} value=${f.limit} onInput=${v => set({ limit: v })}/>
           <span class="mut small">${t('pset.limit.hint')}</span></label>
