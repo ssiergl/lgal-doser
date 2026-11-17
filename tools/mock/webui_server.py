@@ -341,9 +341,11 @@ def pumps_post(h, path, q):
                 return h.send(200, {"status": "calibrating"})
             if a == "apply":
                 if not p["pending"]: return err(h, "no_calibration_run", status=409)
-                m = num("measured_ml")
-                if not (0.5 * p["ptarget"] <= m <= 2 * p["ptarget"]): return err(h, "measured_out_of_range")
-                p["mlrev"] = round(0.37 * m / p["ptarget"], 4); p["calat"] = int(time.time()); p["pending"] = False; p["newtube"] = False
+                # as the firmware (dosing_core.cpp calibrate): the run turned target / old ml per rev
+                # revolutions; the result must lie within a quarter to four times the nominal value
+                m = num("measured_ml"); upr = (p["mlrev"] or ENG["nominal_ml_per_rev"]) * m / p["ptarget"]
+                if not (ENG["nominal_ml_per_rev"] / 4 <= upr <= ENG["nominal_ml_per_rev"] * 4): return err(h, "measured_out_of_range")
+                p["mlrev"] = round(upr, 4); p["calat"] = int(time.time()); p["pending"] = False; p["newtube"] = False
                 return h.send(200, {"status": "ok"})
             if a == "cancel": p["pending"] = False; return h.send(200, {"status": "ok"})
             return err(h, "invalid_param", "action")
