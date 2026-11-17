@@ -490,6 +490,86 @@ static void test_supply() {
     CHECK(total(4) > b);
 }
 
+// A run state written while the clock was days ahead: started again from now
+static void test_cursor_in_future() {
+    sim::run_for(1);
+    CHECK(store::run[4].cursor.utc <= sim::utc());
+}
+
+// Queued manual doses that do not run, a time zone the device does not
+// understand, and a new plan while a slot waits
+static void test_error_paths() {
+    const sched::Locks before = scheduler::locks();
+    sim::set_utc(sim::utc() + 86400);  // the earlier jobs are long over
+    sim::run_for(2);
+    for (int p : {2, 3}) CHECK(scheduler::set_schedule(p, sched::PumpSchedule{}) == nullptr);
+    sched::Locks l;
+    l.count = 1;
+    l.rules[0] = sched::LockRule{2, 3, 180};  // longer than the 120 min a dose may wait
+    l.manual = sched::ManualDuringLock::Queue;
+    CHECK(scheduler::set_locks(l) == nullptr);
+    bool queued = false;
+    int64_t retry = 0;
+    const uint64_t b3 = total(3);
+    CHECK(scheduler::manual_dose(2, 1000, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && !queued);
+    sim::run_for(30);
+    // the lock time does not end in time: the queued dose is dropped
+    CHECK(scheduler::manual_dose(3, 500, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && queued);
+    sim::run_for(121 * 60);
+    CHECK(!scheduler::status(3).queued && total(3) == b3);
+    // cancelled by the user
+    CHECK(scheduler::manual_dose(3, 500, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && queued);
+    scheduler::cancel_queued(3);
+    scheduler::cancel_queued(9);
+    CHECK(!scheduler::status(3).queued);
+    sim::run_for(61 * 60);  // lock time over
+    CHECK(total(3) == b3);
+    // the pump is switched off while the dose waits: it fails and is not kept
+    CHECK(scheduler::manual_dose(2, 1000, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && !queued);
+    sim::run_for(30);
+    CHECK(scheduler::manual_dose(3, 500, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && queued);
+    const auto set3 = dosing::settings(3);
+    auto off = set3;
+    off.mode = dose::Mode::Disabled;
+    CHECK(dosing::set_settings(3, off) == nullptr);
+    sim::run_for(2);
+    CHECK(!scheduler::status(3).queued && total(3) == b3);
+    CHECK(dosing::set_settings(3, set3) == nullptr);
+    CHECK(scheduler::set_locks(sched::Locks{}) == nullptr);
+
+    // a time zone the device does not understand: the plans run on UTC
+    const int64_t now = sim::utc();
+    const char* tz = sim::tz;
+    sim::tz = "not a zone";
+    CHECK(scheduler::to_local(now) == now);
+    CHECK(scheduler::today() == static_cast<int32_t>(now / 86400));
+    sim::tz = tz;
+    CHECK(scheduler::to_local(now) == tz::to_local(g_zone, now));
+    sim::time_valid = false;
+    CHECK(scheduler::today() == -1);
+    sim::time_valid = true;
+
+    // a slot waits behind a manual dose and the plan is replaced: the slot is gone
+    const int64_t local_now = tz::to_local(g_zone, sim::utc());
+    const uint16_t slot = static_cast<uint16_t>((local_now % 86400 / 60 + 15) / 5 * 5 % 1440);
+    CHECK(scheduler::set_schedule(3, plan({single(slot, 1000)})) == nullptr);
+    const int64_t due = scheduler::status(3).next_utc;
+    CHECK(due > sim::utc() && due < sim::utc() + 1800);
+    sim::run_until(due - 5);
+    const uint64_t b = total(3);
+    CHECK(scheduler::manual_dose(3, 40000, dosing::Trigger::Api, -1, &retry, &queued) == nullptr);
+    sim::run_for(10);
+    auto st = scheduler::status(3);
+    CHECK(st.delayed);
+    CHECK_STR(st.delay_reason, "pump_busy");
+    CHECK(scheduler::set_schedule(3, plan({single(static_cast<uint16_t>((slot + 600) % 1440), 1000)})) == nullptr);
+    CHECK(!scheduler::status(3).delayed);
+    sim::run_for(120);
+    CHECK(total(3) == b + 40000);  // the manual dose only
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+    CHECK(scheduler::set_locks(before) == nullptr);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -497,7 +577,11 @@ int main(int argc, char**) {
     tzset();
     CHECK(tz::parse(sim::tz, &g_zone));
     CHECK(dosing::init() == ESP_OK && sim::task);
+    store::have_run[4] = true;  // see test_cursor_in_future
+    store::run[4].cursor = sched::Cursor{sim::utc() + 3 * 86400, 0};
     CHECK(scheduler::init() == ESP_OK && sim::sched_task);
+    std::printf("Scheduler: run state from the future\n");
+    test_cursor_in_future();
     std::printf("Scheduler: basic run\n");
     test_basic();
     std::printf("Scheduler: conflicts on save\n");
@@ -524,6 +608,8 @@ int main(int argc, char**) {
     test_events();
     std::printf("Scheduler: 24 V supply missing\n");
     test_supply();
+    std::printf("Scheduler: queue, time zone and plan change errors\n");
+    test_error_paths();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }
