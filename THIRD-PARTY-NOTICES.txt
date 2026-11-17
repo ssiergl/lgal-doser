@@ -97,7 +97,7 @@ texts follow the list.
   License: BSD-3-Clause
   Copyright: The littlefs authors, Arm Limited
 
-- Preact and preact/hooks (web UI) 10.29.8
+- Preact and preact/hooks (web UI) 11.2.0
   License: MIT
   Copyright: Jason Miller
 

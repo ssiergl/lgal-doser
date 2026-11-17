@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 name: preact
-version: 10.29.8
+version: 11.2.0
 description: Preact and preact/hooks, copied unchanged into www/vendor/
 supplier: 'Organization: Preact'
 license: MIT
