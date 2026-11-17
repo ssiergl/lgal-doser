@@ -10,13 +10,16 @@
 #   - the mock knows no API path the firmware does not have,
 #   - every field the mock answers and every error code it sends is a name the firmware uses.
 # The last check is loose on purpose (the name occurs in the firmware as a string), but it catches
-# a renamed or invented field. The WebSocket (/api/v1/ws) is covered by the end-to-end tests.
+# a renamed or invented field. The WebSocket (/api/v1/ws) gets the same check for its status frame and
+# its replies, and the reply shape of ws.cpp (an "error" reply without the id for a broken message).
+import base64
 import http.cookiejar
 import json
 import os
 import pathlib
 import re
 import socket
+import struct
 import subprocess
 import sys
 import time
@@ -104,7 +107,9 @@ def _key(pattern):
 class Client:
     def __init__(self, port):
         self.base = f"http://127.0.0.1:{port}"
-        self.op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+        self.port = port
+        self.jar = http.cookiejar.CookieJar()
+        self.op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
 
     def login(self):
         status, _, _ = self.call("POST", "/api/v1/auth/login", {"password": _key(r'AUTH = \{"password": "([^"]+)"')})
@@ -142,6 +147,91 @@ def mock():
     finally:
         proc.terminate()
         proc.wait(10)
+
+
+class WebSocket:
+    """Just enough of RFC 6455 for text frames: masked frames out, unmasked frames in."""
+
+    def __init__(self, client):
+        self.s = socket.create_connection(("127.0.0.1", client.port), timeout=5)
+        cookie = "; ".join(f"{c.name}={c.value}" for c in client.jar)
+        key = base64.b64encode(os.urandom(16)).decode()
+        self.s.sendall((f"GET /api/v1/ws HTTP/1.1\r\nHost: 127.0.0.1:{client.port}\r\nUpgrade: websocket\r\n"
+                        f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n"
+                        f"Cookie: {cookie}\r\n\r\n").encode())
+        head = b""
+        while b"\r\n\r\n" not in head:
+            head += self.s.recv(1)
+        assert head.startswith(b"HTTP/1.1 101"), head
+
+    def _exact(self, n):
+        buf = b""
+        while len(buf) < n:
+            c = self.s.recv(n - len(buf))
+            assert c, "connection closed"
+            buf += c
+        return buf
+
+    def send(self, text):
+        b, mask = text.encode(), os.urandom(4)
+        n = len(b)
+        head = bytes([0x81, 0x80 | n]) if n < 126 else bytes([0x81, 0xFE]) + struct.pack(">H", n)
+        self.s.sendall(head + mask + bytes(c ^ mask[i % 4] for i, c in enumerate(b)))
+
+    def recv(self, skip_status=True):
+        while True:
+            b0, b1 = self._exact(2)
+            n = b1 & 127
+            if n == 126:
+                n = struct.unpack(">H", self._exact(2))[0]
+            elif n == 127:
+                n = struct.unpack(">Q", self._exact(8))[0]
+            m = json.loads(self._exact(n))
+            if not (skip_status and m.get("type") == "status"):
+                return m
+
+    def close(self):
+        self.s.close()
+
+
+def _unknown_fields(value):
+    found = set()
+    _fields(value, found)
+    return sorted(f"{k} ({where})" for k, where in found if k not in NAMES and not k.isdigit())
+
+
+def test_websocket_frames(mock):
+    ws = WebSocket(mock)
+    try:
+        # the first frame is the status, with the head ws_core.cpp writes
+        hello = ws.recv(skip_status=False)
+        assert hello["type"] == "status"
+        assert {"seq", "utc", "time_valid"} <= hello.keys()
+        assert _unknown_fields(hello) == []
+        replies = []
+        for msg in ({"type": "ping", "id": 1},
+                    {"type": "prime", "id": 2, "pump": 9, "action": "start"},
+                    {"type": "prime", "id": 3, "pump": 1, "action": "start", "tier": 7},
+                    {"type": "prime", "id": 4, "pump": 1, "action": "stop"},
+                    {"type": "prime", "id": 5, "pump": 1, "action": "spin"},
+                    {"type": "dance", "id": 6}):
+            ws.send(json.dumps(msg))
+            replies.append(ws.recv())
+        ws.send("{not json")
+        replies.append(ws.recv())
+    finally:
+        ws.close()
+    assert replies == [
+        {"type": "ping", "id": 1, "ok": True},
+        {"type": "prime", "id": 2, "ok": False, "error": "invalid_param"},
+        {"type": "prime", "id": 3, "ok": False, "error": "invalid_param"},
+        {"type": "prime", "id": 4, "pump": 1, "action": "stop", "ok": False, "error": "not_priming"},
+        {"type": "prime", "id": 5, "pump": 1, "action": "spin", "ok": False, "error": "invalid_param"},
+        {"type": "error", "ok": False, "error": "unknown_type"},
+        {"type": "error", "ok": False, "error": "invalid_json"},
+    ]
+    assert [f for r in replies for f in _unknown_fields(r)] == []
+    assert sorted({r["error"] for r in replies if "error" in r} - NAMES) == []
 
 
 # Routes that end the session or restart the device go last (the mock then is "down" for a few
