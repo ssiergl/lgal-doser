@@ -351,16 +351,25 @@ def route(h, method, path, q, body):
     if path == "/api/v1/net/settings":
         if method == "GET": h.send(200, NET); return True
         if method == "PUT":
-            if body.get("mode") not in ("auto", "lan", "wlan"): err(h, 400, "invalid_param", "mode", field="mode"); return True
-            f = check_ip("lan", body.get("lan", {})) or check_ip("wlan", body.get("wlan", {}))
+            # as net_config::parse: what the body leaves out is kept, null or "" clears an address
+            mode = body.get("mode", NET["mode"])
+            if mode not in ("auto", "lan", "wlan"): err(h, 400, "invalid_param", "mode", field="mode"); return True
+            def merged(part):
+                c = dict(NET[part]); new = body.get(part) or {}
+                for k in ("ip", "netmask", "gateway", "dns1", "dns2"):
+                    if k in new: c[k] = new[k] or ""
+                if "dhcp" in new: c["dhcp"] = new["dhcp"]
+                return c
+            lan, wlan = merged("lan"), merged("wlan")
+            f = check_ip("lan", lan) or check_ip("wlan", wlan)
             if f: err(h, 400, "invalid_param", f, field=f); return True
-            w = body.get("wlan", {})
+            w = body.get("wlan") or {}
             if "password" in w and w["password"] and len(w["password"]) < 8: err(h, 400, "invalid_param", "wlan.password", field="wlan.password"); return True
-            if body["mode"] == "wlan" and not w.get("ssid"): err(h, 400, "wlan_not_configured", "Wi-Fi only needs a network"); return True
-            NET["mode"] = body["mode"]
-            NET["lan"] = {k: body["lan"].get(k, "") for k in NET["lan"]}; NET["lan"]["dhcp"] = body["lan"].get("dhcp", True)
+            if "ssid" in w: wlan["ssid"] = w["ssid"] or ""
             pw_set = bool(w["password"]) if "password" in w else NET["wlan"]["password_set"]
-            NET["wlan"] = {**{k: w.get(k, "") for k in ("ip", "netmask", "gateway", "dns1", "dns2")}, "dhcp": w.get("dhcp", True), "ssid": w.get("ssid", ""), "password_set": pw_set and bool(w.get("ssid"))}
+            wlan["password_set"] = pw_set and bool(wlan["ssid"])  # no network, no password
+            if mode == "wlan" and not wlan["ssid"]: err(h, 400, "wlan_not_configured", "Wi-Fi only needs a network"); return True
+            NET.update(mode=mode, lan=lan, wlan=wlan)
             h.send(200, NET); return True
     if path == "/api/v1/net/scan":
         if method == "POST":
