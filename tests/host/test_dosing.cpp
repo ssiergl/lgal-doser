@@ -22,7 +22,17 @@ bool g_log_verbose = false;
             std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond);    \
         }                                                                    \
     } while (0)
-#define CHECK_STR(a, b) CHECK((a) && std::strcmp((a), (b)) == 0)
+// evaluates `a` once (it may be a call that starts a job)
+#define CHECK_STR(a, b)                                                                                     \
+    do {                                                                                                    \
+        ++g_checks;                                                                                         \
+        const char* got_ = (a);                                                                             \
+        if (!got_ || std::strcmp(got_, (b)) != 0) {                                                         \
+            ++g_fail;                                                                                       \
+            std::printf("FAIL %s:%d: %s = %s, expected %s\n", __FILE__, __LINE__, #a, got_ ? got_ : "null", \
+                        (b));                                                                               \
+        }                                                                                                   \
+    } while (0)
 
 #include "sim.h"
 
