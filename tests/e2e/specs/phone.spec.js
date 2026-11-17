@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { expect, open, proMode, test } from './fixtures.js';
+import { expect, open, proMode, test, unlockForTab } from './fixtures.js';
 
 // Runs in the "phone" project (Pixel 7) only. Every language, because German, French or Polish
 // texts are much longer than English ones.
 const languages = ['en', 'de', 'fr', 'es', 'it', 'nl', 'pl', 'tr', 'zh'];
-const pages = ['#/', '#/pump/1', '#/pump/3', '#/history', '#/settings', '#/maintenance'];
+// the engineering area twice: locked, then unlocked
+const pages = ['#/', '#/pump/1', '#/pump/3', '#/history', '#/settings', '#/maintenance', '#/engineering', 'unlock'];
+
+// The reload after the unlock cuts off requests the page has just started; WebKit reports them
+test.use({ allowErrors: /due to access control checks|Load failed/ });
 
 // Page wider than the screen, or a button, chip or tab whose text does not fit
 const overflow = () => {
@@ -28,7 +32,7 @@ const overflow = () => {
 };
 
 for (const lang of languages) {
-  test(`@phone layout fits (${lang})`, async ({ page, request, isMobile }) => {
+  test(`@phone layout fits (${lang})`, async ({ page, request, isMobile, cleanup }) => {
     test.skip(!isMobile, 'phone project only');
     await request.post('/api/v1/system/language?lang=' + lang);
     try {
@@ -37,9 +41,15 @@ for (const lang of languages) {
       await proMode(page);
       const found = [];
       for (const hash of pages) {
-        await page.goto('/' + hash);
-        await expect(page.locator('main h1').first()).toBeVisible();
-        found.push(...(await page.evaluate(overflow)).map(o => `${hash}: ${o}`));
+        if (hash === 'unlock') {
+          await unlockForTab(page, cleanup);
+          await page.reload();  // still on #/engineering
+          await expect(page.locator('main .eng-grid').first()).toBeVisible();
+        } else {
+          await page.goto('/' + hash);
+          await expect(page.locator('main h1').first()).toBeVisible();
+        }
+        found.push(...(await page.evaluate(overflow)).map(o => `${hash === 'unlock' ? '#/engineering (unlocked)' : hash}: ${o}`));
       }
       expect(found.join('\n')).toBe('');
       await expect(page.locator('nav.bottom')).toBeVisible();

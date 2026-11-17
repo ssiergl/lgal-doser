@@ -89,3 +89,11 @@ export async function unlockEngineering(page, cleanup) {
   await page.getByRole('button', { name: 'Unlock' }).click();
   await expect(page.getByRole('heading', { name: 'A · Mechanics', level: 2 })).toBeVisible();
 }
+
+// Unlocks the engineering area without the page (the key field is translated): the unlock counts
+// only in the tab that made it, so the tab gets its mark as well. Reload to see it.
+export async function unlockForTab(page, cleanup) {
+  cleanup(() => page.request.delete('/api/v1/auth/engineering'));
+  expect((await page.request.post('/api/v1/auth/engineering', { data: { key: engineeringKey } })).ok()).toBe(true);
+  await page.evaluate(() => sessionStorage.setItem('lgal.eng', '1'));
+}

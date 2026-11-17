@@ -4,7 +4,7 @@
 // Accessibility (axe-core, WCAG 2.1 A/AA): contrast, names of buttons and fields, roles, in the
 // light and the dark theme, on every page and in the dialogs.
 import AxeBuilder from '@axe-core/playwright';
-import { expect, open, proMode, test } from './fixtures.js';
+import { expect, open, proMode, test, unlockForTab } from './fixtures.js';
 
 async function check(page, what) {
   // a switched-off pump is shown greyed out on purpose (inactive, WCAG 1.4.3 exception)
@@ -16,16 +16,21 @@ async function check(page, what) {
 }
 
 for (const theme of ['light', 'dark']) {
-  test(`@axe pages are accessible (${theme})`, async ({ page }) => {
+  test(`@axe pages are accessible (${theme})`, async ({ page, cleanup }) => {
     await page.emulateMedia({ colorScheme: theme });
     await open(page);
     await proMode(page);
     const found = [];
-    for (const hash of ['#/', '#/pump/1', '#/pump/2', '#/pump/3', '#/pump/4', '#/history', '#/settings', '#/maintenance']) {
+    for (const hash of ['#/', '#/pump/1', '#/pump/2', '#/pump/3', '#/pump/4', '#/history', '#/settings', '#/maintenance', '#/engineering']) {
       await page.goto('/' + hash);
       await expect(page.locator('main h1').first()).toBeVisible();
       found.push(...await check(page, hash));
     }
+    // the unlocked engineering area: the longest page with the most fields
+    await unlockForTab(page, cleanup);
+    await page.reload();  // the page is on #/engineering already
+    await expect(page.getByRole('heading', { name: 'Backup', level: 2, exact: true })).toBeVisible();
+    found.push(...await check(page, '#/engineering (unlocked)'));
     await page.goto('/#/pump/1');
     await page.getByRole('button', { name: 'Start calibration' }).click();
     await expect(page.getByRole('dialog').getByRole('button', { name: 'Start', exact: true })).toBeFocused();
