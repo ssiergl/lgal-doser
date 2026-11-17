@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // MQTT client (M6): one broker connection, optionally over TLS (public CA
 // bundle or an uploaded CA certificate). Last will "<base>/status" =

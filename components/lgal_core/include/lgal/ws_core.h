@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // WebSocket helpers without ESP dependencies (host tests: tests/host/test_ws.cpp).
 

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Engineering menu mock: engineering parameters, hw status/config, raw test,
 # telemetry and resets (mirrors dosing_api, schedule_api, hwtest_api, engineering_api).
 import random, time

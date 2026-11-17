@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->
+
 # Hardware
 
 Design files of the LGAL Doser, one folder per board ID. The board ID is the one the firmware

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host tests for the event history store (day files in a temp directory).
 #include <sys/stat.h>
 #include <unistd.h>

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Mutation fuzzer for every parser that sees input from outside the device:
 // API request bodies (JSON reader, backup, network, MQTT, schedule, lock
 // rules), query strings, Cookie/Authorization headers, the WebSocket Origin

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Lock times between pumps (settings page, pro view): pairs of pumps that must not dose
 // close together (e.g. calcium and alkalinity), and what a manual dose does
 // while a lock time is running. Saved schedules are checked against the

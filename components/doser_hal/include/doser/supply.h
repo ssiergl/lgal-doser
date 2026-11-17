@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // 24 V sense input (doser/pins.h kSupplySense, board d5v1 from v1.1 on):
 // ADC oneshot, 12 dB attenuation, calibrated (curve fitting), 16 samples per

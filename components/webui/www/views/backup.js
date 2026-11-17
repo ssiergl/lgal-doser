@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Full backup card of the engineering menu (M6): export of the whole
 // configuration with or without secrets, restore of chosen parts.
 import { useState } from 'preact/hooks';

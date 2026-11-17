@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Full backup and restore (M6, engineering area only; format: backup_json.h).
 //

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host tests for SHA-256/HMAC/PBKDF2 and the authentication core.
 // Reference values computed with Python's hashlib/hmac/base64.
 #include <cstdio>

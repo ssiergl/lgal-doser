@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // RTC upkeep on the device: keeps the DS3231 in phase with NTP and trims its
 // aging register automatically whenever a time server is set (logic in

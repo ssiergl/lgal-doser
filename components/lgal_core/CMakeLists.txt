@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # The flags of the language picker are part of the shared web design in the brand
 # repository (Git submodule brand/, web/ is GPL-3.0-or-later)
 idf_build_get_property(project_dir PROJECT_DIR)

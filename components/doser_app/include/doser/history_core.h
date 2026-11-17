@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Event history (functional spec chapter 9): dosing runs, skipped slots,
 // container and calibration changes and alarms as fixed 24-byte records,

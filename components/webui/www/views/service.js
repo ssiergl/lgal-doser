@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Engineering menu (functional spec 11.2), #/engineering. Only reachable via
 // the hidden engineering dialog; every request needs the engineering unlock.
 //   A  mechanics: dosing physics (global), driver per pump

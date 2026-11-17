@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Login, sessions, API keys and engineering unlock (spec 3 + 11.1).
 // Logic in auth_core.h; this part stores the password and keys in NVS

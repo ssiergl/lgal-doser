@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Pin assignment of the board the firmware is built for. The build selects
 // the board (idf.py -DBOARD=<id>, boards/<id>.cmake, default d5v1); its

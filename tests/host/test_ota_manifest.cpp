@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host test of the release manifest, version compare (lgal/ota_manifest.h)
 // and board ID of an image (lgal/ota_image.h)
 #include <algorithm>

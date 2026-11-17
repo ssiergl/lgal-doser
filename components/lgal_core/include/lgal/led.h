@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // RGB status LED with a fixed priority hierarchy (functional spec chapter 10).
 // Each state is a flag; the active flag with the highest priority

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host simulation of the dosing engine (components/doser_app/src/dosing.cpp).
 // Motor, clock and storage are simulated; the engine runs
 // unchanged. Checks the flows retraction/compensation, booking, abort,

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Settings: appearance, time, status LED, login, rules between
 // pumps (pro), network, MQTT, API keys (pro) and the device (name, pages).
 import { html } from '../lib/html.js';

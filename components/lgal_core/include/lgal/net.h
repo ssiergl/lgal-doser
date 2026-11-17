@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Network: Ethernet (W5500, main connection), Wi-Fi client (fallback or
 // fixed), setup SoftAP, mDNS (spec 2).

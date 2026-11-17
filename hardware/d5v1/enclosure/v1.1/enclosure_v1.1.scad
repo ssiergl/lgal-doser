@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
+
 // =====================================================================
 //  LGAL Doser 5 - enclosure for board d5v1 v1.1
 //  Based on the flat enclosure v15 (board v1.0). New for v1.1:

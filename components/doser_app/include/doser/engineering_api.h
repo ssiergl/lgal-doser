@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Engineering area: system telemetry and resets (M6, functional spec 11.2 D).
 // The engineering endpoints need the engineering unlock

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Mock of /api/v1/mqtt (settings, status, CA). Host names steer the simulated
 # connection: "...fail..." -> dns error, "...auth..." -> auth error,
 # "...slow..." -> stays connecting; everything else connects after 2 s.

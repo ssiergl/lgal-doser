@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Translations. English is the base: views add their strings with add().
 // Every other language is one file lang/<code>.json with all keys of the
 // web UI, loaded only when that language is used; a missing key falls back

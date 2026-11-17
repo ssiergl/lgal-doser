@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Device identity: names and setup password derived from the base MAC, plus
 // the name the user gives the device and the host name that follows from it

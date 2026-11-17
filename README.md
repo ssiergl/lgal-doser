@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+
 <p align="center"><a href="https://github.com/ssiergl/lgal-brand"><img src="https://raw.githubusercontent.com/ssiergl/lgal-brand/main/logo/lgal-plaque.svg" width="200" alt="LG Aquatic Life"></a></p>
 
 # <img src="components/webui/www/icon.svg" width="36" height="36" align="top" alt=""> LGAL Doser
@@ -123,5 +126,9 @@ other property.
   [LICENSE-hardware.md](LICENSE-hardware.md). Commercial use only with written permission.
 - Name and logo of LG Aquatic Life: not covered by these licenses, see
   [TRADEMARKS.md](TRADEMARKS.md).
+
+Each source and documentation file names its copyright holder and license in an SPDX header
+at the top. Files that cannot hold a comment (KiCad, Gerber, STL, PDF, JSON) follow the list
+above.
 
 Copyright © 2026 Lars Greiss / LG Aquatic Life

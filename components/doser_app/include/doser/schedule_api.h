@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // REST API of the scheduler (M3). Amounts in ml (decimal), times "HH:MM"
 // local wall-clock, dates "YYYY-MM-DD". Instants come as UTC seconds plus

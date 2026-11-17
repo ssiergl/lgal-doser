@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 cmake_minimum_required(VERSION 3.22)
 
 # Module variant (flash size): idf.py -B build-N8R8 -DVARIANT=N8R8 build adds

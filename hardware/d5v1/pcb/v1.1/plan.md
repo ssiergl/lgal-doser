@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->
+
 # Board d5v1 v1.1 – revision plan
 
 Agreed with the user on 2026-11-15. Board v1.0 (11/2026) stays frozen: files in this folder

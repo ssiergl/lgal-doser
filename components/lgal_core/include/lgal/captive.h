@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Captive portal of the setup AP (spec 2): a DNS server answers every name
 // with the device address, and unknown pages requested by setup AP clients

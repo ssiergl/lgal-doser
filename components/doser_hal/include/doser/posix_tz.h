@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // POSIX TZ rule evaluation ("CET-1CEST,M3.5.0,M10.5.0/3") without libc state.
 //

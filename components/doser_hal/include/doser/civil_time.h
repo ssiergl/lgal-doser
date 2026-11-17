@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Conversion calendar date <-> Unix time (UTC), independent of TZ/libc.
 // Algorithm by H. Hinnant ("days_from_civil"). Header-only, host-tested.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Alarm and warning of the status LED from the pump state (functional spec
 // chapter 10). Pure logic, host-tested; main.cpp collects the input.

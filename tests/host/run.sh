@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Builds and runs the host tests (no ESP-IDF needed).
 #   tests/host/run.sh        Tests
 #   tests/host/run.sh -v     simulations with engine log

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Event history on the "storage" LittleFS partition (functional spec
 // chapter 9). record() never blocks: events go through a queue to a writer

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host tests for the MQTT broker settings (validation, JSON, PEM check).
 #include <cstdio>
 #include <cstring>

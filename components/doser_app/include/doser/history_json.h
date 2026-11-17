@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // JSON/CSV form of history events and the daily sums for the charts.
 // Pure logic, host-tested; history_api.cpp does the HTTP part.

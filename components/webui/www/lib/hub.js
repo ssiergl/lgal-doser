@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Tiny observable for module-level state shared by components.
 import { useEffect, useState } from 'preact/hooks';
 

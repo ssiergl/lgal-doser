@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // First setup (spec 2): wizard page and completion. While setup_completed
 // is false the setup AP stays on, "/" leads to /setup and a signed-in browser

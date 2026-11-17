@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Shared pump helpers: names, colours, state, warnings, the container graphic.
 import { html } from './html.js';
 import { add, getLang, num, t } from './i18n.js';

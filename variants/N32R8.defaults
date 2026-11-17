@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # ESP32-S3 module with 32 MB octal flash and 8 MB octal PSRAM (ESP32-S3-WROOM-2-N32R8V,
 # 1.8 V flash/PSRAM). Octal flash uses GPIO 33-37, which the board leaves free.
 # ESP-IDF supports flash above 16 MB only as octal flash.

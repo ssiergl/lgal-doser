@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Network endpoints (all require login):
 //   GET  /api/v1/net/status          active interface, LAN, Wi-Fi, setup AP

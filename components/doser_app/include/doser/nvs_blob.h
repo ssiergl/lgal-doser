@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Versioned NVS blobs for trivially copyable structs (used by the stores).
 // A blob with a different size or version is ignored (defaults apply).

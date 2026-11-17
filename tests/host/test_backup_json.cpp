@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host tests for the full backup document (write -> parse round trip,
 // secrets, partial documents and validation errors).
 #include <cstdio>

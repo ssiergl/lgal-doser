@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host tests for the network settings (IPv4 parsing, validation, JSON,
 // LAN/WLAN selection policy).
 #include <cstdio>

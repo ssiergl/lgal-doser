@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // What a signed-in browser may reach before the first setup is completed
 // (spec 2). Until then the device only lets the setup itself through: the

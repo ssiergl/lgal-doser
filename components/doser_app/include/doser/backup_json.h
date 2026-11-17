@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Full backup of the device configuration as one JSON document (engineering
 // area, M6). Pure logic, host-tested; backup_api.cpp collects and applies.

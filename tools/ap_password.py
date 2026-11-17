@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Computes the setup Wi-Fi name and passwords of an LGAL device.
 
 Every device keeps its own secret in the factory partition "fctry"

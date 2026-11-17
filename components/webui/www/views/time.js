@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Time settings (settings page): device time and where it comes from, time
 // zone for everyone, NTP server and setting date and time by hand in the
 // pro view. A browser can hand over its clock when the device has no valid

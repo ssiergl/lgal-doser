@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # ---------------------------------------------------------------------------
 # LGAL Doser – base configuration (ESP32-S3-DEV-KIT-N16R8)
 # Bootloader-relevant options (rollback, flash, partitions) only take effect

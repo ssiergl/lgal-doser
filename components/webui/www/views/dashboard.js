@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Overview of all pumps: container, today's amount, range, next dose; errors,
 // warnings and a running boost only as small icon chips beside the status
 // (the texts are on the pump page, one tap away).

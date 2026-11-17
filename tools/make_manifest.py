@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Writes the update manifest (manifest.json) for the release files in a
 directory, in the format components/lgal_core/include/lgal/ota_manifest.h
 reads:

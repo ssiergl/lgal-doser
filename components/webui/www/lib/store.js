@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Device data shared by all views. Full data by REST, live values merged in
 // from the WebSocket status push.
 //   pumps  GET /api/v1/pumps            every 10 s (1 s without WebSocket)

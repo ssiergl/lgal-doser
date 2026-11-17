@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+
 <p align="center"><a href="https://github.com/ssiergl/lgal-brand"><img src="https://raw.githubusercontent.com/ssiergl/lgal-brand/main/logo/lgal-plaque.svg" width="200" alt="LG Aquatic Life"></a></p>
 
 # <img src="components/webui/www/icon.svg" width="36" height="36" align="top" alt=""> LGAL Doser

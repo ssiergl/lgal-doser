@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Network settings and LAN/WLAN selection (spec 2). No ESP dependencies
 // (host tests: tests/host/test_net_config.cpp).

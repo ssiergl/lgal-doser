@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Maintenance (#/maintenance): firmware and device info, firmware update by
 // file upload, updates from the update source (only when one is set), restart,
 // factory reset; log and coredump in the pro view. The update source, the

@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->
+
 # Hardware – rules for working on the boards
 
 This folder holds the circuit boards and enclosures of the LGAL Doser, one folder per board ID

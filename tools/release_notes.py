@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Writes the notes of a GitHub release (Markdown) to stdout:
 
   1. the section of CHANGELOG.md for the version: the summary in bullet

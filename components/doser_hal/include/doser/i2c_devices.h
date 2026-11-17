@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // I²C bus (SDA GPIO8, SCL GPIO14, 4.7 kΩ on the board) with
 //   DS3231 (0x68)   real-time clock, stores UTC

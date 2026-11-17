@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Dosing engine (M2): amount in µl -> steps, anti-drip retraction,
 // calibration, priming with dead-man heartbeat, container, daily limit,

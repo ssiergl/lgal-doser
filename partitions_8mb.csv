@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # LGAL Doser partition table (8 MB flash, module variant N8R8)
 #
 # CAUTION: bootloader and partition table are only written on the first USB

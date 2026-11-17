@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // 24 V supply states of the sense input (board d5v1 from v1.1 on). Pure
 // logic, host-tested (tests/host/test_supply.cpp); supply.cpp measures.

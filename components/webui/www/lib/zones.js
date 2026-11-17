@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Time zones for the time settings: label, POSIX rule, IANA names (to
 // suggest the browser's zone). Same list as the setup wizard
 // (lgal_core/www/setup.html) - keep both in step.

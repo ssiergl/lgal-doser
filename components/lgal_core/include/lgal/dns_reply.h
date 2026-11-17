@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // DNS answers for the captive portal of the setup AP: every name resolves
 // to the device. No ESP dependencies (host tests: tests/host/test_dns.cpp).

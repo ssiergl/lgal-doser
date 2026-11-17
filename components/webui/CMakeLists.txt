@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 idf_component_register(
     SRCS "src/webui.cpp"
     INCLUDE_DIRS "include"

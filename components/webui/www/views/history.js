@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // History page: daily amounts as one small bar chart per pump (everyone),
 // pro view additionally the event list with filter and CSV export.
 import { useEffect, useRef, useState } from 'preact/hooks';

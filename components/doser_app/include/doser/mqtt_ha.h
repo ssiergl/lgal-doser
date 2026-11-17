@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // MQTT publishing of the pump states, Home Assistant discovery and commands
 // (M6). Topics and payloads: doser/ha_core.h; connection: lgal/mqtt.h.

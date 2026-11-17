@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+
 # LGAL Doser – build guide
 
 *English · [Deutsch](de/nachbau.md)*

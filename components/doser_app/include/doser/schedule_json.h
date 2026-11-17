@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // JSON form of schedules and lock rules (see schedule_api.h for the format).
 // No ESP dependencies (host tests: tests/host/test_schedule_json.cpp).

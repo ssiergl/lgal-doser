@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Packs the web UI (www/) into one blob that is embedded in the firmware.
 
 Every file is gzip-compressed (deterministic: no name, mtime 0) and served

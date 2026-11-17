@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // MQTT broker settings (M6). No ESP dependencies (host tests:
 // tests/host/test_mqtt_config.cpp).

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Network (settings page): connection status for everyone; interface, LAN /
 // Wi-Fi addresses, Wi-Fi search and test in the pro view.
 import { useEffect, useRef, useState } from 'preact/hooks';

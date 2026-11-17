@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Firmware OTA by HTTP upload, from the fixed update source or from a URL,
 // with image check and rollback protection.

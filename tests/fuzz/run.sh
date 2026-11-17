@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Builds the parser fuzzer with AddressSanitizer and UndefinedBehaviorSanitizer
 # and runs it (no ESP-IDF needed).
 #   tests/fuzz/run.sh [rounds per target] [seed]   (HOST_CXX=clang++: other compiler)

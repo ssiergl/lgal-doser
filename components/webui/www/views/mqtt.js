@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // MQTT / Home Assistant (settings page): connection status for everyone;
 // broker, TLS with CA upload, discovery and remote control in the pro view.
 import { useEffect, useRef, useState } from 'preact/hooks';

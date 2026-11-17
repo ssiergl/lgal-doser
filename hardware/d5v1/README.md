@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->
+
 # d5v1 – LGAL Doser 5
 
 Five pumps, circuit boards v1.0 (11/2026, built) and v1.1; both have the

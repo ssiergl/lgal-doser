@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Simulated hardware, clock and storage for the host simulations of the
 // dosing engine and the scheduler. Header with definitions: include it in

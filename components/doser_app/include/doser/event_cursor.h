@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Position of the MQTT event stream in the history (M6, spec 1 and 9). Every
 // history event is sent once, oldest first; after a broker or network outage

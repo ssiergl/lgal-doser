@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host simulation of the scheduler (components/doser_app/src/scheduler.cpp)
 // together with the real dosing engine. Motor, clock and storage are
 // simulated; days pass in one-second steps (20 ms while a pump moves).

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Schedule card of the pump detail view: today's doses of this pump on a
 // 24 h bar and the editor of its plan. Every pump has exactly one plan: "spread" (daily amount in N doses between two
 // times) or "times" (single times, each with its own amount).

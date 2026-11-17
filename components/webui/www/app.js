@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // LG Aquatic Life web UI: layout, hash router, start-up.
 import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';

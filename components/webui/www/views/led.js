@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Status LED (settings page): what the LED shows right now, what the colours
 // mean, and the night mode that dims the idle light in a time window.
 import { useEffect, useState } from 'preact/hooks';

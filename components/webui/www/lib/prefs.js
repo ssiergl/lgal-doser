@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Per-browser view preferences: beginner/pro mode, colour theme and clock
 // (24 h or 12 h with AM/PM).
 import { hub, load, save } from './hub.js';

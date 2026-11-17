@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // MQTT topics, Home Assistant discovery and command parsing (M6). Pure
 // logic, host-tested (tests/host/test_ha.cpp); mqtt_ha.cpp feeds it.

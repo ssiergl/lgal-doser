@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Board ID inside a firmware image (pure logic, host-testable:
 // tests/host/test_ota_manifest.cpp).

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Board d5v1: LGAL Doser 5, circuit board v1.0 (11/2026), five pumps.
 // Source: CLAUDE.md / schematic "Dosingpump 5x Kamoer". Do not change.

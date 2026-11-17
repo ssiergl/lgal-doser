@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->
+
 # d5v1 – enclosure
 
 This folder holds the enclosure and mechanical parts of the LGAL Doser 5, one folder per board

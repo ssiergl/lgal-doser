@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // REST API of the event history (M6, functional spec chapter 9). Instants as
 // UTC seconds plus the device-local "YYYY-MM-DD HH:MM:SS". All require login.

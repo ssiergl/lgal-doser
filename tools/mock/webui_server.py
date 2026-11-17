@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Local mock of the device for the web UI (Python stdlib only, localhost).
 #
 #   python3 tools/mock/webui_server.py [project dir] [port]   -> http://localhost:8767/

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Detail view of one pump: container, schedule, boost, manual dose,
 // priming, calibration, consumption and settings (fine-tuning only in the pro view).
 import { useEffect, useRef, useState } from 'preact/hooks';

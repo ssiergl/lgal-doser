@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Hidden engineering access (spec 11.1): clicking the firmware version in the
 // footer 7 times opens this dialog. It asks for the per-device key and then
 // opens the engineering menu (views/service.js); when the area is already

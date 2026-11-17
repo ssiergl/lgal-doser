@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 #include "freertos/FreeRTOS.h"
 inline SemaphoreHandle_t xSemaphoreCreateMutex() { static int m; return &m; }

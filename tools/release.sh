@@ -1,4 +1,7 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Builds the release files of every board and module variant into dist/:
 #   lgal_doser-<B>-<V>.bin       app image: OTA update and update manifest
 #   lgal_doser-<B>-<V>-full.bin  bootloader, partition table, OTA data and app

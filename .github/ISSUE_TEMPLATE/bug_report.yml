@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 name: Bug report
 description: Something does not work as described (firmware, web UI, build, documentation).
 title: "[Bug] "

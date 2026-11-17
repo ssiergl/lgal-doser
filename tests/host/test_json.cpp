@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Host tests for the JSON reader (lgal_core) and the round trip with the
 // JSON writer.
 #include <cstdio>

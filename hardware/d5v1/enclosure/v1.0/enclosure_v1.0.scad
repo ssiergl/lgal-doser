@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
+
 // =====================================================================
 //  Enclosure LGAL Doser 5 for board d5v1 v1.0 - flat variant
 //  The board lies flat BEHIND the pumps (12 mm above the floor)

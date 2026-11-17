@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Night mode of the status LED (functional spec chapter 10): dims or switches
 // off the idle indication (prio 7) in a local time window. Alarms, warnings

@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life -->
+<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->
+
 # d5v1 – circuit board
 
 Circuit boards of the LGAL Doser 5 (board ID `d5v1`). All versions share the same ESP32-S3 pin

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Device card (settings page): the name of the device, the host name that
 // follows from it (own host name in the pro view) and the device pages.
 import { useEffect, useState } from 'preact/hooks';

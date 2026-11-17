@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Changes made in the core (network, MQTT, device settings, clock, password,
 // API keys) for the application's event history. The core does not know the

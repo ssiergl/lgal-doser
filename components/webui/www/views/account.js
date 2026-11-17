@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Account (settings page): change the admin password and sign out for
 // everyone; API keys for apps, Home Assistant and scripts in the pro view.
 import { useEffect, useState } from 'preact/hooks';

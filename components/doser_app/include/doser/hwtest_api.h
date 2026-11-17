@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // Hardware diagnostics (engineering menu, spec 11.2 C/D). All endpoints
 // need the unlocked engineering area (auth.h).

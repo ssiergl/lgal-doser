@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Small shared UI pieces: messages, decimal input, segmented control, switch,
 // save bar, hold button, confirmation dialog.
 import { useEffect, useRef, useState } from 'preact/hooks';

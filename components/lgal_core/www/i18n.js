@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // LG Aquatic Life – shared translation base for all device pages.
 //
 // Firmware/API are always English (errors: {"error":{"code","message"}}).

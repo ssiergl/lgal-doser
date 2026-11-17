@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 // RAM ring buffer for log output. Replaces the serial console, since the
 // board is not reachable via USB in the housing (available via the system API).
