@@ -9,7 +9,7 @@ Firmware der Dosierpumpe „LG Aquatic Life“ (erstes Gerät: ESP32-S3-DEV-KIT-
 Aufbau, Bauen, Inbetriebnahme, Schnittstellen und Verhalten im Detail. Überblick über das Projekt:
 [README](../../README.de.md); festgelegte Hardware (Pinbelegung, Schaltung): [CLAUDE.md](../../CLAUDE.md).
 
-Framework: **ESP-IDF v6.0.3**, C++ (gnu++2b), FreeRTOS.
+Framework: **ESP-IDF v6.1.1**, C++ (gnu++2b), FreeRTOS.
 
 ## Struktur
 
@@ -35,7 +35,7 @@ hardware/               Gehäuse- und Platinendaten pro Ausführung, z. B. d5v1/
 ## Toolchain
 
 ```bash
-git clone -b v6.0.3 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.0.3
+git clone -b v6.1.1 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v6.1.1
 ```
 
 Dieses Repository mit dem Marken-Submodul (`brand/`, das Logo und das gemeinsame Web-Design):
@@ -48,13 +48,13 @@ In einem vorhandenen Checkout: `git submodule update --init`; ein neueres Logo o
 `git submodule update --remote brand` und einem Commit.
 
 ```bash
-~/esp/esp-idf-v6.0.3/install.sh esp32s3 && brew install cmake ninja
+~/esp/esp-idf-v6.1.1/install.sh esp32s3 && brew install cmake ninja
 ```
 
 In jeder neuen Shell:
 
 ```bash
-source ~/esp/esp-idf-v6.0.3/export.sh
+source ~/esp/esp-idf-v6.1.1/export.sh
 ```
 
 Bauen:
@@ -214,7 +214,7 @@ neuere Vorabversion draußen ist, lässt es unverändert. Geräte im Beta-Kanal 
 
 `.github/workflows/ci.yml` führt bei jedem Push auf `main` und jedem Pull Request die
 Host-Tests unter beiden Sanitizern, einen kurzen Fuzz-Lauf und den Build aller drei
-Varianten aus (im Container `espressif/idf:v6.0.3`).
+Varianten aus (im Container `espressif/idf:v6.1.1`).
 
 ## Erstinbetriebnahme (einmalig per USB, vor dem Einbau)
 

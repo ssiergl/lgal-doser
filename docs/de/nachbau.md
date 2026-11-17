@@ -74,7 +74,7 @@ Pinbelegung und Schaltung sind festgelegt, siehe [CLAUDE.md](../../CLAUDE.md).
 - Lötstation, Lötzinn, Entlötlitze
 - Multimeter (Spannung, Durchgang)
 - USB-Kabel für das ESP-Board und ein Rechner mit Python 3 (für `esptool` und die Skripte);
-  zum Selbstbauen der Firmware ESP-IDF v6.0.3 (siehe [technische Doku](technik.md#toolchain))
+  zum Selbstbauen der Firmware ESP-IDF v6.1.1 (siehe [technische Doku](technik.md#toolchain))
 - Messbecher oder Spritze mit 0,1-ml-Teilung zum Kalibrieren
 - 3D-Drucker für das Gehäuse (oder ein eigenes Gehäuse)
 
