@@ -25,6 +25,19 @@ jobs:
         run: SAN=1 HOST_CXX=clang++ sh tests/host/run.sh
       - name: Fuzz parsers (short run)
         run: HOST_CXX=clang++ sh tests/fuzz/run.sh 20000 1
+  checks:
+    # translations, Python tools, web UI and firmware sources without building anything
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    steps:
+      - name: Install tools
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+            ca-certificates python3
+      - uses: actions/checkout@v4
+      - name: Translations
+        run: python3 tests/i18n/check_translations.py
   firmware:
     runs-on: ubuntu-24.04
     container: espressif/idf:v6.1.1
