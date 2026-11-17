@@ -3,6 +3,9 @@
 
 import { adminPassword, expect, open, test } from './fixtures.js';
 
+// WebKit reports the requests that signing out cuts off
+test.use({ allowErrors: /due to access control checks|Load failed/ });
+
 test('sign out, wrong password, sign in again', async ({ page }) => {
   await open(page, '#/settings');
   await page.getByRole('button', { name: 'Sign out' }).click();
