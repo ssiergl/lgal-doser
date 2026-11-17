@@ -59,7 +59,7 @@ test.describe('manual dose during a lock time', () => {
     const amount = c.getByRole('textbox', { name: 'Amount ml', exact: true });
     await amount.fill('13');
     await c.getByRole('button', { name: 'Dose', exact: true }).click();
-    await expect(c.locator('.msg.err')).toHaveText(/^Lock time to another pump until \d{1,2}:\d\d/);
+    await expect(c.locator('.msg.err')).toHaveText(/^Lock time to another pump until (tomorrow )?\d{1,2}:\d\d/);  // before midnight: "tomorrow 00:02"
     await amount.fill('14');
     await c.getByRole('button', { name: 'Dose', exact: true }).click();
     await expect(c.getByRole('status')).toHaveText('Lock time running – the dose starts afterwards');
