@@ -87,10 +87,10 @@ export function Toggle({ checked, onChange, disabled, children }) {
     <input type="checkbox" role="switch" checked=${checked} disabled=${disabled} onChange=${e => onChange(e.target.checked)}/></label>`;
 }
 
-// Decimal input with unit; value is the text
-export function Amount({ value, onInput, unit = 'ml', id, placeholder }) {
+// Decimal input with unit; value is the text. Without a <label for=id> give it a label.
+export function Amount({ value, onInput, unit = 'ml', id, placeholder, label }) {
   return html`<div class="amount"><input id=${id} type="text" inputmode="decimal" autocomplete="off"
-    value=${value} placeholder=${placeholder} onInput=${e => onInput(e.target.value)}/><span>${unit}</span></div>`;
+    aria-label=${label} value=${value} placeholder=${placeholder} onInput=${e => onInput(e.target.value)}/><span>${unit}</span></div>`;
 }
 
 // Save / discard row at the end of a settings form (type=submit saves)

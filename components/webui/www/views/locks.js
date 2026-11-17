@@ -22,6 +22,7 @@ add({
     'lk.intro': 'A lock time keeps two pumps apart: after a dose of one pump ends, the other one starts at the earliest once the lock time has passed. Use it for additives that must not meet in the same water flow.',
     'lk.none': 'No lock times – all pumps may dose at the same time.',
     'lk.add': 'Add rule', 'lk.del': 'Delete rule',
+    'lk.a': 'Rule {n}: first pump', 'lk.b': 'Rule {n}: second pump', 'lk.gap': 'Rule {n}: lock time in minutes',
     'lk.manual': 'Manual dose during a lock time', 'lk.m.reject': 'Reject', 'lk.m.queue': 'Wait',
     'lk.m.hint.reject': 'The dose is refused with a note when it may start.',
     'lk.m.hint.queue': 'The dose waits and starts by itself once the lock time has passed.',
@@ -49,8 +50,8 @@ function check(d) {
   return null;
 }
 
-function PumpSelect({ value, pumps, onChange }) {
-  return html`<select value=${value} style=${{ '--pc': pumpColor(+value) }} onChange=${e => onChange(+e.target.value)}>
+function PumpSelect({ value, pumps, onChange, label }) {
+  return html`<select aria-label=${label} value=${value} style=${{ '--pc': pumpColor(+value) }} onChange=${e => onChange(+e.target.value)}>
     ${pumps.map(p => html`<option value=${p.pump}>${p.pump} · ${pumpName(p)}</option>`)}</select>`;
 }
 
@@ -98,10 +99,10 @@ export function LocksCard() {
       ${head}
       ${!d.rules.length && html`<p class="small mut">${t('lk.none')}</p>`}
       <div class="lrules">${d.rules.map((r, i) => html`<div class=${'lrow' + (bad && bad.i === i ? ' bad' : '')} key=${i}>
-        <${PumpSelect} value=${r.a} pumps=${fit} onChange=${v => setRule(i, { a: v })}/>
+        <${PumpSelect} value=${r.a} pumps=${fit} label=${t('lk.a', { n: i + 1 })} onChange=${v => setRule(i, { a: v })}/>
         <span class="mut" aria-hidden="true">↔</span>
-        <${PumpSelect} value=${r.b} pumps=${fit} onChange=${v => setRule(i, { b: v })}/>
-        <${Amount} value=${r.gap} onInput=${v => setRule(i, { gap: v })} unit="min"/>
+        <${PumpSelect} value=${r.b} pumps=${fit} label=${t('lk.b', { n: i + 1 })} onChange=${v => setRule(i, { b: v })}/>
+        <${Amount} value=${r.gap} onInput=${v => setRule(i, { gap: v })} unit="min" label=${t('lk.gap', { n: i + 1 })}/>
         <button type="button" class="ghost" title=${t('lk.del')} aria-label=${t('lk.del')}
           onClick=${() => set({ rules: d.rules.filter((_, k) => k !== i) })}>✕</button>
       </div>`)}</div>
