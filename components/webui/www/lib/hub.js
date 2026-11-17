@@ -6,14 +6,18 @@ import { useEffect, useState } from 'preact/hooks';
 
 export function hub() {
   const subs = new Set();
+  let version = 0;  // counts the emits
   return {
-    emit() { subs.forEach(f => f()); },
-    // Re-render the calling component on every emit
+    emit() { version++; subs.forEach(f => f()); },
+    // Re-render the calling component on every emit. The subscription starts after the first
+    // paint; an emit in between (fast answers at start-up) would be lost, so catch up on it.
     use() {
       const [, force] = useState(0);
+      const seen = version;
       useEffect(() => {
         const f = () => force(x => x + 1);
         subs.add(f);
+        if (version !== seen) f();
         return () => subs.delete(f);
       }, []);
     },
