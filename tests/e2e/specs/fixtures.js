@@ -25,8 +25,18 @@ export const test = base.extend({
   signedIn: [true, { option: true }],
   // console and page errors a test causes on purpose (e.g. /401|WebSocket/)
   allowErrors: [null, { option: true }],
-  page: async ({ page, request, signedIn, allowErrors }, use, info) => {
+  page: async ({ page, request, browserName, signedIn, allowErrors }, use, info) => {
     const errors = [];
+    // WebKit on Linux without a graphics card blurs behind every glass card in software: the
+    // unlocked engineering page (15 cards) then draws no frame for over a minute, and no click
+    // gets through. Real devices blur on the graphics chip, so the tests drop only the blur.
+    if (browserName === 'webkit' && process.platform === 'linux') {
+      await page.addInitScript(() => addEventListener('DOMContentLoaded', () => {
+        const s = document.createElement('style');
+        s.textContent = '* { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }';
+        document.head.appendChild(s);
+      }));
+    }
     // allowErrors also covers page errors: WebKit reports a request cut off by a reload as one,
     // even when the page catches it
     page.on('pageerror', e => { if (!(allowErrors && allowErrors.test(String(e)))) errors.push(String(e)); });
