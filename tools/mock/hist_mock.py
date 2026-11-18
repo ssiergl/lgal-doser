@@ -94,6 +94,7 @@ def _filter(q):
     try:
         pump = int(q.get("pump", 0))
         days = int(q.get("days", 0))
+        frm, to = int(q.get("from", 0)), int(q.get("to", 2**32 - 1))  # UTC, both inclusive (history::Filter)
     except ValueError:
         return None
     if not 0 <= pump <= 5 or (q.get("days") and not 1 <= days <= 60): return None
@@ -104,6 +105,7 @@ def _filter(q):
         lt = time.localtime()
         frm = time.time() - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec) - (days - 1) * 86400
         out = [e for e in out if e["utc"] >= frm]
+    if "from" in q or "to" in q: out = [e for e in out if frm <= e["utc"] <= to]
     if pump: out = [e for e in out if e["pump"] == pump]
     if kinds: out = [e for e in out if e["kind"] in kinds]
     return list(reversed(out))
