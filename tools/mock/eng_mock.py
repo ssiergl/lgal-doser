@@ -6,7 +6,6 @@
 import random, time
 import __main__ as M
 
-START = time.time()
 SCH = {"grid_min": 5, "max_delay_min": 120}
 CFG = [{"run_ma": 650, "hold_ma": 0, "microsteps": 16, "full_steps": 200, "invert": False, "accel": 64000, "v_start": 1066} for _ in range(5)]
 RAW = [{"running": False, "start": 0.0, "steps": 0, "sps": 1, "pos": 0, "sg_min": 0} for _ in range(5)]
@@ -107,7 +106,7 @@ def route(h, method, path, q, eng_ok):
         h.send(200, SCH); return True
     if path == "/api/v1/engineering/telemetry" and method == "GET":
         ht = 337 * 1024; free = random.randint(150, 160) * 1024
-        h.send(200, {"uptime_s": int(time.time() - START) + 3 * 86400 + 4000, "reset_reason": "SW", "tasks": 27,
+        h.send(200, {"uptime_s": __import__("sys_mock").uptime(), "reset_reason": "SW", "tasks": 27,
                      "chip_temp_c": round(41 + random.random() * 2, 1),
                      "heap": {"free": free, "min_free": 121 * 1024, "largest_block": 96 * 1024, "total": ht,
                               "fragmentation_pct": round(100 * (1 - 96 * 1024 / free), 1)},

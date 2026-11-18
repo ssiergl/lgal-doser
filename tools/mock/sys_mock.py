@@ -86,8 +86,12 @@ def led_json():
 
 def down(): return time.time() < SYS["down_until"]
 
+def uptime():
+    """Seconds since the start: the mock begins as if up for 2 days 3 hours, after a restart from 0"""
+    return int(max(0, time.time() - SYS["boot"])) + (0 if SYS.get("restarted") else 2 * 86400 + 3 * 3600)
+
 def restart(delay=6):
-    SYS["down_until"] = time.time() + delay; SYS["boot"] = time.time() + delay; ENG["until"] = 0
+    SYS["down_until"] = time.time() + delay; SYS["boot"] = time.time() + delay; SYS["restarted"] = True; ENG["until"] = 0
     SESSIONS.clear()  # sessions live in RAM (strict mode)
 
 # Device name and host name (lgal/device_name.h)
@@ -119,7 +123,7 @@ def info_json():
     return {"device": {"vendor": "LG Aquatic Life", "model": "LGAL Doser 5", "board": "d5v1", "hostname": hostname(), "mac": "AA:BB:CC:00:11:22", "setup_completed": True},
             "firmware": {"project": "lgal_doser", "version": SYS["version"], "idf": "v6.1.1", "built": "Nov  7 2026 10:00:00",
                          "partition": SYS["partition"], "ota_state": "VALID", "last_invalid_partition": SYS["invalid"]},
-            "system": {"uptime_s": int(max(0, time.time() - SYS["boot"])) + 2 * 86400 + 3 * 3600, "reset_reason": "SW", "heap_free": 182000,
+            "system": {"uptime_s": uptime(), "reset_reason": "SW", "heap_free": 182000,
                        "heap_min_free": 151000, "heap_largest_block": 98000, "psram_free": 8200000, "coredump": SYS["coredump"]},
             "network": {"active": "lan", "eth_present": True, "eth_link": True, "eth_ip": "192.168.1.50", "wlan": "off", "wlan_ip": None, "ap_active": False, "ap_clients": 0},
             "time": time_json(), "language": "de", "languages": LANGUAGES, "device_name": DEVICE["name"], "links": LINKS,
