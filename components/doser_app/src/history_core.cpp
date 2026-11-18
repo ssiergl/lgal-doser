@@ -230,11 +230,12 @@ size_t Store::query(const Filter& flt, bool (*cb)(const Event&, void*), void* ct
 int Store::prune(uint32_t now_utc, uint16_t keep_days) {
     int32_t list[kMaxDays];
     const int n = days(list, kMaxDays);
-    const int32_t oldest = day_of_utc(now_utc) - keep_days;
+    const int32_t today = day_of_utc(now_utc), oldest = today - keep_days;
     int removed = 0;
     used_known_ = false;
     for (int i = 0; i < n; ++i) {
-        if (list[i] >= oldest) continue;
+        // from a clock that was ahead; tomorrow stays for a clock a little ahead at midnight
+        if (list[i] >= oldest && list[i] <= today + 1) continue;
         char path[64];
         path_of(list[i], path);
         if (std::remove(path) == 0) ++removed;

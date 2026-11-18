@@ -157,7 +157,13 @@ static void test_store() {
     v = all(s);
     CHECK(v.size() == 10 && v.back().utc >= kDay0 + 86400);
     CHECK(s.prune(kDay0 + 3 * 86400, 2) == 0);
-    CHECK(s.clear() == 2);
+    // days after tomorrow come from a clock that was ahead: deleted, tomorrow stays
+    CHECK(s.append(ev(kDay0 + 4 * 86400, Kind::Dose, 1)));
+    CHECK(s.append(ev(kDay0 + 9 * 86400, Kind::Dose, 1)));
+    CHECK(s.prune(kDay0 + 3 * 86400, 2) == 1);
+    v = all(s);
+    CHECK(v.size() == 11 && v.front().utc == kDay0 + 4 * 86400);
+    CHECK(s.clear() == 3);
     CHECK(all(s).empty());
     CHECK(chdir("/") == 0);
     rm_dir(tmp);

@@ -95,7 +95,8 @@ public:
     // Matching events, newest first; cb returns false to stop. Returns the
     // number of matching events passed to cb.
     size_t query(const Filter& f, bool (*cb)(const Event&, void*), void* ctx) const;
-    // Delete day files older than keep_days before the day of now_utc
+    // Delete day files older than keep_days before the day of now_utc, and
+    // those after the next day (written while the clock was ahead)
     int prune(uint32_t now_utc, uint16_t keep_days);
     // Number of day files and their total size
     void usage(int* files, uint64_t* bytes) const;
