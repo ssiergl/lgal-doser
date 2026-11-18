@@ -61,6 +61,41 @@ def test_match_doses_too_late_is_missing():
     assert m["missing"] == [at("18 09:00:00")] and m["extra"] == 1
 
 
+def test_live_watch_pings(monkeypatch):
+    sent = []
+
+    class FakeSocket:
+        def settimeout(self, t):
+            pass
+
+    class FakeWs:
+        status = 101
+        s = FakeSocket()
+
+        def __init__(self, dev):
+            pass
+
+        def send(self, msg):
+            sent.append(msg)
+
+        def recv(self):
+            time.sleep(0.02)
+            return {"type": "status"}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(endurance, "WebSocket", FakeWs)
+    monkeypatch.setattr(endurance, "WS_PING_S", 0.1)
+    live = endurance.LiveWatch(None)
+    live.start()
+    time.sleep(0.5)
+    live.stop()
+    live.join(1)
+    assert 3 <= len(sent) <= 6 and all(m == {"type": "ping"} for m in sent), sent
+    assert live.frames > 10 and live.drops == 0
+
+
 @pytest.fixture
 def device():
     port = _free_port()

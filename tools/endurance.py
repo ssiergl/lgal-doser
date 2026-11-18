@@ -42,6 +42,7 @@ HEAP_DROP_WARN = 16 * 1024     # free memory in the last hour this much below th
 LARGEST_BLOCK_WARN = 16 * 1024
 CLOCK_OFF_WARN_S = 10
 WS_GAP_WARN_S = 30             # the firmware pushes the status at least every 10 s
+WS_PING_S = 30                 # a client that only listens is the first one closed when the sockets run out
 NTP_EXPECT_S = 4 * 3600        # a run this long should see an NTP sync
 SLOW_POLL_S = 300              # schedules and hardware are read every 5 minutes
 END_MARGIN_S = 15 * 60         # doses planned this close to the end are not checked
@@ -96,7 +97,11 @@ class LiveWatch(threading.Thread):
                 with self.lock:
                     self.ws = ws
                     self.connected_once = True
+                pinged = time.monotonic()
                 while not self.done.is_set():
+                    if time.monotonic() - pinged >= WS_PING_S:
+                        ws.send({"type": "ping"})
+                        pinged = time.monotonic()
                     m = ws.recv()
                     if m and m.get("type") == "status":
                         now = time.time()

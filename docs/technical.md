@@ -610,8 +610,8 @@ At the end it checks:
 - **Clock and network:** valid time all along, at most 10 s from this computer's clock, an NTP
   sync (from 4 hours on, when a time server is set), the same network interface all along, the
   24 V supply (board v1.1).
-- **Live connection:** a WebSocket stays open the whole run; drops or more than 30 s without a
-  status frame are warnings.
+- **Live connection:** a WebSocket stays open the whole run and pings every 30 s; drops or more
+  than 30 s without a status frame are warnings.
 - **Doses:** per pump in automatic mode, every slot the schedule planned in the run (except the
   last 15 minutes) has its entry in the history: done (with the amount; less than the target is
   a warning), skipped with its reason (warning), failed or missing (fails). Doses without a
