@@ -93,7 +93,9 @@ def test_api_key_with_engineering_key(device, tmp_path):
         assert r[f"driver {n}"][0] == "PASS", out
     for name in ("drivers off at rest", "UART bus A", "UART bus B", "clock module", "EEPROM", "history storage"):
         assert r[name][0] == "PASS", (name, r.get(name))
-    assert "engineering" in json.loads(snap.read_text())["settings"]
+    taken = json.loads(snap.read_text())["settings"]
+    assert "engineering" in taken
+    assert "api_keys" not in taken  # an API key cannot read the key names (sessions only)
     # the same state compared: unchanged; a renamed pump is found
     code, r, out = run(device, "--compare", str(snap), key=key, eng=True)
     assert r["settings unchanged"][0] == "PASS", out

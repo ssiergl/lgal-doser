@@ -457,8 +457,9 @@ def snapshot(dev, info):
         "locks": dev.json("/api/v1/schedule/locks"),
         "pumps": pumps,
         "schedules": schedules,
-        "api_keys": sorted(k["name"] for k in dev.json("/api/v1/auth/keys").get("keys", [])),
     }
+    if not dev.key:  # the device lists its keys only to a session
+        snap["api_keys"] = sorted(k["name"] for k in dev.json("/api/v1/auth/keys").get("keys", []))
     if dev.eng_key:
         hw = dev.json("/api/v1/hw/status")
         snap["engineering"] = {
