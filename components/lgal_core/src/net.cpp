@@ -311,7 +311,11 @@ void apply_mode(wifi_mode_t m) {
         if (err == ESP_OK && !s_wifi_started) {
             entropy::radio(true);
             err = esp_wifi_start();
-            if (err == ESP_OK) s_wifi_started = true;
+            if (err == ESP_OK) {
+                s_wifi_started = true;
+                // mains powered: modem sleep would only delay every answer by up to a beacon (~100 ms)
+                esp_wifi_set_ps(WIFI_PS_NONE);
+            }
         }
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Wi-Fi mode %d failed: %s", int(m), esp_err_to_name(err));

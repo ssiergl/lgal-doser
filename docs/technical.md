@@ -380,7 +380,7 @@ In the web UI under **Settings → Network** (status for everyone, settings, Wi-
 |---|---|
 | Interface | `auto` (default): LAN has priority. If the LAN has no address for 30 s (cable out, no DHCP), the Wi-Fi client starts; as soon as the LAN has an address again, the Wi-Fi radio goes off. `lan`: LAN only, Wi-Fi stays off. `wlan`: Wi-Fi only, Ethernet is switched off. |
 | Addresses | LAN and Wi-Fi separately: DHCP or static (IP, mask /8–/30, gateway, DNS 1/2). The DNS servers follow the active interface. |
-| Wi-Fi | WPA2 or newer (password 8–63 characters) or open. Reconnect with a wait of 2 s, doubling up to 60 s. |
+| Wi-Fi | WPA2 or newer (password 8–63 characters) or open. Reconnect with a wait of 2 s, doubling up to 60 s. No power saving (the device runs on mains): the radio stays awake, so answers do not wait up to a beacon interval (~100 ms). |
 | Applying | Saved at once (NVS `net`), applied 1 s after the response – otherwise the response would not reach the browser at a new IP. |
 | Connection test | Checks SSID/password/addresses without saving (max. 25 s); afterwards the saved settings apply again. |
 | Locked out? | Button 3 s → setup Wi-Fi, open `http://192.168.4.1/` there, sign in and change it under Settings → Network (pro view). The setup Wi-Fi runs in parallel to the Wi-Fi client. |
