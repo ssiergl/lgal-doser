@@ -84,6 +84,9 @@ mock; the test on the finished hardware is still pending.
 - Updates by file, from a fixed update source (release manifest) or from a URL; rollback on a
   failed start; update entity for Home Assistant. A device only accepts firmware for its own
   board and module variant.
+- Acceptance test script for a device on the network (`tools/acceptance.py`): locked API,
+  firmware, pumps, drivers and clock, a settings snapshot to compare after an update, an
+  optional test dose and update.
 - License texts of the firmware and the third-party software on the device.
 - Software bill of materials (SBOM, SPDX 2.2 JSON) for every board and module variant with
   each release. Built with ESP-IDF v6.1.1.
