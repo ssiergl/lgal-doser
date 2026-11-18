@@ -98,3 +98,49 @@ test('API keys (pro view): shown once, all slots, delete asks first', async ({ p
   await expect(keys).toHaveCount(3);
   await expect(name).toBeEnabled();
 });
+
+// The device speaks plain HTTP: no secure context, no Clipboard API. The key is copied
+// through a hidden text field; if the browser refuses, the card says so.
+test('copy a new key over plain HTTP', async ({ page, cleanup, browserName }) => {
+  const before = (await (await page.request.get('/api/v1/auth/keys')).json()).keys.map(k => k.slot);
+  cleanup(async () => {
+    for (const k of (await (await page.request.get('/api/v1/auth/keys')).json()).keys) {
+      if (!before.includes(k.slot)) await page.request.delete('/api/v1/auth/keys?slot=' + k.slot);
+    }
+  });
+  if (browserName === 'chromium') await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'isSecureContext', { get: () => false });
+    const orig = document.execCommand.bind(document);
+    window.copies = [];
+    window.refuseCopy = false;
+    document.execCommand = cmd => {
+      if (cmd !== 'copy') return orig(cmd);
+      window.copies.push(document.activeElement && document.activeElement.value);
+      return window.refuseCopy ? false : orig(cmd);
+    };
+  });
+  await open(page, '#/settings');
+  await proMode(page);
+  const c = card(page, 'API keys');
+  await c.getByRole('textbox', { name: 'Name of the new key' }).fill('Plain HTTP');
+  await c.getByRole('button', { name: 'Create key' }).click();
+  const fresh = c.locator('.newkey');
+  const key = await fresh.locator('code').textContent();
+  expect(key).toMatch(/^lgal_test_[0-9a-f]{32}$/);
+
+  await page.evaluate(() => { window.refuseCopy = true; });
+  await fresh.getByRole('button', { name: 'Copy' }).click();
+  await expect(c.locator('.msg.err')).toHaveText('Could not copy – please select the key and copy it by hand.');
+  await expect(fresh.getByRole('button', { name: 'Copy' })).toBeVisible();
+
+  await page.evaluate(() => { window.refuseCopy = false; });
+  await fresh.getByRole('button', { name: 'Copy' }).click();
+  await expect(fresh.getByRole('button', { name: 'Copied' })).toBeVisible();
+  await expect(c.locator('.msg.err')).toHaveCount(0);
+  expect(await page.evaluate(() => window.copies)).toEqual([key, key]);
+  await expect(page.locator('body > textarea')).toHaveCount(0);   // the helper field is gone again
+  if (browserName === 'chromium') {
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(key);
+  }
+});

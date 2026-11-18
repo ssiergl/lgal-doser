@@ -22,6 +22,7 @@ add({
     'ac.keys.none': 'No API keys yet.', 'ac.keys.created': 'created {d}', 'ac.keys.name': 'Name of the new key',
     'ac.keys.add': 'Create key', 'ac.keys.full': 'All {n} key slots are in use.', 'ac.keys.del': 'Delete key "{n}"? Programs using it lose access.',
     'ac.keys.delete': 'Delete', 'ac.keys.once': 'Copy the key now – it is shown only once:', 'ac.keys.copy': 'Copy', 'ac.keys.copied': 'Copied',
+    'ac.keys.copyfail': 'Could not copy – please select the key and copy it by hand.',
     'ac.keys.done': 'Done', 'ac.keys.deleted': 'Key "{n}" deleted.',
     'err.wrong_password': 'Wrong password', 'err.too_many_attempts': 'Too many attempts – please wait',
     'err.password_too_short': 'At least 8 characters', 'err.password_too_long': 'At most 64 characters',
@@ -118,7 +119,7 @@ function KeysCard() {
       <span class="small">${t('ac.keys.once')}</span>
       <code>${fresh.key}</code>
       <div class="row">
-        <button type="button" onClick=${() => copy(fresh.key).then(() => setCopied(true)).catch(() => {})}>${copied ? t('ac.keys.copied') : t('ac.keys.copy')}</button>
+        <button type="button" onClick=${() => copy(fresh.key).then(() => { msg.clear(); setCopied(true); }).catch(() => msg.err(t('ac.keys.copyfail')))}>${copied ? t('ac.keys.copied') : t('ac.keys.copy')}</button>
         <button type="button" class="sec" onClick=${() => setFresh(null)}>${t('ac.keys.done')}</button>
       </div></div>`}
     <form class="row nowrap savebar" novalidate onSubmit=${create}>
