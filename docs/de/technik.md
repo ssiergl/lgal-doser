@@ -20,7 +20,7 @@ components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitpla
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL, siehe TRADEMARKS.md) und web/, das gemeinsame Design der Seiten (GPL)
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
@@ -102,7 +102,7 @@ Die CI führt außerdem diese Prüfungen aus; lokal aus dem Repository-Wurzelver
 | Prüfung | Befehl | Schlägt fehl, wenn |
 |---|---|---|
 | Übersetzungen | `python3 tests/i18n/check_translations.py` | einer `lang/*.json` ein Schlüssel fehlt, sie einen unbekannten hat oder andere Platzhalter (`{n}` …) als Englisch; der Code `t('…')` mit einem Schlüssel aufruft, den Englisch nicht definiert |
-| Python-Werkzeuge | `python3 -m pytest tests/tools` | Manifest, Beta-Kanal, Release-Text, Passwörter oder Provisionierungswerte falsch sind; Passwörter und Versionsreihenfolge werden gegen dieselben Werte geprüft wie in den Host-Tests der Firmware |
+| Python-Werkzeuge | `python3 -m pytest tests/tools` | Manifest, Beta-Kanal, Release-Text, Passwörter oder Provisionierungswerte falsch sind; das Abnahmeskript (`tools/acceptance.py`) gegen den Mock nicht mehr findet, was es soll (gesperrte API, ein gespeicherter Absturz, ein Treiber, der nicht antwortet, eine geänderte Einstellung, eine Testdosis, ein Update auf die andere Partition); Passwörter und Versionsreihenfolge werden gegen dieselben Werte geprüft wie in den Host-Tests der Firmware |
 | Mock-Vertrag | `python3 -m pytest tests/tools/test_api_contract.py` (Teil der Python-Werkzeuge) | die Webseiten einen API-Pfad oder eine Methode aufrufen, die die Firmware nicht registriert; der Mock (`tools/mock/`) eine Firmware-Route nicht beantwortet, einen Pfad kennt, den die Firmware nicht hat, oder ein Feld liefert oder einen Fehlercode sendet, der nirgends in den Firmware-Quellen vorkommt; über den WebSocket der Status-Frame und die Antworten auf Ping, Befüllen, einen unbekannten Typ und kaputtes JSON andere Felder oder eine andere Form haben als die der Firmware (die End-to-End-Tests laufen nur gegen den Mock; ein Mock, der von der Firmware abweicht, ließe sie bestehen, während das Gerät scheitert) |
 | Image-Größe | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | das App-Image mehr als 85 % seines OTA-Slots belegt (ein zu großes Image lässt sich nicht per OTA einspielen, und die Slot-Größe lässt sich per OTA nicht ändern) |
 | ESLint | `npm ci --prefix tests/lint`, dann `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | die Weboberfläche einen undefinierten Namen, eine unbenutzte Variable oder einen anderen Fehler enthält, vor dem ESLint warnt (ohne Build-Schritt fände ihn sonst niemand) |
@@ -482,7 +482,9 @@ Eine Adresse, die er nicht kennt, beantwortet er mit 404 und dem Header `X-Mock-
 der Vertragstest (siehe Prüfungen) Firmware-Routen, die dem Mock fehlen. Der Zustand geht beim Beenden verloren. Umgebung: `MOCK_FACTORY=1`
 startet im Werkszustand; `MOCK_BOARD_REV=1.1` simuliert Platine v1.1 mit 24-V-Messung,
 `MOCK_SUPPLY=<Volt>` deren Versorgung (Standard 24.1; unter 20 V antworten Dosierungen
-`supply_low`, unter 12 V `supply_missing`).
+`supply_low`, unter 12 V `supply_missing`). `MOCK_STRICT_AUTH=1` meldet wie die Firmware pro
+Client an (Sitzungs-Cookie oder API-Schlüssel, auch `X-Engineering-Key`) statt mit einem gemeinsamen
+Zustand und startet abgemeldet; die Tests des Abnahmeskripts nutzen das.
 
 ## OTA-Update
 
@@ -555,6 +557,45 @@ curl -H "Authorization: Bearer lgal_..." -H "X-Engineering-Key: ..." -d '{"url":
 - Fortschritt und Ergebnis kommen zusätzlich auf `<basis>/ota/state` (MQTT).
 - Abgelehnt, solange eine Pumpe läuft (`pump_running`) oder schon ein Update läuft; der Download
   läuft im Hintergrund, Prüfung, Neustart und Rollback wie beim Upload.
+
+## Abnahmetest am Gerät
+
+`tools/acceptance.py` prüft ein Gerät im Netz, nach jedem Release Candidate und beim
+Hardwaretest. Es liest nur, solange es nicht dosieren oder aktualisieren soll:
+
+```bash
+LGAL_API_KEY=lgal_... python3 tools/acceptance.py lgal-doser-xxxx.local --snapshot vorher.json
+LGAL_API_KEY=lgal_... python3 tools/acceptance.py lgal-doser-xxxx.local \
+    --ota build-d5v1-N16R8/lgal_doser.bin --expect-version 0.1.0-rc.9
+python3 tools/acceptance.py lgal-doser-xxxx.local --dose 1:2      # fragt nach dem Passwort, dann vor dem Dosieren
+```
+
+- **Zugang:** Jede GET-Route aus den Firmware-Quellen antwortet ohne Anmeldung mit 401 (offen sind
+  nur `auth/status` und `system/language`), der WebSocket ebenso; ein falsches Passwort wird
+  abgelehnt; eine Änderung oder ein WebSocket von einer fremden Seite bekommt 403; der
+  Engineering-Bereich ist gesperrt.
+- **Firmware:** Version (`--expect-version`), Update bestätigt (`VALID`; `PENDING_VERIFY` ist eine
+  Warnung), kein Rollback, letzter Start kein Absturz (Panic, Watchdog, Brownout), kein
+  gespeicherter Absturzbericht, freier Speicher.
+- **Gerät:** Uhr und Uhrmodul, Netzwerk, 24-V-Versorgung (Board v1.1), kein laufendes Update; je
+  Pumpe Betriebsart, letztes Ergebnis, Kalibrierung und übersprungene Dosen (Warnungen).
+- **Hardware** (mit `LGAL_ENG_KEY`): jeder bestückte Treiber antwortet über UART und hat seine
+  Register gesetzt, kein Fehler, Treiber in Ruhe aus, Fehlerrate beider UART-Busse, Uhrmodul,
+  EEPROM, Verlaufsspeicher.
+- **Live-Verbindung:** Der WebSocket schickt sofort den Status und beantwortet einen Ping.
+- **Einstellungen:** `--snapshot` schreibt sie (Pumpen, Zeitpläne, Sperrzeiten, Netzwerk, MQTT, LED,
+  Zeit, Updates, Namen der API-Schlüssel; mit `LGAL_ENG_KEY` auch die Engineering-Werte und
+  Treiber) in eine Datei, `--compare` listet jede Abweichung. `--ota` lädt das Image hoch, wartet
+  auf den Neustart, prüft die andere Partition, führt alle Prüfungen erneut aus und vergleicht die
+  Einstellungen mit dem Stand davor.
+- **Testdosis** (`--dose PUMPE:ML`, bis 50 ml, mehrfach möglich): fragt zuerst nach einem
+  Messbecher (`--yes` ohne Nachfrage); geprüft werden Ergebnis und dosierte Menge, die Menge im
+  Becher liest du selbst ab.
+
+Anmeldung nur über die Umgebung (`LGAL_API_KEY` oder `LGAL_PASSWORD`, sonst fragt es nach dem
+Passwort), damit kein Geheimnis in der Shell-Historie landet. Exit-Code 0: bestanden (Warnungen
+erlaubt), 1: eine Prüfung fehlgeschlagen, 2: nicht erreichbar oder Anmeldung abgelehnt. Der
+Engineering-Zugang einer Sitzung wird am Ende wieder gesperrt.
 
 ## API
 
