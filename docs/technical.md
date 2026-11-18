@@ -21,7 +21,7 @@ components/doser_app/   device logic: hardware diagnostics, dosing engine, sched
 components/webui/       web UI (M5): www/ (Preact + htm, no build), pack.py embeds it gzip-compressed
 brand/                  brand repository as Git submodule: the logo (not GPL, see TRADEMARKS.md) and web/, the shared design of the pages (GPL)
 main/                   wiring of the components (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (device mock for the web UI)
+tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, endurance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (device mock for the web UI)
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest)
                         and simulation of dosing engine and scheduler (`tests/host/run.sh`)
 tests/fuzz/             fuzzers for all parsers of external input (`tests/fuzz/run.sh`)
@@ -101,7 +101,7 @@ The CI also runs these checks; locally from the repository root:
 | Check | Command | Fails when |
 |---|---|---|
 | Translations | `python3 tests/i18n/check_translations.py` | a `lang/*.json` misses a key, has an unknown one or other placeholders (`{n}` …) than English; the code calls `t('…')` with a key English does not define |
-| Python tools | `python3 -m pytest tests/tools` | manifest, beta channel, release text, passwords or provisioning values are wrong; the acceptance script (`tools/acceptance.py`) no longer finds against the mock what it should (locked API, a stored crash, a driver that does not answer, a changed setting, a test dose, an update to the other partition); passwords and version order are checked against the same values as the firmware's host tests |
+| Python tools | `python3 -m pytest tests/tools` | manifest, beta channel, release text, passwords or provisioning values are wrong; the acceptance script (`tools/acceptance.py`) no longer finds against the mock what it should (locked API, a stored crash, a driver that does not answer, a changed setting, a test dose, an update to the other partition), or the long-term test (`tools/endurance.py`) matches the planned doses with the history wrongly or misses a restart or a driver that does not answer; passwords and version order are checked against the same values as the firmware's host tests |
 | Mock contract | `python3 -m pytest tests/tools/test_api_contract.py` (part of the Python tools) | the web pages call an API path or method the firmware does not register; the mock (`tools/mock/`) does not answer a firmware route, knows a path the firmware does not have, or answers a field or sends an error code that occurs nowhere in the firmware sources; over the WebSocket the status frame and the replies to ping, priming, an unknown type and broken JSON have other fields or another shape than the firmware's (the end-to-end tests run against the mock only, so a mock that drifts from the firmware would let them pass while the device fails) |
 | Image size | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | the app image fills more than 85 % of its OTA slot (an image too large cannot be installed over the air, and the slot size cannot be changed by OTA) |
 | ESLint | `npm ci --prefix tests/lint`, then `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | the web UI uses an undefined name, has an unused variable or another error ESLint recommends against (no build step would find it) |
@@ -585,6 +585,43 @@ Sign-in from the environment only (`LGAL_API_KEY` or `LGAL_PASSWORD`, else it as
 password), so no secret lands in the shell history. Exit code 0: passed (warnings allowed), 1: a
 check failed, 2: not reachable or sign-in refused. A session's engineering access is locked again
 at the end.
+
+## Long-term test on the device
+
+`tools/endurance.py` watches a device for 24 hours (`--hours`) without changing anything: the
+pumps dose by their own schedules, so their tubes must end in a container. Every minute
+(`--interval`) it reads the device, every 5 minutes the plans of the day and the hardware, and
+every 15 minutes (`--report`) it prints a status line; restarts, outages, network changes and
+driver problems show at once. `--log run.csv` keeps every sample (memory, response time,
+network, supply, WebSocket frames, chip temperature). Ctrl-C ends the run early and checks what
+was recorded. Keep the computer awake for the whole run, e.g. on a Mac:
+
+```bash
+LGAL_API_KEY=lgal_... LGAL_ENG_KEY=... caffeinate -i python3 tools/endurance.py lgal-doser-xxxx.local --log run.csv
+```
+
+At the end it checks:
+
+- **Run:** every sample answered (an outage of 3 minutes or more fails), response times, no
+  restart (uptime went back: fails, with the reset reason), no new core dump, the firmware did not
+  change.
+- **Memory:** lowest free memory, a leak (free memory in the last hour more than 16 KiB below the
+  first hour, from 3 hours on), largest free block.
+- **Clock and network:** valid time all along, at most 10 s from this computer's clock, an NTP
+  sync (from 4 hours on, when a time server is set), the same network interface all along, the
+  24 V supply (board v1.1).
+- **Live connection:** a WebSocket stays open the whole run; drops or more than 30 s without a
+  status frame are warnings.
+- **Doses:** per pump in automatic mode, every slot the schedule planned in the run (except the
+  last 15 minutes) has its entry in the history: done (with the amount; less than the target is
+  a warning), skipped with its reason (warning), failed or missing (fails). Doses without a
+  slot are warnings, alarms of the run warnings or, for driver, clock and supply faults, failures.
+  A dose may start up to the longest delay of the scheduler after its slot (engineering value,
+  120 minutes when the script has no engineering key).
+- **Hardware** (with `LGAL_ENG_KEY`): every fitted driver answers without a fault the whole run,
+  error rate of both UART buses during the run, chip temperature, no history events dropped.
+
+Sign-in and exit codes as in the acceptance test.
 
 ## API
 

@@ -86,7 +86,8 @@ mock; the test on the finished hardware is still pending.
   board and module variant.
 - Acceptance test script for a device on the network (`tools/acceptance.py`): locked API,
   firmware, pumps, drivers and clock, a settings snapshot to compare after an update, an
-  optional test dose and update.
+  optional test dose and update; a long-term test (`tools/endurance.py`, 24 hours) that watches
+  restarts, memory, clock, network and the live connection and checks every scheduled dose.
 - License texts of the firmware and the third-party software on the device.
 - Software bill of materials (SBOM, SPDX 2.2 JSON) for every board and module variant with
   each release. Built with ESP-IDF v6.1.1.
