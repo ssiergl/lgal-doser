@@ -411,6 +411,8 @@ const char* set_schedule(int pump, const sched::PumpSchedule& s, SaveResult* r, 
     for (int q = 0; q < kN; ++q) s_all[q] = s_rt[q].sch;
     s_all[pump] = s;
     if (const char* e = check_all(s_locks, s_cfg, ctx, r)) return e;
+    // saved again unchanged (the editor, an automation): no flash write, no history entry
+    if (sched::same(s_rt[pump].sch, s)) return nullptr;
     if (schedule_store::save_schedule(pump, s) != ESP_OK) return "storage_error";
     adopt(pump, s, ts);
     if (source != history::Source::None) {

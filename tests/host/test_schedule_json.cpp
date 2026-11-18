@@ -44,22 +44,6 @@ static Parsed parse_sched(const std::string& text, int32_t today = kToday) {
     return p;
 }
 
-static bool same(const sched::PumpSchedule& a, const sched::PumpSchedule& b) {
-    bool eq = a.kind == b.kind && a.power_loss == b.power_loss &&
-              a.catch_up_min == b.catch_up_min && a.days.mode == b.days.mode && a.days.weekdays == b.days.weekdays &&
-              a.days.interval == b.days.interval &&
-              (a.days.mode == sched::DayMode::Weekdays || a.days.anchor_day == b.days.anchor_day);
-    if (a.kind == sched::Kind::Spread)
-        eq = eq && a.count == b.count && a.start_min == b.start_min && a.end_min == b.end_min &&
-             a.amount_ul == b.amount_ul;
-    if (a.kind == sched::Kind::Times) {
-        eq = eq && a.time_count == b.time_count;
-        for (int i = 0; eq && i < a.time_count; ++i)
-            eq = a.times[i].minute == b.times[i].minute && a.times[i].ul == b.times[i].ul;
-    }
-    return eq;
-}
-
 static std::string written(const sched::PumpSchedule& s) {
     Json j;
     j.obj();
@@ -122,7 +106,7 @@ static void test_schedule_round_trip() {
     CHECK(text.find("\"ml\":24.125") != std::string::npos);
     CHECK(text.find("\"times\"") == std::string::npos);
     Parsed p = parse_sched(text);
-    CHECK(p.ok && same(p.s, s));
+    CHECK(p.ok && sched::same(p.s, s));
 
     // single times with their own amounts, every 3rd day
     sched::PumpSchedule t;
@@ -138,7 +122,7 @@ static void test_schedule_round_trip() {
     CHECK(text.find("\"anchor\":\"2026-11-05\"") != std::string::npos);
     CHECK(text.find("\"start\"") == std::string::npos && text.find("\"count\"") == std::string::npos);
     p = parse_sched(text);
-    CHECK(p.ok && same(p.s, t));
+    CHECK(p.ok && sched::same(p.s, t));
 
     // no schedule
     text = written(sched::PumpSchedule{});

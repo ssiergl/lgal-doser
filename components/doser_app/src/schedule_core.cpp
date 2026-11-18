@@ -175,6 +175,26 @@ int expand(const PumpSchedule& s, uint16_t grid_min, uint32_t min_dose_ul, Slot*
     return n;
 }
 
+bool same(const PumpSchedule& a, const PumpSchedule& b) {
+    if (a.kind != b.kind) return false;
+    if (a.kind == Kind::None) return true;
+    const DayRule &x = a.days, &y = b.days;
+    if (a.power_loss != b.power_loss || a.catch_up_min != b.catch_up_min || x.mode != y.mode) return false;
+    if (x.mode == DayMode::Interval) {
+        // another anchor on the same days is the same rule
+        if (x.interval != y.interval || x.interval < 1 || mod(int64_t(x.anchor_day) - y.anchor_day, x.interval) != 0)
+            return false;
+    } else if (x.weekdays != y.weekdays) {
+        return false;
+    }
+    if (a.kind == Kind::Spread)
+        return a.count == b.count && a.start_min == b.start_min && a.end_min == b.end_min && a.amount_ul == b.amount_ul;
+    if (a.time_count != b.time_count) return false;
+    for (int i = 0; i < a.time_count && i < kMaxTimes; ++i)
+        if (a.times[i].minute != b.times[i].minute || a.times[i].ul != b.times[i].ul) return false;
+    return true;
+}
+
 bool runs_on(const PumpSchedule& s, int32_t day) {
     return s.kind != Kind::None && active_on(s.days, day);
 }

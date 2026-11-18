@@ -446,6 +446,35 @@ static void test_forecast() {
     CHECK(remaining_days(ps, none, 0, day, now, 500000) == 50.0f);
 }
 
+static void test_same() {
+    const PumpSchedule a = times({{480, 1000}, {720, 2000}});
+    PumpSchedule b = a;
+    CHECK(same(a, b));
+    b.times[5] = {999, 9, 9};  // unused entry
+    CHECK(same(a, b));
+    b.times[1].ul = 2100;
+    CHECK(!same(a, b));
+    b = a;
+    b.days = weekdays(kMon);
+    CHECK(!same(a, b));
+    b = a;
+    b.catch_up_min = 30;
+    CHECK(!same(a, b));
+    CHECK(same(spread(480, 1200, 4, 4000), spread(480, 1200, 4, 4000)));
+    CHECK(!same(spread(480, 1200, 4, 4000), spread(480, 1200, 5, 4000)));
+    CHECK(!same(spread(480, 1200, 4, 4000), spread(480, 1200, 4, 4000, every(2, 0))));
+    CHECK(same(spread(480, 1200, 4, 4000, every(3, 10)), spread(480, 1200, 4, 4000, every(3, 4))));
+    CHECK(!same(spread(480, 1200, 4, 4000, every(3, 10)), spread(480, 1200, 4, 4000, every(3, 5))));
+    b = a;
+    b.days.anchor_day = 77;  // not used by weekdays
+    b.count = 9;             // not used by single times
+    CHECK(same(a, b));
+    PumpSchedule none;
+    PumpSchedule none2;
+    none2.amount_ul = 5;  // without a kind nothing else counts
+    CHECK(same(none, none2) && !same(none, a));
+}
+
 static void test_run_records() {
     RunState st;
     st.cursor = Cursor{1793968215, 7713};
@@ -481,6 +510,8 @@ int main() {
     test_boost();
     std::printf("Schedule: forecast\n");
     test_forecast();
+    std::printf("Schedule: same plan\n");
+    test_same();
     std::printf("Schedule: run state records\n");
     test_run_records();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);

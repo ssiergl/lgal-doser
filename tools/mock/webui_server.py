@@ -189,7 +189,8 @@ def put_sched(h, i, body):
     lim = P[i]["limit"]
     if lim and sum(u for _, u in today_slots(i)) / 1000 > lim:
         SCHED[i] = old; return h.send(409, {"error": {"code": "exceeds_daily_limit", "message": "x", "pump": i + 1}})
-    if kind == "none": note("schedule", i + 1, "cleared")
+    if new == old or kind == old["kind"] == "none": pass   # unchanged: like the device, no entry
+    elif kind == "none": note("schedule", i + 1, "cleared")
     else:
         _, _, sl = expand(new)
         note("schedule", i + 1, "set", daily_ml=round(sum(u for _, u in sl) / 1000, 3), doses=len(sl))

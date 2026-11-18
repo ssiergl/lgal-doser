@@ -93,6 +93,10 @@ struct Slot {
     uint32_t ul;
 };
 
+// Same plan: only the fields its kind and day rule use (an interval anchor
+// counts by the days it gives, "times" by the used entries)
+bool same(const PumpSchedule& a, const PumpSchedule& b);
+
 // Slots of the plan on a day it runs (sorted by time), independent of days
 // and mode; a plan without kind has none. Returns the number of slots or
 // -1 with *err: "invalid_time", "off_grid", "invalid_range", "invalid_count",

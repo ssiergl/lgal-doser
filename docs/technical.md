@@ -858,7 +858,7 @@ the history too; the engineering menu deletes it on its own and starts the amoun
 | `alarm_end` | end of an alarm, same codes |
 | `boost` | `started` (`total_ml`, `days` or `doses`), `cancelled` (by hand, `done_ml` so far), `finished` (by itself: all doses given or period over, `done_ml`) |
 | `mode` | mode changed (`mode`: `auto`, `manual_only`, `disabled`) |
-| `schedule` | schedule saved (`set` with `daily_ml` and `doses` per day) or deleted (`cleared`) |
+| `schedule` | schedule changed (`set` with `daily_ml` and `doses` per day) or deleted (`cleared`); the same plan saved again is neither written to the flash nor recorded |
 | `settings` | other pump settings changed (name, speed, limits, thresholds, direction) |
 | `locks` | lock rules changed (pump 0, `rules`) |
 | `system` | device (pump 0): `boot` (`reason`: `power_on`, `restart`, `crash`, `watchdog`, `brownout`, …), `updated` (`version`, `from`), `restored` (backup), `time_set`, `cleared` (history deleted – the first entry after it), `settings` (language, time zone, LED, name), `network`, `mqtt`, `channels` (`pumps`), `engineering`, `password`, `key_added`, `key_removed` |

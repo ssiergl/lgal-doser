@@ -45,6 +45,7 @@ sched::PumpSchedule sch[5];
 sched::RunState run[5];
 bool have_run[5];
 int run_saves[5];
+int sch_saves[5];
 }  // namespace store
 
 namespace doser::schedule_store {
@@ -61,6 +62,7 @@ esp_err_t save_locks(const sched::Locks& l) {
 void load_schedule(int pump, sched::PumpSchedule* s) { *s = store::sch[pump]; }
 esp_err_t save_schedule(int pump, const sched::PumpSchedule& s) {
     store::sch[pump] = s;
+    ++store::sch_saves[pump];
     return ESP_OK;
 }
 bool load_run(int pump, sched::RunState* s) {
@@ -447,9 +449,20 @@ static void test_events() {
     CHECK(scheduler::set_schedule(3, plan({single(540, 1000), single(600, 1500)}), nullptr, Source::Manual) == nullptr);
     e = sim::last_event(Kind::Schedule, 4);
     CHECK(e->target_ul == 2500 && e->value == 2);
-    const size_t plans = count_events(Kind::Schedule);
+    size_t plans = count_events(Kind::Schedule);
     CHECK(scheduler::set_schedule(3, spread(480, 1200, 4, 4000)) == nullptr);  // without source (restore)
     CHECK(count_events(Kind::Schedule) == plans);
+    // the same plan again: not saved, no entry
+    const int saves = store::sch_saves[3];
+    CHECK(scheduler::set_schedule(3, spread(480, 1200, 4, 4000), nullptr, Source::Api) == nullptr);
+    CHECK(count_events(Kind::Schedule) == plans && store::sch_saves[3] == saves);
+    CHECK(scheduler::set_schedule(3, spread(480, 1200, 5, 4000), nullptr, Source::Api) == nullptr);
+    CHECK(count_events(Kind::Schedule) == plans + 1 && store::sch_saves[3] == saves + 1);
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}, nullptr, Source::Api) == nullptr);
+    plans = count_events(Kind::Schedule);
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}, nullptr, Source::Api) == nullptr);
+    CHECK(count_events(Kind::Schedule) == plans);
+    CHECK(scheduler::set_schedule(3, spread(480, 1200, 4, 4000)) == nullptr);
 
     // lock rules (device)
     CHECK(scheduler::set_locks(scheduler::locks(), nullptr, Source::Api) == nullptr);
