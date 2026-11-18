@@ -320,6 +320,7 @@ def pumps_post(h, path, q):
     if starts and sup in ("missing", "low"): return err(h, "supply_" + sup, status=409)
     if path == "/api/v1/pumps/prime":  # prime() takes the lock itself
         e = prime(None, {"pump": n, "action": q.get("action")})
+        if e == "not_priming" and q.get("action") == "stop": e = None  # the firmware just stops (dosing::stop)
         return err(h, e, status=409) if e else h.send(200, {"status": "ok"})
     with LOCK:
         if path == "/api/v1/pumps/dose":
@@ -400,12 +401,12 @@ def recv_exact(s, n):
         buf += c
     return buf
 
-def prime(cid, m, reply):
+def prime(cid, m, reply=None):
     # as dosing_api.cpp ws_prime: the reply names pump and action once the pump is valid
     pump, action, tier = m.get("pump"), m.get("action"), m.get("tier", 0)
     if not isinstance(pump, int) or not 1 <= pump <= 5: return "invalid_param"
     if not isinstance(tier, int) or not 0 <= tier <= 2: return "invalid_param"
-    reply.update(pump=pump, action=action if isinstance(action, str) else "")
+    if reply is not None: reply.update(pump=pump, action=action if isinstance(action, str) else "")
     i = pump - 1; p = P[i]; now = time.time()
     with LOCK:
         if action == "start":

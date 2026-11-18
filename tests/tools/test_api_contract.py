@@ -234,6 +234,20 @@ def test_websocket_frames(mock):
     assert sorted({r["error"] for r in replies if "error" in r} - NAMES) == []
 
 
+def test_rest_priming(mock):
+    # the page primes over REST when the WebSocket is down: start, heartbeat, stop
+    def prime(action):
+        status, _, body = mock.call("POST", f"/api/v1/pumps/prime?pump=1&action={action}", {})
+        return status, json.loads(body or b"{}")
+    status, body = prime("beat")
+    assert status == 409 and body["error"]["code"] == "not_priming"
+    assert prime("stop")[0] == 200  # nothing to stop: dosing::stop answers ok
+    assert prime("start")[0] == 200
+    assert prime("beat")[0] == 200
+    assert prime("stop")[0] == 200
+    assert mock.call("POST", "/api/v1/pumps/prime?pump=9&action=start", {})[0] == 400
+
+
 # Routes that end the session or restart the device go last (the mock then is "down" for a few
 # seconds, so the reboot is the very last, after a new sign-in); the WebSocket needs an upgrade
 LAST = [("/api/v1/auth/engineering", "DELETE"), ("/api/v1/system/factory_reset", "POST"),
