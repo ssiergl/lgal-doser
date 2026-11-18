@@ -1037,8 +1037,8 @@ Ab Werk aus.
 - [x] **M5** WebUI (SPA, eingebettet ins Firmware-Image)
 - [x] **M6** MQTT + Home-Assistant-Discovery, Historie, Backup, Engineering-Modus
 
-Alle Meilensteine sind umgesetzt und mit Host-Tests, Fuzzer und Geräte-Mock geprüft. Der Test auf
-der fertigen Hardware steht noch aus.
+Alle Meilensteine sind umgesetzt und mit Host-Tests, Fuzzer, Geräte-Mock und auf Platine v1.0
+geprüft.
 
 ## Lizenz
 

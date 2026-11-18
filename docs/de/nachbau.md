@@ -9,8 +9,8 @@ Diese Anleitung beschreibt, wie man die Dosierpumpe selbst aufbaut: Teile, elekt
 Sicherheit, Firmware aufspielen, Inbetriebnahme und Test. Sie richtet sich an Bastler, die
 löten, mit einem Multimeter messen und ein Python-Skript auf der Kommandozeile starten können.
 
-> **Stand:** Platine v1.0 (11/2026) ist gebaut, Firmware fertig. Der Test der Firmware auf der
-> echten Hardware steht noch aus. KiCad-Projekt, Stückliste, Gerber-Daten und Gehäuse
+> **Stand:** Platine v1.0 (11/2026) ist gebaut, die Firmware ist fertig und läuft darauf.
+> KiCad-Projekt, Stückliste, Gerber-Daten und Gehäuse
 > (OpenSCAD-Quelle und STL-Dateien) der Platinen v1.0 und v1.1 liegen in
 > [`hardware/`](../../hardware/); v1.1 ist noch nicht gebaut.
 
