@@ -109,7 +109,7 @@ test('restore: wrong files, chosen parts, asks first', async ({ page, cleanup },
 
 test.describe('signed out', () => {
   // WebKit reports the requests that the move to the sign-in page cuts off
-  test.use({ allowErrors: /access control checks|Load failed|network connection was lost/ });
+  test.use({ allowErrors: /access control checks|Load failed|NetworkError when attempting|network connection was lost/ });
 
   test('restoring the passwords signs everyone out', async ({ page, cleanup }) => {
     await unlockEngineering(page, cleanup);

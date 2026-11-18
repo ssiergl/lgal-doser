@@ -3,8 +3,8 @@
 
 import { adminPassword, expect, open, test } from './fixtures.js';
 
-// WebKit reports the requests that signing out cuts off
-test.use({ allowErrors: /due to access control checks|Load failed/ });
+// WebKit and Firefox report the requests that signing out cuts off
+test.use({ allowErrors: /due to access control checks|Load failed|NetworkError when attempting/ });
 
 test('sign out, wrong password, sign in again', async ({ page }) => {
   await open(page, '#/settings');

@@ -9,8 +9,8 @@ const languages = ['en', 'de', 'fr', 'es', 'it', 'nl', 'pl', 'tr', 'zh'];
 // the engineering area twice: locked, then unlocked
 const pages = ['#/', '#/pump/1', '#/pump/3', '#/history', '#/settings', '#/maintenance', '#/engineering', 'unlock'];
 
-// The reload after the unlock cuts off requests the page has just started; WebKit reports them
-test.use({ allowErrors: /due to access control checks|Load failed/ });
+// The reload after the unlock cuts off requests the page has just started; WebKit and Firefox report them
+test.use({ allowErrors: /due to access control checks|Load failed|NetworkError when attempting/ });
 
 // Page wider than the screen, or a button, chip or tab whose text does not fit
 const overflow = () => {

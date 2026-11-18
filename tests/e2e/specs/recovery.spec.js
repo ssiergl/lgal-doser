@@ -7,7 +7,7 @@
 import { expect, test } from './fixtures.js';
 
 // While the device restarts, requests fail
-test.use({ allowErrors: /ERR_|network connection was lost|Connection terminated unexpectedly|Could not connect|Load failed|access control checks|status of 400 .*\/api\/v1\/ota\/firmware/ });
+test.use({ allowErrors: /ERR_|network connection was lost|Connection terminated unexpectedly|Could not connect|Load failed|NetworkError when attempting|access control checks|status of 400 .*\/api\/v1\/ota\/firmware/ });
 
 const reset = (page, cleanup) => cleanup(() => page.request.post('/mock/firmware'));
 const info = (page, name) => page.locator('#info tr').filter({ has: page.locator('td:first-child', { hasText: new RegExp(`^${name}$`) }) }).locator('td').nth(1);

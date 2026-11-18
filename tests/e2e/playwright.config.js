@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// End-to-end tests of the web UI in a real browser (Chromium) against the device mock
+// End-to-end tests of the web UI in real browsers (Chromium, WebKit, Firefox) against the device mock
 // (tools/mock/webui_server.py). Each run starts its own mocks on ports of their own, so a mock
 // running for development on 8767 is not touched. From the repository root:
 //   npm ci --prefix tests/e2e
-//   npx --prefix tests/e2e playwright install chromium     (once)
+//   npx --prefix tests/e2e playwright install chromium webkit firefox     (once)
 //   npx --prefix tests/e2e playwright test -c tests/e2e
 // The mock keeps one shared state, so the tests run one after another.
 import { defineConfig, devices } from '@playwright/test';
@@ -41,12 +41,14 @@ export default defineConfig({
   webServer: [mock(8771), mock(8772, 'MOCK_FACTORY=1'),
     mock(8773, 'MOCK_BOARD_REV=1.1 MOCK_SUPPLY=8'), mock(8774, 'MOCK_BOARD_REV=1.1 MOCK_SUPPLY=18')],
   // Chromium runs everything; WebKit (Safari, and every browser on an iPhone) runs the same flows
-  // except the axe checks (they do not depend on the engine) and the one-time factory setup.
-  // @phone tests run only at phone size.
+  // except the axe checks (they do not depend on the engine) and the one-time factory setup, and
+  // so does Firefox (Gecko, still common in Germany). @phone tests run only at phone size; Firefox
+  // has no phone mode in Playwright, and few use it on a phone.
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:8771' }, grepInvert: /@phone/ },
     { name: 'phone', use: { ...devices['Pixel 7'], baseURL: 'http://127.0.0.1:8771' }, grep: /@phone/ },
     { name: 'safari', use: { ...devices['Desktop Safari'], ...webkit }, grepInvert: /@phone|@axe|@factory/, timeout: webkitTimeout },
     { name: 'iphone', use: { ...devices['iPhone 15'], ...webkit }, grep: /@phone/, timeout: webkitTimeout },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'], baseURL: 'http://127.0.0.1:8771' }, grepInvert: /@phone|@axe|@factory/ },
   ],
 });

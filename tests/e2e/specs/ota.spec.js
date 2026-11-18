@@ -12,7 +12,7 @@ const firmware = page => card(page, 'Device').locator('dt', { hasText: /^Firmwar
 const reset = (page, cleanup) => cleanup(() => page.request.post('/mock/firmware'));
 
 // While the device restarts, requests fail and the live connection drops
-const restarting = 'ERR_|WebSocket|network connection was lost|Connection terminated unexpectedly|Could not connect|Load failed|access control checks';
+const restarting = 'ERR_|WebSocket|network connection was lost|Connection terminated unexpectedly|Could not connect|Load failed|NetworkError when attempting|access control checks';
 
 test.describe('with a restart', () => {
   test.use({ allowErrors: new RegExp(restarting + '|status of 40[03] .*/api/v1/(ota/firmware|system/factory_reset)') });

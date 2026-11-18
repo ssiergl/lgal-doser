@@ -98,7 +98,7 @@ test('channel population: at least one pump, asks before the restart', async ({ 
 
 test.describe('with a restart', () => {
   // While the device restarts, requests fail and the live connection drops
-  test.use({ allowErrors: /ERR_|WebSocket|network connection was lost|Connection terminated unexpectedly|Could not connect|Load failed|access control checks/ });
+  test.use({ allowErrors: /ERR_|WebSocket|network connection was lost|Connection terminated unexpectedly|Could not connect|Load failed|NetworkError when attempting|access control checks/ });
 
   test('channel population: saved, the device restarts, the pump is gone everywhere', async ({ page, cleanup }) => {
     test.slow();
