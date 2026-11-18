@@ -387,12 +387,22 @@ def check_hardware(r, dev, info):
             "not found on I²C (0x68)")
     if rtc.get("battery_warning") or rtc.get("time_lost"):
         r.warn("backup battery", "the clock module lost its time")
-    r.check((hw.get("eeprom") or {}).get("present"), "EEPROM", "found", "not found on I²C (0x57)")
+    if (hw.get("eeprom") or {}).get("present"):
+        r.ok("EEPROM", "found")
+    else:
+        r.fail("EEPROM", "not found on I²C (0x57); " + i2c_scan(dev))
     tel = dev.json("/api/v1/engineering/telemetry")
     st = tel.get("storage") or {}
     (r.ok if not st.get("history_dropped") else r.warn)(
         "history storage", f"{st.get('history_days')} days, {st.get('history_dropped', 0)} events dropped")
     return hw
+
+
+def i2c_scan(dev):
+    """The bus scan the firmware logs at start (in the RAM log until it is overwritten)"""
+    status, _, body = dev.raw("GET", "/api/v1/system/log")
+    found = re.findall(r"Bus scan: [^\r\n]*", body.decode(errors="replace")) if status == 200 else []
+    return f"at the last start: {found[-1]}" if found else "the bus scan of the start is no longer in the log"
 
 
 def check_live(r, dev):

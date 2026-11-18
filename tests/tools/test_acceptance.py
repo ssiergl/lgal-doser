@@ -126,3 +126,23 @@ def test_update(device, tmp_path):
     assert code == 0, out
     for name in ("uploaded", "device back", "other partition", "version", "settings unchanged"):
         assert r[name][0] == "PASS", (name, out)
+
+
+def test_i2c_scan_from_the_log():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("acceptance", SCRIPT)
+    acc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(acc)
+
+    class Dev:
+        def __init__(self, status, body):
+            self.answer = (status, {}, body)
+
+        def raw(self, method, path):
+            assert (method, path) == ("GET", "/api/v1/system/log")
+            return self.answer
+
+    log = b"I (812) i2c: Bus scan: 1 device(s) at 0x68\nW (815) i2c: AT24C32 (0x57) not found\n"
+    assert acc.i2c_scan(Dev(200, log)) == "at the last start: Bus scan: 1 device(s) at 0x68"
+    assert acc.i2c_scan(Dev(200, b"I (9) app: running\n")) == "the bus scan of the start is no longer in the log"
+    assert acc.i2c_scan(Dev(401, b"")) == "the bus scan of the start is no longer in the log"
