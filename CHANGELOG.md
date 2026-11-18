@@ -9,8 +9,8 @@ All notable changes to the LGAL Doser firmware. The format follows
 
 ## Unreleased – 0.1.0
 
-First complete firmware (milestones M0–M6). Tested with host tests, fuzzers and the device
-mock; the test on the finished hardware is still pending.
+First complete firmware (milestones M0–M6). Tested with host tests, fuzzers, the device mock
+and on board v1.0.
 
 ### Device and hardware
 

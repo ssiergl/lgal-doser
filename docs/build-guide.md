@@ -9,8 +9,8 @@ This guide describes how to build the dosing pump yourself: parts, electrical sa
 the firmware, start-up and test. It is meant for makers who can solder, measure with a
 multimeter and start a Python script on the command line.
 
-> **Status:** circuit board v1.0 (11/2026) is built, the firmware is complete. Testing the
-> firmware on the real hardware is still pending. KiCad project, bill of materials, Gerber files
+> **Status:** circuit board v1.0 (11/2026) is built, the firmware is complete and runs on it.
+> KiCad project, bill of materials, Gerber files
 > and enclosure (OpenSCAD source and STL files) of boards v1.0 and v1.1 are in
 > [`hardware/`](../hardware/); v1.1 is not yet built.
 

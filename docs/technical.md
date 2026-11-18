@@ -1014,8 +1014,8 @@ bright. Off by default.
 - [x] **M5** Web UI (SPA, embedded in the firmware image)
 - [x] **M6** MQTT + Home Assistant discovery, history, backup, engineering mode
 
-All milestones are implemented and tested with host tests, fuzzers and the device mock. The test
-on the finished hardware is still pending.
+All milestones are implemented and tested with host tests, fuzzers, the device mock and on board
+v1.0.
 
 ## License
 
