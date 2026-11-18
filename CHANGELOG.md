@@ -76,7 +76,7 @@ mock; the test on the finished hardware is still pending.
 
 - MQTT with TLS (public or own CA), Home Assistant discovery, optional control, events
   replayed after a lost connection.
-- History up to 60 days with CSV export.
+- History up to 60 days with CSV export; when the storage runs out, the oldest days go first.
 - Backup of the schedule per pump and of the whole device (engineering).
 - Update channel stable or beta (release candidates, pro view, with a warning); the release
   workflow keeps the beta manifest in the pre-release `channel-beta`.

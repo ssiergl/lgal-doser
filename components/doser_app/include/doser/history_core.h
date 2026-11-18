@@ -5,7 +5,8 @@
 // Event history (functional spec chapter 9): dosing runs, skipped slots,
 // container and calibration changes and alarms as fixed 24-byte records,
 // one file per UTC day ("<day>.ev") in a directory. Days older than the
-// retention time are deleted as a whole. Plain stdio/dirent, so the same
+// retention time are deleted as a whole; when the space runs out, the oldest
+// days go first. Plain stdio/dirent, so the same
 // code runs on LittleFS (device) and in a temp directory (host tests).
 // Not thread-safe; history.cpp serializes all access.
 
@@ -86,6 +87,10 @@ public:
     // dir without trailing slash, below 40 chars, must exist
     explicit Store(const char* dir);
 
+    // Upper limit for the day files together (0 = none). When an append would
+    // exceed it, or the file system is full (ENOSPC), the oldest day files are
+    // deleted first; the day the event belongs to is never deleted.
+    void set_budget(uint64_t bytes) { budget_ = bytes; }
     bool append(const Event& e);
     // Matching events, newest first; cb returns false to stop. Returns the
     // number of matching events passed to cb.
@@ -100,7 +105,13 @@ public:
 private:
     void path_of(int32_t day, char (&out)[64]) const;
     int days(int32_t* out, int max) const;  // sorted newest first
+    bool write(int32_t day, const Event& e);
+    bool drop_oldest(int32_t keep_day);      // false: no other day left
+    uint64_t used();                         // total size of the day files, cached
     char dir_[40];
+    uint64_t budget_ = 0;
+    uint64_t used_ = 0;
+    bool used_known_ = false;
 };
 
 }  // namespace doser::history

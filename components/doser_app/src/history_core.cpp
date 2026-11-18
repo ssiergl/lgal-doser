@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -130,23 +131,63 @@ int Store::days(int32_t* out, int max) const {
     return n;
 }
 
-bool Store::append(const Event& e) {
+bool Store::write(int32_t day, const Event& e) {
     char path[64];
-    path_of(day_of_utc(e.utc), path);
+    path_of(day, path);
     FILE* f = std::fopen(path, "ab");
     if (!f) return false;
     // a torn record from a power cut would shift all later ones: realign
     std::fseek(f, 0, SEEK_END);
     const long size = std::ftell(f);
     bool ok = true;
-    if (size > 0 && size % long(kRecordSize)) {
+    const size_t pad = size > 0 && size % long(kRecordSize) ? kRecordSize - size % kRecordSize : 0;
+    if (pad) {
         static const uint8_t kPad[kRecordSize] = {};
-        ok = std::fwrite(kPad, 1, kRecordSize - size % kRecordSize, f) == kRecordSize - size % kRecordSize;
+        ok = std::fwrite(kPad, 1, pad, f) == pad;
     }
     uint8_t rec[kRecordSize];
     encode(e, rec);
     ok = ok && std::fwrite(rec, 1, sizeof(rec), f) == sizeof(rec);
-    return std::fclose(f) == 0 && ok;
+    ok = std::fclose(f) == 0 && ok;
+    // a failed write may have left a part: count again next time
+    if (!ok) used_known_ = false;
+    else used_ += pad + kRecordSize;
+    return ok;
+}
+
+bool Store::drop_oldest(int32_t keep_day) {
+    int32_t list[kMaxDays];
+    const int n = days(list, kMaxDays);
+    for (int i = n; i-- > 0;) {
+        if (list[i] == keep_day) continue;
+        char path[64];
+        path_of(list[i], path);
+        used_known_ = false;
+        return std::remove(path) == 0;
+    }
+    return false;
+}
+
+uint64_t Store::used() {
+    if (!used_known_) {
+        int files = 0;
+        usage(&files, &used_);
+        used_known_ = true;
+    }
+    return used_;
+}
+
+bool Store::append(const Event& e) {
+    const int32_t day = day_of_utc(e.utc);
+    // room for the record and the padding of a torn one
+    while (budget_ && used() + 2 * kRecordSize > budget_ && drop_oldest(day)) {}
+    // a full file system: give up old days, never new events
+    for (int tries = 0; tries < 4; ++tries) {
+        errno = 0;
+        if (write(day, e)) return true;
+        if (errno != ENOSPC || !drop_oldest(day)) return false;
+    }
+    return false;
 }
 
 size_t Store::query(const Filter& flt, bool (*cb)(const Event&, void*), void* ctx) const {
@@ -191,6 +232,7 @@ int Store::prune(uint32_t now_utc, uint16_t keep_days) {
     const int n = days(list, kMaxDays);
     const int32_t oldest = day_of_utc(now_utc) - keep_days;
     int removed = 0;
+    used_known_ = false;
     for (int i = 0; i < n; ++i) {
         if (list[i] >= oldest) continue;
         char path[64];

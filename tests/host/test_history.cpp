@@ -183,10 +183,40 @@ static void test_many() {
     rm_dir(tmp);
 }
 
+static void test_budget() {
+    std::printf("Byte budget\n");
+    const std::string tmp = mkdir_tmp();
+    CHECK(!tmp.empty() && chdir(tmp.c_str()) == 0 && mkdir("h", 0755) == 0);
+    Store s("h");
+    s.set_budget(10 * kRecordSize);
+    for (int d = 0; d < 3; ++d)
+        for (int i = 0; i < 3; ++i) CHECK(s.append(ev(kDay0 + d * 86400 + i * 60, Kind::Dose, 1)));
+    CHECK(all(s).size() == 9);
+    // the next record does not fit: the oldest day goes, the new event is kept
+    CHECK(s.append(ev(kDay0 + 3 * 86400, Kind::Dose, 2)));
+    auto v = all(s);
+    CHECK(v.size() == 7 && v.front().pump == 2 && v.back().utc == kDay0 + 86400);
+    int files = 0;
+    uint64_t bytes = 0;
+    s.usage(&files, &bytes);
+    CHECK(files == 3 && bytes <= 10 * kRecordSize);
+    // the day of the event itself is never deleted, even beyond the budget
+    for (int i = 0; i < 12; ++i) CHECK(s.append(ev(kDay0 + 4 * 86400 + i * 60, Kind::Skip, 3)));
+    v = all(s);
+    CHECK(v.size() == 12 && v.back().utc == kDay0 + 4 * 86400);
+    // without a budget nothing is deleted
+    s.set_budget(0);
+    CHECK(s.append(ev(kDay0 + 5 * 86400, Kind::Dose, 4)));
+    CHECK(all(s).size() == 13);
+    CHECK(chdir("/") == 0);
+    rm_dir(tmp);
+}
+
 int main() {
     test_codec();
     test_store();
     test_many();
+    test_budget();
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

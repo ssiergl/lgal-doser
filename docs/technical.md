@@ -841,7 +841,9 @@ UTC day under `/storage/hist`, checksum per entry). Days older than the retentio
 menu, 1–60 days, 60 by default, part of the backup) are deleted hourly, after shortening within
 a minute. Writing goes through a queue in its own task – dosing and schedule never wait for the
 flash. Without a valid time nothing is recorded. At around 240 doses a day that is about 6 KB
-per day, 60 days ≈ 350 KB (storage 1.75 MB on N8R8, 5.75 MB on N16R8). A factory reset deletes
+per day, 60 days ≈ 350 KB (storage 1.75 MB on N8R8, 5.75 MB on N16R8). The day files may take
+three quarters of the partition at most; when a new entry would exceed that, or the flash is full,
+the oldest days are deleted first – never the day of the new entry. A factory reset deletes
 the history too; the engineering menu deletes it on its own and starts the amounts of today
 (and with them the daily limit) and the count of skipped doses of today again.
 

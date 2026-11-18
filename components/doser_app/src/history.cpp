@@ -86,6 +86,9 @@ esp_err_t init() {
     s_mx = xSemaphoreCreateMutex();
     s_q = xQueueCreate(kQueueLen, sizeof(Event));
     static Store store(kDir);
+    // leave a quarter for LittleFS itself (metadata, a block per file)
+    size_t fs_total = 0, fs_used = 0;
+    if (esp_littlefs_info(kLabel, &fs_total, &fs_used) == ESP_OK) store.set_budget(uint64_t(fs_total) / 4 * 3);
     s_store = &store;
     if (!s_mx || !s_q || xTaskCreate(task, "history", 4096, nullptr, 3, nullptr) != pdPASS) {
         s_store = nullptr;
