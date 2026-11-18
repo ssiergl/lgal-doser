@@ -440,8 +440,15 @@ class H(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     def log_message(self, *a): pass
     def locked(self, method):
-        """True when the request was answered: pages redirect to the sign-in, API calls get 401"""
+        """True when the request was answered: a change from a foreign page gets 403 (like
+        http::same_origin), pages redirect to the sign-in, API calls get 401"""
         p = self.path.split("?")[0]
+        origin, host = self.headers.get("Origin"), self.headers.get("Host") or ""
+        if method != "GET" and origin is not None and origin.lower() not in ("http://" + host.lower(), "https://" + host.lower()):
+            n = int(self.headers.get("Content-Length", 0) or 0)
+            if n: self.rfile.read(n)
+            self.send(403, {"error": {"code": "forbidden_origin", "message": "Changes only from the device's own pages"}})
+            return True
         if sys_mock.via(self) or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")): return False
         if p == "/" and not sys_mock.SETUP["completed"]: return False  # factory state: redirect to /setup first
         n = int(self.headers.get("Content-Length", 0) or 0)
