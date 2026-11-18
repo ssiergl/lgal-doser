@@ -21,7 +21,7 @@ components/doser_app/   device logic: hardware diagnostics, dosing engine, sched
 components/webui/       web UI (M5): www/ (Preact + htm, no build), pack.py embeds it gzip-compressed
 brand/                  brand repository as Git submodule: the logo (not GPL, see TRADEMARKS.md) and web/, the shared design of the pages (GPL)
 main/                   wiring of the components (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (device mock for the web UI)
+tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (device mock for the web UI)
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest)
                         and simulation of dosing engine and scheduler (`tests/host/run.sh`)
 tests/fuzz/             fuzzers for all parsers of external input (`tests/fuzz/run.sh`)
@@ -101,7 +101,7 @@ The CI also runs these checks; locally from the repository root:
 | Check | Command | Fails when |
 |---|---|---|
 | Translations | `python3 tests/i18n/check_translations.py` | a `lang/*.json` misses a key, has an unknown one or other placeholders (`{n}` …) than English; the code calls `t('…')` with a key English does not define |
-| Python tools | `python3 -m pytest tests/tools` | manifest, beta channel, release text, passwords or provisioning values are wrong; passwords and version order are checked against the same values as the firmware's host tests |
+| Python tools | `python3 -m pytest tests/tools` | manifest, beta channel, release text, passwords or provisioning values are wrong; the acceptance script (`tools/acceptance.py`) no longer finds against the mock what it should (locked API, a stored crash, a driver that does not answer, a changed setting, a test dose, an update to the other partition); passwords and version order are checked against the same values as the firmware's host tests |
 | Mock contract | `python3 -m pytest tests/tools/test_api_contract.py` (part of the Python tools) | the web pages call an API path or method the firmware does not register; the mock (`tools/mock/`) does not answer a firmware route, knows a path the firmware does not have, or answers a field or sends an error code that occurs nowhere in the firmware sources; over the WebSocket the status frame and the replies to ping, priming, an unknown type and broken JSON have other fields or another shape than the firmware's (the end-to-end tests run against the mock only, so a mock that drifts from the firmware would let them pass while the device fails) |
 | Image size | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | the app image fills more than 85 % of its OTA slot (an image too large cannot be installed over the air, and the slot size cannot be changed by OTA) |
 | ESLint | `npm ci --prefix tests/lint`, then `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | the web UI uses an undefined name, has an unused variable or another error ESLint recommends against (no build step would find it) |
@@ -471,7 +471,9 @@ passwords the sign-in waits 1, 2, 4 … s (429). An address it does not know ans
 the header `X-Mock-No-Route`, so the contract test (see Checks) finds firmware routes the mock
 lacks. The state is lost on exit. Environment: `MOCK_FACTORY=1` starts in factory state; `MOCK_BOARD_REV=1.1` simulates
 board v1.1 with 24 V sense, `MOCK_SUPPLY=<volts>` its supply (default 24.1; below 20 V doses
-answer `supply_low`, below 12 V `supply_missing`).
+answer `supply_low`, below 12 V `supply_missing`). `MOCK_STRICT_AUTH=1` signs in per client like
+the firmware (session cookie or API key, also `X-Engineering-Key`) instead of one shared state and
+starts signed out; the tests of the acceptance script use it.
 
 ## OTA update
 
@@ -545,6 +547,43 @@ curl -H "Authorization: Bearer lgal_..." -H "X-Engineering-Key: ..." -d '{"url":
 - Progress and result also go to `<base>/ota/state` (MQTT).
 - Rejected while a pump runs (`pump_running`) or an update is already running; the download runs
   in the background, check, restart and rollback as with the upload.
+
+## Acceptance test on the device
+
+`tools/acceptance.py` checks a device on the network, after every release candidate and at the
+hardware test. It only reads unless asked to dose or update:
+
+```bash
+LGAL_API_KEY=lgal_... python3 tools/acceptance.py lgal-doser-xxxx.local --snapshot before.json
+LGAL_API_KEY=lgal_... python3 tools/acceptance.py lgal-doser-xxxx.local \
+    --ota build-d5v1-N16R8/lgal_doser.bin --expect-version 0.1.0-rc.9
+python3 tools/acceptance.py lgal-doser-xxxx.local --dose 1:2      # asks for the password, then before dosing
+```
+
+- **Access:** every GET route of the firmware sources answers 401 without a sign-in (only
+  `auth/status` and `system/language` are open), the WebSocket as well; a wrong password is
+  refused; a change or a WebSocket from a foreign page gets 403; the engineering area is locked.
+- **Firmware:** version (`--expect-version`), update confirmed (`VALID`; `PENDING_VERIFY` is a
+  warning), no rollback, last start not a crash (panic, watchdog, brownout), no stored core dump,
+  free memory.
+- **Device:** clock and clock module, network, 24 V supply (board v1.1), no update running;
+  per pump mode, last result, calibration and skipped doses (warnings).
+- **Hardware** (with `LGAL_ENG_KEY`): every fitted driver answers on UART and has its registers
+  set, no fault, drivers off at rest, error rate of both UART buses, clock module, EEPROM, history
+  storage.
+- **Live connection:** the WebSocket sends the status at once and answers a ping.
+- **Settings:** `--snapshot` writes them (pumps, schedules, locks, network, MQTT, LED, time,
+  updates, API key names; with `LGAL_ENG_KEY` also the engineering values and drivers) to a file,
+  `--compare` lists every difference. `--ota` uploads the image, waits for the restart, checks the
+  other partition and runs all checks again, then compares the settings with the state before.
+- **Test dose** (`--dose PUMP:ML`, up to 50 ml, repeatable): asks for a measuring cup first
+  (`--yes` without asking); the result and the dosed amount are checked, the amount in the cup is
+  for you to read.
+
+Sign-in from the environment only (`LGAL_API_KEY` or `LGAL_PASSWORD`, else it asks for the
+password), so no secret lands in the shell history. Exit code 0: passed (warnings allowed), 1: a
+check failed, 2: not reachable or sign-in refused. A session's engineering access is locked again
+at the end.
 
 ## API
 
