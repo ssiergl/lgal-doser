@@ -389,7 +389,7 @@ In der Weboberfläche unter **Einstellungen → Netzwerk** (Status für alle, Ei
 |---|---|
 | Schnittstelle | `auto` (Standard): LAN hat Vorrang. Ist das LAN 30 s ohne Adresse (Kabel weg, kein DHCP), startet der WLAN-Client; sobald das LAN wieder eine Adresse hat, geht das WLAN-Funkmodul aus. `lan`: nur LAN, WLAN bleibt aus. `wlan`: nur WLAN, Ethernet wird abgeschaltet. |
 | Adressen | LAN und WLAN getrennt: DHCP oder fest (IP, Maske /8–/30, Gateway, DNS 1/2). Die DNS-Server folgen der aktiven Schnittstelle. |
-| WLAN | WPA2 oder neuer (Passwort 8–63 Zeichen) oder offen. Wiederverbindung mit Wartezeit 2 s, verdoppelt bis 60 s. |
+| WLAN | WPA2 oder neuer (Passwort 8–63 Zeichen) oder offen. Wiederverbindung mit Wartezeit 2 s, verdoppelt bis 60 s. Kein Stromsparen (das Gerät hängt am Netz): Der Funk bleibt wach, Antworten warten also nicht bis zu einem Beacon-Intervall (~100 ms). |
 | Übernahme | Gespeichert sofort (NVS `net`), angewendet 1 s nach der Antwort – sonst erreicht die Antwort bei einer neuen IP den Browser nicht mehr. |
 | Verbindungstest | Prüft SSID/Passwort/Adressen ohne zu speichern (max. 25 s); danach gelten wieder die gespeicherten Einstellungen. |
 | Ausgesperrt? | Taster 3 s → Setup-WLAN, dort `http://192.168.4.1/` öffnen, anmelden und unter Einstellungen → Netzwerk (Profi-Ansicht) ändern. Das Setup-WLAN läuft parallel zum WLAN-Client. |
