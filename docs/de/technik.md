@@ -415,7 +415,7 @@ gespeicherte. Fehler: 400 `invalid_param` mit `field` (z. B. `lan.gateway`), 400
 | Thema | Verhalten |
 |---|---|
 | Status-Push | `{"type":"status","seq","utc","time_valid","pumps":[…]}` direkt nach dem Verbinden, bei jeder Änderung (geprüft alle 250 ms) und mindestens alle 10 s. Pro Pumpe nur die Live-Werte: Tätigkeit, Phase, Fortschritt (`done_ml`, `target_ml`, `rpm`, `prime_s`), Behälter, Tagesmenge, letzter Lauf. Alles andere liefert `GET /api/v1/pumps`. |
-| Anfragen | `{"type":"…","id"?:n,…}` → Antwort mit gleichem `type`/`id`, `"ok"` und bei Fehler `"error"` (Code). `{"type":"ping"}` zum Testen. |
+| Anfragen | `{"type":"…","id"?:n,…}` → Antwort mit gleichem `type`/`id`, `"ok"` und bei Fehler `"error"` (Code). `{"type":"ping"}` zum Testen und um verbunden zu bleiben: Gehen dem Gerät die Sockets (10) aus, schließt es die Verbindung, von der es am längsten nichts gehört hat; ein Client, der nur zuhört, pingt deshalb etwa alle 30 s (die Weboberfläche tut das). |
 | Entlüften | `{"type":"prime","pump":1,"action":"start\|beat\|stop","tier"?:0..2}`. Beim Halten alle 150 ms `beat`. Bricht die Verbindung ab, stoppt die Pumpe sofort (zusätzlich nach `prime_heartbeat_ms` ohne Heartbeat). |
 | Sicherheit | Browser nur von den eigenen Seiten (Origin = Host, sonst 403 `forbidden_origin`). Max. 4 Verbindungen (503 `too_many_clients`). Abmelden, Passwortwechsel oder gelöschter API-Key beenden die Verbindung (Prüfung alle 5 s und bei jeder Nachricht). |
 
@@ -623,8 +623,8 @@ Am Ende prüft es:
 - **Uhr und Netzwerk:** durchgehend gültige Zeit, höchstens 10 s Abstand zur Uhr dieses Rechners,
   eine NTP-Synchronisierung (ab 4 Stunden, wenn ein Zeitserver eingestellt ist), durchgehend
   dieselbe Netzwerkschnittstelle, die 24-V-Versorgung (Board v1.1).
-- **Live-Verbindung:** ein WebSocket bleibt den ganzen Lauf offen; Abbrüche oder mehr als 30 s
-  ohne Status-Frame sind Warnungen.
+- **Live-Verbindung:** ein WebSocket bleibt den ganzen Lauf offen und pingt alle 30 s; Abbrüche
+  oder mehr als 30 s ohne Status-Frame sind Warnungen.
 - **Dosen:** pro Pumpe im Automatikbetrieb hat jeder Termin, den der Zeitplan im Lauf vorsah
   (außer in den letzten 15 Minuten), seinen Eintrag im Verlauf: ausgeführt (mit Menge; weniger
   als das Ziel ist eine Warnung), übersprungen mit Grund (Warnung), fehlgeschlagen oder fehlend
