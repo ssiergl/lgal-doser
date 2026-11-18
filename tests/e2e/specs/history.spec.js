@@ -160,3 +160,56 @@ test('events: the text of every kind', async ({ page }) => {
     await expect(li.locator('.hi-c')).toHaveClass(new RegExp('\\b' + cls + '\\b'));
   }
 });
+
+// Point at a day: the line above the chart shows its values, the chart itself does not move
+test('history: the values of a day under the pointer', async ({ page }) => {
+  const days = ['01', '02', '03', '04', '05', '06', '07'].map((d, k) => ({
+    date: '2026-11-' + d, ml: [[2, 4, 0, 6, 8, 3, 7.5][k], 0, 0, 0, 0], doses: [[2, 2, 0, 3, 4, 2, 6][k], 0, 0, 0, 0],
+    skipped: [k === 2 ? 2 : 0, 0, 0, 0, 0],
+  }));
+  let daily = { keep_days: 400, today: '2026-11-07', days };
+  await page.route(/\/api\/v1\/history\/daily\?/, route => route.fulfill({ json: daily }));
+  await open(page, '#/history');
+  await page.getByRole('radio', { name: '7 days' }).click();
+  await page.getByRole('radio', { name: 'Bars' }).click();
+  const hc = page.locator('.hc').filter({ has: page.locator('.hc-head', { hasText: /^KH$/ }) });
+  const svg = hc.locator('svg');
+  const read = hc.locator('.hc-read');
+  await expect(svg).toHaveAttribute('aria-label', 'KH');
+  await expect(read).toHaveText('');
+  await expect(page.getByText('Dot under the axis: doses were skipped that day.')).toBeVisible();
+  await expect(page.getByText('Kept for 400 days.')).toBeVisible();
+  await expect(hc.locator('.hc-skip')).toHaveCount(1);
+
+  const box = await svg.boundingBox();
+  const slot = (box.width - 34 - 8) / 7;   // margins of the plot: 34 left, 8 right
+  const before = await read.boundingBox();
+  await svg.hover({ position: { x: 34 + slot * 6.5, y: 60 } });
+  await expect(read).toHaveText('today: 7.50 ml · 6 doses');
+  await expect(svg).toHaveAttribute('aria-label', 'KH: today: 7.50 ml · 6 doses');
+  await expect(hc.locator('.hc-hl')).toHaveCount(1);
+  expect(await read.boundingBox()).toEqual(before);
+  await svg.hover({ position: { x: 34 + slot * 2.5, y: 60 } });
+  await expect(read).toHaveText(/: 0\.00 ml · 0 doses · 2 skipped$/);
+  await page.mouse.move(0, 0);
+  await expect(read).toHaveText('');
+  await expect(hc.locator('.hc-hl')).toHaveCount(0);
+
+  // the line runs from axis to axis: the first day sits on the y axis
+  await page.getByRole('radio', { name: 'Line' }).click();
+  await svg.hover({ position: { x: 34 + 2, y: 60 } });
+  await expect(read).toHaveText(/: 2\.00 ml · 2 doses$/);
+  await expect(hc.locator('.hc-cross')).toHaveCount(1);
+
+  await page.getByText('Show as table').click();
+  const table = page.locator('details.hc-table table');
+  await expect(table.locator('tbody tr')).toHaveCount(7);
+  await expect(table.locator('tbody tr').first().locator('td').nth(1)).toHaveText('7.50');
+  await expect(table.locator('tbody tr').nth(4).locator('td').nth(1)).toHaveText('0.00 (2×)');
+
+  // no valid time on the device: no chart, a note instead
+  daily = { keep_days: 400, today: '', days: [] };
+  await page.getByRole('radio', { name: '14 days' }).click();
+  await expect(page.getByText('The device has no valid time – daily values follow once the time is set.')).toBeVisible();
+  await expect(page.locator('.hc')).toHaveCount(0);
+});
