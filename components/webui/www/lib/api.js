@@ -56,6 +56,10 @@ export function qs(o) {
 let ws = null;
 let nextId = 0;
 let retry = 1000;
+let pinger = null;
+// the device closes the least recently heard connection when its sockets run out: a ping keeps
+// an open tab from being the one that goes, a dead connection stops pinging and goes first
+const PING_MS = 30000;
 const waiting = new Map();
 const listeners = { status: new Set(), state: new Set() };
 
@@ -71,7 +75,11 @@ function setState() { listeners.state.forEach(f => f(liveOpen())); }
 export function connectLive() {
   const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/api/v1/ws';
   ws = new WebSocket(url);
-  ws.onopen = () => { retry = 1000; setState(); };
+  ws.onopen = () => {
+    retry = 1000;
+    setState();
+    pinger = setInterval(() => liveCall({ type: 'ping' }).catch(() => {}), PING_MS);
+  };
   ws.onmessage = ev => {
     let m;
     try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -83,6 +91,8 @@ export function connectLive() {
     if (m.ok) w.ok(m); else w.fail(new ApiError(m.error, m.error, 409, m));
   };
   ws.onclose = () => {
+    clearInterval(pinger);
+    pinger = null;
     ws = null;
     setState();
     for (const w of waiting.values()) { clearTimeout(w.timer); w.fail(new ApiError('network', 'closed', 0)); }
