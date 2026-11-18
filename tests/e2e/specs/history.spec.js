@@ -114,3 +114,49 @@ test('events: a late answer does not overwrite a newer filter', async ({ page })
   await expect(c.getByText('No events in this period.')).toBeVisible();
   await expect(c.locator('.hi-list > li')).toHaveCount(0);
 });
+
+// Every kind of event with its detail text and colour; the list comes in the firmware's format
+test('events: the text of every kind', async ({ page }) => {
+  const ev = (kind, pump, source, code, extra = {}) => ({ utc: 1794000000, local: '2026-11-07 08:30:00', kind, pump, source, code, ...extra });
+  const rows = [
+    [ev('dose', 1, 'schedule', 'success', { target_ml: 2.5, done_ml: 2.5 }), 'Dose · schedule', '2.50 ml', 'done', 'mut'],
+    [ev('dose', 2, 'manual', 'aborted', { target_ml: 5, done_ml: 1.25 }), 'Dose · manual', '1.25 of 5.00 ml', 'stopped', 'err'],
+    [ev('dose', 1, 'api', 'heartbeat_lost', { target_ml: 4, done_ml: 1 }), 'Dose · API', '1.00 of 4.00 ml', 'stopped (connection)', 'err'],
+    [ev('prime', 3, 'manual', 'aborted', { target_ml: 10, done_ml: 3 }), 'Filling · manual', '3.00 ml', 'stopped', 'err'],
+    [ev('calib_run', 1, 'manual', 'success', { target_ml: 10, done_ml: 10 }), 'Calibration run · manual', '10.00 ml', 'done', 'mut'],
+    [ev('skip', 1, 'schedule', 'missed', { count: 3 }), 'Skipped', '3 doses', 'missed (device off)', 'warn'],
+    [ev('skip', 2, 'schedule', 'daily_limit', { target_ml: 2, count: 1 }), 'Skipped', '2.00 ml', 'daily limit reached', 'warn'],
+    [ev('container', 2, 'manual', 'set', { remaining_ml: 1500, capacity_ml: 2000 }), 'Container · manual', /^1,?500 of 2,?000 ml$/, 'changed', 'mut'],
+    [ev('calibration', 1, 'manual', 'set', { ul_per_rev: 245, measured_ml: 9.87, target_ml: 10 }), 'Calibration · manual', '0.245 ml/rev. · measured 9.87 of 10.00 ml', 'changed', 'mut'],
+    [ev('tube', 3, 'manual', 'set', { hours: 12 }), 'Tube · manual', '12 h', 'changed', 'mut'],
+    [ev('boost', 1, 'manual', 'started', { total_ml: 6, days: 3 }), 'Boost · manual', '6.00 ml over 3 days', 'started', 'mut'],
+    [ev('boost', 2, 'mqtt', 'started', { total_ml: 4, doses: 4 }), 'Boost · MQTT', '4.00 ml over 4 doses', 'started', 'mut'],
+    [ev('boost', 1, 'manual', 'cancelled', { total_ml: 6, done_ml: 1 }), 'Boost · manual', '1.00 of 6.00 ml', 'cancelled', 'mut'],
+    [ev('mode', 3, 'api', 'set', { mode: 'manual_only' }), 'Mode · API', 'Manual only', 'changed', 'mut'],
+    [ev('schedule', 2, 'manual', 'set', { daily_ml: 12, doses: 6 }), 'Schedule · manual', '12.00 ml/day · 6 doses', 'changed', 'mut'],
+    [ev('schedule', 2, 'manual', 'cleared'), 'Schedule · manual', '', 'deleted', 'mut'],
+    [ev('locks', 0, 'manual', 'set', { rules: 2 }), 'Lock rules · manual', '2 rules', 'changed', 'mut'],
+    [ev('settings', 0, 'api', 'key_added'), 'Settings · API', '', 'API key added', 'mut'],
+    [ev('alarm', 0, '', 'supply_low'), 'Alarm', '', '24 V supply too low', 'err'],
+    [ev('alarm_end', 2, '', 'container_low'), 'Alarm over', '', 'container almost empty', 'ok'],
+    [ev('system', 0, '', 'boot', { reason: 'crash' }), 'System', 'after a crash', 'started', 'warn'],
+    [ev('system', 0, '', 'boot', { reason: 'power_on' }), 'System', 'power on', 'started', 'mut'],
+    [ev('system', 0, '', 'channels', { pumps: [1, 2, 3] }), 'System', 'pumps 1, 2, 3', 'fitted pumps changed', 'mut'],
+    [ev('system', 0, '', 'updated', { version: '0.2.0' }), 'System', '0.2.0', 'firmware updated', 'mut'],
+  ];
+  await page.route(/\/api\/v1\/history\?/, route => route.fulfill({ json: { events: rows.map(r => r[0]), more: false } }));
+  await page.goto('/');
+  await proMode(page);
+  await open(page, '#/history');
+  const list = events(page).locator('.hi-list > li');
+  await expect(list).toHaveCount(rows.length);
+  for (const [i, [e, kind, detail, code, cls]] of rows.entries()) {
+    const li = list.nth(i);
+    await expect(li.locator('.hi-t')).toHaveText(/^07\.11\. /);
+    await expect(li.locator('.hi-p')).toHaveText(e.pump ? /\S/ : 'Device');
+    await expect(li.locator('.hi-k')).toHaveText(kind);
+    await expect(li.locator('.hi-d')).toHaveText(detail);
+    await expect(li.locator('.hi-c')).toHaveText(code);
+    await expect(li.locator('.hi-c')).toHaveClass(new RegExp('\\b' + cls + '\\b'));
+  }
+});
