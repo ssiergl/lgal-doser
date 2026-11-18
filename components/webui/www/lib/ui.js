@@ -31,6 +31,24 @@ export function useChange(fn, deps) {
   }, deps);
 }
 
+// Draft of a form whose data other forms reload as well (one card saves, the shared data comes
+// again): a field takes the new value unless the user changed it and the device did not, so typing
+// in one card survives saving another one, while a card's own save takes the stored values.
+export function useDraft(base, deps) {
+  const [d, setD] = useState(base);
+  const prev = useRef(base);
+  useChange(() => {
+    const old = prev.current;
+    prev.current = base;
+    setD(o => {
+      const n = { ...base };
+      for (const k in n) if (k in o && o[k] !== old[k] && base[k] === old[k]) n[k] = o[k];
+      return n;
+    });
+  }, deps);
+  return [d, setD];
+}
+
 // Message line under a form: {ok, text} or an error
 export function useMsg() {
   const [m, set] = useState(null);

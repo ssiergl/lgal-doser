@@ -17,7 +17,7 @@ import { add, errText, getLang, num, t } from '../lib/i18n.js';
 import { hourCycle } from '../lib/prefs.js';
 import { pumpColor, pumpName } from '../lib/pumps.js';
 import { reloadPumps, useStore } from '../lib/store.js';
-import { Seg, Toggle, ask, useChange, useMsg } from '../lib/ui.js';
+import { Seg, Toggle, ask, useChange, useDraft, useMsg } from '../lib/ui.js';
 import { BackupSection } from './backup.js';
 import { EngUnlock, lockEngineering } from './engineering.js';
 import { UpdateSourceCard, UrlUpdateCard, waitForDevice } from './maintenance.js';
@@ -158,10 +158,9 @@ const physOf = e => ({ retract_rev: str(e.retract_rev), calib_ml: str(e.calib_ml
   tier1_rpm: str(e.tier_rpm[0]), tier2_rpm: str(e.tier_rpm[1]), tier3_rpm: str(e.tier_rpm[2]) });
 
 function PhysCard({ eng, spr, reload }) {
-  const [d, setD] = useState(physOf(eng));
+  const [d, setD] = useDraft(physOf(eng), [eng]);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useChange(() => setD(physOf(eng)), [eng]);
   const set = p => setD(x => ({ ...x, ...p }));
   const q = changed(kPhys, d, physOf(eng));
   const bad = invalid(kPhys, d);
@@ -315,10 +314,9 @@ const limOf = (e, s) => ({ prime_max_s: str(e.prime_max_s), prime_heartbeat_ms: 
   min_dose_ml: str(e.min_dose_ml), limit_mode: e.limit_mode, grid_min: s.grid_min, max_delay_min: str(s.max_delay_min) });
 
 function LimitsCard({ eng, sch, reload }) {
-  const [d, setD] = useState(limOf(eng, sch));
+  const [d, setD] = useDraft(limOf(eng, sch), [eng, sch]);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useChange(() => setD(limOf(eng, sch)), [eng, sch]);
   const set = x => setD(o => ({ ...o, ...x }));
   const base = limOf(eng, sch);
   const qd = changed(kLim, d, base);
@@ -360,10 +358,9 @@ const kThr = [
 const thrOf = e => ({ warn_days: str(e.warn_days), low_days: str(e.low_days) });
 
 function ThresholdCard({ eng, reload }) {
-  const [d, setD] = useState(thrOf(eng));
+  const [d, setD] = useDraft(thrOf(eng), [eng]);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useChange(() => setD(thrOf(eng)), [eng]);
   const q = changed(kThr, d, thrOf(eng));
   const bad = invalid(kThr, d);
   const submit = e => {
@@ -390,11 +387,10 @@ function ThresholdCard({ eng, reload }) {
 const kTube = { k: 'tube_life_h', l: 'sv.tube_life', min: 10, max: 65535, u: 'h' };
 
 function TubeCard({ eng, pumps, reload }) {
-  const [d, setD] = useState({ tube_life_h: str(eng.tube_life_h) });
+  const [d, setD] = useDraft({ tube_life_h: str(eng.tube_life_h) }, [eng]);
   const [hours, setHours] = useState(['', '', '', '', '']);
   const [busy, setBusy] = useState(false);
   const msg = useMsg();
-  useChange(() => setD({ tube_life_h: str(eng.tube_life_h) }), [eng]);
   const q = changed([kTube], d, { tube_life_h: str(eng.tube_life_h) });
   const bad = invalid([kTube], d);
   const submit = e => {

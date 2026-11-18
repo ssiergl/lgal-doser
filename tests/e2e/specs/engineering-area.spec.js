@@ -205,6 +205,26 @@ test('limits, container thresholds and history: checked and saved', async ({ pag
   await expect(hist.getByRole('status')).toHaveText('Please check: Keep events for (1 … 60)');
 });
 
+test('saving one card keeps what is typed in another', async ({ page, cleanup }) => {
+  await unlock(page, cleanup);
+  const before = await dosing(page);
+  cleanup(() => page.request.post('/api/v1/engineering/dosing?' + new URLSearchParams({
+    prime_max_s: before.prime_max_s, warn_days: before.warn_days })));
+  const thr = card(page, 'Container thresholds');
+  const warn = thr.getByRole('textbox', { name: /^Warning when/ });
+  const typed = String(before.warn_days + 3);
+  await warn.fill(typed);
+  const lim = card(page, 'Timeouts, minimum dose and grid');
+  await lim.getByRole('textbox', { name: /^Priming: max\. duration/ }).fill(String(before.prime_max_s + 10));
+  await save(lim);
+  // the shared values came again: the typed threshold is still there and still to be saved
+  await expect(warn).toHaveValue(typed);
+  await expect(thr.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+  await save(thr);
+  expect(await dosing(page)).toMatchObject({ prime_max_s: before.prime_max_s + 10, warn_days: before.warn_days + 3 });
+  await expect(thr.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+});
+
 test('tubes: set and reset a counter, lifetime', async ({ page, cleanup }) => {
   await unlock(page, cleanup);
   const pumps = (await get(page, '/api/v1/pumps')).pumps;
