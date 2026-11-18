@@ -155,7 +155,12 @@ test.describe('engineering', () => {
     await ask.getByRole('button', { name: 'Confirm' }).click();
     await expect(src.getByRole('status')).toHaveText('Saved.');
     await expect(http).toBeChecked();
-    await addr.fill('http://192.168.1.10/firmware.bin');
+    // the dialog gives the focus back a frame after it closed; text typed before that can be lost
+    // when the focus moves away under it (seen in Firefox), so type until it is in the field
+    await expect(async () => {
+      await addr.fill('http://192.168.1.10/firmware.bin');
+      await expect(addr).toHaveValue('http://192.168.1.10/firmware.bin', { timeout: 500 });
+    }).toPass();
     await expect(url.getByText(/^Unencrypted \(http\): the file can be altered/)).toBeVisible();
     await start.click();
     await expect(ask).toContainText('Download the firmware over unencrypted http?');
