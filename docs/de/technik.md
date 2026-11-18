@@ -582,10 +582,10 @@ python3 tools/acceptance.py lgal-doser-xxxx.local --dose 1:2      # fragt nach d
   Pumpe Betriebsart, letztes Ergebnis, Kalibrierung und übersprungene Dosen (Warnungen).
 - **Hardware** (mit `LGAL_ENG_KEY`): jeder bestückte Treiber antwortet über UART und hat seine
   Register gesetzt, kein Fehler, Treiber in Ruhe aus, Fehlerrate beider UART-Busse, Uhrmodul,
-  EEPROM, Verlaufsspeicher.
+  EEPROM (fehlt es: der I²C-Bus-Scan des letzten Starts aus dem Log), Verlaufsspeicher.
 - **Live-Verbindung:** Der WebSocket schickt sofort den Status und beantwortet einen Ping.
 - **Einstellungen:** `--snapshot` schreibt sie (Pumpen, Zeitpläne, Sperrzeiten, Netzwerk, MQTT, LED,
-  Zeit, Updates, Namen der API-Schlüssel; mit `LGAL_ENG_KEY` auch die Engineering-Werte und
+  Zeit, Updates, Namen der API-Schlüssel – nur mit dem Passwort, das Gerät nennt seine Schlüssel nur einer Sitzung; mit `LGAL_ENG_KEY` auch die Engineering-Werte und
   Treiber) in eine Datei, `--compare` listet jede Abweichung. `--ota` lädt das Image hoch, wartet
   auf den Neustart, prüft die andere Partition, führt alle Prüfungen erneut aus und vergleicht die
   Einstellungen mit dem Stand davor.
