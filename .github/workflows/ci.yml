@@ -53,6 +53,10 @@ jobs:
     # the web UI in Chromium and WebKit (desktop and phone size) and Firefox against tools/mock/webui_server.py
     runs-on: ubuntu-24.04
     container: debian:trixie
+    env:
+      # Firefox does not start when $HOME belongs to another user (in the container it is
+      # /github/home); install and run with root's home so both find the same browsers
+      HOME: /root
     steps:
       - name: Install tools
         run: |
