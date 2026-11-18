@@ -20,7 +20,7 @@ components/doser_app/   Geräte-Logik: Hardware-Diagnose, Dosier-Engine, Zeitpla
 components/webui/       Weboberfläche (M5): www/ (Preact + htm, ohne Build), pack.py bettet sie gzip-komprimiert ein
 brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL, siehe TRADEMARKS.md) und web/, das gemeinsame Design der Seiten (GPL)
 main/                   Verdrahtung der Komponenten (app_main)
-tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (Geräte-Mock für die Weboberfläche)
+tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, endurance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest)
                         und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
@@ -102,7 +102,7 @@ Die CI führt außerdem diese Prüfungen aus; lokal aus dem Repository-Wurzelver
 | Prüfung | Befehl | Schlägt fehl, wenn |
 |---|---|---|
 | Übersetzungen | `python3 tests/i18n/check_translations.py` | einer `lang/*.json` ein Schlüssel fehlt, sie einen unbekannten hat oder andere Platzhalter (`{n}` …) als Englisch; der Code `t('…')` mit einem Schlüssel aufruft, den Englisch nicht definiert |
-| Python-Werkzeuge | `python3 -m pytest tests/tools` | Manifest, Beta-Kanal, Release-Text, Passwörter oder Provisionierungswerte falsch sind; das Abnahmeskript (`tools/acceptance.py`) gegen den Mock nicht mehr findet, was es soll (gesperrte API, ein gespeicherter Absturz, ein Treiber, der nicht antwortet, eine geänderte Einstellung, eine Testdosis, ein Update auf die andere Partition); Passwörter und Versionsreihenfolge werden gegen dieselben Werte geprüft wie in den Host-Tests der Firmware |
+| Python-Werkzeuge | `python3 -m pytest tests/tools` | Manifest, Beta-Kanal, Release-Text, Passwörter oder Provisionierungswerte falsch sind; das Abnahmeskript (`tools/acceptance.py`) gegen den Mock nicht mehr findet, was es soll (gesperrte API, ein gespeicherter Absturz, ein Treiber, der nicht antwortet, eine geänderte Einstellung, eine Testdosis, ein Update auf die andere Partition) oder der Langzeittest (`tools/endurance.py`) geplante Dosen falsch dem Verlauf zuordnet oder einen Neustart bzw. einen nicht antwortenden Treiber übersieht; Passwörter und Versionsreihenfolge werden gegen dieselben Werte geprüft wie in den Host-Tests der Firmware |
 | Mock-Vertrag | `python3 -m pytest tests/tools/test_api_contract.py` (Teil der Python-Werkzeuge) | die Webseiten einen API-Pfad oder eine Methode aufrufen, die die Firmware nicht registriert; der Mock (`tools/mock/`) eine Firmware-Route nicht beantwortet, einen Pfad kennt, den die Firmware nicht hat, oder ein Feld liefert oder einen Fehlercode sendet, der nirgends in den Firmware-Quellen vorkommt; über den WebSocket der Status-Frame und die Antworten auf Ping, Befüllen, einen unbekannten Typ und kaputtes JSON andere Felder oder eine andere Form haben als die der Firmware (die End-to-End-Tests laufen nur gegen den Mock; ein Mock, der von der Firmware abweicht, ließe sie bestehen, während das Gerät scheitert) |
 | Image-Größe | `python3 tests/size/check_image_size.py build-d5v1-N8R8` | das App-Image mehr als 85 % seines OTA-Slots belegt (ein zu großes Image lässt sich nicht per OTA einspielen, und die Slot-Größe lässt sich per OTA nicht ändern) |
 | ESLint | `npm ci --prefix tests/lint`, dann `tests/lint/node_modules/.bin/eslint -c tests/lint/eslint.config.js components/webui/www` | die Weboberfläche einen undefinierten Namen, eine unbenutzte Variable oder einen anderen Fehler enthält, vor dem ESLint warnt (ohne Build-Schritt fände ihn sonst niemand) |
@@ -597,6 +597,44 @@ Anmeldung nur über die Umgebung (`LGAL_API_KEY` oder `LGAL_PASSWORD`, sonst fra
 Passwort), damit kein Geheimnis in der Shell-Historie landet. Exit-Code 0: bestanden (Warnungen
 erlaubt), 1: eine Prüfung fehlgeschlagen, 2: nicht erreichbar oder Anmeldung abgelehnt. Der
 Engineering-Zugang einer Sitzung wird am Ende wieder gesperrt.
+
+## Langzeittest am Gerät
+
+`tools/endurance.py` beobachtet ein Gerät 24 Stunden lang (`--hours`), ohne etwas zu ändern: Die
+Pumpen dosieren nach ihren eigenen Zeitplänen, ihre Schläuche müssen also in einem Behälter
+enden. Jede Minute (`--interval`) liest es das Gerät, alle 5 Minuten die Pläne des Tages und die
+Hardware, und alle 15 Minuten (`--report`) gibt es eine Statuszeile aus; Neustarts, Ausfälle,
+Netzwechsel und Treiberprobleme erscheinen sofort. `--log lauf.csv` hält jede Messung fest
+(Speicher, Antwortzeit, Netz, Versorgung, WebSocket-Frames, Chiptemperatur). Strg-C beendet den
+Lauf vorzeitig und prüft, was bis dahin aufgezeichnet ist. Der Rechner muss den ganzen Lauf wach
+bleiben, z. B. auf dem Mac:
+
+```bash
+LGAL_API_KEY=lgal_... LGAL_ENG_KEY=... caffeinate -i python3 tools/endurance.py lgal-doser-xxxx.local --log lauf.csv
+```
+
+Am Ende prüft es:
+
+- **Lauf:** jede Messung beantwortet (ein Ausfall ab 3 Minuten am Stück schlägt fehl),
+  Antwortzeiten, kein Neustart (Laufzeit ging zurück: schlägt fehl, mit Grund des Neustarts),
+  kein neuer Core-Dump, die Firmware hat sich nicht geändert.
+- **Speicher:** niedrigster freier Speicher, ein Leck (freier Speicher in der letzten Stunde mehr
+  als 16 KiB unter der ersten Stunde, ab 3 Stunden Laufzeit), größter freier Block.
+- **Uhr und Netzwerk:** durchgehend gültige Zeit, höchstens 10 s Abstand zur Uhr dieses Rechners,
+  eine NTP-Synchronisierung (ab 4 Stunden, wenn ein Zeitserver eingestellt ist), durchgehend
+  dieselbe Netzwerkschnittstelle, die 24-V-Versorgung (Board v1.1).
+- **Live-Verbindung:** ein WebSocket bleibt den ganzen Lauf offen; Abbrüche oder mehr als 30 s
+  ohne Status-Frame sind Warnungen.
+- **Dosen:** pro Pumpe im Automatikbetrieb hat jeder Termin, den der Zeitplan im Lauf vorsah
+  (außer in den letzten 15 Minuten), seinen Eintrag im Verlauf: ausgeführt (mit Menge; weniger
+  als das Ziel ist eine Warnung), übersprungen mit Grund (Warnung), fehlgeschlagen oder fehlend
+  (schlägt fehl). Dosen ohne Termin sind Warnungen, Alarme im Lauf Warnungen bzw. bei Treiber-,
+  Uhr- und Versorgungsfehlern Fehler. Eine Dosis darf bis zur längsten Verzögerung des
+  Schedulers nach ihrem Termin starten (Engineering-Wert, ohne Engineering-Key 120 Minuten).
+- **Hardware** (mit `LGAL_ENG_KEY`): jeder bestückte Treiber antwortet den ganzen Lauf ohne
+  Fehler, Fehlerquote beider UART-Busse im Lauf, Chiptemperatur, keine verworfenen Verlaufseinträge.
+
+Anmeldung und Exit-Codes wie beim Abnahmetest.
 
 ## API
 
