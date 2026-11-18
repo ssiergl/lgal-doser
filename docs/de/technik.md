@@ -858,9 +858,13 @@ die Scheduler-Parameter das [Engineering-Menü](#engineering-menü-m6).
 Das Gerät zeichnet Ereignisse als 24-Byte-Einträge auf der LittleFS-Partition `storage` auf
 (eine Datei pro UTC-Tag unter `/storage/hist`, Prüfsumme je Eintrag). Tage älter als die
 Aufbewahrungszeit (Engineering-Menü, 1–60 Tage, ab Werk 60, Teil der Datensicherung) löscht es
-stündlich, nach dem Verkürzen innerhalb einer Minute. Geschrieben wird über eine Warteschlange in einem eigenen Task – Dosierung
+stündlich, nach dem Verkürzen innerhalb einer Minute, ebenso Tage nach morgen, geschrieben bei
+vorgehender Uhr. Geschrieben wird über eine Warteschlange in einem eigenen Task – Dosierung
 und Zeitplan warten nie auf den Flash. Ohne gültige Uhrzeit wird nichts aufgezeichnet.
 Bei rund 240 Dosen am Tag sind das etwa 6 KB pro Tag, 60 Tage ≈ 350 KB (Speicher 1,75 MB bei N8R8, 5,75 MB bei N16R8).
+Die Tagesdateien dürfen höchstens drei Viertel der Partition belegen; würde ein neuer Eintrag das
+überschreiten oder ist der Flash voll, löscht das Gerät zuerst die ältesten Tage – nie den Tag des
+neuen Eintrags.
 Werkseinstellungen löschen die Historie mit; einzeln löscht sie das Engineering-Menü und setzt
 dabei auch die heutigen Mengen (und damit das Tageslimit) und die heute übersprungenen Dosen
 zurück.
@@ -876,7 +880,7 @@ zurück.
 | `alarm_end` | Ende eines Alarms, gleiche Codes |
 | `boost` | `started` (`total_ml`, `days` oder `doses`), `cancelled` (von Hand, `done_ml` bis dahin), `finished` (von selbst: alle Dosen gegeben oder Zeitraum vorbei, `done_ml`) |
 | `mode` | Betriebsart geändert (`mode`: `auto`, `manual_only`, `disabled`) |
-| `schedule` | Zeitplan gespeichert (`set` mit `daily_ml` und `doses` pro Tag) oder gelöscht (`cleared`) |
+| `schedule` | Zeitplan geändert (`set` mit `daily_ml` und `doses` pro Tag) oder gelöscht (`cleared`); derselbe Plan noch einmal gespeichert wird weder in den Flash geschrieben noch aufgezeichnet |
 | `settings` | übrige Pumpeneinstellungen geändert (Name, Geschwindigkeit, Limits, Schwellen, Drehrichtung) |
 | `locks` | Sperrregeln geändert (Pumpe 0, `rules`) |
 | `system` | Gerät (Pumpe 0): `boot` (`reason`: `power_on`, `restart`, `crash`, `watchdog`, `brownout`, …), `updated` (`version`, `from`), `restored` (Datensicherung), `time_set`, `cleared` (Verlauf gelöscht – der erste Eintrag danach), `settings` (Sprache, Zeitzone, LED, Name), `network`, `mqtt`, `channels` (`pumps`), `engineering`, `password`, `key_added`, `key_removed` |
