@@ -37,12 +37,19 @@ export const test = base.extend({
         document.head.appendChild(s);
       }));
     }
-    // allowErrors also covers page errors: WebKit reports a request cut off by a reload as one,
-    // even when the page catches it
-    page.on('pageerror', e => { if (!(allowErrors && allowErrors.test(String(e)))) errors.push(String(e)); });
+    // WebKit reports a request that a reload or a page change cuts off as "cannot load … due to
+    // access control checks", as a page error even when the page catches it. Such a message
+    // counts only when no navigation was near it.
+    const navs = [], cut = [];
+    page.on('framenavigated', f => { if (f === page.mainFrame()) navs.push(Date.now()); });
+    const report = text => {
+      if (allowErrors && allowErrors.test(text)) return;
+      if (browserName === 'webkit' && /due to access control checks/.test(text)) cut.push({ text, at: Date.now() });
+      else errors.push(text);
+    };
+    page.on('pageerror', e => report(String(e)));
     page.on('console', m => {
-      const text = m.text() + ' ' + m.location().url;
-      if (m.type() === 'error' && !expected(m.location().url) && !(allowErrors && allowErrors.test(text))) errors.push(text);
+      if (m.type() === 'error' && !expected(m.location().url)) report(m.text() + ' ' + m.location().url);
     });
     if (signedIn) {
       expect((await request.post('/api/v1/auth/login', { data: { password: adminPassword } })).ok()).toBeTruthy();
@@ -50,6 +57,7 @@ export const test = base.extend({
       await request.post('/api/v1/pumps/stop?pump=0');
     }
     await use(page);
+    for (const c of cut) if (!navs.some(t => Math.abs(t - c.at) < 2000)) errors.push(c.text);
     expect(errors, `errors on the page (${info.title})`).toEqual([]);
   },
   // Puts the shared mock state back. cleanup(fn) returns fn to call at the end of the test (so the
