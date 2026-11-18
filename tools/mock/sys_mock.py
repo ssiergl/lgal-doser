@@ -467,6 +467,8 @@ def route(h, method, path, q, body):
             cookie = [("Set-Cookie", f"lgal_session={t}; Path=/; HttpOnly; SameSite=Strict")]
         h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}, headers=cookie); return True
     if path == "/api/v1/auth/keys":
+        # managing keys needs a session, an API key cannot list or make keys (auth.cpp)
+        if STRICT and not session_of(h): err(h, 401, "unauthorized", "Login required"); return True
         if method == "GET": h.send(200, {"max": MAX_KEYS, "keys": [{k: v for k, v in x.items() if k != "token"} for x in KEYS]}); return True
         if method == "POST":
             name = (body.get("name") or "").strip()
