@@ -27,6 +27,38 @@ if os.environ.get("MOCK_FACTORY") == "1":
     SETUP["completed"] = False
 KEYS = [{"slot": 1, "name": "Home Assistant", "created": int(time.time()) - 86400 * 12}]
 MAX_KEYS = 4
+# MOCK_STRICT_AUTH=1: sign-in per client like the firmware (session cookie lgal_session or an API
+# key in X-API-Key / Authorization: Bearer) instead of one shared state; for tools/acceptance.py.
+# The engineering area stays one shared state.
+STRICT = os.environ.get("MOCK_STRICT_AUTH") == "1"
+SESSIONS = set()
+if STRICT:
+    AUTH["session"] = False
+
+
+def session_of(h):
+    for part in (h.headers.get("Cookie") or "").split(";"):
+        k, _, v = part.strip().partition("=")
+        if k == "lgal_session" and v in SESSIONS: return v
+    return None
+
+
+def key_of(h):
+    k, a = h.headers.get("X-API-Key") or "", h.headers.get("Authorization") or ""
+    if a.startswith("Bearer "): k = a[7:]
+    return bool(k) and any(x.get("token") == k for x in KEYS)
+
+
+def eng_active(h):
+    """Engineering area open: unlocked (shared state), or an API key with X-Engineering-Key (tools)"""
+    if ENG["until"] > time.time(): return True
+    return STRICT and key_of(h) and h.headers.get("X-Engineering-Key") == ENGKEY
+
+
+def via(h):
+    """How the request is signed in: "session", "api_key" or None"""
+    if not STRICT: return "session" if AUTH["session"] else None
+    return "session" if session_of(h) else "api_key" if key_of(h) else None
 ENGKEY = "test-eng-key"
 ENG = {"until": 0}
 SYS = {"coredump": True, "boot": time.time(), "down_until": 0, "version": "0.5.0-dev", "partition": "ota_0", "invalid": None}
@@ -56,6 +88,7 @@ def down(): return time.time() < SYS["down_until"]
 
 def restart(delay=6):
     SYS["down_until"] = time.time() + delay; SYS["boot"] = time.time() + delay; ENG["until"] = 0
+    SESSIONS.clear()  # sessions live in RAM (strict mode)
 
 # Device name and host name (lgal/device_name.h)
 DEVICE = {"name": "", "own": ""}
@@ -215,11 +248,11 @@ def route(h, method, path, q, body):
         return True
     import hist_mock
     h._json_body = body
-    if hist_mock.route(h, method, path, q, lambda: ENG["until"] > time.time()): return True
+    if hist_mock.route(h, method, path, q, lambda: eng_active(h)): return True
     import mqtt_mock
     if mqtt_mock.route(h, method, path, q, body): return True
     import eng_mock
-    if eng_mock.route(h, method, path, q, lambda: ENG["until"] > time.time()): return True
+    if eng_mock.route(h, method, path, q, lambda: eng_active(h)): return True
     if path == "/api/v1/system/info" and method == "GET": h.send(200, info_json()); return True
     if path == "/api/v1/system/device":
         if method == "GET": h.send(200, device_json()); return True
@@ -269,7 +302,7 @@ def route(h, method, path, q, body):
         h.send(200, {"status": "rebooting"}); restart(); return True  # the mock keeps its state
     if path == "/api/v1/ota/settings":
         if method == "PUT":
-            if ("source" in body or "allow_http" in body) and ENG["until"] <= time.time():
+            if ("source" in body or "allow_http" in body) and not eng_active(h):
                 err(h, 403, "engineering_locked", "Engineering area is locked"); return True
             for k in ("auto_check", "allow_http"):
                 if k in body and not isinstance(body[k], bool): err(h, 400, "invalid_param", k); return True
@@ -304,7 +337,7 @@ def route(h, method, path, q, body):
         h.send(202, {"status": "started"}); return True
     if path == "/api/v1/ota/status" and method == "GET": h.send(200, ota_status()); return True
     if path == "/api/v1/ota/url" and method == "POST":
-        if ENG["until"] <= time.time(): err(h, 403, "engineering_locked", "Engineering area is locked"); return True
+        if not eng_active(h): err(h, 403, "engineering_locked", "Engineering area is locked"); return True
         u = str(body.get("url", "")).strip()
         if not re.match(r"^https?://[^/\s:?#][^\s]*$", u, re.I) or len(u) > 512: err(h, 400, "invalid_url", "Invalid URL"); return True
         if u.lower().startswith("http://") and not OTA["allow_http"]: err(h, 400, "http_not_allowed", "Plain http is not allowed"); return True
@@ -395,7 +428,7 @@ def route(h, method, path, q, body):
     if path == "/api/v1/system/language" and method == "GET" and down():
         return True
     if path == "/api/v1/auth/status" and method == "GET":
-        h.send(200, {"logged_in": AUTH["session"], "via": "session" if AUTH["session"] else "none", "password_set": AUTH["password_set"], "setup_completed": SETUP["completed"],
+        h.send(200, {"logged_in": via(h) is not None, "via": via(h) or "none", "password_set": AUTH["password_set"], "setup_completed": SETUP["completed"],
                      "engineering": ENG["until"] > time.time(), "engineering_left_s": int(max(0, ENG["until"] - time.time())), "recovery": False, "device": hostname()}); return True
     if path == "/api/v1/auth/password" and method == "POST":
         if AUTH["password_set"] and body.get("current") != AUTH["password"]: err(h, 403, "wrong_password", "Current password is wrong"); return True
@@ -414,22 +447,31 @@ def route(h, method, path, q, body):
         h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/auth/recover" and method == "POST":  # the mock is never reached through the setup Wi-Fi
         err(h, 403, "recovery_unavailable", "Only via the setup Wi-Fi (hold the button for 3 s)"); return True
-    if path == "/api/v1/auth/logout" and method == "POST": AUTH["session"] = False; h.send(200, {"status": "ok"}); return True
+    if path == "/api/v1/auth/logout" and method == "POST":
+        if STRICT: SESSIONS.discard(session_of(h))
+        else: AUTH["session"] = False
+        h.send(200, {"status": "ok"}, headers=[("Set-Cookie", "lgal_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0")]); return True
     if path == "/api/v1/auth/login" and method == "POST":
         if not AUTH["password_set"]: err(h, 409, "password_not_set", "Choose the admin password in the setup first"); return True
         if throttled(h): return True
         if body.get("password") != AUTH["password"]: failed(); err(h, 403, "wrong_password", "Wrong password"); return True
         THROTTLE.update(failures=0, until=0)
-        AUTH["session"] = True; h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}); return True
+        AUTH["session"] = True
+        cookie = []
+        if STRICT:
+            t = secrets.token_hex(16); SESSIONS.add(t)
+            cookie = [("Set-Cookie", f"lgal_session={t}; Path=/; HttpOnly; SameSite=Strict")]
+        h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}, headers=cookie); return True
     if path == "/api/v1/auth/keys":
-        if method == "GET": h.send(200, {"max": MAX_KEYS, "keys": KEYS}); return True
+        if method == "GET": h.send(200, {"max": MAX_KEYS, "keys": [{k: v for k, v in x.items() if k != "token"} for x in KEYS]}); return True
         if method == "POST":
             name = (body.get("name") or "").strip()
             if not name or len(name) > 23: err(h, 400, "invalid_param", "name (1..23 characters)"); return True
             if len(KEYS) >= MAX_KEYS: err(h, 409, "too_many_keys", "All key slots are in use"); return True
             slot = min(set(range(1, MAX_KEYS + 1)) - {k["slot"] for k in KEYS})
-            KEYS.append({"slot": slot, "name": name, "created": int(time.time())}); KEYS.sort(key=lambda k: k["slot"])
-            h.send(200, {"slot": slot, "name": name, "key": "lgal_test_" + secrets.token_hex(16)}); return True
+            token = "lgal_test_" + secrets.token_hex(16)
+            KEYS.append({"slot": slot, "name": name, "created": int(time.time()), "token": token}); KEYS.sort(key=lambda k: k["slot"])
+            h.send(200, {"slot": slot, "name": name, "key": token}); return True
         if method == "DELETE":
             s = int(q.get("slot", 0))
             KEYS[:] = [k for k in KEYS if k["slot"] != s]; h.send(200, {"status": "ok"}); return True

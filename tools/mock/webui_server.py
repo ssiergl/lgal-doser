@@ -442,7 +442,7 @@ class H(BaseHTTPRequestHandler):
     def locked(self, method):
         """True when the request was answered: pages redirect to the sign-in, API calls get 401"""
         p = self.path.split("?")[0]
-        if sys_mock.AUTH["session"] or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")): return False
+        if sys_mock.via(self) or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")): return False
         if p == "/" and not sys_mock.SETUP["completed"]: return False  # factory state: redirect to /setup first
         n = int(self.headers.get("Content-Length", 0) or 0)
         if n: self.rfile.read(n)
