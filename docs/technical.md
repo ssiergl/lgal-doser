@@ -570,11 +570,11 @@ python3 tools/acceptance.py lgal-doser-xxxx.local --dose 1:2      # asks for the
 - **Device:** clock and clock module, network, 24 V supply (board v1.1), no update running;
   per pump mode, last result, calibration and skipped doses (warnings).
 - **Hardware** (with `LGAL_ENG_KEY`): every fitted driver answers on UART and has its registers
-  set, no fault, drivers off at rest, error rate of both UART buses, clock module, EEPROM, history
-  storage.
+  set, no fault, drivers off at rest, error rate of both UART buses, clock module, EEPROM (if it is missing: the I²C bus scan of the
+  last start from the log), history storage.
 - **Live connection:** the WebSocket sends the status at once and answers a ping.
 - **Settings:** `--snapshot` writes them (pumps, schedules, locks, network, MQTT, LED, time,
-  updates, API key names; with `LGAL_ENG_KEY` also the engineering values and drivers) to a file,
+  updates, API key names – only with the password, the device lists its keys to a session only; with `LGAL_ENG_KEY` also the engineering values and drivers) to a file,
   `--compare` lists every difference. `--ota` uploads the image, waits for the restart, checks the
   other partition and runs all checks again, then compares the settings with the state before.
 - **Test dose** (`--dose PUMP:ML`, up to 50 ml, repeatable): asks for a measuring cup first
