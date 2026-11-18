@@ -96,6 +96,7 @@
   "ac.keys.once": "Anahtarı şimdi kopyalayın – yalnızca bir kez gösterilir:",
   "ac.keys.copy": "Kopyala",
   "ac.keys.copied": "Kopyalandı",
+  "ac.keys.copyfail": "Kopyalanamadı – lütfen anahtarı seçip elle kopyalayın.",
   "ac.keys.done": "Tamam",
   "ac.keys.deleted": "\"{n}\" anahtarı silindi.",
   "err.wrong_password": "Yanlış parola",

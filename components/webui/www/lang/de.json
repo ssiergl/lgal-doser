@@ -91,6 +91,7 @@
   "ac.keys.once": "Schlüssel jetzt kopieren – er wird nur einmal angezeigt:",
   "ac.keys.copy": "Kopieren",
   "ac.keys.copied": "Kopiert",
+  "ac.keys.copyfail": "Kopieren ging nicht – bitte den Schlüssel markieren und von Hand kopieren.",
   "ac.keys.done": "Fertig",
   "ac.keys.deleted": "Schlüssel „{n}“ gelöscht.",
   "err.wrong_password": "Falsches Passwort",

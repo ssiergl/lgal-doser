@@ -96,6 +96,7 @@
   "ac.keys.once": "Skopiuj klucz teraz – jest pokazywany tylko raz:",
   "ac.keys.copy": "Kopiuj",
   "ac.keys.copied": "Skopiowano",
+  "ac.keys.copyfail": "Nie udało się skopiować – zaznacz klucz i skopiuj go ręcznie.",
   "ac.keys.done": "Gotowe",
   "ac.keys.deleted": "Klucz „{n}” usunięty.",
   "err.wrong_password": "Błędne hasło",

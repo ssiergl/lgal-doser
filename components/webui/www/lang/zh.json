@@ -96,6 +96,7 @@
   "ac.keys.once": "请立即复制密钥 – 它只显示一次：",
   "ac.keys.copy": "复制",
   "ac.keys.copied": "已复制",
+  "ac.keys.copyfail": "无法复制——请选中密钥并手动复制。",
   "ac.keys.done": "完成",
   "ac.keys.deleted": "密钥 \"{n}\" 已删除。",
   "err.wrong_password": "密码错误",

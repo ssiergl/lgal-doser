@@ -96,6 +96,7 @@
   "ac.keys.once": "Copie la clave ahora – solo se muestra una vez:",
   "ac.keys.copy": "Copiar",
   "ac.keys.copied": "Copiada",
+  "ac.keys.copyfail": "No se pudo copiar: selecciona la clave y cópiala a mano.",
   "ac.keys.done": "Hecho",
   "ac.keys.deleted": "Clave «{n}» eliminada.",
   "err.wrong_password": "Contraseña incorrecta",

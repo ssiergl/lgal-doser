@@ -96,6 +96,7 @@
   "ac.keys.once": "Kopieer de sleutel nu – hij wordt maar één keer getoond:",
   "ac.keys.copy": "Kopiëren",
   "ac.keys.copied": "Gekopieerd",
+  "ac.keys.copyfail": "Kopiëren lukte niet – selecteer de sleutel en kopieer hem met de hand.",
   "ac.keys.done": "Klaar",
   "ac.keys.deleted": "Sleutel \"{n}\" verwijderd.",
   "err.wrong_password": "Onjuist wachtwoord",
