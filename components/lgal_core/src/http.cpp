@@ -25,12 +25,15 @@ namespace {
 constexpr const char* TAG = "http";
 httpd_handle_t s_server = nullptr;
 
-// Socket budget: a browser opens up to 6 connections, plus the WebSocket and
-// API clients (Home Assistant). The server needs 2 more of its own (listen,
-// control), the rest of the firmware up to 3 (captive DNS, MQTT, OTA download).
-// The server must reach its own limit before lwIP runs out of sockets, else
-// accept() fails with ENFILE and the LRU purge never kicks in.
-constexpr int kMaxOpenSockets = 10;
+// Socket budget: a browser opens up to 6 connections while it loads the web UI.
+// Two browsers loading at the same time (phone and computer) plus up to 4
+// WebSocket and API clients (Home Assistant, tools) need 16, 20 leave room for
+// more; with 10 the LRU purge closed live connections during such a burst. An
+// idle connection costs a few hundred bytes. The server needs 2 more
+// of its own (listen, control), the rest of the firmware up to 3 (captive DNS,
+// MQTT, OTA download). The server must reach its own limit before lwIP runs out
+// of sockets, else accept() fails with ENFILE and the LRU purge never kicks in.
+constexpr int kMaxOpenSockets = 20;
 constexpr int kOtherSockets = 3;
 static_assert(kMaxOpenSockets + 2 + kOtherSockets <= CONFIG_LWIP_MAX_SOCKETS,
               "CONFIG_LWIP_MAX_SOCKETS too small for the HTTP server");

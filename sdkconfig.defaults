@@ -49,8 +49,8 @@ CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 CONFIG_ESP_NETIF_SET_DNS_PER_DEFAULT_NETIF=y
 
 # Sockets: budget see lgal_core/src/http.cpp (default 10 was too few,
-# accept() failed with ENFILE)
-CONFIG_LWIP_MAX_SOCKETS=16
+# accept() failed with ENFILE; 16 too few for two browsers loading at once)
+CONFIG_LWIP_MAX_SOCKETS=25
 
 # HTTP server
 CONFIG_HTTPD_WS_SUPPORT=y
