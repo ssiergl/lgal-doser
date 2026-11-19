@@ -789,7 +789,7 @@ Oszilloskop/Logikanalysator).
 
 | Thema | Umsetzung |
 |---|---|
-| Menge → Schritte | Kalibrierung in µl pro Motorumdrehung (unabhängig von den Mikroschritten). Ohne Kalibrierung Nennwert 0,37 ml/U (≈ 111 ml/min bei 300 U/min). |
+| Menge → Schritte | Kalibrierung in µl pro Motorumdrehung (unabhängig von den Mikroschritten). Ohne Kalibrierung Nennwert 0,27 ml/U (≈ 81 ml/min bei 300 U/min; mit Wasser auf Board v1.0 gemessen: 0,256 ml/U, der Nennwert liegt etwas darüber, damit eine unkalibrierte Pumpe eher zu wenig dosiert). |
 | Ablauf | Rückzug ausgleichen → Hauptfahrt → Anti-Tropf-Rückzug. Der ausgeführte Rückzug wird spannungsausfallsicher gespeichert. Der Rückzug ist pro Pumpe **ab Werk aus** und lässt sich auf „Standard“ (globaler Wert) oder einen eigenen Wert stellen; beim Ausschalten wird ein offener Rückzug bei der nächsten Dosis noch ausgeglichen. |
 | Verbuchung | Beim Start wird die volle Menge auf Tageslimit, Behälter und Gesamtzähler gebucht und gesichert; ein Abbruch schreibt die nicht geförderte Menge gut. Der Behälter zählt nie unter 0 ml (vergessenes Nachfüllen); die Dosis läuft trotzdem. Stromausfall während der Fahrt → Menge bleibt gebucht (sichere Seite). |
 | Tageslimit | hart pro Pumpe; Fenster Kalendertag oder rollierend 24 h (Engineering). Stunden-Töpfe über 26 h, angebrochene Stunden zählen voll. Ohne gültige Uhrzeit werden Pumpen mit Limit gesperrt. |
@@ -799,8 +799,8 @@ Oszilloskop/Logikanalysator).
 | Speicher | Einstellungen in NVS (`dose`). Laufzustand je Pumpe im EEPROM als A/B-Datensätze (Folgenummer + CRC32, ab 0x000), Rückfall auf NVS ohne EEPROM. |
 
 Engineering-Standardwerte (Super-Admin, global; Rückzug zusätzlich pro Pumpe):
-Rückzug „Standard“ ¼ U (≈ 0,09 ml), Kalibrier-Zielmenge 10 ml, Stufen 100/200/300 U/min
-(≈ 37/74/111 ml/min), Entlüften max. 60 s / Heartbeat 500 ms, kleinste Dosis 0,02 ml,
+Rückzug „Standard“ ¼ U (≈ 0,07 ml), Kalibrier-Zielmenge 10 ml, Stufen 100/200/300 U/min
+(≈ 27/54/81 ml/min), Entlüften max. 60 s / Heartbeat 500 ms, kleinste Dosis 0,02 ml,
 Schlauch-Lebensdauer 1000 h, Tageslimit pro Kalendertag. Änderungen brauchen die
 Engineering-Freischaltung (siehe [Zugang](#zugang)).
 
