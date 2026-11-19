@@ -338,6 +338,7 @@ static void test_queue_and_clock_jump() {
     CHECK(scheduler::set_locks(l) == nullptr);
     // Sunday 22 Nov 13:00: manual dose on pump 1, then on pump 2 -> queued
     sim::run_until(local(11, 22, 13, 0));
+    sim::run_for(5);  // the clock is already at pump 1's 09:00 slot (27 Nov): let it finish
     int64_t retry = 0;
     bool queued = false;
     CHECK(scheduler::manual_dose(0, 1000, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && !queued);

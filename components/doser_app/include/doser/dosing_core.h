@@ -13,8 +13,10 @@
 
 namespace doser::dose {
 
-// Nominal value without calibration: ≈ 110 ml/min at 300 rpm (datasheet ≥ 80).
-constexpr float kNominalUlPerRev = 370.0f;
+// Nominal value without calibration: ≈ 81 ml/min at 300 rpm (datasheet ≥ 80). Calibrated with
+// water on board v1.0: 256 µl per revolution; a little above that, so that an uncalibrated pump
+// rather doses too little than too much.
+constexpr float kNominalUlPerRev = 270.0f;
 constexpr int kTiers = 3;
 constexpr uint32_t kMaxDoseUl = 1000000;  // 1 l per single job
 

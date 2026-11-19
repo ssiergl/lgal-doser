@@ -36,7 +36,7 @@ test('dosing physics: values are checked, speeds must rise, saved values stay', 
   await save_.click();
   await expect(c.getByRole('status')).toHaveText(/^Please check: Anti-drip retraction \("default"\) \(0\.000 … 2\.000\)$/);
   await retract.fill('0.5');
-  await expect(c.getByText('≈ 0.19 ml')).toBeVisible();  // 0.5 revolutions × 0.37 ml
+  await expect(c.getByText('≈ 0.14 ml')).toBeVisible();  // 0.5 revolutions × 0.27 ml
 
   const fast = c.getByRole('textbox', { name: /^Speed fast/ });
   await fast.fill('150');  // slower than "normal" (200)
@@ -258,7 +258,7 @@ test('raw stepper test, driver diagnosis, clock module', async ({ page, cleanup 
   await unlock(page, cleanup);
   cleanup(() => page.request.post('/api/v1/hw/pump/stop?pump=0&mode=hard'));
   const raw = card(page, 'Raw stepper test');
-  await expect(raw.getByText('= 1.00 rev ≈ 0.37 ml (nominal) · 2.0 s')).toBeVisible();  // 3200 steps at 1600/s
+  await expect(raw.getByText('= 1.00 rev ≈ 0.27 ml (nominal) · 2.0 s')).toBeVisible();  // 3200 steps at 1600/s
   await raw.getByRole('textbox', { name: /^Frequency/ }).fill('0');
   await raw.getByRole('button', { name: 'Start' }).click();
   await expect(raw.getByRole('status')).toHaveText(/^Please check: Frequency \(1 … 32,000\)$/);

@@ -281,17 +281,17 @@ static void test_tz() {
 static void test_dose_conversion() {
     using namespace dose;
     const uint32_t spr = 3200;  // 200 full steps × 16
-    CHECK(ul_to_steps(370, kNominalUlPerRev, spr) == 3200);
-    CHECK(ul_to_steps(20, kNominalUlPerRev, spr) == 173);  // 0.02 ml
-    CHECK(steps_to_ul(3200, kNominalUlPerRev, spr) == 370);
-    CHECK(ul_to_steps(1000000, kNominalUlPerRev, spr) == 8648649);
+    CHECK(ul_to_steps(270, kNominalUlPerRev, spr) == 3200);
+    CHECK(ul_to_steps(20, kNominalUlPerRev, spr) == 237);  // 0.02 ml
+    CHECK(steps_to_ul(3200, kNominalUlPerRev, spr) == 270);
+    CHECK(ul_to_steps(1000000, kNominalUlPerRev, spr) == 11851852);
     CHECK(mrev_to_steps(250, spr) == 800);  // ¼ rev
     CHECK(mrev_to_steps(250, 6400) == 1600);
-    CHECK(std::fabs(flow_ml_min(300, kNominalUlPerRev) - 111.0f) < 0.01f);
+    CHECK(std::fabs(flow_ml_min(300, kNominalUlPerRev) - 81.0f) < 0.01f);
     // Calibration: 20 ml target with nominal value, collected 18.5 ml
     const uint32_t steps = ul_to_steps(20000, kNominalUlPerRev, spr);
     auto c = calibrate(steps, spr, 18500);
-    CHECK(c.ok && std::fabs(c.ul_per_rev - 342.25f) < 0.1f);
+    CHECK(c.ok && std::fabs(c.ul_per_rev - 249.75f) < 0.1f);
     CHECK(ul_to_steps(18500, c.ul_per_rev, spr) == steps);
     // Change microsteps: calibration stays valid
     CHECK(ul_to_steps(18500, c.ul_per_rev, 6400) == 2 * steps);

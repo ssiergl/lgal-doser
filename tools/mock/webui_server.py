@@ -19,7 +19,7 @@ ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.abspath(os.path.join(os.pat
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8767
 LANG = {"v": "de"}
 ENG = {"retract_rev": 0.25, "calib_ml": 10.0, "tier_rpm": [100, 200, 300], "prime_max_s": 60, "prime_heartbeat_ms": 4000,
-       "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day", "warn_days": 7, "low_days": 4, "nominal_ml_per_rev": 0.37, "max_rpm": 600}
+       "min_dose_ml": 0.02, "tube_life_h": 1000, "limit_mode": "calendar_day", "warn_days": 7, "low_days": 4, "nominal_ml_per_rev": 0.27, "max_rpm": 600}
 LOCK = threading.Lock()
 NAMES = ["KH", "Calcium", "Magnesium", "", "Spurenelemente"]
 CAP = [2000.0, 2000.0, 1000.0, 0.0, 500.0]

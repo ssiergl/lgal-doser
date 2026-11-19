@@ -16,6 +16,7 @@
 
 #include <cstdint>
 
+#include "doser/dosing_core.h"
 #include "doser/limits.h"
 #include "doser/posix_tz.h"
 
@@ -114,7 +115,7 @@ uint32_t day_total(const PumpSchedule& s, int32_t day);
 // ---------------------------------------------------------------------------
 // Runtime of one scheduled dose (compensate retraction + main move + retraction)
 struct RunParams {
-    float ul_per_rev = 370.0f;
+    float ul_per_rev = dose::kNominalUlPerRev;
     uint16_t rpm = 200;
     uint16_t retract_mrev = 250;
     uint16_t accel_rpm_s = 600;

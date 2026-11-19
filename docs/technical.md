@@ -772,7 +772,7 @@ analyser).
 
 | Topic | Implementation |
 |---|---|
-| Amount → steps | Calibration in µl per motor revolution (independent of the microsteps). Without calibration the nominal value 0.37 ml/rev (≈ 111 ml/min at 300 rpm). |
+| Amount → steps | Calibration in µl per motor revolution (independent of the microsteps). Without calibration the nominal value 0.27 ml/rev (≈ 81 ml/min at 300 rpm; measured with water on board v1.0: 0.256 ml/rev, the nominal value lies a little above it so that an uncalibrated pump rather doses too little). |
 | Sequence | Compensate retract → main run → anti-drip retract. The executed retract is stored safe against power loss. The retract is **off by default** per pump and can be set to "default" (global value) or an own value; when switched off, an open retract is still compensated on the next dose. |
 | Booking | At start the full amount is booked to daily limit, container and total counter and saved; an abort credits the amount not delivered. The container never counts below 0 ml (forgotten refill); the dose still runs. Power cut during the run → the amount stays booked (safe side). |
 | Daily limit | hard per pump; window calendar day or rolling 24 h (engineering). Hour buckets over 26 h, started hours count fully. Without a valid time, pumps with a limit are locked. |
@@ -782,7 +782,7 @@ analyser).
 | Storage | Settings in NVS (`dose`). Run state per pump in the EEPROM as A/B records (sequence number + CRC32, from 0x000), fallback to NVS without EEPROM. |
 
 Engineering defaults (super admin, global; retract additionally per pump): retract "default"
-¼ rev (≈ 0.09 ml), calibration target 10 ml, tiers 100/200/300 rpm (≈ 37/74/111 ml/min),
+¼ rev (≈ 0.07 ml), calibration target 10 ml, tiers 100/200/300 rpm (≈ 27/54/81 ml/min),
 priming max. 60 s / heartbeat 500 ms, smallest dose 0.02 ml, tube life 1000 h, daily limit per
 calendar day. Changes need the engineering unlock (see [Access](#access)).
 

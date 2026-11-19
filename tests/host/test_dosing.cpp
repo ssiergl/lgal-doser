@@ -230,11 +230,11 @@ static void test_calibration() {
     CHECK_STR(dosing::calibrate_apply(p, 500), "measured_out_of_range");
     CHECK(dosing::calibrate_apply(p, 9250) == nullptr);
     s = dosing::status(p);
-    CHECK(!s.calib_pending && std::fabs(s.settings.ul_per_rev - 342.25f) < 0.1f);
+    CHECK(!s.calib_pending && std::fabs(s.settings.ul_per_rev - 249.75f) < 0.1f);
     auto* run = sim::last_event(history::Kind::CalibRun, 1);
     auto* cal = sim::last_event(history::Kind::Calibration, 1);
     CHECK(run && run->target_ul == 10000 && std::strcmp(history::code_str(run->code), "success") == 0);
-    CHECK(cal && cal->target_ul == 10000 && cal->done_ul == 9250 && cal->value >= 342150 && cal->value <= 342350);
+    CHECK(cal && cal->target_ul == 10000 && cal->done_ul == 9250 && cal->value >= 249650 && cal->value <= 249850);
     // next dose uses the new value
     m.moves.clear();
     CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);

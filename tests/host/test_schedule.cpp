@@ -185,7 +185,8 @@ static void test_day_plan() {
 }
 
 static void test_runtime() {
-    RunParams p;  // 370 µl/rev, 200 rpm, ¼ rev retraction, 600 rpm/s
+    RunParams p;  // 200 rpm, ¼ rev retraction, 600 rpm/s
+    p.ul_per_rev = 370;
     CHECK(run_seconds(1000, p) == 4);    // 1.78 s of moves + 2 s margin
     CHECK(run_seconds(100000, p) == 85);  // 270 rev at 200 rpm ≈ 82 s
     p.rpm = 100;
@@ -200,7 +201,10 @@ static void test_runtime() {
 static Validation run_validate(const PumpSchedule (&all)[kPumps], const Locks& l, Conflict* c, int max,
                                uint32_t limit0 = 0) {
     Context ctx;
-    for (auto& r : ctx.run) r.rpm = 100;
+    for (auto& r : ctx.run) {  // the run times below assume 370 µl/rev
+        r.rpm = 100;
+        r.ul_per_rev = 370;
+    }
     ctx.daily_limit_ul[0] = limit0;
     ctx.today = day_num(2026, 11, 6);
     return validate(all, l, ctx, c, max);
