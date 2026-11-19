@@ -181,6 +181,22 @@ the manifest when updating. It rejects an image for a different flash size on up
 (`wrong_variant`). N32R8 is only built, not tested on hardware (ESP-IDF supports flash above
 16 MB only as octal flash, hence the WROOM-2 module).
 
+### Memory
+
+| Memory | Holds |
+|---|---|
+| Internal RAM (~340 KB usable, ~120 KB free in operation) | code that must run during flash writes (step clocks), task stacks, network stack (lwIP, Wi-Fi, W5500 buffers), HTTP and WebSocket connections, sign-in sessions (lost on restart) |
+| PSRAM (8 MB) | log buffer (32 KB, engineering menu), every allocation above 16 KB, all TLS connections (update check, OTA download, MQTT over TLS) |
+| Flash `nvs` | settings, plans, calibration, network and MQTT access, admin password hash and API keys |
+| Flash `fctry` | device secret, board revision, fitting (kept by a factory reset) |
+| Flash `coredump`, `ota_0`/`ota_1` | the last crash; the two firmware slots with the web UI inside |
+| Flash `storage` (LittleFS) | history |
+| EEPROM AT24C32 (RTC module) | run state per pump (two slots with CRC); without EEPROM it goes to NVS |
+
+TLS allocates in PSRAM (`CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC`): the update check alone took up to
+~75 KB of internal RAM, a lasting MQTT TLS connection about 35 KB more. The network stack stays in
+internal RAM: it is faster there, and the W5500 driver hands its buffers to SPI DMA.
+
 ### Release
 
 `tools/release.sh` builds every board (`boards/`) in every variant into `dist/`: per board and

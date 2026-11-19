@@ -23,6 +23,13 @@ CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
 
+# TLS (update check, OTA download, MQTT over TLS) allocates in PSRAM: the update
+# check alone took up to ~75 KB of internal RAM, together with a lasting MQTT TLS
+# connection (~35 KB) little would be left. The network stack (lwIP, Wi-Fi,
+# W5500) stays in internal RAM: faster, and the W5500 driver hands its buffers
+# to SPI DMA. Docs: "Memory" in docs/technical.md.
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
 # OTA: rollback on failed boot (bootloader feature!)
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
