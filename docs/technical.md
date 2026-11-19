@@ -208,8 +208,10 @@ The CI builds the same combinations (matrix in `.github/workflows/ci.yml`: add a
 there).
 
 On GitHub `.github/workflows/release.yml` does this: raise the version in `version.txt`, commit,
-push the tag `v<version>`. The workflow checks that tag and `version.txt` match, builds and
-publishes everything as a release. The images contain no secret (see
+push the tag `v<version>`. The workflow checks that tag and `version.txt` match, builds
+everything and at the same time runs the whole CI (`ci.yml`) on the tagged commit. Only when both
+passed does it publish the release; a failed test leaves neither a release nor a changed beta
+channel behind (a release takes as long as the slowest CI job, about 20 minutes). The images contain no secret (see
 [First start-up](#first-start-up-once-over-usb-before-installation)), so the workflow needs no
 repository secrets. Tags with a pre-release part (`v1.0.0-rc.1`) become pre-releases, which
 `releases/latest` skips. The devices then use
@@ -253,9 +255,9 @@ release candidate or release, with absolute addresses into the release of that v
 is out, leaves it as it is. Devices on the beta channel read
 `https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json`.
 
-`.github/workflows/ci.yml` runs the host tests under both sanitizers, a short fuzz run and the
-build of all three variants on every push to `main` and every pull request (in the
-`espressif/idf:v6.1.1` container).
+`.github/workflows/ci.yml` runs the host tests under both sanitizers, a short fuzz run, the
+checks, the end-to-end tests of the web UI and the build of all three variants (in the
+`espressif/idf:v6.1.1` container) on every push to `main`, every pull request and every release.
 
 ## First start-up (once over USB, before installation)
 

@@ -3,12 +3,14 @@
 
 # Host tests, a short fuzz run, the checks (translations, Python tools, ESLint, cppcheck), the
 # end-to-end tests of the web UI (Playwright against the mock) and the firmware of every board
-# and module variant with its size and SBOM on each push to main and each pull request.
+# and module variant with its size and SBOM on each push to main and each pull request. The release
+# workflow calls it too and publishes only when all of it passed.
 name: CI
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 permissions:
   contents: read
 jobs:
