@@ -57,8 +57,8 @@ let ws = null;
 let nextId = 0;
 let retry = 1000;
 let pinger = null;
-// the device closes the least recently heard connection when its sockets run out: a ping keeps
-// an open tab from being the one that goes, a dead connection stops pinging and goes first
+// the device closes the connection with the oldest traffic when its sockets run out; its own
+// pushes count as traffic, the ping keeps the tab fresh in between
 const PING_MS = 30000;
 const waiting = new Map();
 const listeners = { status: new Set(), state: new Set() };

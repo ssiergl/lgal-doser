@@ -216,6 +216,11 @@ void send_work(void* arg) {
                 if (i >= 0) s_clients[i].failed = true;
             }
             httpd_sess_trigger_close(s_server, fd);
+        } else {
+            // The server's LRU counter only moves when a client sends, so a client that only
+            // listens would be the first one closed when the sockets run out. A delivered push
+            // counts as traffic: browsers loading the UI lose idle connections instead.
+            httpd_sess_update_lru_counter(s_server, fd);
         }
     }
     delete p;
