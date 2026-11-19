@@ -322,7 +322,7 @@ Weboberfläche.
   [Ersteinrichtung](#ersteinrichtung-m4) das erste eigene Admin-Passwort (8–64 Zeichen) und
   setzt ein vergessenes über das Setup-WLAN zurück. Ohne Admin-Passwort führt `/login` zur
   Einrichtung.
-- **Sitzungen** liegen nur im RAM (Cookie `lgal_session`, max. 8, 7 Tage ohne Nutzung bzw.
+- **Sitzungen** liegen nur im RAM (Cookie `lgal_session`, max. 16, 7 Tage ohne Nutzung bzw.
   30 Tage absolut). Nach Neustart oder OTA neu anmelden. Passwort ändern meldet alle
   anderen Browser ab.
 - **API-Keys** (max. 4) für App, Home Assistant und Skripte, Header `X-API-Key: lgal_…` oder
