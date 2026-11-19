@@ -185,6 +185,23 @@ Update aus dem Manifest die passende Datei. Ein Image für eine andere Flash-Gr�
 es beim Upload ab (`wrong_variant`). N32R8 ist nur gebaut, nicht auf Hardware getestet
 (Flash über 16 MB unterstützt ESP-IDF nur als Octal-Flash, daher das WROOM-2-Modul).
 
+### Speicher
+
+| Speicher | Enthält |
+|---|---|
+| Interner RAM (~340 KB nutzbar, im Betrieb ~120 KB frei) | Code, der während Flash-Schreibvorgängen laufen muss (Schrittakte), Task-Stacks, Netzwerkstack (lwIP, WLAN, W5500-Puffer), HTTP- und WebSocket-Verbindungen, Anmeldesitzungen (nach einem Neustart weg) |
+| PSRAM (8 MB) | Log-Puffer (32 KB, Engineering-Menü), jede Anforderung über 16 KB, alle TLS-Verbindungen (Update-Prüfung, OTA-Download, MQTT über TLS) |
+| Flash `nvs` | Einstellungen, Pläne, Kalibrierung, Netzwerk- und MQTT-Zugang, Hash des Admin-Passworts und API-Keys |
+| Flash `fctry` | Geräte-Secret, Platinenrevision, Bestückung (bleibt beim Werksreset erhalten) |
+| Flash `coredump`, `ota_0`/`ota_1` | der letzte Absturz; die zwei Firmware-Slots mit der Weboberfläche darin |
+| Flash `storage` (LittleFS) | Historie |
+| EEPROM AT24C32 (RTC-Modul) | Laufzustand je Pumpe (zwei Slots mit CRC); ohne EEPROM landet er im NVS |
+
+TLS belegt seinen Speicher im PSRAM (`CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC`): Die Update-Prüfung
+allein brauchte bis zu ~75 KB internen RAM, eine dauerhafte MQTT-TLS-Verbindung etwa 35 KB mehr.
+Der Netzwerkstack bleibt im internen RAM: Er ist dort schneller, und der W5500-Treiber gibt seine
+Puffer direkt an die SPI-DMA.
+
 ### Release
 
 `tools/release.sh` baut jedes Board (`boards/`) in jeder Variante nach `dist/`: je Board und
