@@ -315,7 +315,7 @@ the target right away; password, API keys and engineering live in the web UI.
 - **Device password** (rating plate): it never signs in. It only sets the first own admin
   password (8–64 characters) in step 2 of the [initial setup](#initial-setup-m4) and resets a
   forgotten one through the setup Wi-Fi. Without an admin password `/login` leads to the setup.
-- **Sessions** live in RAM only (cookie `lgal_session`, max. 8, 7 days without use or 30 days
+- **Sessions** live in RAM only (cookie `lgal_session`, max. 16, 7 days without use or 30 days
   absolute). Sign in again after a restart or OTA. Changing the password signs out all other
   browsers.
 - **API keys** (max. 4) for apps, Home Assistant and scripts, header `X-API-Key: lgal_…` or

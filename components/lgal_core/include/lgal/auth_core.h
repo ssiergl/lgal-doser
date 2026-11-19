@@ -64,7 +64,7 @@ void encode_token(const uint8_t random[kTokenRandom], char out[kTokenChars + 1])
 
 // ---------------------------------------------------------------------------
 // Sessions
-constexpr int kMaxSessions = 8;
+constexpr int kMaxSessions = 16;                  // more sign-ins push out the least recently used
 constexpr int64_t kSessionIdle = 7 * 86400;       // s without request
 constexpr int64_t kSessionMax = 30 * 86400;       // s after login
 constexpr int64_t kEngineeringIdle = 15 * 60;     // s without engineering request
