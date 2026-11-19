@@ -648,6 +648,7 @@ the sign-in, setup and `/recovery` pages and in the settings of the web UI.
 | GET | `/` | web UI (M5); in factory state redirect to `/setup` |
 | GET | `/recovery` | maintenance page (emergency, in the firmware image) |
 | GET | `/ui/…` | files of the web UI (without sign-in) |
+| GET | `/favicon.ico` | redirect to `/ui/icon.svg` (browsers ask for it on their own) |
 | GET | `/login` | sign-in, forgotten password (setup Wi-Fi), first own password |
 | GET | `/api/v1/net/status` | active interface, LAN, Wi-Fi (state, RSSI, failure reason), setup Wi-Fi, `fallback_in_s` |
 | GET / PUT | `/api/v1/net/settings` | settings (JSON, see [Network](#network-m4)); PUT takes partial documents |

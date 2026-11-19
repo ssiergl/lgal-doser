@@ -450,7 +450,7 @@ class H(BaseHTTPRequestHandler):
             if n: self.rfile.read(n)
             self.send(403, {"error": {"code": "forbidden_origin", "message": "Changes only from the device's own pages"}})
             return True
-        if sys_mock.via(self) or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")): return False
+        if sys_mock.via(self) or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")) or p == "/favicon.ico": return False
         if p == "/" and not sys_mock.SETUP["completed"]: return False  # factory state: redirect to /setup first
         n = int(self.headers.get("Content-Length", 0) or 0)
         if n: self.rfile.read(n)
@@ -478,6 +478,8 @@ class H(BaseHTTPRequestHandler):
         if p == "/" and not sys_mock.SETUP["completed"]:  # factory state: the start page is the setup
             self.send_response(302); self.send_header("Location", "/setup"); self.send_header("Content-Length", "0"); self.end_headers(); return
         if p == "/": return self.send(200, open(ROOT + "/components/webui/www/index.html", "rb").read(), "text/html; charset=utf-8")
+        if p == "/favicon.ico":  # as webui.cpp: browsers ask for it on their own
+            self.send_response(301); self.send_header("Location", "/ui/icon.svg"); self.send_header("Content-Length", "0"); self.end_headers(); return
         if p in ("/ui/licenses/gpl-3.0.txt", "/ui/licenses/third-party.txt"):
             return self.send(200, open(ROOT + ("/LICENSE" if "gpl" in p else "/THIRD-PARTY-NOTICES.txt"), "rb").read(), "text/plain; charset=utf-8")
         if p == "/ui/logo.svg":  # from the brand submodule, as in the firmware

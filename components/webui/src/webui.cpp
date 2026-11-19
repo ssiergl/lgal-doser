@@ -97,6 +97,14 @@ esp_err_t get_asset(httpd_req_t* req) {
     return send_file(req, *f);
 }
 
+// Some browsers ask for /favicon.ico on their own (Safari, tabs restored after
+// a network change), although every page names /ui/icon.svg
+esp_err_t get_favicon(httpd_req_t* req) {
+    httpd_resp_set_status(req, "301 Moved Permanently");
+    httpd_resp_set_hdr(req, "Location", "/ui/icon.svg");
+    return httpd_resp_send(req, nullptr, 0);
+}
+
 // "/" after the setup check and login (sysapi)
 esp_err_t send_home(httpd_req_t* req) {
     const File* f = find("index.html", 10);
@@ -112,6 +120,7 @@ esp_err_t register_handlers(httpd_handle_t server) {
     }
     ESP_LOGI(TAG, "%d files, %u bytes", s_count, unsigned(webui_bin_end - webui_bin_start));
     http::route(server, "/ui/*", HTTP_GET, get_asset);
+    http::route(server, "/favicon.ico", HTTP_GET, get_favicon);
     lgal::sysapi::set_home_page(send_home);
     return ESP_OK;
 }
