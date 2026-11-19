@@ -214,7 +214,10 @@ neues Board dort ergänzen).
 
 Auf GitHub macht das `.github/workflows/release.yml`: Version in `version.txt` erhöhen,
 committen, Tag `v<Version>` pushen. Der Workflow prüft, dass Tag und `version.txt`
-übereinstimmen, baut und veröffentlicht alles als Release. Die Images enthalten kein
+übereinstimmen, baut alles und lässt gleichzeitig die gesamte CI (`ci.yml`) auf dem
+getaggten Commit laufen. Erst wenn beides grün ist, veröffentlicht er das Release; ein
+fehlgeschlagener Test hinterlässt weder ein Release noch einen geänderten Beta-Kanal (ein
+Release dauert so lange wie der langsamste CI-Job, etwa 20 Minuten). Die Images enthalten kein
 Geheimnis (siehe [Erstinbetriebnahme](#erstinbetriebnahme-einmalig-per-usb-vor-dem-einbau)),
 der Workflow braucht deshalb keine Repository-Secrets. Tags mit
 Vorabversion (`v1.0.0-rc.1`) werden Vorab-Releases, die `releases/latest` überspringt.
@@ -260,9 +263,10 @@ dieser Version (`tools/channel_manifest.py`). Ein älteres Release, z. B. ein Ho
 neuere Vorabversion draußen ist, lässt es unverändert. Geräte im Beta-Kanal lesen
 `https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json`.
 
-`.github/workflows/ci.yml` führt bei jedem Push auf `main` und jedem Pull Request die
-Host-Tests unter beiden Sanitizern, einen kurzen Fuzz-Lauf und den Build aller drei
-Varianten aus (im Container `espressif/idf:v6.1.1`).
+`.github/workflows/ci.yml` führt bei jedem Push auf `main`, jedem Pull Request und jedem
+Release die Host-Tests unter beiden Sanitizern, einen kurzen Fuzz-Lauf, die Prüfungen, die
+End-to-End-Tests der Weboberfläche und den Build aller drei Varianten aus (im Container
+`espressif/idf:v6.1.1`).
 
 ## Erstinbetriebnahme (einmalig per USB, vor dem Einbau)
 
