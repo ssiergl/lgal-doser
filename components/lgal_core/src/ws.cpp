@@ -7,6 +7,8 @@
 #include <cstring>
 #include <string>
 
+#include <sys/socket.h>
+
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -22,6 +24,10 @@ namespace lgal::ws {
 
 namespace {
 constexpr const char* TAG = "ws";
+// Pushes run in the HTTP server task: a client that stopped reading (phone locked, VPN gone)
+// would block every request for the server's send_wait_timeout (15 s) once its buffer is full.
+// A live client takes a status frame within milliseconds, also over a VPN.
+constexpr int kSendTimeoutS = 2;
 constexpr int kMaxTypes = 8;
 constexpr int kMaxCloseHandlers = 4;
 constexpr int kTokens = 32;
@@ -99,6 +105,8 @@ esp_err_t pre_handshake(httpd_req_t* req) {
         }
         ESP_LOGI(TAG, "Client %d connected (fd %d)", slot, fd);
     }
+    const timeval tv{kSendTimeoutS, 0};
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) != 0) ESP_LOGW(TAG, "Send timeout of fd %d not set", fd);
     notify();
     return ESP_OK;
 }
@@ -200,7 +208,7 @@ void send_work(void* arg) {
         if (fd < 0 || httpd_ws_get_fd_info(s_server, fd) != HTTPD_WS_CLIENT_WEBSOCKET) continue;
         if (httpd_ws_send_frame_async(s_server, fd, &f) != ESP_OK) {
             // A client that stopped reading (tab in the background, phone asleep) blocks each send
-            // for send_wait_timeout. Mark it so that pushes queued before the close skip it.
+            // for kSendTimeoutS. Mark it so that pushes queued before the close skip it.
             ESP_LOGW(TAG, "Send to fd %d failed, closing", fd);
             {
                 Guard g;
