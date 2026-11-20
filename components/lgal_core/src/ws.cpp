@@ -19,6 +19,11 @@
 #include "lgal/settings.h"
 #include "lgal/timesync.h"
 #include "lgal/ws_core.h"
+#include "sdkconfig.h"
+
+#if !CONFIG_LWIP_SO_LINGER
+#error "CONFIG_LWIP_SO_LINGER is needed to reset WebSocket clients that stopped reading"
+#endif
 
 namespace lgal::ws {
 
@@ -214,6 +219,13 @@ void send_work(void* arg) {
                 Guard g;
                 const int i = find_fd(fd);
                 if (i >= 0) s_clients[i].failed = true;
+            }
+            // Reset instead of a graceful close: lwIP would keep the unsent frames (up to a
+            // send buffer, ~6 KB) and retransmit them for many minutes to a client that sleeps.
+            // With linger 0 it only resets when data is left; otherwise the close is normal.
+            const linger lg{1, 0};
+            if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &lg, sizeof(lg)) != 0) {
+                ESP_LOGW(TAG, "Reset of fd %d not set", fd);
             }
             httpd_sess_trigger_close(s_server, fd);
         } else {

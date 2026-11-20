@@ -62,6 +62,9 @@ CONFIG_LWIP_MAX_SOCKETS=25
 # or OTA download. With 16 lwIP refused new connections before the server reached
 # its own limit, so the LRU purge never ran (budget see lgal_core/src/http.cpp)
 CONFIG_LWIP_MAX_ACTIVE_TCP=24
+# SO_LINGER: a WebSocket client that stopped reading is reset instead of closed
+# gracefully, so its unsent frames do not hold RAM for minutes (lgal_core/src/ws.cpp)
+CONFIG_LWIP_SO_LINGER=y
 
 # HTTP server
 CONFIG_HTTPD_WS_SUPPORT=y
