@@ -685,6 +685,7 @@ der Weboberfläche.
 | GET | `/recovery` | Wartungsseite (Notfall, im Firmware-Image) |
 | GET | `/ui/…` | Dateien der Weboberfläche (ohne Anmeldung) |
 | GET | `/favicon.ico` | Weiterleitung auf `/ui/icon.svg` (Browser fragen von sich aus danach) |
+| GET | `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` | Icon für den Home-Bildschirm (wie `/ui/apple-touch-icon.png`, das jede Seite nennt; Safari fragt von sich aus nach diesen Pfaden) |
 | GET | `/login` | Anmeldung, Passwort vergessen (Setup-WLAN), erstes eigenes Passwort |
 | GET | `/api/v1/net/status` | aktive Schnittstelle, LAN, WLAN (Zustand, RSSI, Fehlergrund), Setup-WLAN, `fallback_in_s` |
 | GET / PUT | `/api/v1/net/settings` | Einstellungen (JSON, siehe [Netzwerk](#netzwerk-m4)); PUT nimmt Teil-Dokumente |

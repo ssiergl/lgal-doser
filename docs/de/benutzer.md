@@ -85,8 +85,9 @@ Ein neues Gerät öffnet dafür ein eigenes WLAN, das Setup-WLAN (LED orange pul
    Setup-WLAN ab. Handy oder Laptop wieder mit dem Heimnetz verbinden und die neue Adresse
    öffnen.
 
-Tipp: Die Adresse als Lesezeichen speichern. Funktioniert `….local` nicht (manche
-Android-Geräte), die IP-Adresse verwenden; sie steht auch in der Geräteliste des Routers.
+Tipp: Die Adresse als Lesezeichen speichern oder auf den Home-Bildschirm des Handys legen (dort
+erscheint sie mit dem Tropfen-Icon). Funktioniert `….local` nicht (manche Android-Geräte), die
+IP-Adresse verwenden; sie steht auch in der Geräteliste des Routers.
 
 ## 4. Anmelden
 
