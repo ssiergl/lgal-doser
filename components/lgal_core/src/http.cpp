@@ -33,10 +33,17 @@ httpd_handle_t s_server = nullptr;
 // of its own (listen, control), the rest of the firmware up to 3 (captive DNS,
 // MQTT, OTA download). The server must reach its own limit before lwIP runs out
 // of sockets, else accept() fails with ENFILE and the LRU purge never kicks in.
+// The same holds for lwIP's TCP connections (CONFIG_LWIP_MAX_ACTIVE_TCP): when
+// they run out, new connections fail with ECONNABORTED (accept error 113) until
+// a client closes one. Besides the server's, MQTT and the update check or OTA
+// download hold one each; connections in TIME-WAIT give way to new ones.
 constexpr int kMaxOpenSockets = 20;
 constexpr int kOtherSockets = 3;
+constexpr int kOtherTcp = 2;
 static_assert(kMaxOpenSockets + 2 + kOtherSockets <= CONFIG_LWIP_MAX_SOCKETS,
               "CONFIG_LWIP_MAX_SOCKETS too small for the HTTP server");
+static_assert(kMaxOpenSockets + kOtherTcp <= CONFIG_LWIP_MAX_ACTIVE_TCP,
+              "CONFIG_LWIP_MAX_ACTIVE_TCP too small for the HTTP server");
 
 // Browsers asking for a page get a redirect to the login page, API clients JSON.
 // Chrome's Accept header for a page is 135 characters long. A longer header is
