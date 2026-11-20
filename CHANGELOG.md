@@ -65,6 +65,7 @@ and on board v1.0.
 - Overview, pump detail, schedule editor with 24 h bar, history with charts and event list,
   settings, maintenance, engineering menu, coral reef in the background.
 - Live values over WebSocket.
+- Drop icon in the browser tab and on the home screen of phones.
 - LG Aquatic Life logo: large on the sign-in and setup pages, dimmed in the background of the
   web UI.
 - Shared design of the pages (colours, reef and bubbles, building blocks, flags) taken from the

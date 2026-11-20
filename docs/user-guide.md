@@ -80,8 +80,9 @@ A new device opens its own Wi-Fi for this, the setup Wi-Fi (LED pulsing orange).
    `http://lgal-doser-xxxx.local/`, and the IP address. 20 seconds later the setup Wi-Fi switches
    off. Connect phone or laptop to the home network again and open the new address.
 
-Tip: bookmark the address. If `….local` does not work (some Android devices), use the IP
-address; it is also listed in the router's device list.
+Tip: bookmark the address, or add it to the home screen of your phone (it gets the drop icon
+there). If `….local` does not work (some Android devices), use the IP address; it is also listed
+in the router's device list.
 
 ## 4. Signing in
 

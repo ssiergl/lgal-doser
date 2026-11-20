@@ -450,7 +450,7 @@ class H(BaseHTTPRequestHandler):
             if n: self.rfile.read(n)
             self.send(403, {"error": {"code": "forbidden_origin", "message": "Changes only from the device's own pages"}})
             return True
-        if sys_mock.via(self) or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")) or p == "/favicon.ico": return False
+        if sys_mock.via(self) or (method, p) in OPEN or p.startswith(("/ui/", "/mock/")) or p in ("/favicon.ico", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"): return False
         if p == "/" and not sys_mock.SETUP["completed"]: return False  # factory state: redirect to /setup first
         n = int(self.headers.get("Content-Length", 0) or 0)
         if n: self.rfile.read(n)
@@ -480,6 +480,8 @@ class H(BaseHTTPRequestHandler):
         if p == "/": return self.send(200, open(ROOT + "/components/webui/www/index.html", "rb").read(), "text/html; charset=utf-8")
         if p == "/favicon.ico":  # as webui.cpp: browsers ask for it on their own
             self.send_response(301); self.send_header("Location", "/ui/icon.svg"); self.send_header("Content-Length", "0"); self.end_headers(); return
+        if p in ("/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"):  # as webui.cpp: Safari asks for them on its own
+            return self.send(200, open(ROOT + "/components/webui/www/apple-touch-icon.png", "rb").read(), "image/png")
         if p in ("/ui/licenses/gpl-3.0.txt", "/ui/licenses/third-party.txt"):
             return self.send(200, open(ROOT + ("/LICENSE" if "gpl" in p else "/THIRD-PARTY-NOTICES.txt"), "rb").read(), "text/plain; charset=utf-8")
         if p == "/ui/logo.svg":  # from the brand submodule, as in the firmware
@@ -490,7 +492,7 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, open(ROOT + "/brand/web/reef.js", "rb").read(), "text/javascript")
         if p.startswith("/ui/"):
             ext = p.rsplit(".", 1)[-1]
-            ct = {"js": "text/javascript", "mjs": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "html": "text/html", "json": "application/json"}.get(ext, "application/octet-stream")
+            ct = {"js": "text/javascript", "mjs": "text/javascript", "css": "text/css", "svg": "image/svg+xml", "html": "text/html", "json": "application/json", "png": "image/png"}.get(ext, "application/octet-stream")
             try: return self.send(200, open(ROOT + "/components/webui/www/" + p[4:], "rb").read(), ct + "; charset=utf-8")
             except OSError: return self.send(404, {"error": {"code": "not_found", "message": "x"}})
         if p == "/api/v1/pumps/schedule":

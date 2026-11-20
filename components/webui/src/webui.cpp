@@ -105,6 +105,14 @@ esp_err_t get_favicon(httpd_req_t* req) {
     return httpd_resp_send(req, nullptr, 0);
 }
 
+// Icon for the home screen of phones (180 x 180 px, the drop of icon.svg without
+// rounded corners: iOS rounds them itself). Every page names it; Safari also asks
+// for these two paths on its own.
+esp_err_t get_touch_icon(httpd_req_t* req) {
+    const File* f = find("apple-touch-icon.png", 20);
+    return f ? send_file(req, *f) : http::send_error(req, "404 Not Found", "not_found", "No such file");
+}
+
 // "/" after the setup check and login (sysapi)
 esp_err_t send_home(httpd_req_t* req) {
     const File* f = find("index.html", 10);
@@ -121,6 +129,8 @@ esp_err_t register_handlers(httpd_handle_t server) {
     ESP_LOGI(TAG, "%d files, %u bytes", s_count, unsigned(webui_bin_end - webui_bin_start));
     http::route(server, "/ui/*", HTTP_GET, get_asset);
     http::route(server, "/favicon.ico", HTTP_GET, get_favicon);
+    http::route(server, "/apple-touch-icon.png", HTTP_GET, get_touch_icon);
+    http::route(server, "/apple-touch-icon-precomposed.png", HTTP_GET, get_touch_icon);
     lgal::sysapi::set_home_page(send_home);
     return ESP_OK;
 }
