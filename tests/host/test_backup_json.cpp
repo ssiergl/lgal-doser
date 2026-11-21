@@ -167,6 +167,10 @@ static void test_round_trip() {
     CHECK(old.find("keep_days") == std::string::npos);
     static bk::Data out2;
     CHECK(parse_str(old, base, &out2, &err, &r) && out2.history_keep_days == 0);
+    // files from before the minimum of 30 days: a shorter retention is raised to 30
+    old = doc;
+    replace(&old, "\"keep_days\":30", "\"keep_days\":7");
+    CHECK(parse_str(old, base, &out2, &err, &r) && out2.history_keep_days == 30);
     // files from before the channel population: unchanged (0)
     old = doc;
     replace(&old, ",\"fitted\":[1,2,3,4]", "");

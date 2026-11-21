@@ -59,7 +59,7 @@ add({
 });
 
 const kRanges = [7, 14, 30];
-const kMaxSpan = 90;  // the longest period and how far back it can start (history keeps at most 90 days)
+const kMaxKeep = 90;  // the longest retention: how far back a period can start until the device answered
 const kKinds = ['dose', 'skip', 'boost', 'prime', 'calib_run', 'container', 'calibration', 'tube', 'mode', 'schedule',
   'settings', 'locks', 'alarm', 'alarm_end', 'system'];
 const kPage = 50;
@@ -84,12 +84,12 @@ const query = f => Object.entries(f).filter(([, v]) => v !== '' && v !== 0).map(
 const periodQuery = p => (typeof p === 'object' ? { from_date: p.from, to_date: p.to } : { days: p });
 const periodKey = p => (typeof p === 'object' ? p.from + '/' + p.to : String(p));
 
-// Period of a card: 7, 14 or 30 days up to today, or "Period": any days within the last 90,
-// with two date fields below, as wide as the buttons together. "Period" starts with the days
-// shown so far. today: the device's day, if known.
-function Period({ value, onChange, today }) {
+// Period of a card: 7, 14 or 30 days up to today, or "Period": any days the history still
+// keeps (keep: retention in days, 30 to 90), with two date fields below, as wide as the buttons
+// together. "Period" starts with the days shown so far. today: the device's day, if known.
+function Period({ value, onChange, today, keep }) {
   const custom = typeof value === 'object';
-  const end = today || browserToday(), min = addDays(end, 1 - kMaxSpan);
+  const end = today || browserToday(), min = addDays(end, 1 - (keep || kMaxKeep));
   const clamp = v => (v < min ? min : v > end ? end : v);
   const pick = v => onChange(v !== 'custom' ? v : custom ? value : { from: addDays(end, 1 - value), to: end });
   // a date typed in part is empty: wait for the whole date
@@ -206,7 +206,7 @@ function DayChart({ n, name, days, today, kind }) {
   </div>`;
 }
 
-function DailyCard() {
+function DailyCard({ keep }) {
   const s = useStore();
   const [range, setRange] = useState(14);
   const [kind, setKind] = useState(load('lgal.hichart', 'bar') === 'line' ? 'line' : 'bar');
@@ -223,7 +223,7 @@ function DailyCard() {
   const head = html`<div class="row between hc-top"><h2>${t('hi.daily')}</h2>
     <div class="row hc-ctl">
       <${Seg} value=${kind} onChange=${pickKind} options=${[['line', t('hi.line')], ['bar', t('hi.bar')]]}/>
-      <${Period} value=${range} onChange=${setRange} today=${D && D.today}/>
+      <${Period} value=${range} onChange=${setRange} today=${D && D.today} keep=${keep}/>
     </div></div>`;
   if (!D) return html`<section class="card">${head}<p class="mut">…</p></section>`;
   if (D.error) return html`<section class="card">${head}<p class="msg err">${errText(D.error)}</p></section>`;
@@ -280,7 +280,7 @@ function codeCls(e) {
   return kBad.includes(e.code) ? 'err' : 'mut';
 }
 
-function EventsCard({ pump }) {
+function EventsCard({ pump, keep }) {
   const s = useStore();
   const [f, setF] = useState({ pump: pump || 0, kind: '', period: 7 });
   const q = { pump: f.pump, kind: f.kind, ...periodQuery(f.period) };
@@ -315,7 +315,7 @@ function EventsCard({ pump }) {
         <option value="">${t('hi.all')}</option>
         ${kKinds.map(k => html`<option value=${k}>${t('hk.' + k)}</option>`)}
       </select>
-      <${Period} value=${f.period} onChange=${v => set({ period: v })}/>
+      <${Period} value=${f.period} onChange=${v => set({ period: v })} keep=${keep}/>
     </div>
     ${err && html`<p class="msg err">${errText(err)}</p>`}
     ${!list ? html`<p class="mut">…</p>` : !list.length ? html`<p class="mut">${t('hi.none')}</p>` : html`
@@ -332,9 +332,12 @@ function EventsCard({ pump }) {
 
 export function HistoryView({ pump }) {
   const prefs = usePrefs();
+  // retention (engineering area): how far back a period can start
+  const [keep, setKeep] = useState(0);
+  useEffect(() => { api('GET', '/api/v1/history/settings').then(j => setKeep(j.keep_days)).catch(() => {}); }, []);
   return html`<div class="page-head"><h1>${t('hi.title')}</h1></div>
     <div class="grid">
-      <${DailyCard}/>
-      ${prefs.mode === 'pro' && html`<${EventsCard} pump=${pump}/>`}
+      <${DailyCard} keep=${keep}/>
+      ${prefs.mode === 'pro' && html`<${EventsCard} pump=${pump} keep=${keep}/>`}
     </div>`;
 }

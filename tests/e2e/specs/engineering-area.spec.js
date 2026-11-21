@@ -203,9 +203,9 @@ test('limits, container thresholds and history: checked and saved', async ({ pag
 
   // shortening the history deletes days, so only the check is tried here
   const hist = card(page, 'History');
-  await hist.getByRole('textbox', { name: /^Keep events for/ }).fill('0');
+  await hist.getByRole('textbox', { name: /^Keep events for/ }).fill('29');
   await hist.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(hist.getByRole('status')).toHaveText('Please check: Keep events for (1 … 90)');
+  await expect(hist.getByRole('status')).toHaveText('Please check: Keep events for (30 … 90)');
 });
 
 test('saving one card keeps what is typed in another', async ({ page, cleanup }) => {

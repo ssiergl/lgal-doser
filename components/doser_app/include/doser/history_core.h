@@ -16,8 +16,9 @@
 namespace doser::history {
 
 // Retention in days (spec 9: configurable, default 90). The daily view and
-// the queries cover at most kKeepDaysMax days.
-constexpr uint16_t kKeepDaysMin = 1;
+// the queries cover at most kKeepDaysMax days. A shorter time than
+// kKeepDaysMin (allowed up to 0.1.0-rc.2) is raised to it when loaded.
+constexpr uint16_t kKeepDaysMin = 30;
 constexpr uint16_t kKeepDaysMax = 90;
 constexpr uint16_t kKeepDaysDefault = 90;
 

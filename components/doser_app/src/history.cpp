@@ -80,7 +80,8 @@ esp_err_t init() {
     nvs_handle_t h;
     if (nvs_open(kNs, NVS_READONLY, &h) == ESP_OK) {
         uint16_t v = 0;
-        if (nvs_get_u16(h, kKeepKey, &v) == ESP_OK && v >= kKeepDaysMin && v <= kKeepDaysMax) s_keep = v;
+        if (nvs_get_u16(h, kKeepKey, &v) == ESP_OK && v >= 1 && v <= kKeepDaysMax)
+            s_keep = v < kKeepDaysMin ? kKeepDaysMin : v;  // shorter times were allowed before
         nvs_close(h);
     }
     s_mx = xSemaphoreCreateMutex();

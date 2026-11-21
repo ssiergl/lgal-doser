@@ -224,7 +224,7 @@ esp_err_t post_settings(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     int64_t v = 0;
     if (!http::query_int(req, "keep_days", &v) || v < history::kKeepDaysMin || v > history::kKeepDaysMax)
-        return http::send_error(req, "400 Bad Request", "invalid_param", "keep_days=1..90");
+        return http::send_error(req, "400 Bad Request", "invalid_param", "keep_days=30..90");
     if (history::set_keep_days(static_cast<uint16_t>(v)) != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", "Could not save");
     note_system(req, "engineering");

@@ -19,7 +19,7 @@
 //                                 "days" empty without a valid clock
 //   DELETE /api/v1/history        delete everything (engineering area)
 //   GET    /api/v1/history/settings  {"keep_days","min_days","max_days"}
-//   POST   /api/v1/history/settings  ?keep_days=1..90 retention (engineering area;
+//   POST   /api/v1/history/settings  ?keep_days=30..90 retention (engineering area;
 //                                 a shorter value deletes older days within a minute)
 //
 // kinds: dose, prime, calib_run, skip, container, calibration, tube, alarm

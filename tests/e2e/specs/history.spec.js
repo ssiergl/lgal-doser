@@ -29,7 +29,9 @@ test('history: period and chart type', async ({ page }) => {
 // "YYYY-MM-DD" of the local day k days from today (browser and mock share the clock)
 const day = k => { const d = new Date(); d.setDate(d.getDate() + k); return d.toLocaleDateString('sv-SE'); };
 
-test('history: a period of its own, at most the last 90 days', async ({ page }) => {
+test('history: a period of its own, back as far as the history is kept', async ({ page }) => {
+  // kept for 45 days (engineering area, 30 … 90)
+  await page.route('**/api/v1/history/settings', route => route.fulfill({ json: { keep_days: 45, min_days: 30, max_days: 90 } }));
   await open(page, '#/history');
   const from = page.getByLabel('From'), to = page.getByLabel('To');
   await expect(from).toHaveCount(0);
@@ -45,12 +47,13 @@ test('history: a period of its own, at most the last 90 days', async ({ page }) 
   await to.fill(day(-31));
   await from.fill(day(-40));
   expect((await (await r).json()).days.map(d => d.date)).toEqual([...Array(10)].map((_, k) => day(k - 40)));
-  // a start before the first of the last 90 days moves up to it; a start after the end
-  // takes the end along
-  r = asked(`from_date=${day(-89)}&to_date=${day(-31)}`);
+  // a start before the first day still kept moves up to it; a start after the end takes
+  // the end along
+  await expect(from).toHaveAttribute('min', day(-44));
+  r = asked(`from_date=${day(-44)}&to_date=${day(-31)}`);
   await from.fill(day(-200));
   await r;
-  await expect(from).toHaveValue(day(-89));
+  await expect(from).toHaveValue(day(-44));
   await from.fill(day(-5));
   await expect(to).toHaveValue(day(-5));
 

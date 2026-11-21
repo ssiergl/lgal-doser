@@ -5,6 +5,7 @@
 import random, time
 
 KEEP = 90  # maximum retention
+KEEP_MIN = 30  # minimum retention
 SET = {"keep": KEEP}
 EV = []  # newest last
 ON_CLEAR = []  # callbacks of the other modules (amounts of today), like the firmware
@@ -180,11 +181,11 @@ def route(h, method, path, q, eng_ok):
             if not eng_ok(): _err(h, "engineering_locked", status=403); return True
             try: v = int(q.get("keep_days", ""))
             except ValueError: v = 0
-            if not 1 <= v <= KEEP: _err(h, "invalid_param", "keep_days=1..90"); return True
+            if not KEEP_MIN <= v <= KEEP: _err(h, "invalid_param", "keep_days=30..90"); return True
             SET["keep"] = v
             cut = time.time() - (v + 1) * 86400
             EV[:] = [e for e in EV if e["utc"] >= cut]
-        h.send(200, {"keep_days": SET["keep"], "min_days": 1, "max_days": KEEP}); return True
+        h.send(200, {"keep_days": SET["keep"], "min_days": KEEP_MIN, "max_days": KEEP}); return True
     if path == "/api/v1/history" and method == "DELETE":
         if not eng_ok(): _err(h, "engineering_locked", status=403); return True
         EV.clear()

@@ -347,9 +347,10 @@ bool parse_engineering(const JsonValue& v, Data* d, Error* err) {
     }
     d->history_keep_days = 0;
     if (v["history"].valid()) {
-        if (!get_int(v["history"]["keep_days"], history::kKeepDaysMin, history::kKeepDaysMax, &x))
+        // a backup from before the minimum of 30 days may hold a shorter time: raised to it
+        if (!get_int(v["history"]["keep_days"], 1, history::kKeepDaysMax, &x))
             return fail(err, "invalid_param", "engineering.history.keep_days");
-        d->history_keep_days = static_cast<uint16_t>(x);
+        d->history_keep_days = static_cast<uint16_t>(x < history::kKeepDaysMin ? history::kKeepDaysMin : x);
     }
     return true;
 }
