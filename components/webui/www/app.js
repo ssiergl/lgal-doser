@@ -8,6 +8,7 @@ import { html } from './lib/html.js';
 import { add, initLang, num, ready, t, useLang } from './lib/i18n.js';
 import { setMode, usePrefs } from './lib/prefs.js';
 import { drawReef } from './lib/reef.js';
+import { onRoute } from './lib/route.js';
 import { start, useStore } from './lib/store.js';
 import { DialogHost } from './lib/ui.js';
 import { Dashboard } from './views/dashboard.js';
@@ -43,11 +44,7 @@ function parse() {
 
 function useRoute() {
   const [r, set] = useState(parse());
-  useEffect(() => {
-    const f = () => { set(parse()); window.scrollTo(0, 0); };
-    addEventListener('hashchange', f);
-    return () => removeEventListener('hashchange', f);
-  }, []);
+  useEffect(() => onRoute(() => { set(parse()); window.scrollTo(0, 0); }), []);
   return r;
 }
 

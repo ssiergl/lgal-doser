@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
 import { add, errText, t } from '../lib/i18n.js';
+import { navigate } from '../lib/route.js';
 import { useMsg } from '../lib/ui.js';
 
 add({
@@ -68,7 +69,7 @@ export function EngUnlock({ onDone, autoFocus }) {
 
 export function EngDialog({ onClose }) {
   const [S, setS] = useState(null);
-  const open = () => { location.hash = '#/engineering'; onClose(); };
+  const open = () => { navigate('#/engineering'); onClose(); };
   useEffect(() => {
     api('GET', '/api/v1/auth/status')
       .then(j => { if (j.engineering) open(); else setS(j); })
