@@ -109,6 +109,12 @@ esp_err_t start() {
     cfg.recv_wait_timeout = 15;
     cfg.send_wait_timeout = 15;
     cfg.close_fn = on_close;
+    // A browser that resets its connections (Safari on the iPhone when the screen locks or
+    // the app goes to the background: up to 6 HTTP connections and the WebSocket at once)
+    // makes the server warn for every socket. That is normal, the sockets are closed and
+    // freed; "ws: Client n disconnected" still shows the live channel going away.
+    esp_log_level_set("httpd_txrx", ESP_LOG_ERROR);
+    esp_log_level_set("httpd_ws", ESP_LOG_ERROR);
     esp_err_t err = httpd_start(&s_server, &cfg);
     if (err == ESP_OK) ESP_LOGI(TAG, "HTTP server running on port 80");
     return err;
