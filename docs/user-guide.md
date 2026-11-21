@@ -236,8 +236,8 @@ full).
 
 ### History
 
-**History** shows the dosed amount per day and pump for 7 to 90 days (14 by default), as
-bars or line. Tapping a day names amount, number of doses and skipped doses. In pro there is
+**History** shows the dosed amount per day and pump for 7, 14 (default) or 30 days, or with
+**Period** for any days within the last 90 (from – to), as bars or line. Tapping a day names amount, number of doses and skipped doses. In pro there is
 the list of all events (doses, tube filling, calibration, alarms, changes …) with filter and CSV
 export.
 

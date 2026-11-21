@@ -27,6 +27,21 @@ namespace hj = history_json;
 
 constexpr int64_t kMaxLimit = 500;
 
+// Period as local calendar days: from_date=YYYY-MM-DD&to_date=YYYY-MM-DD, both inclusive,
+// at most kMaxDays days. 0: not given, 1: *first/*last set, -1: error already sent
+int read_dates(httpd_req_t* req, int32_t* first, int32_t* last) {
+    char a[16], b[16];
+    const bool has_a = http::query_str(req, "from_date", a, sizeof(a));
+    const bool has_b = http::query_str(req, "to_date", b, sizeof(b));
+    if (!has_a && !has_b) return 0;
+    if (!has_a || !has_b || !sched_json::parse_date(a, first) || !sched_json::parse_date(b, last) ||
+        *last < *first || *last - *first >= hj::kMaxDays) {
+        http::send_error(req, "400 Bad Request", "invalid_param", "from_date..to_date (YYYY-MM-DD, at most 90 days)");
+        return -1;
+    }
+    return 1;
+}
+
 // Filter from the query; false: error already sent
 bool read_filter(httpd_req_t* req, history::Filter* f) {
     int64_t v = 0;
@@ -56,6 +71,16 @@ bool read_filter(httpd_req_t* req, history::Filter* f) {
             const int64_t from = ts.utc - since_midnight - (v - 1) * 86400;
             f->from = from > 0 ? static_cast<uint32_t>(from) : 0;
         }
+    }
+    int32_t first = 0, last = 0;
+    const int dates = read_dates(req, &first, &last);
+    if (dates < 0) return false;
+    if (dates > 0) {
+        // local midnight of the first day up to the last second before the day after the last
+        const int64_t from = scheduler::to_utc(int64_t(first) * 86400);
+        const int64_t to = scheduler::to_utc(int64_t(last + 1) * 86400) - 1;
+        f->from = from < 0 ? 0 : from > UINT32_MAX ? UINT32_MAX : uint32_t(from);
+        f->to = to < 0 ? 0 : to > UINT32_MAX ? UINT32_MAX : uint32_t(to);
     }
     if (http::query_int(req, "from", &v)) f->from = v < 0 ? 0 : v > UINT32_MAX ? UINT32_MAX : uint32_t(v);
     if (http::query_int(req, "to", &v)) f->to = v < 0 ? 0 : v > UINT32_MAX ? UINT32_MAX : uint32_t(v);
@@ -136,6 +161,9 @@ esp_err_t get_daily(httpd_req_t* req) {
     int64_t days = 14;
     if (http::query_int(req, "days", &days) && (days < 1 || days > hj::kMaxDays))
         return http::send_error(req, "400 Bad Request", "invalid_param", "days=1..90");
+    int32_t first = 0, last = 0;
+    const int dates = read_dates(req, &first, &last);
+    if (dates < 0) return ESP_OK;
     const int32_t today = scheduler::today();
     Json j;
     j.obj().kv("keep_days", static_cast<int>(history::keep_days()));
@@ -144,11 +172,13 @@ esp_err_t get_daily(httpd_req_t* req) {
         return http::send_json(req, j.c_str());
     }
     auto* d = new hj::Daily;
-    d->reset(today, static_cast<int>(days));
+    if (dates > 0) d->reset(last, last - first + 1);
+    else d->reset(today, static_cast<int>(days));
     history::Filter f;
     // a day earlier in UTC: local days may start before the UTC day
     const int64_t from = (int64_t(d->first_day) - 1) * 86400;
     f.from = from > 0 ? static_cast<uint32_t>(from) : 0;
+    if (dates > 0) f.to = static_cast<uint32_t>((int64_t(last) + 2) * 86400);  // a day later in UTC, too
     f.kinds = static_cast<uint16_t>((1u << static_cast<uint8_t>(history::Kind::Dose)) |
                                     (1u << static_cast<uint8_t>(history::Kind::Skip)));
     history::query(f, [](const history::Event& e, void* p) {

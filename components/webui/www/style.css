@@ -266,6 +266,18 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .hc-hl { fill: var(--text); fill-opacity: .06; }
 .hc-skip { fill: var(--warn); }
 .hc-ctl { gap: 8px; flex-wrap: wrap; }
+/* period: the buttons and, for "Period", the two date fields below in one block of the same
+   width (the buttons share it evenly); the title stays on the line of the buttons. Narrow
+   screens: the whole width of the card. */
+.hc-top { align-items: baseline; }
+.hc-ctl, .hi-filter { align-items: flex-start; }
+.period { display: inline-grid; gap: 8px; max-width: 100%; }
+.period > .seg { display: flex; width: 100%; }
+.period > .seg button { flex: 1 1 auto; }
+.period-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.period-dates label { display: grid; gap: 4px; margin: 0; font-size: 13px; color: var(--mut); font-weight: 600; }
+.period-dates input { width: 100%; min-width: 0; }
+@media (max-width: 600px) { .period { width: 100%; } }
 .hc-table summary { cursor: pointer; color: var(--mut); }
 .scroll { overflow-x: auto; }
 .hc-table table { border-collapse: collapse; margin-top: 8px; }
@@ -274,6 +286,7 @@ pre.log { margin: 12px 0 0; max-height: 360px; overflow: auto; padding: 10px; bo
 .hc-table th { color: var(--mut); font-weight: 600; }
 .hi-filter { margin: 12px 0 6px; }
 .hi-filter select { max-width: 100%; }
+.hi-filter .period { margin-left: auto; }  /* at the right edge, below the CSV export */
 .hi-list { list-style: none; margin: 8px 0 12px; padding: 0; }
 .hi-list li {
   display: grid; grid-template-columns: 92px minmax(90px, 1fr) minmax(110px, 1.2fr) minmax(90px, 1fr) minmax(90px, 1fr);

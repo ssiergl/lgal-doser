@@ -26,6 +26,38 @@ test('history: period and chart type', async ({ page }) => {
   await expect(page.getByRole('table').first()).toBeVisible();
 });
 
+// "YYYY-MM-DD" of the local day k days from today (browser and mock share the clock)
+const day = k => { const d = new Date(); d.setDate(d.getDate() + k); return d.toLocaleDateString('sv-SE'); };
+
+test('history: a period of its own, at most the last 90 days', async ({ page }) => {
+  await open(page, '#/history');
+  const from = page.getByLabel('From'), to = page.getByLabel('To');
+  await expect(from).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: '60 days' })).toHaveCount(0);
+  // "Period" starts with the days shown so far
+  await page.getByRole('radio', { name: 'Period' }).click();
+  await expect(page.getByRole('radio', { name: 'Period' })).toHaveAttribute('aria-checked', 'true');
+  await expect(from).toHaveValue(day(-13));
+  await expect(to).toHaveValue(day(0));
+
+  const asked = q => page.waitForResponse(r => r.url().includes('/api/v1/history/daily?' + q));
+  let r = asked(`from_date=${day(-40)}&to_date=${day(-31)}`);
+  await to.fill(day(-31));
+  await from.fill(day(-40));
+  expect((await (await r).json()).days.map(d => d.date)).toEqual([...Array(10)].map((_, k) => day(k - 40)));
+  // a start before the first of the last 90 days moves up to it; a start after the end
+  // takes the end along
+  r = asked(`from_date=${day(-89)}&to_date=${day(-31)}`);
+  await from.fill(day(-200));
+  await r;
+  await expect(from).toHaveValue(day(-89));
+  await from.fill(day(-5));
+  await expect(to).toHaveValue(day(-5));
+
+  await page.getByRole('radio', { name: '7 days' }).click();
+  await expect(from).toHaveCount(0);
+});
+
 const events = page => page.locator('section.card')
   .filter({ has: page.getByRole('heading', { name: 'Events', level: 2, exact: true }) });
 
@@ -73,6 +105,14 @@ test('events (pro view): paging, filters, empty period', async ({ page }) => {
   await expect(rows.filter({ hasText: 'firmware updated' })).toHaveCount(0);  // 22 days ago
   await c.getByRole('radio', { name: '30 days' }).click();
   await expect(rows.filter({ hasText: 'firmware updated' }).locator('.hi-d')).toHaveText('0.0.9 → 0.1.0');
+
+  // a period of its own: only the start with the update 22 days ago, also in the CSV link
+  await c.getByRole('radio', { name: 'Period' }).click();
+  await c.getByLabel('To').fill(day(-20));
+  await c.getByLabel('From').fill(day(-25));
+  await expect(rows.locator('.hi-c')).toHaveText(['firmware updated', 'started']);
+  await expect(c.getByRole('link', { name: 'CSV export' }))
+    .toHaveAttribute('href', `/api/v1/history.csv?kind=system&from_date=${day(-25)}&to_date=${day(-20)}`);
 });
 
 test('events: a pump from the address, CSV export with the filter', async ({ page }) => {

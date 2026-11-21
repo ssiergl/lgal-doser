@@ -574,6 +574,13 @@ int64_t to_local(int64_t utc) {
     return tz::to_local(s_zone, utc);
 }
 
+int64_t to_utc(int64_t local) {
+    if (!s_mx) return local;
+    Guard g;
+    refresh_zone();
+    return tz::to_utc(s_zone, local);
+}
+
 void clear_skipped() {
     if (!s_mx) return;
     Guard g;

@@ -91,8 +91,23 @@ _gen()
 def _err(h, code="invalid_param", msg="x", status=400):
     h.send(status, {"error": {"code": code, "message": msg}})
 
+# from_date/to_date (YYYY-MM-DD, local days, both inclusive, at most KEEP days) -> (first, last)
+# as datetime.date; None: not given; False: invalid
+def _dates(q):
+    import datetime
+    if "from_date" not in q and "to_date" not in q: return None
+    try:
+        a = datetime.date.fromisoformat(q.get("from_date", ""))
+        b = datetime.date.fromisoformat(q.get("to_date", ""))
+    except ValueError:
+        return False
+    if b < a or (b - a).days >= KEEP: return False
+    return a, b
+
 def _filter(q):
     out = EV
+    span = _dates(q)
+    if span is False: return None
     try:
         pump = int(q.get("pump", 0))
         days = int(q.get("days", 0))
@@ -107,6 +122,9 @@ def _filter(q):
         lt = time.localtime()
         frm = time.time() - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec) - (days - 1) * 86400
         out = [e for e in out if e["utc"] >= frm]
+    if span:
+        lo, hi = span[0].isoformat(), span[1].isoformat()
+        out = [e for e in out if lo <= e["local"][:10] <= hi]
     if "from" in q or "to" in q: out = [e for e in out if frm <= e["utc"] <= to]
     if pump: out = [e for e in out if e["pump"] == pump]
     if kinds: out = [e for e in out if e["kind"] in kinds]
@@ -193,13 +211,14 @@ def route(h, method, path, q, eng_ok):
     if path == "/api/v1/history/daily":
         try: days = int(q.get("days", 14))
         except ValueError: _err(h); return True
-        if not 1 <= days <= KEEP: _err(h); return True
+        span = _dates(q)
+        if not 1 <= days <= KEEP or span is False: _err(h); return True
+        import datetime
         today = time.strftime("%Y-%m-%d")
-        lt = time.localtime()
-        mid = time.time() - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec)
+        first, last = span or (datetime.date.today() - datetime.timedelta(days=days - 1), datetime.date.today())
         out = []
-        for k in range(days - 1, -1, -1):
-            date = time.strftime("%Y-%m-%d", time.localtime(mid - k * 86400 + 43200))
+        for k in range((last - first).days + 1):
+            date = (first + datetime.timedelta(days=k)).isoformat()
             ml, doses, sk = [0.0] * 5, [0] * 5, [0] * 5
             for e in EV:
                 if not e["local"].startswith(date) or not 1 <= e["pump"] <= 5: continue

@@ -6,11 +6,14 @@
 // UTC seconds plus the device-local "YYYY-MM-DD HH:MM:SS". All require login.
 //
 //   GET    /api/v1/history        ?pump=1..5&kind=dose,skip,...&days=1..90
-//                                 (or from=&to= UTC seconds)&limit=1..500&offset=
+//                                 (or from_date=&to_date= YYYY-MM-DD, local days, both
+//                                 inclusive, at most 90; or from=&to= UTC seconds)
+//                                 &limit=1..500&offset=
 //                                 {"events":[...], "more":bool}, newest first.
 //                                 Event fields: see history_json.h
 //   GET    /api/v1/history.csv    same filters, no limit (attachment)
-//   GET    /api/v1/history/daily  ?days=1..90 (default 14)
+//   GET    /api/v1/history/daily  ?days=1..90 (default 14) up to today, or
+//                                 from_date=&to_date= (YYYY-MM-DD, at most 90 days)
 //                                 {"today","keep_days","days":[{"date","ml":[5],
 //                                 "doses":[5],"skipped":[5]}]} oldest first;
 //                                 "days" empty without a valid clock

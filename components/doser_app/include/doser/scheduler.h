@@ -93,5 +93,7 @@ Status status(int pump);
 int32_t today();
 // UTC -> local wall-clock seconds in the device time zone (for API/UI)
 int64_t to_local(int64_t utc);
+// Local wall-clock seconds -> UTC (gap: shifted forward, ambiguous: first occurrence)
+int64_t to_utc(int64_t local);
 
 }  // namespace doser::scheduler

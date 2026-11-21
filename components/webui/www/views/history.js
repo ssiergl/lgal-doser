@@ -16,6 +16,7 @@ import { Seg } from '../lib/ui.js';
 add({
   en: {
     'hi.title': 'History', 'hi.daily': 'Dosed per day', 'hi.days': '{n} days',
+    'hi.custom': 'Period', 'hi.from': 'From', 'hi.to': 'To',
     'hi.hover': 'Point at or tap the chart for the values of a day.',
     'hi.bar': 'Bars', 'hi.line': 'Line',
     'hi.day': '{d}: {ml} ml · {n} doses', 'hi.day.skip': '{n} skipped', 'hi.today': 'today',
@@ -57,7 +58,8 @@ add({
   },
 });
 
-const kRanges = [7, 14, 30, 60, 90];
+const kRanges = [7, 14, 30];
+const kMaxSpan = 90;  // the longest period and how far back it can start (history keeps at most 90 days)
 const kKinds = ['dose', 'skip', 'boost', 'prime', 'calib_run', 'container', 'calibration', 'tube', 'mode', 'schedule',
   'settings', 'locks', 'alarm', 'alarm_end', 'system'];
 const kPage = 50;
@@ -67,6 +69,40 @@ const kBad = ['aborted', 'fault', 'locked', 'heartbeat_lost', 'max_duration', 'r
 function dayLabel(date, opts = { weekday: 'short', day: '2-digit', month: '2-digit' }) {
   const [y, m, d] = date.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString(getLang(), { ...opts, timeZone: 'UTC' });
+}
+
+// "YYYY-MM-DD" k days after a date (k < 0: before), calendar days
+function addDays(date, k) {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + k)).toISOString().slice(0, 10);
+}
+const pad2 = n => String(n).padStart(2, '0');
+const browserToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; };
+// Query string of the non-empty filter values
+const query = f => Object.entries(f).filter(([, v]) => v !== '' && v !== 0).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+// Query of a period: a number of days up to today or { from, to } (local days, both inclusive)
+const periodQuery = p => (typeof p === 'object' ? { from_date: p.from, to_date: p.to } : { days: p });
+const periodKey = p => (typeof p === 'object' ? p.from + '/' + p.to : String(p));
+
+// Period of a card: 7, 14 or 30 days up to today, or "Period": any days within the last 90,
+// with two date fields below, as wide as the buttons together. "Period" starts with the days
+// shown so far. today: the device's day, if known.
+function Period({ value, onChange, today }) {
+  const custom = typeof value === 'object';
+  const end = today || browserToday(), min = addDays(end, 1 - kMaxSpan);
+  const clamp = v => (v < min ? min : v > end ? end : v);
+  const pick = v => onChange(v !== 'custom' ? v : custom ? value : { from: addDays(end, 1 - value), to: end });
+  // a date typed in part is empty: wait for the whole date
+  const setFrom = v => { if (v) { v = clamp(v); onChange({ from: v, to: value.to < v ? v : value.to }); } };
+  const setTo = v => { if (v) { v = clamp(v); onChange({ from: value.from > v ? v : value.from, to: v }); } };
+  return html`<div class="period">
+    <${Seg} value=${custom ? 'custom' : value} onChange=${pick}
+      options=${[...kRanges.map(n => [n, t('hi.days', { n })]), ['custom', t('hi.custom')]]}/>
+    ${custom && html`<div class="period-dates">
+      <label>${t('hi.from')}<input type="date" min=${min} max=${value.to} value=${value.from} onChange=${e => setFrom(e.target.value)}/></label>
+      <label>${t('hi.to')}<input type="date" min=${value.from} max=${end} value=${value.to} onChange=${e => setTo(e.target.value)}/></label>
+    </div>`}
+  </div>`;
 }
 
 // Axis maximum: 1, 2 or 5 × 10^k at or above v
@@ -178,16 +214,16 @@ function DailyCard() {
   const [D, setD] = useState(null);
   useEffect(() => {
     let live = true;
-    const get = () => api('GET', '/api/v1/history/daily?days=' + range).then(j => live && setD(j)).catch(e => live && setD({ error: e }));
+    const get = () => api('GET', '/api/v1/history/daily?' + query(periodQuery(range))).then(j => live && setD(j)).catch(e => live && setD({ error: e }));
     get();
     const id = setInterval(get, 60000);
     return () => { live = false; clearInterval(id); };
-  }, [range]);
+  }, [periodKey(range)]);
 
   const head = html`<div class="row between hc-top"><h2>${t('hi.daily')}</h2>
     <div class="row hc-ctl">
       <${Seg} value=${kind} onChange=${pickKind} options=${[['line', t('hi.line')], ['bar', t('hi.bar')]]}/>
-      <${Seg} value=${range} onChange=${setRange} options=${kRanges.map(n => [n, t('hi.days', { n })])}/>
+      <${Period} value=${range} onChange=${setRange} today=${D && D.today}/>
     </div></div>`;
   if (!D) return html`<section class="card">${head}<p class="mut">…</p></section>`;
   if (D.error) return html`<section class="card">${head}<p class="msg err">${errText(D.error)}</p></section>`;
@@ -244,11 +280,10 @@ function codeCls(e) {
   return kBad.includes(e.code) ? 'err' : 'mut';
 }
 
-const query = f => Object.entries(f).filter(([, v]) => v !== '' && v !== 0).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-
 function EventsCard({ pump }) {
   const s = useStore();
-  const [f, setF] = useState({ pump: pump || 0, kind: '', days: 7 });
+  const [f, setF] = useState({ pump: pump || 0, kind: '', period: 7 });
+  const q = { pump: f.pump, kind: f.kind, ...periodQuery(f.period) };
   const [list, setList] = useState(null);
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -258,19 +293,19 @@ function EventsCard({ pump }) {
   const load = (offset, prev) => {
     const n = ++last.current;
     setBusy(true);
-    api('GET', '/api/v1/history?' + query({ ...f, limit: kPage, offset }))
+    api('GET', '/api/v1/history?' + query({ ...q, limit: kPage, offset }))
       .then(j => { if (n === last.current) { setList(prev.concat(j.events)); setMore(j.more); setErr(null); } })
       .catch(e => { if (n === last.current) setErr(e); })
       .finally(() => { if (n === last.current) setBusy(false); });
   };
-  useEffect(() => { setList(null); load(0, []); }, [f.pump, f.kind, f.days]);
+  useEffect(() => { setList(null); load(0, []); }, [f.pump, f.kind, periodKey(f.period)]);
   const set = patch => setF(prev => ({ ...prev, ...patch }));
   const pumps = fittedOf(s.pumps);
   const nameOf = n => { const p = pumps.find(x => x.pump === n); return p ? pumpName(p) : t('pump', { n }); };
 
   return html`<section class="card">
     <div class="row between"><h2>${t('hi.events')}</h2>
-      <a class="btn sec" href=${'/api/v1/history.csv?' + query(f)} download>${t('hi.csv')}</a></div>
+      <a class="btn sec" href=${'/api/v1/history.csv?' + query(q)} download>${t('hi.csv')}</a></div>
     <div class="row hi-filter">
       <select class="small" value=${f.pump} onChange=${e => set({ pump: +e.target.value })} aria-label=${t('hi.allpumps')}>
         <option value="0">${t('hi.allpumps')}</option>
@@ -280,7 +315,7 @@ function EventsCard({ pump }) {
         <option value="">${t('hi.all')}</option>
         ${kKinds.map(k => html`<option value=${k}>${t('hk.' + k)}</option>`)}
       </select>
-      <${Seg} value=${f.days} onChange=${v => set({ days: v })} options=${kRanges.map(n => [n, t('hi.days', { n })])}/>
+      <${Period} value=${f.period} onChange=${v => set({ period: v })}/>
     </div>
     ${err && html`<p class="msg err">${errText(err)}</p>`}
     ${!list ? html`<p class="mut">…</p>` : !list.length ? html`<p class="mut">${t('hi.none')}</p>` : html`
