@@ -92,7 +92,8 @@ Pump numbering = labels on enclosure and board: seen from the front, pump 1 is o
   `hardware/d5v1/pcb/README.md`). Board v1.1 routes the RX lines on the board. Both versions
   have the board ID `d5v1`.
 - **DIR is hard-wired to GND.** The direction of rotation can only be switched through the
-  register `GCONF.shaft`.
+  register `GCONF.shaft`. With the Kamoer motor, `shaft` = 1 turns the pump clockwise seen from
+  the front, `shaft` = 0 counter-clockwise (checked 11/2026).
 - **DIAG is not connected.** Stall detection (StallGuard) only by reading `SG_RESULT` /
   `DRV_STATUS` over UART while running.
 - SPREAD, INDEX, CLK: open (internal clock, StealthChop by default).

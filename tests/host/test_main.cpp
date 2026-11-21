@@ -82,14 +82,15 @@ static void test_current() {
     CHECK(((r.chopconf >> 24) & 0xF) == 3);
     CHECK(r.chopconf & (1u << 28));  // Interpolation
     CHECK((r.chopconf & 0xF) == 3);  // TOFF
-    CHECK(!(r.gconf & tmc::GCONF_SHAFT));
+    CHECK(r.gconf & tmc::GCONF_SHAFT);  // forward = clockwise = shaft set
     CHECK(r.gconf & tmc::GCONF_PDN_DISABLE);
     CHECK(r.gconf & tmc::GCONF_MSTEP_REG_SELECT);
     CHECK(!(r.gconf & tmc::GCONF_EN_SPREADCYCLE));
     CHECK(((r.pwmconf >> 20) & 3) == 1);  // freewheel
-    CHECK(tmc::make_regs(s, 110, true).gconf & tmc::GCONF_SHAFT);
-    s.invert = true;
     CHECK(!(tmc::make_regs(s, 110, true).gconf & tmc::GCONF_SHAFT));
+    s.invert = true;
+    CHECK(!(tmc::make_regs(s, 110, false).gconf & tmc::GCONF_SHAFT));
+    CHECK(tmc::make_regs(s, 110, true).gconf & tmc::GCONF_SHAFT);
 
     auto d = tmc::decode_drv_status((1u << 31) | (17u << 16) | (1u << 3));
     CHECK(d.stst && d.cs_actual == 17 && d.s2gb && d.short_circuit() && !d.ot);

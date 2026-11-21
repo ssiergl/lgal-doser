@@ -104,7 +104,10 @@ uint32_t gconf_for(const DriverSettings& s, bool reverse) {
     // Current only via registers (no VREF), external Rsense, StealthChop,
     // PDN_UART as UART, microsteps from CHOPCONF.MRES.
     uint32_t g = GCONF_PDN_DISABLE | GCONF_MSTEP_REG_SELECT | GCONF_MULTISTEP_FILT;
-    if (s.invert != reverse) g |= GCONF_SHAFT;
+    // GCONF.shaft set turns the Kamoer KPHM100 clockwise seen from the front with the
+    // motor wiring of the board (checked 11/2026); clear turns it counter-clockwise.
+    const bool ccw = s.invert != reverse;
+    if (!ccw) g |= GCONF_SHAFT;
     return g;
 }
 

@@ -84,7 +84,7 @@ struct DriverSettings {
     uint16_t run_ma = 600;
     uint16_t hold_ma = 0;
     uint16_t microsteps = 16;
-    bool invert = false;  // Invert base direction (GCONF.shaft)
+    bool invert = false;  // false: forward clockwise seen from the front, true: counter-clockwise
 };
 
 struct DriverRegs {

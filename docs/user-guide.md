@@ -192,8 +192,8 @@ Pump → settings in pro:
 - **Speed** when dosing (three tiers).
 - **Retract:** pulls back a little after every dose so that nothing drips (off by default).
 - **Warning and alarm threshold** of the container in days of range.
-- **Direction of rotation**, if the pump delivers the wrong way round (only at standstill; then
-  fill briefly and check the direction).
+- **Direction of rotation** seen from the front, clockwise from the factory, if the pump delivers
+  the wrong way round (only at standstill; then fill briefly and check the direction).
 
 The target amount of the calibration can be changed in pro directly in the calibration wizard.
 

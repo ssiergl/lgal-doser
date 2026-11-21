@@ -20,7 +20,7 @@
 //                                 &direction=cw|ccw&warn_days=0..60&low_days=0..60
 //                                 (thresholds: 0 = engineering default, alarm <= warning;
 //                                 retraction: off from the factory, 0 = off, global = engineering value;
-//                                 direction = driver GCONF.shaft, cw = factory setting, 409 pump_busy
+//                                 direction seen from the front, cw = factory setting, 409 pump_busy
 //                                 while the pump runs)
 //   POST /api/v1/pumps/container  ?pump=&remaining_ml=&capacity_ml=
 //   POST /api/v1/pumps/tube       ?pump=&hours=0
