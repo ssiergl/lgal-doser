@@ -13,6 +13,7 @@
 
 #include "esp_app_desc.h"
 #include "esp_app_format.h"
+#include "esp_bootloader_desc.h"
 #include "esp_crt_bundle.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
@@ -47,6 +48,8 @@ namespace lgal::ota {
 namespace {
 constexpr const char* TAG = "ota";
 constexpr size_t kChunk = 4096;
+static_assert(kDescOffset == sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t));
+static_assert(kBootloaderDescMagic == ESP_BOOTLOADER_DESC_MAGIC_BYTE);
 static_assert(kBoardDescOffset ==
               sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t));
 constexpr size_t kHeaderLen = kBoardDescOffset + sizeof(BoardDesc);
@@ -119,6 +122,12 @@ bool check_header(const uint8_t* data, std::string& err, const char*& code) {
     if (img->chip_id != ESP_CHIP_ID_ESP32S3) {
         code = "wrong_chip";
         err = "Firmware is not built for ESP32-S3";
+        return false;
+    }
+    // the complete flash image for USB starts with the bootloader, not the app
+    if (is_bootloader_image(data, kHeaderLen)) {
+        code = "full_image";
+        err = "Complete flash image for USB (-full.bin): upload the .bin without -full";
         return false;
     }
     if (const uint8_t own = own_flash_size(); own != 0xff && img->spi_size != own) {

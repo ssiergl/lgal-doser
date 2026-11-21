@@ -16,6 +16,10 @@ bool valid_board_id(const char* id) {
     return n > 0;
 }
 
+bool is_bootloader_image(const uint8_t* data, size_t len) {
+    return data && len > kDescOffset && data[kDescOffset] == kBootloaderDescMagic;
+}
+
 std::string image_board(const uint8_t* data, size_t len) {
     if (!data || len < sizeof(BoardDesc)) return {};
     BoardDesc d;

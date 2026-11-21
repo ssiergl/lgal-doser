@@ -202,7 +202,8 @@ internal RAM: it is faster there, and the W5500 driver hands its buffers to SPI 
 `tools/release.sh` builds every board (`boards/`) in every variant into `dist/`: per board and
 variant the app image `lgal_doser-<B>-<V>.bin` (OTA, e.g. `lgal_doser-d5v1-N16R8.bin`) and
 `lgal_doser-<B>-<V>-full.bin` (bootloader, partition table, OTA data and app for the first USB
-flash at address 0x0) and the SBOM `lgal_doser-<B>-<V>.spdx.json` (see below), plus
+flash at address 0x0; an update upload rejects it with `full_image`, since it starts with the
+bootloader) and the SBOM `lgal_doser-<B>-<V>.spdx.json` (see below), plus
 `manifest.json` (`tools/make_manifest.py`), `LICENSE` and `THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` builds only some.
 The CI builds the same combinations (matrix in `.github/workflows/ci.yml`: add a new board
 there).

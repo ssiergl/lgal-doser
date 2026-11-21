@@ -39,6 +39,7 @@ add({
     'err.no_ota_partition': 'No update partition available', 'err.invalid_size': 'Invalid file size', 'err.transfer_aborted': 'Transfer aborted',
     'err.not_esp_image': 'This is not a firmware file', 'err.wrong_chip': 'Firmware is for a different chip', 'err.wrong_variant': 'Firmware is for a module with a different flash size (variant N8R8/N16R8/N32R8)',
     'err.no_app_desc': 'Firmware file is incomplete', 'err.wrong_project': 'Firmware is for a different device',
+    'err.full_image': 'This is the complete image for USB flashing (-full.bin) – upload the .bin without -full',
     'err.wrong_board': 'Firmware is for a different circuit board (model)',
     'err.flash_error': 'Flash write error', 'err.file_too_short': 'File too short', 'err.image_invalid': 'Firmware verification failed',
     'err.upload_failed': 'Update failed', 'err.no_memory': 'Device is out of memory', 'err.no_coredump': 'No crash report stored',

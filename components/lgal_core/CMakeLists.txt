@@ -44,6 +44,7 @@ idf_component_register(
     EMBED_TXTFILES "www/recovery.html" "www/i18n.js" "${flags_js}" "www/login.html" "www/setup.html"
     REQUIRES
         bootloader_support
+        esp_bootloader_format
         esp_driver_gpio
         esp_driver_ledc
         esp_driver_spi

@@ -189,12 +189,25 @@ static void test_image_board() {
     CHECK(valid_board_id("d5v1") && !valid_board_id("") && !valid_board_id("d5-v1"));
 }
 
+static void test_bootloader_image() {
+    std::printf("Bootloader image\n");
+    uint8_t img[64] = {0xE9};
+    CHECK(!is_bootloader_image(img, sizeof(img)));
+    img[kDescOffset] = 0x32;  // app: esp_app_desc_t magic 0xABCD5432, little endian
+    CHECK(!is_bootloader_image(img, sizeof(img)));
+    img[kDescOffset] = kBootloaderDescMagic;
+    CHECK(is_bootloader_image(img, sizeof(img)));
+    CHECK(!is_bootloader_image(img, kDescOffset));  // too short
+    CHECK(!is_bootloader_image(nullptr, sizeof(img)));
+}
+
 int main() {
     test_versions();
     test_urls();
     test_manifest();
     test_variants();
     test_image_board();
+    test_bootloader_image();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

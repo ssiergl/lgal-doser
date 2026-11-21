@@ -26,9 +26,21 @@ struct BoardDesc {
 };
 static_assert(sizeof(BoardDesc) == 32);
 
+// Offset of the description in the first segment of an image: image header
+// (24) + first segment header (8). An app has esp_app_desc_t there, a
+// bootloader esp_bootloader_desc_t, whose first byte is kBootloaderDescMagic
+// (ota.cpp checks offset and magic against the ESP-IDF types).
+constexpr size_t kDescOffset = 24 + 8;
+constexpr uint8_t kBootloaderDescMagic = 80;  // ESP_BOOTLOADER_DESC_MAGIC_BYTE
+
+// true when the image starts with a bootloader: a complete flash image
+// (bootloader, partition table, app; "-full.bin") instead of the app alone.
+// data must hold at least kDescOffset + 1 bytes.
+bool is_bootloader_image(const uint8_t* data, size_t len);
+
 // Offset in the image: image header (24) + first segment header (8) +
 // esp_app_desc_t (256); ota.cpp checks it against the ESP-IDF types.
-constexpr size_t kBoardDescOffset = 24 + 8 + 256;
+constexpr size_t kBoardDescOffset = kDescOffset + 256;
 
 // true for 1..kMaxBoardId characters a-z, 0-9
 bool valid_board_id(const char* id);

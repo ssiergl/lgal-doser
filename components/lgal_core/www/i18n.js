@@ -163,6 +163,7 @@
       'err.not_esp_image': 'This is not a firmware file',
       'err.wrong_chip': 'Firmware is for a different chip',
       'err.no_app_desc': 'Firmware file is incomplete',
+      'err.full_image': 'This is the complete image for USB flashing (-full.bin) – upload the .bin without -full',
       'err.wrong_project': 'Firmware is for a different device',
       'err.wrong_variant': 'Firmware is for a module with a different flash size',
       'err.wrong_board': 'Firmware is for a different circuit board (model)',
