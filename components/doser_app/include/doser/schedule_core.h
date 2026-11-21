@@ -142,6 +142,10 @@ struct Locks {
 };
 // Lock time between two pumps in seconds (largest matching rule), 0 = none
 int64_t lock_gap(const Locks& l, int pa, int pb);
+// A lock time counts from the full minute in which the dose ended: after a
+// dose of a few seconds at 08:00 a lock time of 30 min allows 08:30 (start
+// times exactly the lock time apart fit), a long dose still counts from its end.
+int64_t lock_start(int64_t end);
 // Runtime guard: earliest start for pump `pump`. last_end: end of the last
 // dose per pump (0 = none), running: dose in progress (end unknown ->
 // INT64_MAX). Returns `now` or later.

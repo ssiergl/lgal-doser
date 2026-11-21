@@ -42,7 +42,8 @@ and on board v1.0.
 
 - One plan per pump: daily amount spread over doses or single times; daily, weekdays or every
   N days; daylight saving time, behaviour after a power cut.
-- All plans checked on save (overlap, daily limit, lock times between pumps).
+- All plans checked on save (overlap, daily limit, lock times between pumps); a lock time counts
+  from the minute in which a dose ends, so doses exactly the lock time apart fit.
 - Boost over days or doses.
 
 ### Network, access and security

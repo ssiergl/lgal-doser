@@ -601,7 +601,7 @@ static void test_locks() {
     int64_t retry = 0;
     // earlier tests ended jobs a few seconds ago: the lock applies right away
     CHECK_STR(dosing::dose(0, 1000, dosing::Trigger::Manual, -1, &retry), "collision_lock");
-    CHECK(retry == dosing::status(1).state.last_end + 300);
+    CHECK(retry == sched::lock_start(dosing::status(1).state.last_end) + 300);
     sim::now_us += 600 * 1000000LL;
     CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);
     CHECK_STR(dosing::dose(1, 1000, dosing::Trigger::Manual, -1, &retry), "collision_lock");
@@ -610,7 +610,7 @@ static void test_locks() {
     const int64_t end = dosing::status(0).state.last_end;
     CHECK(end > 0 && sim::stored[0].last_end == end);  // saved with the end of the job
     CHECK_STR(dosing::dose(1, 1000, dosing::Trigger::Schedule, -1, &retry), "collision_lock");
-    CHECK(retry == end + 300);
+    CHECK(retry == sched::lock_start(end) + 300);
     // no rule for pump 3
     CHECK(dosing::dose(2, 1000, dosing::Trigger::Manual) == nullptr);
     CHECK(sim::run_until_idle(2));
@@ -623,7 +623,7 @@ static void test_locks() {
     CHECK(sim::run_until_idle(1));
     // symmetric: now pump 1 has to wait for pump 2
     CHECK_STR(dosing::dose(0, 1000, dosing::Trigger::Api, -1, &retry), "collision_lock");
-    CHECK(retry == dosing::status(1).state.last_end + 300);
+    CHECK(retry == sched::lock_start(dosing::status(1).state.last_end) + 300);
     // without a valid clock only running pumps count
     sim::time_valid = false;
     CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);

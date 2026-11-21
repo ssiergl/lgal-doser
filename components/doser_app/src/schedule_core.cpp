@@ -224,6 +224,8 @@ uint32_t run_seconds(uint32_t ul, const RunParams& p) {
 }
 
 // ---------------------------------------------------------------------------
+int64_t lock_start(int64_t end) { return end - ((end % 60) + 60) % 60; }
+
 int64_t lock_gap(const Locks& l, int pa, int pb) {
     int64_t gap = 0;
     const int n = l.count < kMaxLocks ? l.count : kMaxLocks;
@@ -243,7 +245,7 @@ int64_t lock_until(const Locks& l, int pump, const int64_t (&last_end)[kPumps], 
         const int64_t gap = lock_gap(l, pump, q);
         if (!gap) continue;
         if (running[q]) return INT64_MAX;
-        if (last_end[q] && last_end[q] + gap > t) t = last_end[q] + gap;
+        if (last_end[q] && lock_start(last_end[q]) + gap > t) t = lock_start(last_end[q]) + gap;
     }
     return t;
 }
@@ -272,7 +274,8 @@ struct Checker {
     }
 
     // A slot of pump pb (on the same day or the next) starts while a slot of
-    // pump pa is still running or within `gap` after its end.
+    // pump pa is still running or within `gap` after the minute of its end
+    // (lock_start): a slot exactly the lock time after a short dose fits.
     void check_plans(int pa, int pb, int64_t gap, const char* code) {
         const PumpSchedule& a = all[pa];
         const PumpSchedule& b = all[pb];
@@ -284,7 +287,8 @@ struct Checker {
             if (!can_coincide(a.days, b.days, next)) continue;
             for (int x = 0; x < na; ++x) {
                 const int64_t start = sa[x].minute * 60;
-                const int64_t end = start + run_seconds(sa[x].ul, ctx.run[pa]) + gap;
+                const int64_t run_end = start + run_seconds(sa[x].ul, ctx.run[pa]);
+                const int64_t end = gap ? lock_start(run_end) + gap : run_end;
                 for (int y = 0; y < nb; ++y) {
                     const int64_t other = sb[y].minute * 60 + next * 86400;
                     if (pa == pb && x == y && !next) continue;

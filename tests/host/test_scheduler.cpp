@@ -164,12 +164,12 @@ static void test_runtime_guard() {
     const int64_t end1 = dosing::status(1).state.last_end;
     auto st = scheduler::status(0);
     CHECK(st.delayed && std::strcmp(st.delay_reason, "collision_lock") == 0);
-    CHECK(st.retry_at == end1 + 300 && st.next_utc == local(11, 8, 8, 0));
+    CHECK(st.retry_at == sched::lock_start(end1) + 300 && st.next_utc == local(11, 8, 8, 0));
     CHECK(total(0) == before);
-    sim::run_until(end1 + 302);
+    sim::run_until(sched::lock_start(end1) + 302);
     CHECK(total(0) == before + 1000);
     st = scheduler::status(0);
-    CHECK(!st.delayed && st.last_run_at == end1 + 300 && st.skipped == 0);
+    CHECK(!st.delayed && st.last_run_at == sched::lock_start(end1) + 300 && st.skipped == 0);
     // pump 2's own slot at 08:10 is 5 min after the delayed dose: on time
     const uint64_t before1 = total(1);
     sim::run_until(local(11, 8, 8, 10, 30));

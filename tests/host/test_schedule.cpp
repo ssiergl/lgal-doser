@@ -196,6 +196,22 @@ static void test_runtime() {
     p.retract_mrev = 0;
     p.ul_per_rev = 370;
     CHECK(run_seconds(20, p) == 3);  // smallest dose: well below a second
+
+    // lock time from the minute in which the other pump's dose ended
+    CHECK(lock_start(120) == 120 && lock_start(179) == 120);
+    Locks l;
+    l.count = 1;
+    l.rules[0] = LockRule{0, 1, 30};
+    const int64_t t0 = 1800000000 / 60 * 60;  // 08:00:00 somewhere
+    int64_t last_end[kPumps] = {t0 + 7, 0, 0, 0, 0};
+    bool running[kPumps] = {};
+    CHECK(lock_until(l, 1, last_end, running, t0 + 1800) == t0 + 1800);  // exactly 30 min later: on time
+    CHECK(lock_until(l, 1, last_end, running, t0 + 1799) == t0 + 1800);
+    last_end[0] = t0 + 61;  // the dose ran into the next minute
+    CHECK(lock_until(l, 1, last_end, running, t0 + 1800) == t0 + 1860);
+    CHECK(lock_until(l, 2, last_end, running, t0) == t0);  // no rule for pump 3
+    running[0] = true;
+    CHECK(lock_until(l, 1, last_end, running, t0 + 1800) == INT64_MAX);
 }
 
 static Validation run_validate(const PumpSchedule (&all)[kPumps], const Locks& l, Conflict* c, int max,
@@ -248,18 +264,29 @@ static void test_validate() {
         all[1] = at(485, 1000);
         Locks l;
         l.count = 1;
-        l.rules[0] = LockRule{1, 0, 5};
+        l.rules[0] = LockRule{1, 0, 6};
         Validation v = run_validate(all, l, c, 8);
         CHECK(is(v.error, "conflict") && v.conflicts == 1 && is(c[0].code, "collision_lock"));
-        CHECK(c[0].first.pump == 0 && c[0].second.pump == 1 && c[0].gap_min == 5);
+        CHECK(c[0].first.pump == 0 && c[0].second.pump == 1 && c[0].gap_min == 6);
         all[1] = at(490, 1000);
         CHECK(run_validate(all, l, c, 8).error == nullptr);
+        // exactly the lock time apart fits: it counts from the minute in which the dose ends
+        l.rules[0] = LockRule{1, 0, 5};
+        all[1] = at(485, 1000);
+        CHECK(run_validate(all, l, c, 8).error == nullptr);
+        all[0] = at(480, 100000);  // 100 ml ≈ 85 s: ends in the next minute
+        v = run_validate(all, l, c, 8);
+        CHECK(is(v.error, "conflict") && v.conflicts == 1 && is(c[0].code, "collision_lock"));
+        all[0] = at(480, 1000);
         all[1] = at(480, 1000);  // simultaneous: once
         v = run_validate(all, l, c, 8);
         CHECK(v.conflicts == 1);
-        all[1] = at(475, 1000);  // the other way round
+        all[1] = at(475, 1000);  // the other way round, again exactly the lock time
+        CHECK(run_validate(all, l, c, 8).error == nullptr);
+        l.rules[0] = LockRule{1, 0, 6};
         v = run_validate(all, l, c, 8);
         CHECK(v.conflicts == 1 && c[0].first.pump == 1 && c[0].second.pump == 0);
+        l.rules[0] = LockRule{1, 0, 5};
         all[1] = at(475, 1000, weekdays(kTue));  // never on the same day
         all[0].days = weekdays(kMon);
         CHECK(run_validate(all, l, c, 8).error == nullptr);

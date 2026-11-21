@@ -19,7 +19,7 @@ const kMaxLocks = 10;
 add({
   en: {
     'lk.title': 'Lock times between pumps',
-    'lk.intro': 'A lock time keeps two pumps apart: after a dose of one pump ends, the other one starts at the earliest once the lock time has passed. Use it for additives that must not meet in the same water flow.',
+    'lk.intro': 'A lock time keeps two pumps apart: after a dose of one pump, the other one starts at the earliest once the lock time has passed, counted from the minute in which the dose ended – doses at 08:00 and 08:30 fit a lock time of 30 minutes. Use it for additives that must not meet in the same water flow.',
     'lk.none': 'No lock times – all pumps may dose at the same time.',
     'lk.add': 'Add rule', 'lk.del': 'Delete rule',
     'lk.a': 'Rule {n}: first pump', 'lk.b': 'Rule {n}: second pump', 'lk.gap': 'Rule {n}: lock time in minutes',
