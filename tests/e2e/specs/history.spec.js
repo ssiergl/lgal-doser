@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // History: daily amounts for everyone; in the pro view the event list with filters, paging and
-// CSV export. The mock generates 60 days of events; the tests here use kinds that no other test
+// CSV export. The mock generates 90 days of events; the tests here use kinds that no other test
 // adds (alarms, container, system), so their counts are fixed.
 import { readFileSync } from 'node:fs';
 import { expect, open, proMode, test } from './fixtures.js';

@@ -38,7 +38,7 @@ size_t csv_line(const history::Event& e, int64_t local, char* out, size_t len);
 
 // Dosed amounts per local day and pump (dose events of every source) and
 // skipped slots, for the last `days` local days up to and including `today`.
-constexpr int kMaxDays = 60;
+constexpr int kMaxDays = 90;
 struct Daily {
     int32_t first_day = 0;  // local day number of index 0
     int days = 0;

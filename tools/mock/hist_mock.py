@@ -1,10 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Mock of the history endpoints: 60 days of generated events (test data only)
+# Mock of the history endpoints: 90 days of generated events (test data only)
 import random, time
 
-KEEP = 60  # maximum retention
+KEEP = 90  # maximum retention
 SET = {"keep": KEEP}
 EV = []  # newest last
 ON_CLEAR = []  # callbacks of the other modules (amounts of today), like the firmware
@@ -97,7 +97,7 @@ def _filter(q):
         frm, to = int(q.get("from", 0)), int(q.get("to", 2**32 - 1))  # UTC, both inclusive (history::Filter)
     except ValueError:
         return None
-    if not 0 <= pump <= 5 or (q.get("days") and not 1 <= days <= 60): return None
+    if not 0 <= pump <= 5 or (q.get("days") and not 1 <= days <= KEEP): return None
     kinds = [k for k in q.get("kind", "").split(",") if k]
     if any(k not in ("dose", "prime", "calib_run", "skip", "container", "calibration", "tube", "alarm", "boost", "mode",
                      "schedule", "settings", "locks", "alarm_end", "system") for k in kinds): return None
@@ -160,7 +160,7 @@ def route(h, method, path, q, eng_ok):
             if not eng_ok(): _err(h, "engineering_locked", status=403); return True
             try: v = int(q.get("keep_days", ""))
             except ValueError: v = 0
-            if not 1 <= v <= KEEP: _err(h, "invalid_param", "keep_days=1..60"); return True
+            if not 1 <= v <= KEEP: _err(h, "invalid_param", "keep_days=1..90"); return True
             SET["keep"] = v
             cut = time.time() - (v + 1) * 86400
             EV[:] = [e for e in EV if e["utc"] >= cut]
@@ -191,7 +191,7 @@ def route(h, method, path, q, eng_ok):
     if path == "/api/v1/history/daily":
         try: days = int(q.get("days", 14))
         except ValueError: _err(h); return True
-        if not 1 <= days <= 60: _err(h); return True
+        if not 1 <= days <= KEEP: _err(h); return True
         today = time.strftime("%Y-%m-%d")
         lt = time.localtime()
         mid = time.time() - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec)

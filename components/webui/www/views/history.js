@@ -52,7 +52,7 @@ add({
   },
 });
 
-const kRanges = [7, 14, 30, 60];
+const kRanges = [7, 14, 30, 60, 90];
 const kKinds = ['dose', 'skip', 'boost', 'prime', 'calib_run', 'container', 'calibration', 'tube', 'mode', 'schedule',
   'settings', 'locks', 'alarm', 'alarm_end', 'system'];
 const kPage = 50;

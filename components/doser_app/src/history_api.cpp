@@ -46,7 +46,7 @@ bool read_filter(httpd_req_t* req, history::Filter* f) {
     if (http::query_int(req, "days", &v)) {
         const auto ts = lgal::timesync::status();
         if (v < 1 || v > hj::kMaxDays) {
-            http::send_error(req, "400 Bad Request", "invalid_param", "days=1..60");
+            http::send_error(req, "400 Bad Request", "invalid_param", "days=1..90");
             return false;
         }
         if (ts.valid) {
@@ -135,7 +135,7 @@ esp_err_t get_daily(httpd_req_t* req) {
     if (!http::authorize(req)) return ESP_OK;
     int64_t days = 14;
     if (http::query_int(req, "days", &days) && (days < 1 || days > hj::kMaxDays))
-        return http::send_error(req, "400 Bad Request", "invalid_param", "days=1..60");
+        return http::send_error(req, "400 Bad Request", "invalid_param", "days=1..90");
     const int32_t today = scheduler::today();
     Json j;
     j.obj().kv("keep_days", static_cast<int>(history::keep_days()));
@@ -194,7 +194,7 @@ esp_err_t post_settings(httpd_req_t* req) {
     if (!http::authorize_engineering(req)) return ESP_OK;
     int64_t v = 0;
     if (!http::query_int(req, "keep_days", &v) || v < history::kKeepDaysMin || v > history::kKeepDaysMax)
-        return http::send_error(req, "400 Bad Request", "invalid_param", "keep_days=1..60");
+        return http::send_error(req, "400 Bad Request", "invalid_param", "keep_days=1..90");
     if (history::set_keep_days(static_cast<uint16_t>(v)) != ESP_OK)
         return http::send_error(req, "500 Internal Server Error", "storage_error", "Could not save");
     note_system(req, "engineering");

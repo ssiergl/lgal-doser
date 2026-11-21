@@ -301,7 +301,7 @@ static void test_errors() {
     expect_error("\"run_ma\":700", "\"run_ma\":1600", "invalid_param", "engineering.hardware.pumps[1].run_ma");
     expect_error("\"hold_ma\":100", "\"hold_ma\":800", "invalid_param", "engineering.hardware.pumps[1].hold_ma");
     expect_error("\"microsteps\":32", "\"microsteps\":12", "invalid_param", "engineering.hardware.pumps[1].microsteps");
-    expect_error("\"keep_days\":30", "\"keep_days\":61", "invalid_param", "engineering.history.keep_days");
+    expect_error("\"keep_days\":30", "\"keep_days\":91", "invalid_param", "engineering.history.keep_days");
     expect_error("\"keep_days\":30", "\"keep_days\":0", "invalid_param", "engineering.history.keep_days");
     expect_error("\"fitted\":[1,2,3,4]", "\"fitted\":[1,6]", "invalid_param", "engineering.hardware.fitted");
     expect_error("\"fitted\":[1,2,3,4]", "\"fitted\":[]", "invalid_param", "engineering.hardware.fitted");
