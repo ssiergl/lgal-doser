@@ -205,10 +205,10 @@ Puffer direkt an die SPI-DMA.
 ### Release
 
 `tools/release.sh` baut jedes Board (`boards/`) in jeder Variante nach `dist/`: je Board und
-Variante das App-Image `lgal_doser-<B>-<V>.bin` (OTA, z. B. `lgal_doser-d5v1-N16R8.bin`) und
-`lgal_doser-<B>-<V>-full.bin` (Bootloader, Partitionstabelle, OTA-Daten und App für den
+Variante das App-Image `lgal_doser-<version>-<B>-<V>.bin` (OTA, z. B. `lgal_doser-0.1.0-d5v1-N16R8.bin`) und
+`lgal_doser-<version>-<B>-<V>-full.bin` (Bootloader, Partitionstabelle, OTA-Daten und App für den
 ersten USB-Flash ab Adresse 0x0; ein Update-Upload lehnt sie mit `full_image` ab, weil sie
-mit dem Bootloader beginnt) und die SBOM `lgal_doser-<B>-<V>.spdx.json` (siehe unten),
+mit dem Bootloader beginnt) und die SBOM `lgal_doser-<version>-<B>-<V>.spdx.json` (siehe unten),
 dazu `manifest.json` (`tools/make_manifest.py`), `LICENSE` und `THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` baut nur
 einen Teil. Die CI baut dieselben Kombinationen (Matrix in `.github/workflows/ci.yml`: ein
 neues Board dort ergänzen).
@@ -234,7 +234,7 @@ Vergleich. Den Changelog-Abschnitt also vor dem Taggen aktuell halten.
 #### SBOM
 
 Jedes Release enthält je Board und Variante eine Software-Stückliste,
-`lgal_doser-<B>-<V>.spdx.json` (SPDX 2.2 JSON): jedes Paket, das im Image steckt, mit Version,
+`lgal_doser-<version>-<B>-<V>.spdx.json` (SPDX 2.2 JSON): jedes Paket, das im Image steckt, mit Version,
 Lieferant, Lizenz und, soweit bekannt, CPE und Package-URL – ESP-IDF und seine Teile, die
 verwalteten Komponenten, Preact und htm sowie die eigenen Komponenten. `tools/sbom.py` erzeugt
 sie mit Espressifs [esp-idf-sbom](https://github.com/espressif/esp-idf-sbom) aus der
@@ -242,7 +242,7 @@ sie mit Espressifs [esp-idf-sbom](https://github.com/espressif/esp-idf-sbom) aus
 
 ```bash
 pip install esp-idf-sbom==1.5.0
-python tools/sbom.py build-d5v1-N16R8 lgal_doser-d5v1-N16R8.spdx.json
+python tools/sbom.py build-d5v1-N16R8 lgal_doser-0.1.0-d5v1-N16R8.spdx.json
 ```
 
 Die `sbom.yml`-Dateien beschreiben, was esp-idf-sbom nicht wissen kann: das Projekt und jede
@@ -254,7 +254,7 @@ fällt also vor einem Release auf.
 Bekannte Schwachstellen der Pakete (NVD, über CPE) listet:
 
 ```bash
-esp-idf-sbom check lgal_doser-d5v1-N16R8.spdx.json
+esp-idf-sbom check lgal_doser-0.1.0-d5v1-N16R8.spdx.json
 ```
 
 Für den [Beta-Kanal](#ota-update) aktualisiert jedes Release zusätzlich das Vorab-Release
@@ -295,7 +295,7 @@ also öffentlich sein. Werksreset und OTA-Updates lassen `fctry` unangetastet.
 
    bzw. `idf.py -B build-N8R8 -DVARIANT=N8R8 -p /dev/cu.usbmodem* flash`. Aus einem
    Release geht auch die fertige Gesamtdatei:
-   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin`
+   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-0.1.0-d5v1-N16R8-full.bin`
    (sie überschreibt auch `fctry`, danach also immer Schritt 3).
 
 3. **Provisionieren:** liest die MAC, schreibt das Geräte-Geheimnis
@@ -546,7 +546,7 @@ SHA-256 und optional Größe:
 
 ```json
 {"version":"0.2.0","notes":"https://github.com/<owner>/<repo>/releases/tag/v0.2.0",
- "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin","sha256":"<64 Hex-Zeichen>","size":1234567}]}
+ "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-0.1.0-d5v1-N16R8.bin","sha256":"<64 Hex-Zeichen>","size":1234567}]}
 ```
 
 - `url` absolut oder relativ zur eingestellten Manifest-Adresse (nicht zum Ziel einer Weiterleitung);

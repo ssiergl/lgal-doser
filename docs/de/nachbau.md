@@ -150,7 +150,7 @@ Engineering-Schlüssel ableitet. Dafür gibt es zwei Wege:
    (`d5v1` = LGAL Doser 5, Platine v1.0):
 
    ```bash
-   python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin
+   python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-0.1.0-d5v1-N16R8-full.bin
    ```
 
    oder selbst gebaut mit `idf.py -p /dev/cu.usbmodem* flash`.
@@ -174,7 +174,7 @@ seriellen Konsole. Damit diese Ausgabe nicht verloren geht, nach dem Flashen nic
 starten, sondern erst den Monitor öffnen:
 
 ```bash
-python -m esptool --chip esp32s3 --after no-reset write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin
+python -m esptool --chip esp32s3 --after no-reset write-flash 0x0 lgal_doser-0.1.0-d5v1-N16R8-full.bin
 ```
 
 ```bash
