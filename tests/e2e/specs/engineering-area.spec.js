@@ -163,6 +163,9 @@ test('history kept longer; EEPROM self test', async ({ page, cleanup }) => {
   expect((await get(page, '/api/v1/history/settings')).keep_days).toBe(longer);
 
   const tel = card(page, 'System telemetry');
+  await expect(tel.getByText('Stack reserve per task')).toBeVisible();
+  await tel.getByRole('button', { name: /^Show all \d+$/ }).click();
+  await expect(tel.getByRole('button', { name: 'Show fewer' })).toBeVisible();
   await tel.getByRole('button', { name: 'Run test' }).click();
   await expect(tel.getByRole('status')).toHaveText('EEPROM self test passed.');
 });

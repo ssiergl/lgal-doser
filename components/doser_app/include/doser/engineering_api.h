@@ -11,7 +11,8 @@
 //         "heap":{"free","min_free","largest_block","total","fragmentation_pct"},
 //         "psram":{"free","total"},
 //         "nvs":{"used_entries","free_entries","total_entries","namespaces"},
-//         "storage":{"total","used","history_days","history_bytes","history_dropped"}}
+//         "storage":{"total","used","history_days","history_bytes","history_dropped"},
+//         "stacks":[{"task","free"}] (least stack ever left per task in bytes, tightest first)}
 //   POST /api/v1/engineering/reset?what=network
 //        LAN back to DHCP, WLAN and its password removed (applied after 1 s,
 //        the device may get a new address) -> {"status":"ok"}

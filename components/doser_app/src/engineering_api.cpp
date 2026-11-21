@@ -3,7 +3,10 @@
 
 #include "doser/engineering_api.h"
 
+#include <algorithm>
 #include <cstring>
+#include <memory>
+#include <new>
 
 #include "doser/event_source.h"
 #include "doser/history.h"
@@ -37,6 +40,31 @@ constexpr const char* TAG = "engineering";
 // Internal temperature sensor of the ESP32-S3, installed on first use
 temperature_sensor_handle_t s_tsens = nullptr;
 bool s_tsens_failed = false;
+
+// Stack reserve per task: the least stack ever left since the task started, in bytes
+// (FreeRTOS high water mark). Near 0 the task almost overflowed its stack. Tightest first.
+void add_stacks(Json& j) {
+    struct Entry {
+        char name[configMAX_TASK_NAME_LEN];
+        uint32_t free;
+    };
+    const UBaseType_t cap = uxTaskGetNumberOfTasks() + 4;  // room for tasks started meanwhile
+    std::unique_ptr<TaskStatus_t[]> ts(new (std::nothrow) TaskStatus_t[cap]);
+    std::unique_ptr<Entry[]> e(new (std::nothrow) Entry[cap]);
+    j.arr("stacks");
+    if (ts && e) {
+        const UBaseType_t n = uxTaskGetSystemState(ts.get(), cap, nullptr);
+        // copy the names right away: a task deleted meanwhile frees its name
+        for (UBaseType_t i = 0; i < n; ++i) {
+            std::strncpy(e[i].name, ts[i].pcTaskName, sizeof(e[i].name) - 1);
+            e[i].name[sizeof(e[i].name) - 1] = 0;
+            e[i].free = ts[i].usStackHighWaterMark;
+        }
+        std::sort(e.get(), e.get() + n, [](const Entry& a, const Entry& b) { return a.free < b.free; });
+        for (UBaseType_t i = 0; i < n; ++i) j.obj().kv("task", e[i].name).kv("free", static_cast<int64_t>(e[i].free)).end();
+    }
+    j.end();
+}
 
 bool chip_temp(float* c) {
     if (!s_tsens && !s_tsens_failed) {
@@ -93,6 +121,7 @@ esp_err_t get_telemetry(httpd_req_t* req) {
         .kv("history_bytes", static_cast<int64_t>(u.bytes))
         .kv("history_dropped", static_cast<int64_t>(u.dropped))
         .end();
+    add_stacks(j);
     j.end();
     return http::send_json(req, j.str().c_str());
 }

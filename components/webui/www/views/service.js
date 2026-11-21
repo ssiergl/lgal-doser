@@ -77,6 +77,8 @@ add({
     'sv.heap': 'RAM free (min.)', 'sv.frag': 'Largest block · fragmentation', 'sv.psram': 'PSRAM free', 'sv.nvs': 'NVS entries',
     'sv.fs': 'Flash file system', 'sv.hist.size': 'Recorded', 'sv.hist.v': '{d} days · {b}', 'sv.dropped': 'Events lost since start',
     'sv.tasks': 'Tasks', 'sv.uart': 'UART bus {b}', 'sv.uart.v': '{n} transfers · {e} errors',
+    'sv.stack': 'Stack reserve per task', 'sv.stack.v': '{b} bytes', 'sv.stack.all': 'Show all {n}', 'sv.stack.less': 'Show fewer',
+    'sv.stack.h': 'Least stack left since the start, tightest first. Below 512 bytes a task is close to overflowing.',
     'sv.paused': 'Live values paused – move the mouse or press a key.',
     'sv.danger': 'Danger zone',
     'sv.dz.hist': 'Delete history', 'sv.dz.hist.h': 'Deletes all recorded events.',
@@ -582,8 +584,12 @@ function DiagCard({ hw, pumps, fit }) {
 // ---------------------------------------------------------------------------
 // D: telemetry
 
+const kStackShown = 6;   // tightest tasks shown until "show all"
+const kStackLow = 512;  // bytes: below this a task is close to overflowing
+
 function TelemetryCard({ tel, hw, paused }) {
   const [busy, setBusy] = useState(false);
+  const [allStacks, setAllStacks] = useState(false);
   const msg = useMsg();
   const eeTest = () => {
     setBusy(true);
@@ -609,6 +615,16 @@ function TelemetryCard({ tel, hw, paused }) {
       ${hw.uart.map((u, b) => html`<dt>${t('sv.uart', { b: String.fromCharCode(65 + b) })}</dt>
         <dd class="num">${t('sv.uart.v', { n: num(u.transfers), e: num(u.timeouts + u.crc_errors + u.echo_errors) })}</dd>`)}
     </dl>`}
+    ${tel && tel.stacks && html`<div class="sub">
+      <b>${t('sv.stack')}</b>
+      <dl class="stats two">
+        ${(allStacks ? tel.stacks : tel.stacks.slice(0, kStackShown)).map(s => html`<dt>${s.task}</dt>
+          <dd class=${'num' + (s.free < kStackLow ? ' warn' : '')}>${t('sv.stack.v', { b: num(s.free) })}</dd>`)}
+      </dl>
+      <p class="small mut">${t('sv.stack.h')}</p>
+      ${tel.stacks.length > kStackShown && html`<button type="button" class="sec" onClick=${() => setAllStacks(!allStacks)}>
+        ${allStacks ? t('sv.stack.less') : t('sv.stack.all', { n: tel.stacks.length })}</button>`}
+    </div>`}
     ${paused && html`<p class="small mut">${t('sv.paused')}</p>`}
     <div class="sub">
       <div class="row between"><b>${t('sv.eeprom')}</b>

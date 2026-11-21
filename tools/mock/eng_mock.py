@@ -112,7 +112,10 @@ def route(h, method, path, q, eng_ok):
                               "fragmentation_pct": round(100 * (1 - 96 * 1024 / free), 1)},
                      "psram": {"free": 8_100_000, "total": 8_388_608},
                      "nvs": {"used_entries": 412, "free_entries": 1604, "total_entries": 2016, "namespaces": 11},
-                     "storage": {"total": 6_029_312, "used": 155_648, "history_days": 23, "history_bytes": 98_304, "history_dropped": 0}})
+                     "storage": {"total": 6_029_312, "used": 155_648, "history_days": 23, "history_bytes": 98_304, "history_dropped": 0},
+                     "stacks": [{"task": n, "free": f} for n, f in (
+                         ("ipc0", 412), ("httpd", 1208), ("motion", 1636), ("dosing", 2124), ("tiT", 2240), ("sched", 2592),
+                         ("history", 2680), ("ws_push", 2716), ("mqtt_ha", 3420), ("wifi", 3784), ("IDLE0", 864))]})
         return True
     if path == "/api/v1/engineering/reset" and method == "POST":
         w = q.get("what")

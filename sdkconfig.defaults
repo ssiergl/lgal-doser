@@ -50,6 +50,8 @@ CONFIG_ESP_TASK_WDT_TIMEOUT_S=10
 
 # FreeRTOS
 CONFIG_FREERTOS_HZ=1000
+# uxTaskGetSystemState: stack reserve of every task in the telemetry (engineering_api.cpp)
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
 # Network: DNS servers follow the active interface (LAN or WLAN)
