@@ -245,8 +245,8 @@ ganz voll).
 
 ### Verlauf
 
-**Verlauf** zeigt die dosierte Menge pro Tag und Pumpe für 7 bis 90 Tage (Standard 14), als
-Balken oder Linie. Antippen eines Tages nennt Menge, Anzahl der Dosen und ausgelassene Dosen.
+**Verlauf** zeigt die dosierte Menge pro Tag und Pumpe für 7, 14 (Standard) oder 30 Tage oder
+mit **Zeitraum** für beliebige Tage innerhalb der letzten 90 (von – bis), als Balken oder Linie. Antippen eines Tages nennt Menge, Anzahl der Dosen und ausgelassene Dosen.
 In Profi gibt es die Liste aller Ereignisse (Dosen, Füllen, Kalibrierung, Alarme, Änderungen …)
 mit Filter und CSV-Export.
 
