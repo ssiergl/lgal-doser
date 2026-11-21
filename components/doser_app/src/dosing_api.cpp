@@ -323,7 +323,8 @@ esp_err_t post_settings(httpd_req_t* req) {
         mc.driver.invert = ccw;
         if (turn && motion::status(p).running) return fail(req, "pump_busy");
     }
-    if (const char* e = dosing::set_settings(p, s, source_of(req), turn)) return fail(req, e);
+    if (const char* e = dosing::set_settings(p, s, source_of(req), turn ? (mc.driver.invert ? 2 : 1) : 0))
+        return fail(req, e);
     if (turn) {
         const esp_err_t err = motion::set_config(p, mc);
         if (err == ESP_ERR_INVALID_STATE) return fail(req, "pump_busy");

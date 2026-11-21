@@ -66,6 +66,13 @@ bool parse_kind(const char* s, Kind* out) {
     return false;
 }
 
+const char* changed_str(int bit) {
+    static constexpr const char* kNames[kChangedCount] = {"name",        "speed",       "retract",
+                                                          "daily_limit", "container",   "thresholds",
+                                                          "calibration", "reminder",    "direction"};
+    return bit >= 0 && bit < kChangedCount ? kNames[bit] : "";
+}
+
 const char* source_str(Source s) {
     const auto i = static_cast<uint8_t>(s);
     return i < sizeof(kSources) / sizeof(kSources[0]) ? kSources[i] : "";

@@ -46,6 +46,31 @@ const char* reset_str(int32_t r) {
 bool is_code(const Event& e, const char* c) { return std::strcmp(history::code_str(e.code), c) == 0; }
 
 const char* mode_name(int32_t m) { return dose::mode_str(static_cast<dose::Mode>(m)); }
+
+// Device "settings": the area (lgal::events::Area), "" = not recorded
+const char* area_str(int32_t a) {
+    switch (a) {
+        case 1: return "language";
+        case 2: return "time";
+        case 3: return "led";
+        case 4: return "name";
+        default: return "";
+    }
+}
+
+// Pump "settings": the changed groups as "name+speed"
+void fmt_changed(int32_t m, char* out, size_t len) {
+    size_t n = 0;
+    out[0] = '\0';
+    for (int b = 0; b < history::kChangedCount; ++b)
+        if (m & (1 << b)) {
+            const bool dir = (1 << b) == history::kChDirection;
+            const int k = std::snprintf(out + n, len - n, "%s%s%s", n ? "+" : "", history::changed_str(b),
+                                        !dir ? "" : m & history::kChNowCcw ? "(ccw)" : "(cw)");
+            if (k < 0 || size_t(k) >= len - n) return;
+            n += size_t(k);
+        }
+}
 }  // namespace
 
 void fmt_local_s(int64_t local, char (&out)[20]) {
@@ -115,10 +140,20 @@ void write_event(lgal::Json& j, const Event& e, int64_t local, bool leave_open) 
                 for (int p = 0; p < kMaxPumps; ++p)
                     if (e.value & (1 << p)) j.v(p + 1);
                 j.end();
+            } else if (is_code(e, "settings") && area_str(e.value)[0]) {
+                j.kv("area", area_str(e.value));
+            }
+            break;
+        case Kind::Settings:
+            if (e.value) {
+                j.arr("changed");
+                for (int b = 0; b < history::kChangedCount; ++b)
+                    if (e.value & (1 << b)) j.v(history::changed_str(b));
+                j.end();
+                if (e.value & history::kChDirection) j.kv("direction", e.value & history::kChNowCcw ? "ccw" : "cw");
             }
             break;
         case Kind::Alarm:
-        case Kind::Settings:
         case Kind::AlarmEnd:
             break;
     }
@@ -149,7 +184,7 @@ const char* csv_header() { return "utc,local,kind,pump,source,code,target_ml,don
 size_t csv_line(const Event& e, int64_t local, char* out, size_t len) {
     char loc[20];
     fmt_local_s(local, loc);
-    char value[24] = "";
+    char value[96] = "";
     switch (e.kind) {
         case Kind::Container: std::snprintf(value, sizeof(value), "%.3f", ml(e.value)); break;
         case Kind::Calibration: std::snprintf(value, sizeof(value), "%.2f", e.value / 1000.0); break;
@@ -165,8 +200,10 @@ size_t csv_line(const Event& e, int64_t local, char* out, size_t len) {
                 char v[16];
                 fmt_version(e.value, v);
                 std::snprintf(value, sizeof(value), "%s", v);
-            } else if (e.value) std::snprintf(value, sizeof(value), "%ld", long(e.value));
+            } else if (is_code(e, "settings")) std::snprintf(value, sizeof(value), "%s", area_str(e.value));
+            else if (e.value) std::snprintf(value, sizeof(value), "%ld", long(e.value));
             break;
+        case Kind::Settings: fmt_changed(e.value, value, sizeof(value)); break;
         default: break;
     }
     const int n = std::snprintf(out, len, "%lu,%s,%s,%u,%s,%s,%.3f,%.3f,%s\r\n", static_cast<unsigned long>(e.utc), loc,

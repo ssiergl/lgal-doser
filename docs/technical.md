@@ -885,9 +885,9 @@ the history too; the engineering menu deletes it on its own and starts the amoun
 | `boost` | `started` (`total_ml`, `days` or `doses`), `cancelled` (by hand, `done_ml` so far), `finished` (by itself: all doses given or period over, `done_ml`) |
 | `mode` | mode changed (`mode`: `auto`, `manual_only`, `disabled`) |
 | `schedule` | schedule changed (`set` with `daily_ml` and `doses` per day) or deleted (`cleared`); the same plan saved again is neither written to the flash nor recorded |
-| `settings` | other pump settings changed (name, speed, limits, thresholds, direction) |
+| `settings` | other pump settings changed; `changed` names the groups (`name`, `speed`, `retract`, `daily_limit`, `container`, `thresholds`, `calibration`, `reminder`, `direction`), with a changed direction also `direction` (`cw`/`ccw`, the new one) |
 | `locks` | lock rules changed (pump 0, `rules`) |
-| `system` | device (pump 0): `boot` (`reason`: `power_on`, `restart`, `crash`, `watchdog`, `brownout`, …), `updated` (`version`, `from`), `restored` (backup), `time_set`, `cleared` (history deleted – the first entry after it), `settings` (language, time zone, LED, name), `network`, `mqtt`, `channels` (`pumps`), `engineering`, `password`, `key_added`, `key_removed` |
+| `system` | device (pump 0): `boot` (`reason`: `power_on`, `restart`, `crash`, `watchdog`, `brownout`, …), `updated` (`version`, `from`), `restored` (backup), `time_set`, `cleared` (history deleted – the first entry after it), `settings` (`area`: `language`, `time` – time zone or time server, `led`, `name`), `network`, `mqtt`, `channels` (`pumps`), `engineering`, `password`, `key_added`, `key_removed` |
 
 `source` says who it was: `manual` = web UI (signed-in browser), `api` = API key, `mqtt` = Home
 Assistant/MQTT, `schedule` = schedule (also the end of a boost), `boost` = dose with boost share;
@@ -899,7 +899,9 @@ once, otherwise after the first time sync), with the time of the start.
 The CSV has the columns `utc,local,kind,pump,source,code,target_ml,done_ml,value`; `value` is
 the content (container), µl per revolution (calibration), hours (tube), the count (skipped),
 days or negative number of doses (boost), the mode (mode), doses per day (schedule), the number
-of rules (lock rules), reset reason or version (system).
+of rules (lock rules), the changed groups joined with `+`, the direction as `direction(ccw)`
+(settings), reset reason, version or the area of the settings (system). Entries written before
+the groups and areas were recorded have none.
 
 ## MQTT / Home Assistant (M6)
 

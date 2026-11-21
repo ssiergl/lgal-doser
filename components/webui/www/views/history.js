@@ -47,6 +47,11 @@ add({
     'hc.key_added': 'API key added', 'hc.key_removed': 'API key deleted',
     'hd.bo.days': '{t} ml over {n} days', 'hd.bo.doses': '{t} ml over {n} doses', 'hd.plan': '{d} ml/day · {n} doses',
     'hd.rules': '{n} rules', 'hd.pumps': 'pumps {p}', 'hd.ver': '{from} → {to}',
+    'hd.ar.language': 'Language', 'hd.ar.time': 'Time zone / time server', 'hd.ar.led': 'Status LED', 'hd.ar.name': 'Device name',
+    'hd.ch.name': 'Name', 'hd.ch.speed': 'Speed', 'hd.ch.retract': 'Anti-drip retraction', 'hd.ch.daily_limit': 'Daily limit',
+    'hd.ch.container': 'Container size', 'hd.ch.thresholds': 'Container thresholds', 'hd.ch.calibration': 'Calibration',
+    'hd.ch.reminder': 'Calibration reminder', 'hd.ch.direction': 'Direction of rotation',
+    'hd.ch.dir': 'Direction of rotation → {d}', 'hd.dir.cw': 'Clockwise (CW)', 'hd.dir.ccw': 'Counter-clockwise (CCW)',
     'hd.rs.power_on': 'power on', 'hd.rs.external': 'reset', 'hd.rs.restart': 'restart', 'hd.rs.crash': 'after a crash',
     'hd.rs.watchdog': 'watchdog', 'hd.rs.brownout': 'voltage dip', 'hd.rs.other': '',
   },
@@ -219,10 +224,13 @@ function detail(e) {
     case 'mode': return t('mode.' + e.mode);
     case 'schedule': return e.code === 'set' ? t('hd.plan', { d: num(e.daily_ml, 2), n: e.doses }) : '';
     case 'locks': return t('hd.rules', { n: e.rules });
+    case 'settings': return (e.changed || []).map(c => c === 'direction' && e.direction
+      ? t('hd.ch.dir', { d: t('hd.dir.' + e.direction) }) : t('hd.ch.' + c)).join(', ');
     case 'system':
       if (e.code === 'boot') return t('hd.rs.' + e.reason);
       if (e.code === 'updated') return e.from ? t('hd.ver', { from: e.from, to: e.version }) : e.version || '';
       if (e.code === 'channels') return t('hd.pumps', { p: e.pumps.join(', ') });
+      if (e.code === 'settings' && e.area) return t('hd.ar.' + e.area);
       return '';
     default: return '';
   }

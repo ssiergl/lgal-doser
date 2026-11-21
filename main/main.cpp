@@ -182,12 +182,12 @@ void log_boot(const lgal::timesync::Status& ts) {
 }
 
 // Changes in the core (network, MQTT, device settings, password, keys)
-void log_core_event(const char* code, lgal::events::By by) {
+void log_core_event(const char* code, lgal::events::By by, int32_t value) {
     namespace history = doser::history;
     const history::Source src = by == lgal::events::By::ApiKey    ? history::Source::Api
                                 : by == lgal::events::By::Browser ? history::Source::Manual
                                                                   : history::Source::None;
-    history::note(history::Kind::System, -1, src, code);
+    history::note(history::Kind::System, -1, src, code, 0, 0, value);
 }
 
 // 24 V supply (board with sense input): false = missing at boot. The board

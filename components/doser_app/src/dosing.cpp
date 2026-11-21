@@ -543,15 +543,22 @@ void stop_all() {
 
 namespace {
 // Any setting other than the mode differs
-bool settings_differ(const dose::PumpSettings& a, const dose::PumpSettings& b) {
-    return std::strcmp(a.name, b.name) != 0 || a.speed_tier != b.speed_tier || a.retract_mrev != b.retract_mrev ||
-           a.daily_limit_ul != b.daily_limit_ul || a.capacity_ul != b.capacity_ul ||
-           a.warn_days != b.warn_days || a.low_days != b.low_days ||
-           a.recal_months != b.recal_months || a.ul_per_rev != b.ul_per_rev;
+// The groups of settings that differ (history::Changed bits; the mode has its own event)
+int32_t settings_changes(const dose::PumpSettings& a, const dose::PumpSettings& b) {
+    int32_t m = 0;
+    if (std::strcmp(a.name, b.name) != 0) m |= history::kChName;
+    if (a.speed_tier != b.speed_tier) m |= history::kChSpeed;
+    if (a.retract_mrev != b.retract_mrev) m |= history::kChRetract;
+    if (a.daily_limit_ul != b.daily_limit_ul) m |= history::kChDailyLimit;
+    if (a.capacity_ul != b.capacity_ul) m |= history::kChContainer;
+    if (a.warn_days != b.warn_days || a.low_days != b.low_days) m |= history::kChThresholds;
+    if (a.ul_per_rev != b.ul_per_rev) m |= history::kChCalibration;
+    if (a.recal_months != b.recal_months) m |= history::kChReminder;
+    return m;
 }
 }  // namespace
 
-const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source, bool also_changed) {
+const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source, int turned) {
     if (!valid_pump(pump)) return "invalid_param";
     if (s.speed_tier >= dose::kTiers || s.retract_mrev < -1 || s.retract_mrev > 2000 ||
         s.daily_limit_ul > 10000000 || s.capacity_ul > 100000000 || s.ul_per_rev < 0.0f ||
@@ -568,7 +575,9 @@ const char* set_settings(int pump, const dose::PumpSettings& s, history::Source 
     if (source != history::Source::None) {
         if (before.mode != p.set.mode)
             history::note(history::Kind::Mode, pump, source, "set", 0, 0, static_cast<int32_t>(p.set.mode));
-        if (also_changed || settings_differ(before, p.set)) history::note(history::Kind::Settings, pump, source, "set");
+        int32_t changed = settings_changes(before, p.set);
+        if (turned) changed |= history::kChDirection | (turned == 2 ? int32_t(history::kChNowCcw) : 0);
+        if (changed) history::note(history::Kind::Settings, pump, source, "set", 0, 0, changed);
     }
     return nullptr;
 }

@@ -90,11 +90,13 @@ void stop(int pump);
 void clear_today();
 void stop_all();
 
-// Records a mode change (history "mode") and any other change ("settings";
-// also_changed: settings outside PumpSettings changed with it, e.g. the
-// direction). source None records nothing (backup restore logs on its own).
+// Records a mode change (history "mode") and any other change ("settings",
+// with the groups that changed). turned: the direction, which is not in
+// PumpSettings, changed with it (0 = no, 1 = now clockwise, 2 = now
+// counter-clockwise). source None records nothing (backup restore logs on
+// its own).
 const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source = history::Source::None,
-                         bool also_changed = false);
+                         int turned = 0);
 // Chemical lock times between pumps, checked on every dose (all triggers).
 // Priming and calibration are not affected (operator present, measuring cup).
 void set_locks(const sched::Locks& l);

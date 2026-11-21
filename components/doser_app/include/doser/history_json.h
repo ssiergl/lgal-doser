@@ -24,6 +24,9 @@ void fmt_local_s(int64_t local, char (&out)[20]);
 //   calibration           target_ml, measured_ml, ul_per_rev
 //   tube                  hours
 //   alarm                 code only; pump 0 = device
+//   settings              changed: ["name","speed",…], direction: cw|ccw (the new one,
+//                         with "direction" in changed); missing in older entries
+//   system "settings"     area: language|time|led|name (missing in older entries)
 // leave_open: the caller adds members and closes the object.
 void write_event(lgal::Json& j, const history::Event& e, int64_t local, bool leave_open = false);
 
@@ -31,7 +34,8 @@ void write_event(lgal::Json& j, const history::Event& e, int64_t local, bool lea
 bool parse_kinds(const char* s, uint16_t* out);
 
 // CSV with a header line; value = remaining ml (container), µl/rev
-// (calibration), hours (tube) or slot count (skip)
+// (calibration), hours (tube), slot count (skip), the changed groups
+// ("name+speed", settings) or the area (system "settings")
 const char* csv_header();
 // Line incl. "\r\n"; returns the length, 0 if it does not fit
 size_t csv_line(const history::Event& e, int64_t local, char* out, size_t len);

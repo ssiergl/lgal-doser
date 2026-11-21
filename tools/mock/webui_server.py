@@ -353,7 +353,10 @@ def pumps_post(h, path, q):
             return err(h, "invalid_param", "action")
         if path == "/api/v1/pumps/settings":
             if "mode" in q and q["mode"] != p["mode"]: note("mode", n, "set", mode=q["mode"])
-            if any(k != "pump" and k != "mode" for k in q): note("settings", n, "set")
+            snap = lambda: {"name": NAMES[i], "speed": p["tier"], "retract": (p["rset"], p.get("rrev")),
+                            "daily_limit": p["limit"], "thresholds": (p["warn"], p["low"]), "reminder": p["recal"],
+                            "direction": eng_mock.CFG[i]["invert"]}
+            before = snap()
             if "name" in q: NAMES[i] = q["name"][:23]
             if "mode" in q: p["mode"] = q["mode"]
             if "tier" in q: p["tier"] = int(q["tier"])
@@ -379,6 +382,10 @@ def pumps_post(h, path, q):
             if "direction" in q:
                 if q["direction"] not in ("cw", "ccw"): return err(h, "invalid_param", "direction=cw|ccw")
                 eng_mock.CFG[i]["invert"] = q["direction"] == "ccw"
+            after = snap()  # like the firmware: only the groups that really changed, in its order
+            changed = [g for g in ("name", "speed", "retract", "daily_limit", "thresholds", "reminder", "direction")
+                       if before[g] != after[g]]
+            if changed: note("settings", n, "set", changed=changed)
             return h.send(200, {"status": "ok"})
         if path == "/api/v1/pumps/container":
             if "capacity_ml" in q:

@@ -67,7 +67,7 @@ def _gen():
             _add(day0 + 20 * 3600, "boost", 3, "manual", "cancelled", total_ml=6.0, done_ml=2.0, days=3)
         if d == 15:
             _add(day0 + 9 * 3600, "mode", 4, "manual", "set", mode="disabled")
-            _add(day0 + 9 * 3600 + 40, "settings", 4, "manual", "set")
+            _add(day0 + 9 * 3600 + 40, "settings", 4, "manual", "set", changed=["speed", "daily_limit"])
             _add(day0 + 9 * 3600 + 300, "schedule", 2, "manual", "set", daily_ml=30.0, doses=6)
             _add(day0 + 9 * 3600 + 400, "locks", 0, "manual", "set", rules=2)
         if d == 10:
@@ -76,7 +76,9 @@ def _gen():
         if d == 22:
             _add(day0 + 6 * 3600, "system", 0, None, "boot", reason="power_on")
             _add(day0 + 6 * 3600 + 1, "system", 0, None, "updated", version="0.1.0", **{"from": "0.0.9"})
-        if d == 18: _add(day0 + 12 * 3600, "system", 0, "manual", "network")
+        if d == 18:
+            _add(day0 + 12 * 3600, "system", 0, "manual", "network")
+            _add(day0 + 12 * 3600 + 60, "system", 0, "manual", "settings", area="led")
         if d == 7:
             _add(day0 + 13 * 3600, "system", 0, "manual", "restored")
             _add(day0 + 13 * 3600 + 30, "system", 0, "manual", "password")

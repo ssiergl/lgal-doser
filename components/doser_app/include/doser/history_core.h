@@ -46,6 +46,22 @@ static_assert(kKindMax < 16, "Filter::kinds is a 16 bit mask");
 
 enum class Source : uint8_t { None, Manual, Api, Schedule, Boost, Mqtt };
 
+// Value of a pump "settings" event: the groups that changed (0 = not recorded)
+enum Changed : int32_t {
+    kChName = 1 << 0,
+    kChSpeed = 1 << 1,
+    kChRetract = 1 << 2,
+    kChDailyLimit = 1 << 3,
+    kChContainer = 1 << 4,    // container size
+    kChThresholds = 1 << 5,   // warning and alarm days
+    kChCalibration = 1 << 6,  // µl per revolution entered by hand
+    kChReminder = 1 << 7,     // calibration reminder
+    kChDirection = 1 << 8,
+    kChNowCcw = 1 << 16,      // with kChDirection: turns counter-clockwise now
+};
+constexpr int kChangedCount = 9;
+const char* changed_str(int bit);  // name of bit 0..kChangedCount-1
+
 struct Event {
     uint32_t utc = 0;
     Kind kind = Kind::Dose;

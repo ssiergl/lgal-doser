@@ -120,7 +120,7 @@ esp_err_t get_csv(httpd_req_t* req) {
     ctx->len = std::strlen(head);
     history::query(f, [](const history::Event& e, void* p) {
         auto* c = static_cast<Ctx*>(p);
-        if (sizeof(c->buf) - c->len < 160 && !c->flush()) return false;
+        if (sizeof(c->buf) - c->len < 256 && !c->flush()) return false;
         c->len += hj::csv_line(e, scheduler::to_local(e.utc), c->buf + c->len, sizeof(c->buf) - c->len);
         return true;
     }, ctx);

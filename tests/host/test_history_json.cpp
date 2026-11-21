@@ -174,10 +174,45 @@ static void test_daily() {
     CHECK(d.days == hj::kMaxDays && d.dosed_ul[6][0] == 0);
 }
 
+static void test_what_changed() {
+    std::printf("What a settings event changed\n");
+    using namespace doser::history;
+    lgal::Json j;
+    j.arr();
+    hj::write_event(j, ev(Kind::Settings, 2, 0, 0, kChSpeed | kChDailyLimit, "set"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Settings, 2, 0, 0, kChDirection | kChNowCcw, "set"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Settings, 2, 0, 0, kChName | kChDirection, "set"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::Settings, 2, 0, 0, 0, "set"), local_at(kDay, 8, 0));  // older entry
+    hj::write_event(j, ev(Kind::System, 0, 0, 0, 3, "settings"), local_at(kDay, 8, 0));
+    hj::write_event(j, ev(Kind::System, 0, 0, 0, 0, "settings"), local_at(kDay, 8, 0));  // older entry
+    j.end();
+    lgal::JsonReader r;
+    CHECK(r.parse(j.c_str(), j.str().size(), g_tok, 256));
+    auto a = r.root();
+    CHECK(a[0]["changed"].size() == 2 && a[0]["changed"][0].equals("speed") && a[0]["changed"][1].equals("daily_limit"));
+    CHECK(!a[0]["direction"].valid());
+    CHECK(a[1]["changed"].size() == 1 && a[1]["changed"][0].equals("direction") && a[1]["direction"].equals("ccw"));
+    CHECK(a[2]["changed"][0].equals("name") && a[2]["changed"][1].equals("direction") && a[2]["direction"].equals("cw"));
+    CHECK(!a[3]["changed"].valid() && !a[3]["direction"].valid());
+    CHECK(a[4]["code"].equals("settings") && a[4]["area"].equals("led"));
+    CHECK(!a[5]["area"].valid());
+
+    char line[256];
+    size_t n = hj::csv_line(ev(Kind::Settings, 2, 0, 0, kChSpeed | kChDirection | kChNowCcw, "set"), local_at(kDay, 8, 0),
+                            line, sizeof(line));
+    CHECK(n > 0 && std::string(line).find(",0.000,0.000,speed+direction(ccw)\r\n") != std::string::npos);
+    n = hj::csv_line(ev(Kind::System, 0, 0, 0, 2, "settings"), local_at(kDay, 8, 0), line, sizeof(line));
+    CHECK(n > 0 && std::string(line).find(",settings,0.000,0.000,time\r\n") != std::string::npos);
+    // everything at once still fits (the CSV export flushes with 256 bytes left)
+    n = hj::csv_line(ev(Kind::Settings, 2, 0, 0, (1 << kChangedCount) - 1, "set"), local_at(kDay, 8, 0), line, sizeof(line));
+    CHECK(n > 0 && n < 256 && std::string(line).find("+reminder+direction(cw)\r\n") != std::string::npos);
+}
+
 int main() {
     test_event_json();
     test_kinds_and_csv();
     test_change_events();
+    test_what_changed();
     test_daily();
     std::printf("%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
