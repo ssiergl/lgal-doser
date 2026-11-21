@@ -23,7 +23,7 @@ jobs:
         run: |
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends clang libclang-rt-dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Host tests (AddressSanitizer, UndefinedBehaviorSanitizer)
         run: SAN=1 HOST_CXX=clang++ sh tests/host/run.sh
       - name: Fuzz parsers (short run)
@@ -38,7 +38,7 @@ jobs:
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
             ca-certificates git python3 python3-pytest nodejs npm cppcheck
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true  # brand/: the contract test (tests/tools) runs the mock, which serves files from it
       - name: Translations
@@ -65,7 +65,7 @@ jobs:
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
             ca-certificates git python3 nodejs npm
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true  # brand/: the mock serves the logo and the shared web design from it
       - name: Install Playwright, Chromium, WebKit and Firefox
@@ -76,7 +76,7 @@ jobs:
         run: npx --prefix tests/e2e playwright test -c tests/e2e
       - name: Keep the report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
@@ -91,7 +91,7 @@ jobs:
         board: [d5v1]  # one entry per boards/<id>.cmake
         variant: [N8R8, N16R8, N32R8]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true  # brand/: the logo and the shared web design
       - name: Build ${{ matrix.board }} ${{ matrix.variant }}

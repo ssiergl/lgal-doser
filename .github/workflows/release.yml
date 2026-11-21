@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-24.04
     container: espressif/idf:v6.1.1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: true  # brand/: the logo and the shared web design
       - name: Tag matches version.txt
@@ -44,7 +44,7 @@ jobs:
           . "$IDF_PATH/export.sh"
           pip install -q esp-idf-sbom==1.5.0
           tools/release.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -62,10 +62,10 @@ jobs:
         run: |
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gh ca-certificates python3 git
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # tags and history for the release notes
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
