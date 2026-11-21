@@ -324,7 +324,7 @@
   "led.same": "Başlangıç ve bitiş farklı olmalı.",
   "led.field": "Lütfen kontrol edin: {f}",
   "lk.title": "Pompalar arası bekleme süreleri",
-  "lk.intro": "Bekleme süresi iki pompayı ayırır: biri dozunu bitirdiğinde diğeri ancak bekleme süresi dolduktan sonra başlar. Aynı su akışında buluşmaması gereken katkılar için.",
+  "lk.intro": "Bekleme süresi iki pompayı ayırır: bir pompanın dozundan sonra diğeri ancak bekleme süresi dolduktan sonra başlar; süre, dozun bittiği dakikadan itibaren sayılır – 08:00 ve 08:30'daki dozlar 30 dakikalık bekleme süresine uyar. Aynı su akışında buluşmaması gereken katkılar için.",
   "lk.none": "Bekleme süresi yok – tüm pompalar aynı anda dozlayabilir.",
   "lk.add": "Kural ekle",
   "lk.del": "Kuralı kaldır",

@@ -319,7 +319,7 @@
   "led.same": "Beginn und Ende müssen sich unterscheiden.",
   "led.field": "Bitte prüfen: {f}",
   "lk.title": "Sperrzeiten zwischen Pumpen",
-  "lk.intro": "Eine Sperrzeit hält zwei Pumpen auseinander: Endet eine Dosis der einen Pumpe, startet die andere frühestens nach Ablauf der Sperrzeit. Gedacht für Zusätze, die sich nicht im selben Wasserstrom treffen sollen.",
+  "lk.intro": "Eine Sperrzeit hält zwei Pumpen auseinander: Nach einer Dosis der einen Pumpe startet die andere frühestens nach Ablauf der Sperrzeit, gezählt ab der Minute, in der die Dosis endete – Dosen um 08:00 und 08:30 passen zu einer Sperrzeit von 30 Minuten. Gedacht für Zusätze, die sich nicht im selben Wasserstrom treffen sollen.",
   "lk.none": "Keine Sperrzeiten – alle Pumpen dürfen gleichzeitig dosieren.",
   "lk.add": "Regel hinzufügen",
   "lk.del": "Regel löschen",

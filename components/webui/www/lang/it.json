@@ -324,7 +324,7 @@
   "led.same": "Inizio e fine devono essere diversi.",
   "led.field": "Controlla: {f}",
   "lk.title": "Tempi di blocco tra pompe",
-  "lk.intro": "Un tempo di blocco separa due pompe: quando una ha finito una dose, l’altra parte solo dopo il tempo di blocco. Per additivi che non devono incontrarsi nello stesso flusso d’acqua.",
+  "lk.intro": "Un tempo di blocco separa due pompe: dopo una dose di una pompa, l’altra parte solo trascorso il tempo di blocco, contato dal minuto in cui la dose è finita – dosi alle 08:00 e alle 08:30 rispettano un tempo di blocco di 30 minuti. Per additivi che non devono incontrarsi nello stesso flusso d’acqua.",
   "lk.none": "Nessun tempo di blocco – tutte le pompe possono dosare contemporaneamente.",
   "lk.add": "Aggiungi regola",
   "lk.del": "Elimina regola",

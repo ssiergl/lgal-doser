@@ -324,7 +324,7 @@
   "led.same": "Begin en einde moeten verschillen.",
   "led.field": "Controleer: {f}",
   "lk.title": "Spertijden tussen pompen",
-  "lk.intro": "Een spertijd scheidt twee pompen: is de ene klaar met een dosering, dan start de andere pas na afloop van de spertijd. Voor toevoegingen die niet in dezelfde waterstroom mogen samenkomen.",
+  "lk.intro": "Een spertijd scheidt twee pompen: na een dosering van de ene pomp start de andere pas na afloop van de spertijd, geteld vanaf de minuut waarin de dosering eindigde – doseringen om 08:00 en 08:30 passen bij een spertijd van 30 minuten. Voor toevoegingen die niet in dezelfde waterstroom mogen samenkomen.",
   "lk.none": "Geen spertijden – alle pompen mogen tegelijk doseren.",
   "lk.add": "Regel toevoegen",
   "lk.del": "Regel verwijderen",

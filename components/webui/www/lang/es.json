@@ -324,7 +324,7 @@
   "led.same": "El inicio y el final deben ser distintos.",
   "led.field": "Revise, por favor: {f}",
   "lk.title": "Tiempos de bloqueo entre bombas",
-  "lk.intro": "Un tiempo de bloqueo separa dos bombas: cuando una termina una dosis, la otra solo arranca una vez transcurrido el tiempo de bloqueo. Para aditivos que no deben coincidir en el mismo flujo de agua.",
+  "lk.intro": "Un tiempo de bloqueo separa dos bombas: tras una dosis de una, la otra solo arranca una vez transcurrido el tiempo de bloqueo, contado desde el minuto en que terminó la dosis – dosis a las 08:00 y a las 08:30 cumplen un tiempo de bloqueo de 30 minutos. Para aditivos que no deben coincidir en el mismo flujo de agua.",
   "lk.none": "Sin tiempos de bloqueo – todas las bombas pueden dosificar a la vez.",
   "lk.add": "Añadir regla",
   "lk.del": "Eliminar regla",

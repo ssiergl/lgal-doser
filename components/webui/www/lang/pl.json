@@ -324,7 +324,7 @@
   "led.same": "Początek i koniec muszą się różnić.",
   "led.field": "Sprawdź: {f}",
   "lk.title": "Czasy blokady między pompami",
-  "lk.intro": "Czas blokady rozdziela dwie pompy: gdy jedna skończy dawkę, druga startuje dopiero po upływie czasu blokady. Dla dodatków, które nie mogą spotkać się w tym samym strumieniu wody.",
+  "lk.intro": "Czas blokady rozdziela dwie pompy: po dawce jednej pompy druga startuje dopiero po upływie czasu blokady, liczonego od minuty, w której dawka się skończyła – dawki o 08:00 i 08:30 mieszczą się w czasie blokady 30 minut. Dla dodatków, które nie mogą spotkać się w tym samym strumieniu wody.",
   "lk.none": "Brak czasów blokady – wszystkie pompy mogą dozować jednocześnie.",
   "lk.add": "Dodaj regułę",
   "lk.del": "Usuń regułę",
