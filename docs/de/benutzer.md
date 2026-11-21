@@ -200,8 +200,8 @@ Pumpe → Einstellungen in Profi:
 - **Geschwindigkeit** beim Dosieren (drei Stufen).
 - **Rückzug:** zieht nach jeder Dosis ein wenig zurück, damit nichts nachtropft (ab Werk aus).
 - **Warn- und Alarmschwelle** des Behälters in Tagen Reichweite.
-- **Drehrichtung**, falls die Pumpe falsch herum fördert (nur im Stillstand; danach kurz
-  Schlauch füllen und die Richtung prüfen).
+- **Drehrichtung** von vorne gesehen, ab Werk rechts herum, falls die Pumpe falsch herum fördert
+  (nur im Stillstand; danach kurz Schlauch füllen und die Richtung prüfen).
 
 Die Zielmenge der Kalibrierung lässt sich in Profi direkt im Kalibrier-Assistenten ändern.
 
