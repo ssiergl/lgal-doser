@@ -374,7 +374,9 @@ mit 401 `unauthorized` bzw. 403 `engineering_locked`.
 Ändernde Anfragen (alles außer GET) aus dem Browser nimmt das Gerät nur von seinen eigenen
 Seiten an (Origin = Host, sonst 403 `forbidden_origin`), auch Anmelden, Abmelden,
 Passwortwechsel, API-Keys und Engineering-Freischaltung. Das schützt zusätzlich zum
-`SameSite=Strict`-Cookie vor anderen Geräten unter derselben Heim-Domain. Clients ohne
+`SameSite=Lax`-Cookie (von einer anderen Seite aus nur beim Öffnen einer Seite gesendet, damit
+ein Link oder die eingetippte Adresse funktioniert; mit `Strict` ließ Safari es dann weg und die
+Seite fiel auf die Anmeldung zurück) vor anderen Geräten unter derselben Heim-Domain. Clients ohne
 Origin-Header (Home Assistant, Apps, Skripte) sind nicht betroffen.
 
 Im Werkszustand (`setup_completed = false`) ist das Setup-WLAN immer an und `/` führt
