@@ -117,9 +117,10 @@ esp_err_t start() {
 httpd_handle_t handle() { return s_server; }
 
 namespace {
-// Cross-site request forgery: SameSite=Strict keeps the session cookie away
-// from foreign sites, but not from other hosts of the same site (another
-// device under the same home domain). Browsers send Origin with every
+// Cross-site request forgery: SameSite=Lax keeps the session cookie away
+// from requests of foreign sites except a plain page visit (a link or the
+// address typed in: GET only, which changes nothing), but not from other
+// hosts of the same site (another device under the same home domain). Browsers send Origin with every
 // request that is not GET/HEAD, so such a request is only accepted from the
 // device's own pages. Clients without Origin (apps, Home Assistant, tools)
 // are no browsers and pass.

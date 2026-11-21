@@ -457,11 +457,11 @@ def route(h, method, path, q, body):
     if path == "/api/v1/auth/logout_all" and method == "POST":
         if not via(h) == "session": err(h, 401, "unauthorized", "Login required"); return True
         SESSIONS.clear(); REMEMBERED.clear(); AUTH.update(session=False, remember=False)
-        h.send(200, {"status": "ok"}, headers=[("Set-Cookie", "lgal_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0")]); return True
+        h.send(200, {"status": "ok"}, headers=[("Set-Cookie", "lgal_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")]); return True
     if path == "/api/v1/auth/logout" and method == "POST":
         if STRICT: SESSIONS.discard(session_of(h)); REMEMBERED.discard(session_of(h))
         else: AUTH.update(session=False, remember=False)
-        h.send(200, {"status": "ok"}, headers=[("Set-Cookie", "lgal_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0")]); return True
+        h.send(200, {"status": "ok"}, headers=[("Set-Cookie", "lgal_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")]); return True
     if path == "/api/v1/auth/login" and method == "POST":
         if not AUTH["password_set"]: err(h, 409, "password_not_set", "Choose the admin password in the setup first"); return True
         if throttled(h): return True
@@ -474,7 +474,7 @@ def route(h, method, path, q, body):
             t = secrets.token_hex(16); SESSIONS.add(t)
             if remember: REMEMBERED.add(t)
             age = "; Max-Age=7776000" if remember else ""  # 90 days, like the firmware
-            cookie = [("Set-Cookie", f"lgal_session={t}; Path=/; HttpOnly; SameSite=Strict{age}")]
+            cookie = [("Set-Cookie", f"lgal_session={t}; Path=/; HttpOnly; SameSite=Lax{age}")]
         h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}, headers=cookie); return True
     if path == "/api/v1/auth/keys":
         # managing keys needs a session, an API key cannot list or make keys (auth.cpp)

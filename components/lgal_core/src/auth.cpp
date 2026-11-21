@@ -131,10 +131,10 @@ void set_cookie(httpd_req_t* req, const char* token, bool remember) {
     // static: httpd keeps the pointer until the response is sent
     static char buf[128];
     if (token && remember)
-        snprintf(buf, sizeof(buf), "%s=%s; Path=/; HttpOnly; SameSite=Strict; Max-Age=%lld", kCookie, token,
+        snprintf(buf, sizeof(buf), "%s=%s; Path=/; HttpOnly; SameSite=Lax; Max-Age=%lld", kCookie, token,
                  static_cast<long long>(kRememberIdle));
-    else if (token) snprintf(buf, sizeof(buf), "%s=%s; Path=/; HttpOnly; SameSite=Strict", kCookie, token);
-    else snprintf(buf, sizeof(buf), "%s=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0", kCookie);
+    else if (token) snprintf(buf, sizeof(buf), "%s=%s; Path=/; HttpOnly; SameSite=Lax", kCookie, token);
+    else snprintf(buf, sizeof(buf), "%s=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0", kCookie);
     httpd_resp_set_hdr(req, "Set-Cookie", buf);
 }
 

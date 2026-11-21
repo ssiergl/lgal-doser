@@ -28,8 +28,8 @@ checked and – if confirmed – fixed in a new version; the issue is then publi
 
 The doser is built for the **home network**. What it protects:
 
-- **Access:** own admin password (PBKDF2 hash), sessions in RAM only, cookie with
-  `SameSite=Strict`, changing browser requests only from the device's own pages, throttling of
+- **Access:** own admin password (PBKDF2 hash), sessions in RAM ("stay signed in" ones stored
+  only as SHA-256), cookie with `SameSite=Lax`, changing browser requests only from the device's own pages, throttling of
   password guessing, API keys stored only as SHA-256.
 - **Device secret per device** in the `fctry` partition; the device password (rating plate,
   setup Wi-Fi) and the engineering key are derived from it. Firmware images contain no secret

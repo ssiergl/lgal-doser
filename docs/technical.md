@@ -362,8 +362,10 @@ Browser pages without sign-in redirect to `/login?next=…`; API calls answer 40
 
 The device accepts changing requests (everything except GET) from a browser only from its own
 pages (Origin = Host, otherwise 403 `forbidden_origin`), including sign-in, sign-out, password
-change, API keys and engineering unlock. In addition to the `SameSite=Strict` cookie, this
-protects against other devices under the same home domain. Clients without an Origin header
+change, API keys and engineering unlock. In addition to the `SameSite=Lax` cookie (sent from
+another site only when a page is opened, so a link or the typed address works; `Strict` made
+Safari leave it out then and the page fell back to the sign-in page), this protects against
+other devices under the same home domain. Clients without an Origin header
 (Home Assistant, apps, scripts) are not affected.
 
 In factory state (`setup_completed = false`) the setup Wi-Fi is always on and `/` leads to
