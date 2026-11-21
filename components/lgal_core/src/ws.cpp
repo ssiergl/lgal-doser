@@ -87,6 +87,7 @@ esp_err_t pre_handshake(httpd_req_t* req) {
     }
     auth::Principal who;
     if (!auth::principal(req, &who)) {
+        ESP_LOGW(TAG, "Handshake without a valid sign-in rejected");
         http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
         return ESP_FAIL;
     }
@@ -105,6 +106,7 @@ esp_err_t pre_handshake(httpd_req_t* req) {
             s_new_client = true;
         }
         if (slot < 0) {
+            ESP_LOGW(TAG, "Handshake rejected: all %d places taken", kMaxClients);
             http::send_error(req, "503 Service Unavailable", "too_many_clients", "Too many WebSocket connections");
             return ESP_FAIL;
         }
