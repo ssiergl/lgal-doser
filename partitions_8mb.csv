@@ -5,7 +5,7 @@
 #
 # CAUTION: bootloader and partition table are only written on the first USB
 # flash and can NOT be changed via OTA afterwards. Same layout as the 16 MB
-# table up to the app slots; slots of 3 MB (the app is about 1.8 MB) and
+# table up to the app slots; slots of 3 MB (the app is about 2.1 MB, 11/2026) and
 # 1.75 MB for history and settings files (60 days of history take ~350 KB).
 #
 # Name,     Type, SubType,  Offset,   Size
