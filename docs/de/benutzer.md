@@ -92,12 +92,16 @@ IP-Adresse verwenden; sie steht auch in der Geräteliste des Routers.
 ## 4. Anmelden
 
 - Angemeldet wird als Benutzer **admin** mit dem eigenen **Admin-Passwort**. Der Browser bleibt
-  angemeldet, solange er mindestens einmal pro Woche benutzt wird (höchstens 30 Tage). Nach einem Neustart oder
-  Update des Geräts muss man sich neu anmelden.
+  angemeldet, solange er mindestens einmal pro Woche benutzt und nicht geschlossen wird (höchstens
+  30 Tage). Nach einem Neustart oder Update des Geräts muss man sich neu anmelden.
+- Mit **Angemeldet bleiben** bleibt der Browser 90 Tage nach dem letzten Besuch angemeldet, auch
+  wenn er geschlossen wird und nach einem Neustart oder Update. Nur auf eigenen Geräten anhaken.
+- **Überall abmelden** (Einstellungen → Anmeldung) meldet jeden Browser ab, zum Beispiel nach dem
+  Verlust eines Handys. Apps und Home Assistant mit API-Schlüssel bleiben verbunden.
 - Nach fünf falschen Versuchen wartet das Gerät vor jedem weiteren Versuch, erst kurz, dann
   immer länger (bis 5 Minuten).
 - **Passwort vergessen:** siehe [Wenn etwas nicht geht](#11-wenn-etwas-nicht-geht).
-- Passwort ändern und Abmelden: Einstellungen → Anmeldung.
+- Passwort ändern, Abmelden und Überall abmelden: Einstellungen → Anmeldung.
 
 ## 5. Die Oberfläche
 
@@ -262,7 +266,7 @@ Verbrauch) und warnt, wenn die Lebensdauer erreicht ist. Nach dem Wechsel in Pro
 | Sperrzeiten (Profi) | Mindestabstand zwischen zwei Pumpen, z. B. KH und Calcium mindestens 30 min auseinander; dazu, ob eine manuelle Dosis in der Sperrzeit abgelehnt wird oder wartet |
 | Netzwerk | Status; in Profi LAN/WLAN, feste Adressen, WLAN suchen und testen |
 | MQTT (Profi) | Anbindung an Home Assistant oder einen anderen MQTT-Broker, wahlweise mit Steuerung aus Home Assistant |
-| Anmeldung | Passwort ändern, abmelden; in Profi API-Schlüssel für Apps und Skripte |
+| Anmeldung | Passwort ändern, abmelden, überall abmelden; in Profi API-Schlüssel für Apps und Skripte |
 | Darstellung | dunkel, hell oder wie das System; Sprache; 24- oder 12-Stunden-Format |
 
 **Home Assistant:** Broker-Adresse eintragen und „Home-Assistant-Erkennung“ einschalten; das
