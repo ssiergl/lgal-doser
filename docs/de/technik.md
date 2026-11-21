@@ -911,9 +911,9 @@ zurück.
 | `boost` | `started` (`total_ml`, `days` oder `doses`), `cancelled` (von Hand, `done_ml` bis dahin), `finished` (von selbst: alle Dosen gegeben oder Zeitraum vorbei, `done_ml`) |
 | `mode` | Betriebsart geändert (`mode`: `auto`, `manual_only`, `disabled`) |
 | `schedule` | Zeitplan geändert (`set` mit `daily_ml` und `doses` pro Tag) oder gelöscht (`cleared`); derselbe Plan noch einmal gespeichert wird weder in den Flash geschrieben noch aufgezeichnet |
-| `settings` | übrige Pumpeneinstellungen geändert (Name, Geschwindigkeit, Limits, Schwellen, Drehrichtung) |
+| `settings` | übrige Pumpeneinstellungen geändert; `changed` nennt die Gruppen (`name`, `speed`, `retract`, `daily_limit`, `container`, `thresholds`, `calibration`, `reminder`, `direction`), bei geänderter Drehrichtung zusätzlich `direction` (`cw`/`ccw`, die neue) |
 | `locks` | Sperrregeln geändert (Pumpe 0, `rules`) |
-| `system` | Gerät (Pumpe 0): `boot` (`reason`: `power_on`, `restart`, `crash`, `watchdog`, `brownout`, …), `updated` (`version`, `from`), `restored` (Datensicherung), `time_set`, `cleared` (Verlauf gelöscht – der erste Eintrag danach), `settings` (Sprache, Zeitzone, LED, Name), `network`, `mqtt`, `channels` (`pumps`), `engineering`, `password`, `key_added`, `key_removed` |
+| `system` | Gerät (Pumpe 0): `boot` (`reason`: `power_on`, `restart`, `crash`, `watchdog`, `brownout`, …), `updated` (`version`, `from`), `restored` (Datensicherung), `time_set`, `cleared` (Verlauf gelöscht – der erste Eintrag danach), `settings` (`area`: `language`, `time` – Zeitzone oder Zeitserver, `led`, `name`), `network`, `mqtt`, `channels` (`pumps`), `engineering`, `password`, `key_added`, `key_removed` |
 
 `source` sagt, wer es war: `manual` = Weboberfläche (angemeldeter Browser), `api` = API-Key,
 `mqtt` = Home Assistant/MQTT, `schedule` = Zeitplan (auch das Ende eines Boosts), `boost` =
@@ -925,7 +925,9 @@ sonst nach der ersten Zeitsynchronisation), mit dem Zeitpunkt des Starts.
 Die CSV hat die Spalten `utc,local,kind,pump,source,code,target_ml,done_ml,value`; `value` ist
 der Inhalt (Behälter), µl pro Umdrehung (Kalibrierung), Stunden (Schlauch), die Anzahl
 (ausgelassen), Tage bzw. negative Dosenzahl (Boost), die Betriebsart (Modus), Dosen pro Tag
-(Zeitplan), die Zahl der Regeln (Sperrregeln), Startgrund bzw. Version (System).
+(Zeitplan), die Zahl der Regeln (Sperrregeln), die geänderten Gruppen mit `+` verbunden, die
+Drehrichtung als `direction(ccw)` (Einstellungen), Startgrund, Version oder der Bereich der
+Einstellungen (System). Einträge von vor der Aufzeichnung der Gruppen und Bereiche haben keine.
 
 ## MQTT / Home Assistant (M6)
 
