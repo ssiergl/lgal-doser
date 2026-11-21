@@ -387,6 +387,7 @@
   "err.wrong_chip": "El firmware es para otro chip",
   "err.wrong_variant": "El firmware es para un módulo con otro tamaño de flash (variante N8R8/N16R8/N32R8)",
   "err.no_app_desc": "El archivo de firmware está incompleto",
+  "err.full_image": "Es la imagen completa para flashear por USB (-full.bin): sube el .bin sin -full",
   "err.wrong_project": "El firmware es para otro dispositivo",
   "err.wrong_board": "El firmware es para otra placa (modelo)",
   "err.flash_error": "Error al escribir en la flash",

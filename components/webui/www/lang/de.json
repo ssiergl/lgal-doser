@@ -382,6 +382,7 @@
   "err.wrong_chip": "Firmware ist für einen anderen Chip",
   "err.wrong_variant": "Firmware ist für ein Modul mit anderer Flash-Größe (Variante N8R8/N16R8/N32R8)",
   "err.no_app_desc": "Firmware-Datei ist unvollständig",
+  "err.full_image": "Das ist das Komplett-Image für das Flashen per USB (-full.bin) – bitte die .bin ohne -full hochladen",
   "err.wrong_project": "Firmware ist für ein anderes Gerät",
   "err.wrong_board": "Firmware ist für eine andere Platine (anderes Modell)",
   "err.flash_error": "Fehler beim Schreiben in den Flash",

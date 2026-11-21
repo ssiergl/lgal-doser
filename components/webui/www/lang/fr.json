@@ -387,6 +387,7 @@
   "err.wrong_chip": "Le firmware est destiné à une autre puce",
   "err.wrong_variant": "Le firmware est destiné à un module avec une autre taille de flash (variante N8R8/N16R8/N32R8)",
   "err.no_app_desc": "Le fichier firmware est incomplet",
+  "err.full_image": "C’est l’image complète pour le flashage USB (-full.bin) – téléversez le .bin sans -full",
   "err.wrong_project": "Le firmware est destiné à un autre appareil",
   "err.wrong_board": "Le firmware est destiné à une autre carte (modèle)",
   "err.flash_error": "Erreur d’écriture en flash",

@@ -387,6 +387,7 @@
   "err.wrong_chip": "Firmware başka bir çip için",
   "err.wrong_variant": "Firmware farklı flash boyutuna sahip bir modül için (N8R8/N16R8/N32R8 varyantı)",
   "err.no_app_desc": "Firmware dosyası eksik",
+  "err.full_image": "Bu, USB ile yükleme için tam imaj (-full.bin) – -full olmayan .bin dosyasını yükleyin",
   "err.wrong_project": "Firmware başka bir cihaz için",
   "err.wrong_board": "Firmware başka bir kart (model) için",
   "err.flash_error": "Flash'a yazma hatası",

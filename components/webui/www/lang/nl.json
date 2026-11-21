@@ -387,6 +387,7 @@
   "err.wrong_chip": "De firmware is voor een andere chip",
   "err.wrong_variant": "De firmware is voor een module met een andere flashgrootte (variant N8R8/N16R8/N32R8)",
   "err.no_app_desc": "Het firmwarebestand is onvolledig",
+  "err.full_image": "Dit is de volledige image voor flashen via USB (-full.bin) – upload de .bin zonder -full",
   "err.wrong_project": "De firmware is voor een ander apparaat",
   "err.wrong_board": "De firmware is voor een andere printplaat (model)",
   "err.flash_error": "Fout bij het schrijven naar de flash",

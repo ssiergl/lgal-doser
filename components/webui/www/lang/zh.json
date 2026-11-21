@@ -387,6 +387,7 @@
   "err.wrong_chip": "该固件适用于其他芯片",
   "err.wrong_variant": "该固件适用于闪存容量不同的模块（N8R8/N16R8/N32R8 变体）",
   "err.no_app_desc": "固件文件不完整",
+  "err.full_image": "这是用于 USB 烧录的完整镜像（-full.bin）——请上传不带 -full 的 .bin 文件",
   "err.wrong_project": "该固件适用于其他设备",
   "err.wrong_board": "该固件适用于其他电路板（型号）",
   "err.flash_error": "写入闪存时出错",

@@ -207,7 +207,8 @@ Puffer direkt an die SPI-DMA.
 `tools/release.sh` baut jedes Board (`boards/`) in jeder Variante nach `dist/`: je Board und
 Variante das App-Image `lgal_doser-<B>-<V>.bin` (OTA, z. B. `lgal_doser-d5v1-N16R8.bin`) und
 `lgal_doser-<B>-<V>-full.bin` (Bootloader, Partitionstabelle, OTA-Daten und App für den
-ersten USB-Flash ab Adresse 0x0) und die SBOM `lgal_doser-<B>-<V>.spdx.json` (siehe unten),
+ersten USB-Flash ab Adresse 0x0; ein Update-Upload lehnt sie mit `full_image` ab, weil sie
+mit dem Bootloader beginnt) und die SBOM `lgal_doser-<B>-<V>.spdx.json` (siehe unten),
 dazu `manifest.json` (`tools/make_manifest.py`), `LICENSE` und `THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` baut nur
 einen Teil. Die CI baut dieselben Kombinationen (Matrix in `.github/workflows/ci.yml`: ein
 neues Board dort ergänzen).
