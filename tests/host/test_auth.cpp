@@ -219,6 +219,82 @@ static void test_sessions() {
     CHECK(s.count(3002) == auth::kMaxSessions);
 }
 
+static void test_remembered() {
+    constexpr int64_t U = 1795262276;  // UTC
+    auth::Sessions s;
+    uint8_t r[20];
+    char a[33], b[33];
+    rnd(r, 40);
+    s.create(r, 100, a, true, U);
+    rnd(r, 41);
+    s.create(r, 100, b, false, U);
+    CHECK(s.dirty() && s.remembered_count(U) == 1);
+    auth::SessionStore st;
+    s.export_store(&st, U);
+    CHECK(!s.dirty() && st.count == 1 && st.s[0].last_utc == U);
+    uint8_t h[32];
+    lgal::crypto::sha256(a, 32, h);
+    CHECK(std::memcmp(st.s[0].hash, h, 32) == 0);  // only the hash is stored
+    const int ia = s.find(a, 200, U + 1000);
+    CHECK(ia >= 0 && s.remembered(ia) && !s.remembered(s.find(b, 200, U + 1000)));
+    CHECK(!s.dirty());                                        // last use stored at most once a day
+    CHECK(s.find(a, 300, U + auth::kRememberSave) >= 0 && s.dirty());
+    s.export_store(&st, U + auth::kRememberSave);
+    CHECK(st.s[0].last_utc == U + auth::kRememberSave);
+
+    // restart: the stored session is valid again, the normal one is gone
+    auth::Sessions t;
+    t.import_store(st);
+    CHECK(!t.dirty() && t.find(b, 5, U + 2 * auth::kRememberSave) < 0);
+    int i = t.find(a, 5, U + 2 * auth::kRememberSave);
+    CHECK(i >= 0 && t.remembered(i) && !t.engineering(i, 5));
+    // no absolute limit and no monotonic idle limit, only 90 days after the last use
+    int64_t u = U + 2 * auth::kRememberSave;
+    for (int k = 0; k < 10; ++k) {
+        u += auth::kRememberIdle;
+        CHECK(t.find(a, 6 + k, u) >= 0);
+    }
+    CHECK(t.find(a, 1000000000, 0) >= 0);  // time unknown: stays valid
+    CHECK(t.find(a, 20, u + auth::kRememberIdle + 1) < 0 && t.dirty());
+    t.export_store(&st, u);
+    CHECK(st.count == 0);
+
+    // logout and sign-out of all
+    rnd(r, 42);
+    t.create(r, 30, a, true, U);
+    t.export_store(&st, U);
+    t.remove(a);
+    CHECK(t.dirty() && t.find(a, 31, U) < 0);
+    t.create(r, 32, a, true, U);
+    t.export_store(&st, U);
+    t.clear();
+    CHECK(t.dirty() && t.remembered_count(U) == 0);
+
+    // at most kMaxRemembered; more push out the least recently used remembered one
+    t.clear();
+    char tok[auth::kMaxRemembered + 1][33];
+    for (int k = 0; k <= auth::kMaxRemembered; ++k) {
+        rnd(r, 50 + k);
+        t.create(r, 100 + k, tok[k], true, U);
+    }
+    CHECK(t.remembered_count(U) == auth::kMaxRemembered && t.find(tok[0], 200, U) < 0);
+    CHECK(t.find(tok[1], 200, U) >= 0 && t.find(tok[auth::kMaxRemembered], 200, U) >= 0);
+    // normal sign-ins never push out remembered ones
+    char n[33];
+    for (int k = 0; k < 3 * auth::kMaxSessions; ++k) {
+        rnd(r, 100 + k);
+        t.create(r, 300 + k, n, false, U);
+    }
+    CHECK(t.remembered_count(U) == auth::kMaxRemembered && t.find(n, 400, U) >= 0);
+    for (int k = 1; k <= auth::kMaxRemembered; ++k) CHECK(t.find(tok[k], 400, U) >= 0);
+    CHECK(t.count(400, U) == auth::kMaxSessions);
+    // a remembered one pushes out a normal one while fewer than kMaxRemembered are kept
+    t.remove(tok[1]);
+    rnd(r, 7);
+    t.create(r, 401, a, true, U);
+    CHECK(t.remembered_count(U) == auth::kMaxRemembered && t.find(n, 402, U) >= 0);
+}
+
 static void test_engineering() {
     auth::Sessions s;
     uint8_t r[20];
@@ -389,6 +465,8 @@ int main() {
     test_tokens();
     std::printf("Auth: sessions\n");
     test_sessions();
+    std::printf("Auth: stay signed in\n");
+    test_remembered();
     std::printf("Auth: engineering unlock\n");
     test_engineering();
     std::printf("Auth: API keys\n");

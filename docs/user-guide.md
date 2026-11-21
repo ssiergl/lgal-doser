@@ -87,12 +87,16 @@ in the router's device list.
 ## 4. Signing in
 
 - You sign in as user **admin** with your own **admin password**. The browser stays signed in as long as it is used
-  at least once a week (at most 30 days). After a restart or update of the device you have to
-  sign in again.
+  at least once a week (at most 30 days) and is not closed. After a restart or update of the
+  device you have to sign in again.
+- With **Stay signed in** the browser stays signed in for 90 days after the last visit, also
+  when it is closed and after a restart or update. Only tick it on your own devices.
+- **Sign out everywhere** (settings → sign-in) signs out every browser, for example after losing
+  a phone. Apps and Home Assistant with an API key stay connected.
 - After five wrong attempts the device waits before every further attempt, briefly at first,
   then longer and longer (up to 5 minutes).
 - **Forgotten password:** see [When something does not work](#11-when-something-does-not-work).
-- Change password and sign out: settings → sign-in.
+- Change password, sign out and sign out everywhere: settings → sign-in.
 
 ## 5. The web UI
 
@@ -253,7 +257,7 @@ again.
 | Lock times (pro) | minimum gap between two pumps, e.g. alkalinity and calcium at least 30 min apart; plus whether a manual dose during a lock time is rejected or waits |
 | Network | status; in pro LAN/Wi-Fi, static addresses, scan and test Wi-Fi |
 | MQTT (pro) | connection to Home Assistant or another MQTT broker, optionally with control from Home Assistant |
-| Sign-in | change password, sign out; in pro API keys for apps and scripts |
+| Sign-in | change password, sign out, sign out everywhere; in pro API keys for apps and scripts |
 | Appearance | dark, light or as the system; language; 24- or 12-hour format |
 
 **Home Assistant:** enter the broker address and switch on "Home Assistant discovery"; the device

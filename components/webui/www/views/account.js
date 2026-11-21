@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Account (settings page): change the admin password and sign out for
-// everyone; API keys for apps, Home Assistant and scripts in the pro view.
+// Account (settings page): change the admin password, sign out here or on every
+// browser; API keys for apps, Home Assistant and scripts in the pro view.
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../lib/api.js';
 import { html } from '../lib/html.js';
@@ -13,6 +13,10 @@ import { ask, useMsg } from '../lib/ui.js';
 add({
   en: {
     'ac.title': 'Login', 'ac.info': 'Signed in at {d}.', 'ac.logout': 'Sign out',
+    'ac.keep.on': 'This browser stays signed in (90 days after the last visit).', 'ac.keep.off': 'This browser is signed in until it is closed.',
+    'ac.keep.n': 'Browsers that stay signed in: {n}',
+    'ac.all': 'Sign out everywhere', 'ac.all.hint': '"Sign out everywhere" also signs out the browsers that stay signed in – for example after losing a phone. API keys stay valid.',
+    'ac.all.ask': 'Sign out every browser, this one included?', 'ac.all.ok': 'Sign out all',
     'ac.pw.set': 'Choose your admin password', 'ac.pw.set.hint': 'You signed in with the device password. Please choose your own password (at least 8 characters).',
     'ac.pw.change': 'Change password', 'ac.pw.hint': 'All other browsers are signed out afterwards. API keys stay valid.',
     'ac.pw.current': 'Current password', 'ac.pw.new': 'New password', 'ac.pw.repeat': 'Repeat new password',
@@ -149,10 +153,19 @@ export function AccountCard() {
   if (!S) return html`<section class="card">${head}<p class="mut">…</p></section>`;
   if (S.error) return html`<section class="card">${head}<p class="msg err">${errText(S.error)}</p></section>`;
   const logout = () => api('POST', '/api/v1/auth/logout').catch(() => {}).then(() => { location.href = '/login'; });
+  const logoutAll = async () => {
+    if (!(await ask(t('ac.all.ask'), { ok: t('ac.all.ok'), danger: true }))) return;
+    api('POST', '/api/v1/auth/logout_all').catch(() => {}).then(() => { location.href = '/login'; });
+  };
   return html`<section class="card">
     ${head}
-    <div class="row"><span class="small mut">${t('ac.info', { d: S.device })}</span>
-      <button type="button" class="sec" onClick=${logout}>${t('ac.logout')}</button></div>
+    <p class="small mut"><span>${t('ac.info', { d: S.device })}</span> <span>${t(S.remember ? 'ac.keep.on' : 'ac.keep.off')}</span>
+      ${S.remembered > 0 && html`<br/><span>${t('ac.keep.n', { n: S.remembered })}</span>`}</p>
+    <div class="row">
+      <button type="button" class="sec" onClick=${logout}>${t('ac.logout')}</button>
+      <button type="button" class="sec" onClick=${logoutAll}>${t('ac.all')}</button>
+    </div>
+    <p class="small mut">${t('ac.all.hint')}</p>
     <${PasswordForm} set=${S.password_set} onDone=${loadAuth}/>
   </section>`;
 }

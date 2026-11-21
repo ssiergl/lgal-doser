@@ -8,7 +8,7 @@ test.use({ allowErrors: /due to access control checks|Load failed|NetworkError w
 
 test('sign out, wrong password, sign in again', async ({ page }) => {
   await open(page, '#/settings');
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(/\/login/);
 
   // without a session the API answers 401 and pages lead to the sign-in
@@ -49,4 +49,24 @@ test('too many wrong passwords: the sign-in asks to wait', async ({ page }) => {
   await page.waitForTimeout(2100);
   await send.click();
   await expect(page).not.toHaveURL(/\/login/);
+});
+
+test('stay signed in, then sign out everywhere', async ({ page }) => {
+  await page.request.post('/api/v1/auth/logout');
+  await page.goto('/login');
+  const keep = page.getByRole('checkbox', { name: 'Stay signed in' });
+  await expect(keep).not.toBeChecked();  // off unless chosen
+  await keep.check();
+  await page.locator('#l_pw').fill(adminPassword);
+  await page.locator('#f_login button').click();
+  await expect(page).not.toHaveURL(/\/login/);
+  expect((await (await page.request.get('/api/v1/auth/status')).json()).remember).toBe(true);
+
+  await open(page, '#/settings');
+  await expect(page.getByText('This browser stays signed in (90 days after the last visit).')).toBeVisible();
+  await page.getByRole('button', { name: 'Sign out everywhere' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Sign out all' }).click();
+  await expect(page).toHaveURL(/\/login/);
+  expect((await page.request.get('/api/v1/pumps')).status()).toBe(401);
+  await expect(keep).toBeChecked();  // the browser remembers the choice
 });

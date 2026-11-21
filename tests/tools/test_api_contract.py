@@ -249,9 +249,11 @@ def test_rest_priming(mock):
 
 
 # Routes that end the session or restart the device go last (the mock then is "down" for a few
-# seconds, so the reboot is the very last, after a new sign-in); the WebSocket needs an upgrade
+# seconds, so the reboot is the very last); the routes after a sign-out need a new sign-in
+# (RELOGIN); the WebSocket needs an upgrade
 LAST = [("/api/v1/auth/engineering", "DELETE"), ("/api/v1/system/factory_reset", "POST"),
-        ("/api/v1/auth/logout", "POST"), ("/api/v1/system/reboot", "POST")]
+        ("/api/v1/auth/logout_all", "POST"), ("/api/v1/auth/logout", "POST"), ("/api/v1/system/reboot", "POST")]
+RELOGIN = {("/api/v1/auth/logout", "POST"), ("/api/v1/system/reboot", "POST")}
 SKIP = {("/api/v1/ws", "GET")}
 QUERY = {"/api/v1/pumps/schedule": "?pump=1", "/api/v1/hw/tmc": "?pump=1"}
 
@@ -275,7 +277,7 @@ def test_mock_answers_firmware_routes(mock):
     unknown, fields = [], {}
     for path, method in _probe_order():
         url = "/ui/app.js" if path == "/ui/*" else path + QUERY.get(path, "")
-        if (path, method) == LAST[-1]:
+        if (path, method) in RELOGIN:
             mock.login()
         try:
             if path == "/api/v1/ota/firmware":

@@ -5,14 +5,17 @@
 // Authentication logic without ESP dependencies (host tests: tests/host).
 //
 // * Admin password: PBKDF2-HMAC-SHA256 with random salt, stored as record.
-// * Browser sessions: random tokens in RAM (cookie), idle and absolute
-//   timeout; a session can additionally unlock the engineering area
+// * Browser sessions: random tokens (cookie), kept only as SHA-256, idle and
+//   absolute timeout; a session can additionally unlock the engineering area
 //   (spec 11.1, auto-lock after 15 min without engineering requests).
+//   "Stay signed in" sessions are stored (SessionStore) and last 90 days
+//   after their last use, across restarts and updates.
 // * API keys (app, Home Assistant): "lgal_" + 32 characters, only the
 //   SHA-256 is stored; the key is shown once when created.
 // * Login throttling per client address against password guessing.
 //
-// Times are monotonic seconds (since boot); randomness is passed in.
+// Times are monotonic seconds (since boot), stored sessions use UTC seconds
+// (0 = time unknown); randomness is passed in.
 
 #include <cstddef>
 #include <cstdint>
@@ -68,16 +71,41 @@ constexpr int kMaxSessions = 16;                  // more sign-ins push out the 
 constexpr int64_t kSessionIdle = 7 * 86400;       // s without request
 constexpr int64_t kSessionMax = 30 * 86400;       // s after login
 constexpr int64_t kEngineeringIdle = 15 * 60;     // s without engineering request
+constexpr int kMaxRemembered = 8;                 // "stay signed in" sessions, the rest stays for normal ones
+constexpr int64_t kRememberIdle = 90 * 86400;     // s (UTC) without request
+constexpr int64_t kRememberSave = 86400;          // the last use is stored at most once a day
+static_assert(kMaxRemembered < kMaxSessions, "normal sign-ins need slots of their own");
+
+// Stored "stay signed in" sessions (NVS); only the hash of the token
+struct StoredSession {
+    uint8_t hash[32];
+    int64_t last_utc;  // 0 = unknown
+};
+struct SessionStore {
+    uint32_t version = 1;
+    uint32_t count = 0;
+    StoredSession s[kMaxRemembered] = {};
+};
 
 class Sessions {
 public:
-    // New session (evicts the least recently used one if full)
-    void create(const uint8_t random[kTokenRandom], int64_t now, char token[kTokenChars + 1]);
+    // New session (evicts the least recently used one of its kind if full).
+    // remember: "stay signed in" (stored, kRememberIdle after the last use).
+    void create(const uint8_t random[kTokenRandom], int64_t now, char token[kTokenChars + 1], bool remember = false,
+                int64_t utc = 0);
     // Index of a valid session (and touches it), -1 if unknown or expired
-    int find(const char* token, int64_t now);
+    int find(const char* token, int64_t now, int64_t utc = 0);
     void remove(const char* token);
     void clear();
-    int count(int64_t now) const;
+    int count(int64_t now, int64_t utc = 0) const;
+    bool remembered(int index) const;
+    int remembered_count(int64_t utc) const;
+
+    // The stored sessions changed (created, removed, expired or last use
+    // older than kRememberSave in the store): save export_store()
+    bool dirty() const { return dirty_; }
+    void export_store(SessionStore* out, int64_t utc);  // without expired ones; clears dirty()
+    void import_store(const SessionStore& in);
 
     // Engineering unlock of a session (find() first)
     void set_engineering(int index, bool on, int64_t now);
@@ -87,12 +115,18 @@ public:
 
 private:
     struct Entry {
-        char token[kTokenChars + 1] = "";
-        int64_t created = 0, last = 0;
-        int64_t eng_last = -1;  // < 0: locked
+        bool used = false;
+        bool remember = false;
+        uint8_t hash[32] = {};
+        int64_t created = 0, last = 0;       // monotonic
+        int64_t last_utc = 0, saved_utc = 0;  // remembered: last use, value in the store
+        int64_t eng_last = -1;                // < 0: locked
     };
-    bool alive(const Entry& e, int64_t now) const;
+    bool alive(const Entry& e, int64_t now, int64_t utc) const;
+    int index_of(const char* token) const;
+    void drop(Entry& e);
     Entry e_[kMaxSessions];
+    bool dirty_ = false;
 };
 
 // ---------------------------------------------------------------------------

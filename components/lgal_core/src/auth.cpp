@@ -46,6 +46,12 @@ struct Guard {
 
 int64_t now_s() { return esp_timer_get_time() / 1000000; }
 
+// UTC for stored sessions, 0 while the time is unknown
+int64_t utc_s() {
+    const auto ts = timesync::status();
+    return ts.valid ? ts.utc : 0;
+}
+
 void random_bytes(uint8_t* p, size_t n) { esp_fill_random(p, n); }
 
 template <typename T>
@@ -77,12 +83,34 @@ bool header(httpd_req_t* req, const char* name, char* out, size_t len) {
     return httpd_req_get_hdr_value_str(req, name, out, len) == ESP_OK;
 }
 
-// Session index from the cookie (-1 = none), call with s_mx held
-int session_of(httpd_req_t* req, int64_t now) {
-    char cookies[256], token[kTokenChars + 2];
-    if (!header(req, "Cookie", cookies, sizeof(cookies))) return -1;
-    if (!cookie_value(cookies, kCookie, token, sizeof(token))) return -1;
-    return s_sessions.find(token, now);
+// Saves the "stay signed in" sessions when they changed (call with s_mx held). At most
+// once a day per session for the last use, else only on sign-in and sign-out.
+void sync_store() {
+    if (!s_sessions.dirty()) return;
+    SessionStore st;
+    s_sessions.export_store(&st, utc_s());
+    if (save("sess", st) != ESP_OK) ESP_LOGW(TAG, "Could not store the remembered sessions");
+}
+
+// Session token from the cookie, false if none
+bool cookie_token(httpd_req_t* req, char (&token)[kTokenChars + 2]) {
+    char cookies[256];
+    return header(req, "Cookie", cookies, sizeof(cookies)) && cookie_value(cookies, kCookie, token, sizeof(token));
+}
+
+void set_cookie(httpd_req_t* req, const char* token, bool remember = false);
+
+// Session index from the cookie (-1 = none), call with s_mx held. A remembered session
+// gets its cookie renewed once a day (refresh) or on every call (always).
+int session_of(httpd_req_t* req, int64_t now, bool always_refresh = false) {
+    char token[kTokenChars + 2];
+    if (!cookie_token(req, token)) return -1;
+    const bool was_dirty = s_sessions.dirty();
+    const int s = s_sessions.find(token, now, utc_s());
+    if (s >= 0 && s_sessions.remembered(s) && (always_refresh || (!was_dirty && s_sessions.dirty())))
+        set_cookie(req, token, true);
+    sync_store();
+    return s;
 }
 
 // API key slot (-1 = none), call with s_mx held
@@ -98,21 +126,26 @@ bool equal_str_ct(const char* a, const std::string& b) {
     return a && std::strlen(a) == b.size() && crypto::equal_ct(a, b.data(), b.size());
 }
 
-void set_cookie(httpd_req_t* req, const char* token) {
+// remember: a cookie that outlives the browser (kRememberIdle), else until the browser closes
+void set_cookie(httpd_req_t* req, const char* token, bool remember) {
     // static: httpd keeps the pointer until the response is sent
-    static char buf[96];
-    if (token) snprintf(buf, sizeof(buf), "%s=%s; Path=/; HttpOnly; SameSite=Strict", kCookie, token);
+    static char buf[128];
+    if (token && remember)
+        snprintf(buf, sizeof(buf), "%s=%s; Path=/; HttpOnly; SameSite=Strict; Max-Age=%lld", kCookie, token,
+                 static_cast<long long>(kRememberIdle));
+    else if (token) snprintf(buf, sizeof(buf), "%s=%s; Path=/; HttpOnly; SameSite=Strict", kCookie, token);
     else snprintf(buf, sizeof(buf), "%s=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0", kCookie);
     httpd_resp_set_hdr(req, "Set-Cookie", buf);
 }
 
 // New session for this client (call with s_mx held)
-void login_session(httpd_req_t* req, int64_t now) {
+void login_session(httpd_req_t* req, int64_t now, bool remember = false) {
     uint8_t r[kTokenRandom];
     random_bytes(r, sizeof(r));
     char token[kTokenChars + 1];
-    s_sessions.create(r, now, token);
-    set_cookie(req, token);
+    s_sessions.create(r, now, token, remember, utc_s());
+    sync_store();
+    set_cookie(req, token, remember);
 }
 
 esp_err_t ok(httpd_req_t* req) { return http::send_json(req, "{\"status\":\"ok\"}"); }
@@ -146,6 +179,7 @@ const char* change_password(const char* pw) {
     if (save("pw", r) != ESP_OK) return "storage_error";
     s_pw = r;
     s_sessions.clear();
+    sync_store();
     ESP_LOGI(TAG, "Admin password changed, all sessions signed out");
     return nullptr;
 }
@@ -173,7 +207,7 @@ esp_err_t get_status(httpd_req_t* req) {
     Json j;
     {
         Guard g;
-        const int s = session_of(req, now);
+        const int s = session_of(req, now, true);
         const int k = s < 0 ? key_of(req) : -1;
         j.obj().kv("logged_in", s >= 0 || k >= 0);
         if (s >= 0) j.kv("via", "session");
@@ -183,6 +217,8 @@ esp_err_t get_status(httpd_req_t* req) {
             .kv("setup_completed", settings::setup_completed())
             .kv("engineering", s >= 0 && s_sessions.engineering_left(s, now) > 0)
             .kv("engineering_left_s", s >= 0 ? s_sessions.engineering_left(s, now) : 0)
+            .kv("remember", s_sessions.remembered(s))
+            .kv("remembered", s_sessions.remembered_count(utc_s()))
             .kv("recovery", net::is_setup_ap_client(ip))
             .kv("device", device::hostname())
             .end();
@@ -197,6 +233,9 @@ esp_err_t post_login(httpd_req_t* req) {
     char pw[kMaxPassword + 2];
     if (!str_member(b.doc.root(), "password", pw, sizeof(pw)))
         return http::send_error(req, "400 Bad Request", "invalid_param", "password");
+    bool remember = false;
+    if (!b.doc.root()["remember"].is_null() && !b.doc.root()["remember"].get(&remember))
+        return http::send_error(req, "400 Bad Request", "invalid_param", "remember");
     const uint32_t ip = http::client_ipv4(req);
     const int64_t now = now_s();
     Guard g;
@@ -215,7 +254,8 @@ esp_err_t post_login(httpd_req_t* req) {
         return http::send_error(req, "401 Unauthorized", "wrong_password", "Wrong password");
     }
     s_throttle.succeeded(ip);
-    login_session(req, now);
+    login_session(req, now, remember);
+    if (remember) ESP_LOGI(TAG, "Signed in, staying signed in for %d days", int(kRememberIdle / 86400));
     Json j;
     j.obj().kv("status", "ok").kv("password_set", is_set(s_pw)).end();
     return http::send_json(req, j.c_str());
@@ -223,11 +263,26 @@ esp_err_t post_login(httpd_req_t* req) {
 
 esp_err_t post_logout(httpd_req_t* req) {
     if (!http::same_origin(req)) return ESP_OK;
-    char cookies[256], token[kTokenChars + 2];
-    if (header(req, "Cookie", cookies, sizeof(cookies)) && cookie_value(cookies, kCookie, token, sizeof(token))) {
+    char token[kTokenChars + 2];
+    if (cookie_token(req, token)) {
         Guard g;
         s_sessions.remove(token);
+        sync_store();
     }
+    set_cookie(req, nullptr);
+    return ok(req);
+}
+
+// Signs out every browser, remembered ones included (lost phone); API keys stay valid
+esp_err_t post_logout_all(httpd_req_t* req) {
+    if (!http::same_origin(req)) return ESP_OK;
+    {
+        Guard g;
+        if (session_of(req, now_s()) < 0) return http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+        s_sessions.clear();
+        sync_store();
+    }
+    ESP_LOGW(TAG, "All browsers signed out");
     set_cookie(req, nullptr);
     return ok(req);
 }
@@ -235,9 +290,12 @@ esp_err_t post_logout(httpd_req_t* req) {
 esp_err_t post_password(httpd_req_t* req) {
     if (!http::same_origin(req)) return ESP_OK;
     const int64_t now = now_s();
+    bool remember = false;
     {
         Guard g;
-        if (session_of(req, now) < 0) return http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+        const int s = session_of(req, now);
+        if (s < 0) return http::send_error(req, "401 Unauthorized", "unauthorized", "Login required");
+        remember = s_sessions.remembered(s);
     }
     Body b;
     if (!read_body(req, &b)) return ESP_OK;
@@ -257,7 +315,7 @@ esp_err_t post_password(httpd_req_t* req) {
     std::memset(pw, 0, sizeof(pw));
     std::memset(cur, 0, sizeof(cur));
     if (e) return fail(req, e);
-    login_session(req, now);  // stay signed in on this browser
+    login_session(req, now, remember);  // stay signed in on this browser, as before
     events::note("password", events::By::Browser);
     return ok(req);
 }
@@ -445,8 +503,10 @@ esp_err_t init() {
     if (!load("pw", &s_pw) || !is_set(s_pw)) s_pw = PasswordRecord{};
     KeyStore k;
     if (load("keys", &k) && k.version == 1) s_keys = k;
-    ESP_LOGI(TAG, "Admin password %s, %d API keys", is_set(s_pw) ? "set" : "not set (device password)",
-             key_count(s_keys));
+    SessionStore st;
+    if (load("sess", &st)) s_sessions.import_store(st);
+    ESP_LOGI(TAG, "Admin password %s, %d API keys, %d remembered sign-ins",
+             is_set(s_pw) ? "set" : "not set (device password)", key_count(s_keys), s_sessions.remembered_count(0));
     return ESP_OK;
 }
 
@@ -507,6 +567,7 @@ const char* restore_secrets(const JsonValue& v) {
     s_pw = no_pw ? PasswordRecord{} : pw;
     s_keys = keys;
     s_sessions.clear();
+    sync_store();
     ESP_LOGW(TAG, "Password and %d API keys restored from a backup, all sessions signed out", key_count(s_keys));
     return nullptr;
 }
@@ -514,11 +575,11 @@ const char* restore_secrets(const JsonValue& v) {
 bool principal(httpd_req_t* req, Principal* out) {
     if (!s_mx || !out) return false;
     *out = Principal{};
-    char cookies[256], token[kTokenChars + 2];
+    char token[kTokenChars + 2];
     const int64_t now = now_s();
     Guard g;
-    if (header(req, "Cookie", cookies, sizeof(cookies)) && cookie_value(cookies, kCookie, token, sizeof(token)) &&
-        s_sessions.find(token, now) >= 0) {
+    if (cookie_token(req, token) && s_sessions.find(token, now, utc_s()) >= 0) {
+        sync_store();
         std::strcpy(out->session, token);
         return true;
     }
@@ -532,7 +593,11 @@ bool principal(httpd_req_t* req, Principal* out) {
 bool still_valid(const Principal& p) {
     if (!s_mx) return false;
     Guard g;
-    if (p.session[0]) return s_sessions.find(p.session, now_s()) >= 0;
+    if (p.session[0]) {
+        const bool valid = s_sessions.find(p.session, now_s(), utc_s()) >= 0;
+        sync_store();
+        return valid;
+    }
     if (p.key_slot < 0 || p.key_slot >= kMaxKeys) return false;
     const ApiKey& k = s_keys.keys[p.key_slot];
     return k.name[0] && std::memcmp(k.hash, p.key_hash, sizeof(p.key_hash)) == 0;
@@ -600,6 +665,7 @@ esp_err_t register_handlers(httpd_handle_t server) {
     http::route(server, "/api/v1/auth/status", HTTP_GET, get_status);
     http::route(server, "/api/v1/auth/login", HTTP_POST, post_login);
     http::route(server, "/api/v1/auth/logout", HTTP_POST, post_logout);
+    http::route(server, "/api/v1/auth/logout_all", HTTP_POST, post_logout_all);
     http::route(server, "/api/v1/auth/password", HTTP_POST, post_password);
     http::route(server, "/api/v1/auth/claim", HTTP_POST, post_claim);
     http::route(server, "/api/v1/auth/recover", HTTP_POST, post_recover);

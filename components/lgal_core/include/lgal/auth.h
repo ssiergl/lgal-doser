@@ -3,17 +3,23 @@
 
 #pragma once
 // Login, sessions, API keys and engineering unlock (spec 3 + 11.1).
-// Logic in auth_core.h; this part stores the password and keys in NVS
-// ("auth") and provides the HTTP endpoints. All responses are JSON.
+// Logic in auth_core.h; this part stores the password, the keys and the
+// remembered sessions (hashes only) in NVS ("auth") and provides the HTTP
+// endpoints. All responses are JSON.
 //
 //   GET    /login                      sign-in page (no login needed)
-//   GET    /api/v1/auth/status         login state (no login needed)
-//   POST   /api/v1/auth/login          {"password"} -> session cookie. Without an admin
-//                                      password: 409 password_not_set (setup first)
+//   GET    /api/v1/auth/status         login state (no login needed); "remember": this
+//                                      browser stays signed in, "remembered": how many do
+//   POST   /api/v1/auth/login          {"password", "remember"?} -> session cookie; with
+//                                      remember the cookie and the session outlive the
+//                                      browser and restarts (90 days after the last use).
+//                                      Without an admin password: 409 password_not_set
 //   POST   /api/v1/auth/claim          {"device_password", "new", "language"?}: first admin
 //                                      password, only while none is set (setup step 2);
 //                                      also stores the language of step 1; no session
 //   POST   /api/v1/auth/logout
+//   POST   /api/v1/auth/logout_all     signs out every browser, remembered ones included
+//                                      (session); API keys stay valid
 //   POST   /api/v1/auth/password       {"current", "new"} (session); signs out all
 //                                      other sessions
 //   POST   /api/v1/auth/recover        {"device_password", "new"}: only from a client

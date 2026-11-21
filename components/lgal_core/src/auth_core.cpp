@@ -83,56 +83,124 @@ void encode_token(const uint8_t random[kTokenRandom], char out[kTokenChars + 1])
 }
 
 // ---------------------------------------------------------------------------
-bool Sessions::alive(const Entry& e, int64_t now) const {
-    return e.token[0] && now - e.last <= kSessionIdle && now - e.created <= kSessionMax;
+bool Sessions::alive(const Entry& e, int64_t now, int64_t utc) const {
+    if (!e.used) return false;
+    // without a known time a stored session stays valid (the RTC normally knows it)
+    if (e.remember) return utc <= 0 || e.last_utc <= 0 || utc - e.last_utc <= kRememberIdle;
+    return now - e.last <= kSessionIdle && now - e.created <= kSessionMax;
 }
 
-void Sessions::create(const uint8_t random[kTokenRandom], int64_t now, char token[kTokenChars + 1]) {
-    int slot = 0;
-    for (int i = 0; i < kMaxSessions; ++i) {
-        if (!alive(e_[i], now)) {
-            slot = i;
-            break;
-        }
-        if (e_[i].last < e_[slot].last) slot = i;  // least recently used
-    }
-    Entry& e = e_[slot];
-    encode_token(random, e.token);
-    e.created = e.last = now;
-    e.eng_last = -1;
-    std::memcpy(token, e.token, sizeof(e.token));
+void Sessions::drop(Entry& e) {
+    if (e.used && e.remember) dirty_ = true;
+    e = Entry{};
 }
 
-int Sessions::find(const char* token, int64_t now) {
+int Sessions::index_of(const char* token) const {
     if (!token || std::strlen(token) != kTokenChars) return -1;
+    uint8_t h[32];
+    crypto::sha256(token, kTokenChars, h);
     int found = -1;
     for (int i = 0; i < kMaxSessions; ++i) {
         // compare all entries (constant time per entry, no early exit)
-        if (e_[i].token[0] && crypto::equal_ct(e_[i].token, token, kTokenChars) && found < 0) found = i;
+        if (e_[i].used && crypto::equal_ct(e_[i].hash, h, sizeof(h)) && found < 0) found = i;
     }
-    if (found < 0) return -1;
-    if (!alive(e_[found], now)) {
-        e_[found] = Entry{};
-        return -1;
-    }
-    e_[found].last = now;
     return found;
 }
 
+void Sessions::create(const uint8_t random[kTokenRandom], int64_t now, char token[kTokenChars + 1], bool remember,
+                      int64_t utc) {
+    // a free or expired slot, else the least recently used normal session; a remembered one
+    // pushes out a remembered one once kMaxRemembered are kept. As remembered ones never fill
+    // more than kMaxRemembered < kMaxSessions slots, there always is a normal one to push out.
+    int kept = 0;
+    for (const auto& e : e_) kept += e.remember && alive(e, now, utc) ? 1 : 0;
+    const bool evict_remembered = remember && kept >= kMaxRemembered;
+    int slot = -1;
+    for (int i = 0; i < kMaxSessions && slot < 0 && !evict_remembered; ++i)
+        if (!alive(e_[i], now, utc)) slot = i;
+    if (slot < 0) {
+        for (int i = 0; i < kMaxSessions; ++i)
+            if (e_[i].remember == evict_remembered && (slot < 0 || e_[i].last < e_[slot].last)) slot = i;
+    }
+    Entry& e = e_[slot];
+    drop(e);
+    encode_token(random, token);
+    crypto::sha256(token, kTokenChars, e.hash);
+    e.used = true;
+    e.remember = remember;
+    e.created = e.last = now;
+    e.last_utc = utc;
+    if (remember) dirty_ = true;
+}
+
+int Sessions::find(const char* token, int64_t now, int64_t utc) {
+    const int i = index_of(token);
+    if (i < 0) return -1;
+    Entry& e = e_[i];
+    if (!alive(e, now, utc)) {
+        drop(e);
+        return -1;
+    }
+    e.last = now;
+    if (e.remember && utc > 0) {
+        e.last_utc = utc;
+        if (utc - e.saved_utc >= kRememberSave) dirty_ = true;
+    }
+    return i;
+}
+
 void Sessions::remove(const char* token) {
-    if (!token || std::strlen(token) != kTokenChars) return;
-    for (auto& e : e_)
-        if (e.token[0] && crypto::equal_ct(e.token, token, kTokenChars)) e = Entry{};
+    const int i = index_of(token);
+    if (i >= 0) drop(e_[i]);
 }
 
 void Sessions::clear() {
     for (auto& e : e_) e = Entry{};
+    dirty_ = true;
 }
 
-int Sessions::count(int64_t now) const {
+int Sessions::count(int64_t now, int64_t utc) const {
     int n = 0;
-    for (const auto& e : e_) n += alive(e, now) ? 1 : 0;
+    for (const auto& e : e_) n += alive(e, now, utc) ? 1 : 0;
     return n;
+}
+
+bool Sessions::remembered(int index) const {
+    return index >= 0 && index < kMaxSessions && e_[index].used && e_[index].remember;
+}
+
+int Sessions::remembered_count(int64_t utc) const {
+    int n = 0;
+    for (const auto& e : e_) n += e.remember && alive(e, 0, utc) ? 1 : 0;
+    return n;
+}
+
+void Sessions::export_store(SessionStore* out, int64_t utc) {
+    *out = SessionStore{};
+    for (auto& e : e_) {
+        if (!e.remember || !alive(e, 0, utc) || out->count >= kMaxRemembered) continue;
+        StoredSession& s = out->s[out->count++];
+        std::memcpy(s.hash, e.hash, sizeof(s.hash));
+        s.last_utc = e.saved_utc = e.last_utc;
+    }
+    dirty_ = false;
+}
+
+void Sessions::import_store(const SessionStore& in) {
+    if (in.version != 1) return;
+    const uint32_t n = in.count < uint32_t(kMaxRemembered) ? in.count : uint32_t(kMaxRemembered);
+    for (uint32_t k = 0; k < n; ++k) {
+        int slot = -1;
+        for (int i = 0; i < kMaxSessions && slot < 0; ++i)
+            if (!e_[i].used) slot = i;
+        if (slot < 0) return;
+        Entry& e = e_[slot];
+        e = Entry{};
+        e.used = e.remember = true;
+        std::memcpy(e.hash, in.s[k].hash, sizeof(e.hash));
+        e.last = -1;  // not used since the start: first to go when full
+        e.last_utc = e.saved_utc = in.s[k].last_utc;
+    }
 }
 
 void Sessions::set_engineering(int index, bool on, int64_t now) {
@@ -143,7 +211,7 @@ void Sessions::set_engineering(int index, bool on, int64_t now) {
 bool Sessions::engineering(int index, int64_t now) {
     if (index < 0 || index >= kMaxSessions) return false;
     Entry& e = e_[index];
-    if (e.eng_last < 0) return false;
+    if (!e.used || e.eng_last < 0) return false;
     if (now - e.eng_last > kEngineeringIdle) {
         e.eng_last = -1;
         return false;

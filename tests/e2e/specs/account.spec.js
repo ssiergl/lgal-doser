@@ -16,6 +16,7 @@ test('change the admin password', async ({ page, cleanup }) => {
   await open(page, '#/settings');
   const c = card(page, 'Login');
   await expect(c.getByText(/^Signed in at lgal-doser-e4f5\.$/)).toBeVisible();
+  await expect(c.getByText('This browser is signed in until it is closed.')).toBeVisible();
   await expect(c.getByRole('heading', { name: 'Change password', level: 3 })).toBeVisible();
   const current = c.getByLabel('Current password');
   const pw = c.getByLabel('New password', { exact: true });

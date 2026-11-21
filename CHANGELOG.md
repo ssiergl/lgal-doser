@@ -49,7 +49,8 @@ and on board v1.0.
 
 - LAN with Wi-Fi as fallback, setup Wi-Fi with captive portal and setup wizard, mDNS name
   derived from the device name.
-- Own admin password, sessions in RAM, API keys, throttling of password guessing, origin check
+- Own admin password, sessions in RAM or with "stay signed in" for 90 days across restarts,
+  sign out everywhere, API keys, throttling of password guessing, origin check
   for changing requests; engineering access for the manufacturer only.
 - Locked until the first setup is completed: the device password from the label only sets the
   own admin password, then the setup goes on after signing in once; no pump runs before.

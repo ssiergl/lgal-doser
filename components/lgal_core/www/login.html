@@ -41,6 +41,8 @@ input[readonly]{color:var(--mut);background:transparent}
 .msg:empty{display:none}
 .hint{font-size:13px;color:var(--mut);margin:0 0 6px}
 #lang{position:absolute;top:14px;right:16px;z-index:2}
+label.keep{display:flex;align-items:center;gap:8px;color:var(--text);font-size:15px;font-weight:400;margin:14px 0 2px}
+label.keep input{width:auto;margin:0;flex:none}
 </style>
 <script src="/flags.js"></script>
 <script src="/i18n.js"></script>
@@ -57,6 +59,7 @@ input[readonly]{color:var(--mut);background:transparent}
 <p class="hint" id="l_hint"></p>
 <form id="f_login"><label for="l_user" data-i18n="user"></label><input id="l_user" value="admin" readonly tabindex="-1" autocomplete="username">
 <label for="l_pw" data-i18n="pw"></label><input id="l_pw" type="password" autocomplete="current-password" required>
+<label class="keep"><input type="checkbox" id="l_keep"><span data-i18n="login.keep"></span></label>
 <div class="row"><button data-i18n="login.btn"></button></div></form>
 <div class="msg" id="l_msg"></div>
 </section>
@@ -84,6 +87,7 @@ en:{
  'login.first':'Password saved. Sign in with it once now – your browser can remember it. Then the setup goes on.',
  'login.required':'You are not signed in. Sign in to open this page.',
  'login.wait':'Too many attempts – please wait {s} s.',
+ 'login.keep':'Stay signed in',
  'rec.title':'Forgot password','rec.hint':'You are connected through the setup Wi-Fi. With the device password from the label you can set a new admin password. Schedules and calibration are kept.',
  'rec.device':'Device password (label)','rec.btn':'Set new password',
  'pw.new':'New password','pw.repeat':'Repeat new password','pw.mismatch':'The passwords do not match.',
@@ -295,7 +299,11 @@ async function load(){
   $('l_hint').textContent=t(first?'login.first':'login.required');$('l_hint').hidden=!first&&!P.has('next');
   $('l_pw').focus();
 }
-$('f_login').onsubmit=e=>{e.preventDefault();api('POST','/api/v1/auth/login',{password:$('l_pw').value}).then(()=>{$('l_pw').value='';load()}).catch(e=>errMsg('l_msg',e))};
+// the choice of "stay signed in" is remembered in this browser
+try{$('l_keep').checked=localStorage.getItem('lgal.keep')==='1'}catch(e){}
+$('f_login').onsubmit=e=>{e.preventDefault();const remember=$('l_keep').checked;
+  try{localStorage.setItem('lgal.keep',remember?'1':'0')}catch(e){}
+  api('POST','/api/v1/auth/login',{password:$('l_pw').value,remember}).then(()=>{$('l_pw').value='';load()}).catch(e=>errMsg('l_msg',e))};
 $('f_rec').onsubmit=e=>{e.preventDefault();if(!same('r_pw','r_pw2','r_msg'))return;
   api('POST','/api/v1/auth/recover',{device_password:$('r_dev').value.trim(),new:$('r_pw').value}).then(load).catch(e=>errMsg('r_msg',e))};
 i18n.onChange(()=>{if(S)load()});

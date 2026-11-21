@@ -32,6 +32,7 @@ MAX_KEYS = 4
 # The engineering area stays one shared state.
 STRICT = os.environ.get("MOCK_STRICT_AUTH") == "1"
 SESSIONS = set()
+REMEMBERED = set()  # "stay signed in" sessions (strict mode): they outlive a restart
 if STRICT:
     AUTH["session"] = False
 
@@ -92,7 +93,7 @@ def uptime():
 
 def restart(delay=6):
     SYS["down_until"] = time.time() + delay; SYS["boot"] = time.time() + delay; SYS["restarted"] = True; ENG["until"] = 0
-    SESSIONS.clear()  # sessions live in RAM (strict mode)
+    SESSIONS.intersection_update(REMEMBERED)  # normal sessions live in RAM, remembered ones are stored
 
 # Device name and host name (lgal/device_name.h)
 DEVICE = {"name": "", "own": ""}
@@ -433,7 +434,9 @@ def route(h, method, path, q, body):
         return True
     if path == "/api/v1/auth/status" and method == "GET":
         h.send(200, {"logged_in": via(h) is not None, "via": via(h) or "none", "password_set": AUTH["password_set"], "setup_completed": SETUP["completed"],
-                     "engineering": ENG["until"] > time.time(), "engineering_left_s": int(max(0, ENG["until"] - time.time())), "recovery": False, "device": hostname()}); return True
+                     "engineering": ENG["until"] > time.time(), "engineering_left_s": int(max(0, ENG["until"] - time.time())), "recovery": False, "device": hostname(),
+                     "remember": (session_of(h) in REMEMBERED) if STRICT else AUTH.get("remember", False),
+                     "remembered": len(REMEMBERED) if STRICT else int(AUTH.get("remember", False) and AUTH["session"])}); return True
     if path == "/api/v1/auth/password" and method == "POST":
         if AUTH["password_set"] and body.get("current") != AUTH["password"]: err(h, 403, "wrong_password", "Current password is wrong"); return True
         n = body.get("new", "")
@@ -451,20 +454,27 @@ def route(h, method, path, q, body):
         h.send(200, {"status": "ok"}); return True
     if path == "/api/v1/auth/recover" and method == "POST":  # the mock is never reached through the setup Wi-Fi
         err(h, 403, "recovery_unavailable", "Only via the setup Wi-Fi (hold the button for 3 s)"); return True
+    if path == "/api/v1/auth/logout_all" and method == "POST":
+        if not via(h) == "session": err(h, 401, "unauthorized", "Login required"); return True
+        SESSIONS.clear(); REMEMBERED.clear(); AUTH.update(session=False, remember=False)
+        h.send(200, {"status": "ok"}, headers=[("Set-Cookie", "lgal_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0")]); return True
     if path == "/api/v1/auth/logout" and method == "POST":
-        if STRICT: SESSIONS.discard(session_of(h))
-        else: AUTH["session"] = False
+        if STRICT: SESSIONS.discard(session_of(h)); REMEMBERED.discard(session_of(h))
+        else: AUTH.update(session=False, remember=False)
         h.send(200, {"status": "ok"}, headers=[("Set-Cookie", "lgal_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0")]); return True
     if path == "/api/v1/auth/login" and method == "POST":
         if not AUTH["password_set"]: err(h, 409, "password_not_set", "Choose the admin password in the setup first"); return True
         if throttled(h): return True
         if body.get("password") != AUTH["password"]: failed(); err(h, 403, "wrong_password", "Wrong password"); return True
         THROTTLE.update(failures=0, until=0)
-        AUTH["session"] = True
+        remember = body.get("remember") is True
+        AUTH.update(session=True, remember=remember)
         cookie = []
         if STRICT:
             t = secrets.token_hex(16); SESSIONS.add(t)
-            cookie = [("Set-Cookie", f"lgal_session={t}; Path=/; HttpOnly; SameSite=Strict")]
+            if remember: REMEMBERED.add(t)
+            age = "; Max-Age=7776000" if remember else ""  # 90 days, like the firmware
+            cookie = [("Set-Cookie", f"lgal_session={t}; Path=/; HttpOnly; SameSite=Strict{age}")]
         h.send(200, {"status": "ok", "password_set": AUTH["password_set"]}, headers=cookie); return True
     if path == "/api/v1/auth/keys":
         # managing keys needs a session, an API key cannot list or make keys (auth.cpp)
