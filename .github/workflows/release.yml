@@ -13,7 +13,7 @@
 #   https://github.com/<owner>/<repo>/releases/download/channel-beta/manifest.json
 # The release text is the CHANGELOG.md section of the version plus every
 # commit since the previous tag (tools/release_notes.py).
-# Every build also gets its SBOM (lgal_doser-<board>-<variant>.spdx.json, tools/sbom.py).
+# Every build also gets its SBOM (lgal_doser-<version>-<board>-<variant>.spdx.json, tools/sbom.py).
 # Nothing is published, the beta channel included, unless the whole CI (ci.yml) passed for
 # the tagged commit as well; it runs next to the build.
 # The images hold no secret: every device keeps its own in the factory

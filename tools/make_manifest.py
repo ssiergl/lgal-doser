@@ -7,14 +7,16 @@ directory, in the format components/lgal_core/include/lgal/ota_manifest.h
 reads:
 
   {"version":"0.2.0","notes":"https://…/releases/tag/v0.2.0",
-   "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin",
+   "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-0.1.0-d5v1-N16R8.bin",
               "sha256":"…","size":…}]}
 
 Usage: make_manifest.py <dist dir> --version 0.2.0 [--notes URL] BOARD-VARIANT...
-       (e.g. d5v1-N16R8 for dist/lgal_doser-d5v1-N16R8.bin)
+       (e.g. d5v1-N16R8 with --version 0.1.0 for dist/lgal_doser-0.1.0-d5v1-N16R8.bin)
 
-The file names are relative, so the manifest works from any release
-address (e.g. GitHub's releases/latest/download/manifest.json).
+The file names carry the version (so downloaded files stay apart) and are
+relative, so the manifest works from any release address (e.g. GitHub's
+releases/latest/download/manifest.json). Only manifest.json keeps a fixed
+name: devices look the image up there.
 """
 import argparse
 import hashlib
@@ -45,7 +47,7 @@ def main():
         m = BUILD.match(b)
         if not m:
             sys.exit(f"invalid build {b!r}, expected BOARD-VARIANT such as d5v1-N16R8")
-        name = f"{PROJECT}-{b}.bin"
+        name = f"{PROJECT}-{a.version.lstrip('v')}-{b}.bin"
         data = open(os.path.join(a.dist, name), "rb").read()
         builds.append({"board": m[1], "variant": m[2], "url": name,
                        "sha256": hashlib.sha256(data).hexdigest(), "size": len(data)})

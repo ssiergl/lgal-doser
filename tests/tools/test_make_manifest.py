@@ -22,7 +22,7 @@ def run(dist, *args):
 @pytest.fixture
 def dist(tmp_path):
     for v in ("N8R8", "N16R8"):
-        (tmp_path / f"lgal_doser-d5v1-{v}.bin").write_bytes(v.encode() * 100)
+        (tmp_path / f"lgal_doser-0.2.0-rc.1-d5v1-{v}.bin").write_bytes(v.encode() * 100)
     return tmp_path
 
 
@@ -36,7 +36,8 @@ def test_manifest(dist):
     assert [(b["board"], b["variant"]) for b in doc["builds"]] == [("d5v1", "N8R8"), ("d5v1", "N16R8")]
     for b in doc["builds"]:
         data = (dist / b["url"]).read_bytes()
-        assert b["url"] == f"lgal_doser-d5v1-{b['variant']}.bin"  # relative: works from any release address
+        # relative: works from any release address; the version keeps downloads apart
+        assert b["url"] == f"lgal_doser-0.2.0-rc.1-d5v1-{b['variant']}.bin"
         assert b["sha256"] == hashlib.sha256(data).hexdigest()
         assert b["size"] == len(data)
 
@@ -52,13 +53,14 @@ def test_rejects(dist, args):
 
 
 def test_rejects_missing_image(dist):
-    assert run(dist, "d5v1-N32R8", "--version", "0.2.0").returncode != 0
+    assert run(dist, "d5v1-N32R8", "--version", "0.2.0-rc.1").returncode != 0
+    assert run(dist, "d5v1-N16R8", "--version", "0.2.0").returncode != 0  # image of another version
 
 
 def test_rejects_manifest_the_device_cannot_read(tmp_path):
     builds = [f"b{i}-N16R8" for i in range(40)]
     for b in builds:
-        (tmp_path / f"lgal_doser-{b}.bin").write_bytes(b"x")
+        (tmp_path / f"lgal_doser-0.2.0-{b}.bin").write_bytes(b"x")
     r = run(tmp_path, *builds, "--version", "0.2.0")
     assert r.returncode != 0
     assert "at most 4096" in r.stderr

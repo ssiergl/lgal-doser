@@ -4,7 +4,7 @@
 
 """Writes the SBOM (SPDX 2.2 JSON) of one firmware build.
 
-    tools/sbom.py build-d5v1-N16R8 dist/lgal_doser-d5v1-N16R8.spdx.json
+    tools/sbom.py build-d5v1-N16R8 dist/lgal_doser-0.1.0-d5v1-N16R8.spdx.json
 
 Runs esp-idf-sbom on the build's project_description.json. The sbom.yml files in the project
 root and in each own component give license and supplier. Afterwards every own component gets

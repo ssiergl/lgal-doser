@@ -10,7 +10,7 @@
 //
 //   {"version":"0.2.0",
 //    "notes":"https://github.com/<owner>/<repo>/releases/tag/v0.2.0",
-//    "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin",
+//    "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-0.1.0-d5v1-N16R8.bin",
 //               "sha256":"<64 hex digits>","size":1234567}, …]}
 //
 // "url" is absolute or relative to the manifest address; "notes" and "size"

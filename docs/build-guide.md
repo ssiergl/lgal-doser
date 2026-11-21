@@ -151,7 +151,7 @@ key. There are two ways:
    (`d5v1` = LGAL Doser 5, circuit board v1.0):
 
    ```bash
-   python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin
+   python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-0.1.0-d5v1-N16R8-full.bin
    ```
 
    or built yourself with `idf.py -p /dev/cu.usbmodem* flash`.
@@ -174,7 +174,7 @@ itself and shows **device password and engineering key exactly once** on the ser
 that this output is not lost, do not start right after flashing, but open the monitor first:
 
 ```bash
-python -m esptool --chip esp32s3 --after no-reset write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin
+python -m esptool --chip esp32s3 --after no-reset write-flash 0x0 lgal_doser-0.1.0-d5v1-N16R8-full.bin
 ```
 
 ```bash

@@ -200,10 +200,10 @@ internal RAM: it is faster there, and the W5500 driver hands its buffers to SPI 
 ### Release
 
 `tools/release.sh` builds every board (`boards/`) in every variant into `dist/`: per board and
-variant the app image `lgal_doser-<B>-<V>.bin` (OTA, e.g. `lgal_doser-d5v1-N16R8.bin`) and
-`lgal_doser-<B>-<V>-full.bin` (bootloader, partition table, OTA data and app for the first USB
+variant the app image `lgal_doser-<version>-<B>-<V>.bin` (OTA, e.g. `lgal_doser-0.1.0-d5v1-N16R8.bin`) and
+`lgal_doser-<version>-<B>-<V>-full.bin` (bootloader, partition table, OTA data and app for the first USB
 flash at address 0x0; an update upload rejects it with `full_image`, since it starts with the
-bootloader) and the SBOM `lgal_doser-<B>-<V>.spdx.json` (see below), plus
+bootloader) and the SBOM `lgal_doser-<version>-<B>-<V>.spdx.json` (see below), plus
 `manifest.json` (`tools/make_manifest.py`), `LICENSE` and `THIRD-PARTY-NOTICES.txt`. `BOARDS="d5v1" VARIANTS="N16R8" tools/release.sh` builds only some.
 The CI builds the same combinations (matrix in `.github/workflows/ci.yml`: add a new board
 there).
@@ -227,7 +227,7 @@ keep the changelog section up to date before tagging.
 #### SBOM
 
 Every release carries a software bill of materials per board and variant,
-`lgal_doser-<B>-<V>.spdx.json` (SPDX 2.2 JSON): every package linked into the image with
+`lgal_doser-<version>-<B>-<V>.spdx.json` (SPDX 2.2 JSON): every package linked into the image with
 version, supplier, license and, where known, CPE and package URL – ESP-IDF and its parts, the
 managed components, Preact and htm, and the own components. `tools/sbom.py` writes it with
 Espressif's [esp-idf-sbom](https://github.com/espressif/esp-idf-sbom) from the build's
@@ -235,7 +235,7 @@ Espressif's [esp-idf-sbom](https://github.com/espressif/esp-idf-sbom) from the b
 
 ```bash
 pip install esp-idf-sbom==1.5.0
-python tools/sbom.py build-d5v1-N16R8 lgal_doser-d5v1-N16R8.spdx.json
+python tools/sbom.py build-d5v1-N16R8 lgal_doser-0.1.0-d5v1-N16R8.spdx.json
 ```
 
 The `sbom.yml` files describe what esp-idf-sbom cannot know: the project root and every own
@@ -246,7 +246,7 @@ creates the SBOM of every build, so an invalid `sbom.yml` fails before a release
 Known vulnerabilities of the packages (NVD, by CPE) are listed by:
 
 ```bash
-esp-idf-sbom check lgal_doser-d5v1-N16R8.spdx.json
+esp-idf-sbom check lgal_doser-0.1.0-d5v1-N16R8.spdx.json
 ```
 
 For the [beta channel](#ota-update) every release also updates the pre-release `channel-beta`
@@ -286,7 +286,7 @@ Factory reset and OTA updates leave `fctry` untouched.
 
    or `idf.py -B build-N8R8 -DVARIANT=N8R8 -p /dev/cu.usbmodem* flash`. From a release the
    complete file works too:
-   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-d5v1-N16R8-full.bin`
+   `python -m esptool --chip esp32s3 write-flash 0x0 lgal_doser-0.1.0-d5v1-N16R8-full.bin`
    (it also overwrites `fctry`, so always do step 3 afterwards).
 
 3. **Provision:** reads the MAC, writes the device secret
@@ -532,7 +532,7 @@ SHA-256 and optionally size:
 
 ```json
 {"version":"0.2.0","notes":"https://github.com/<owner>/<repo>/releases/tag/v0.2.0",
- "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-d5v1-N16R8.bin","sha256":"<64 hex characters>","size":1234567}]}
+ "builds":[{"board":"d5v1","variant":"N16R8","url":"lgal_doser-0.1.0-d5v1-N16R8.bin","sha256":"<64 hex characters>","size":1234567}]}
 ```
 
 - `url` absolute or relative to the configured manifest address (not to the target of a

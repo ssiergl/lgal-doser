@@ -3,11 +3,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # Builds the release files of every board and module variant into dist/:
-#   lgal_doser-<B>-<V>.bin       app image: OTA update and update manifest
-#   lgal_doser-<B>-<V>-full.bin  bootloader, partition table, OTA data and app
-#                                in one file, for the first USB flash at 0x0
-#   lgal_doser-<B>-<V>.spdx.json SBOM of the build, SPDX 2.2 JSON (tools/sbom.py)
-#   manifest.json                update manifest (tools/make_manifest.py)
+#   lgal_doser-<version>-<B>-<V>.bin        app image: OTA update and update manifest
+#   lgal_doser-<version>-<B>-<V>-full.bin   bootloader, partition table, OTA data and app
+#                                           in one file, for the first USB flash at 0x0
+#   lgal_doser-<version>-<B>-<V>.spdx.json  SBOM of the build, SPDX 2.2 JSON (tools/sbom.py)
+#   manifest.json                           update manifest (tools/make_manifest.py); the
+#                                           only fixed name, devices look the image up there
 #   LICENSE, THIRD-PARTY-NOTICES.txt
 #
 #   tools/release.sh                          all boards and variants, version from version.txt
@@ -31,10 +32,11 @@ for b in $BOARDS; do
         echo "=== $b $v"
         idf.py -B "build-$b-$v" -DBOARD="$b" -DVARIANT="$v" build
         grep -q "^CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=" "build-$b-$v/sdkconfig"
-        cp "build-$b-$v/lgal_doser.bin" "dist/lgal_doser-$b-$v.bin"
-        idf.py -B "build-$b-$v" -DBOARD="$b" -DVARIANT="$v" merge-bin -o "$PWD/dist/lgal_doser-$b-$v-full.bin"
+        name="lgal_doser-$VERSION-$b-$v"
+        cp "build-$b-$v/lgal_doser.bin" "dist/$name.bin"
+        idf.py -B "build-$b-$v" -DBOARD="$b" -DVARIANT="$v" merge-bin -o "$PWD/dist/$name-full.bin"
         if [ -n "${GITHUB_ACTIONS:-}" ] || python -c "import esp_idf_sbom" 2>/dev/null; then
-            python tools/sbom.py "build-$b-$v" "dist/lgal_doser-$b-$v.spdx.json"
+            python tools/sbom.py "build-$b-$v" "dist/$name.spdx.json"
         else
             echo "esp-idf-sbom not installed: no SBOM for $b $v"
         fi
