@@ -50,26 +50,52 @@ test('lock time rules: add, refuse invalid ones, save, delete', async ({ page, c
   await restore();
 });
 
-// The mock answers a manual dose of 13 ml with a running lock time, 14 ml with "queued"
+// The mock keeps the lock times like the device: Calcium (pump 2) doses, then KH (pump 1) is
+// locked while it runs and for the lock time of rule 1 (5 min from the minute in which it ended)
+const doseCard = page => page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'Dose now', level: 2 }) });
+const queuedOf = async (page, n) => (await (await page.request.get('/api/v1/schedule/status')).json()).pumps[n - 1].queued;
+
+async function lockByCalcium(page, cleanup) {
+  await page.request.post('/mock/locks');
+  const before = await locksOf(page);
+  cleanup(async () => {
+    await page.request.put('/api/v1/schedule/locks', { data: before });
+    await page.request.post('/api/v1/pumps/stop?pump=0');  // also discards a queued dose
+    await page.request.post('/mock/locks');
+  });
+  expect(before.rules).toContainEqual({ pumps: [1, 2], gap_min: 5 });
+  expect((await page.request.post('/api/v1/pumps/dose?pump=2&ml=20')).status()).toBe(200);
+  return before;
+}
+
 test.describe('manual dose during a lock time', () => {
-  test.use({ allowErrors: /status of 409 .*\/api\/v1\/pumps\/dose/ });
-  test('is refused with the time or waits', async ({ page }) => {
-    await open(page, '#/pump/2');
-    const c = page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'Dose now', level: 2 }) });
-    const amount = c.getByRole('textbox', { name: 'Amount ml', exact: true });
-    await amount.fill('13');
-    await c.getByRole('button', { name: 'Dose', exact: true }).click();
+  test.use({ allowErrors: /status of (409|400) .*\/api\/v1\/pumps\/dose/ });
+  test('is refused with the time or waits', async ({ page, cleanup }) => {
+    const before = await lockByCalcium(page, cleanup);
+    await open(page, '#/pump/1');
+    const c = doseCard(page);
+    await c.getByRole('textbox', { name: 'Amount ml', exact: true }).fill('1');
+    const dose = c.getByRole('button', { name: 'Dose', exact: true });
+    await dose.click();
+    await expect(c.locator('.msg.err')).toHaveText('Lock time – another pump is still running');
+    await page.request.post('/api/v1/pumps/stop?pump=2');
+    await dose.click();
     await expect(c.locator('.msg.err')).toHaveText(/^Lock time to another pump until (tomorrow )?\d{1,2}:\d\d/);  // before midnight: "tomorrow 00:02"
-    await amount.fill('14');
-    await c.getByRole('button', { name: 'Dose', exact: true }).click();
+
+    await page.request.put('/api/v1/schedule/locks', { data: { ...before, manual: 'queue' } });
+    await dose.click();
     await expect(c.getByRole('status')).toHaveText('Lock time running – the dose starts afterwards');
+    expect(await queuedOf(page, 1)).toMatchObject({ ml: 1 });
+    expect((await page.request.post('/api/v1/pumps/dose?pump=1&ml=2')).status()).toBe(409);  // one per pump
+    // stop discards it
+    await page.request.post('/api/v1/pumps/stop?pump=1');
+    expect(await queuedOf(page, 1)).toBeNull();
   });
 
   test('"Ask": cancel, wait or dose anyway', async ({ page, cleanup }) => {
     await open(page, '#/settings');
     await proMode(page);
-    const before = await locksOf(page);
-    cleanup(() => page.request.put('/api/v1/schedule/locks', { data: before }));
+    const before = await lockByCalcium(page, cleanup);
     const lc = card(page);
     await lc.getByRole('radio', { name: 'Ask' }).click();
     await expect(lc.getByText('When dosing you choose whether to cancel, wait or dose anyway.', { exact: false })).toBeVisible();
@@ -78,38 +104,43 @@ test.describe('manual dose during a lock time', () => {
     expect((await locksOf(page)).manual).toBe('ask');
 
     await open(page, '#/pump/1');
-    const c = page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'Dose now', level: 2 }) });
-    await c.getByRole('textbox', { name: 'Amount ml', exact: true }).fill('13');
+    const c = doseCard(page);
+    await c.getByRole('textbox', { name: 'Amount ml', exact: true }).fill('1');
+    const dose = c.getByRole('button', { name: 'Dose', exact: true });
     const dialog = page.getByRole('alertdialog', { name: 'Lock time running' });
     const doses = [];
     page.on('request', r => { if (r.url().includes('/api/v1/pumps/dose')) doses.push(new URL(r.url()).searchParams.get('lock')); });
 
-    // cancel: nothing is sent again
-    await c.getByRole('button', { name: 'Dose', exact: true }).click();
-    await expect(dialog).toContainText(/The lock time to Calcium runs until (tomorrow )?\d{1,2}:\d\d\./);
+    // Calcium still runs: no end yet; cancel sends nothing more
+    await dose.click();
+    await expect(dialog).toContainText('Calcium is still dosing; the lock time starts when it ends.');
+    await expect(dialog.getByRole('button', { name: 'Dose afterwards' })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();  // Enter cannot dose by accident
     await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(dialog).toHaveCount(0);
     expect(doses).toEqual([null]);
 
     // wait: queued until the lock time ends
-    await c.getByRole('button', { name: 'Dose', exact: true }).click();
+    await page.request.post('/api/v1/pumps/stop?pump=2');
+    await dose.click();
+    await expect(dialog).toContainText(/The lock time to Calcium runs until (tomorrow )?\d{1,2}:\d\d\./);
     await dialog.getByRole('button', { name: /^Dose at / }).click();
     await expect(c.getByRole('status')).toHaveText('Lock time running – the dose starts afterwards');
+    expect(await queuedOf(page, 1)).toMatchObject({ ml: 1 });
 
     // dose anyway: started, and the history names the lock time passed over
-    await c.getByRole('button', { name: 'Dose', exact: true }).click();
+    await dose.click();
     await dialog.getByRole('button', { name: 'Dose anyway' }).click();
-    await expect(c.getByRole('status')).toHaveText('13.00 ml started');
+    await expect(c.getByRole('status')).toHaveText('1.00 ml started');
     expect(doses).toEqual([null, null, 'queue', null, 'override']);
     await proMode(page);
     await open(page, '#/history/1');
     const ev = page.locator('.hi-list > li').first();
-    await expect(ev.locator('.hi-d')).toHaveText('13.00 ml · lock time to Calcium passed over');
+    await expect(ev.locator('.hi-d')).toHaveText('1.00 ml · lock time to Calcium passed over');
 
     // a choice is refused with any other policy
     await page.request.put('/api/v1/schedule/locks', { data: before });
-    expect((await page.request.post('/api/v1/pumps/dose?pump=1&ml=13&lock=override')).status()).toBe(400);
+    expect((await page.request.post('/api/v1/pumps/dose?pump=1&ml=1&lock=override')).status()).toBe(400);
   });
 });
 

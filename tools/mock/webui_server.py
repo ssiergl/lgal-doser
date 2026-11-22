@@ -46,6 +46,32 @@ SCHED = [
 ]
 BOOST = [None] * 5  # {"total_ml", "remaining_ml", "days", "doses", "start_utc"}
 LOCKS = {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]}
+# lock times at run time, as on the device: end of the last dose per pump, and the manual dose
+# waiting for the end of a lock time (one per pump: {"ml", "tier", "since"})
+LAST_END = [0.0] * 5
+QUEUED = [None] * 5
+
+def queued_json(i):
+    qd = QUEUED[i]
+    return {"ml": qd["ml"], "since": qd["since"], "since_local": time.strftime("%Y-%m-%d %H:%M", time.localtime(qd["since"]))} if qd else None
+
+def lock_until(i, now):
+    """(end of the lock time for pump index i, index of the pump holding it): None if free,
+    inf while the other pump still runs; counted from the full minute in which its dose ended"""
+    until, by = None, None
+    for r in LOCKS["rules"]:
+        if i + 1 not in r["pumps"]: continue
+        q = next(x for x in r["pumps"] if x != i + 1) - 1
+        if P[q]["activity"] == "dosing": return float("inf"), q
+        t = LAST_END[q] - LAST_END[q] % 60 + r["gap_min"] * 60 if LAST_END[q] else 0
+        if t > now and (until is None or t > until): until, by = t, q
+    return until, by
+
+def start_dose(i, ml, now, tier=None, **note_extra):
+    p = P[i]
+    if tier is not None: p["tier_dose"] = tier
+    p.update(activity="dosing", start=now, done=0.0, target=ml)
+    note("dose", i + 1, "success", target_ml=ml, done_ml=ml, **note_extra)  # the mock books it at once
 
 def hm(x):
     h, m = x.split(":"); return int(h) * 60 + int(m)
@@ -231,13 +257,19 @@ def tick():
                 p["done"] = min(p["target"], (now - p["start"]) * rate)
                 if p["done"] >= p["target"]:
                     act = p["activity"]; p["activity"] = "idle"
+                    if act == "dosing": LAST_END[i] = now
                     if act == "dosing":
                         USED[i] += p["target"]; p["remaining"] = max(0.0, p["remaining"] - p["target"]); p["total"] += p["target"]
                     else:
                         p["pending"] = True; p["ptarget"] = p["target"]
                     p["last"] = {"result": "success", "activity": act, "target_ml": p["target"], "done_ml": p["target"], "at": int(now)}
                 continue
-            if p["activity"] != "priming": continue
+            if p["activity"] != "priming":
+                if QUEUED[i] and p["activity"] == "idle" and lock_until(i, now)[0] is None:
+                    qd = QUEUED[i]; QUEUED[i] = None
+                    log("pump", i + 1, "queued dose of", qd["ml"], "ml starts")
+                    start_dose(i, qd["ml"], now, qd["tier"])
+                continue
             p["done"] = (now - p["start"]) * 74.0 / 60
             if now - p["beat"] > ENG["prime_heartbeat_ms"] / 1000: end(i, "heartbeat_lost")
 
@@ -293,8 +325,10 @@ def pumps_post(h, path, q):
     if path == "/api/v1/pumps/stop":
         with LOCK:
             for i, p in enumerate(P):
+                if n == 0 or n == i + 1: QUEUED[i] = None
                 if (n == 0 or n == i + 1) and p["activity"] != "idle":
                     p["last"] = {"result": "aborted", "activity": p["activity"], "target_ml": p["target"], "done_ml": round(p["done"], 3), "at": int(time.time())}
+                    if p["activity"] == "dosing": LAST_END[i] = time.time()
                     p["activity"] = "idle"; p["owner"] = None
         return h.send(200, {"status": "stopped"})
     if not 1 <= n <= 5: return err(h, "invalid_param", "pump")
@@ -333,20 +367,25 @@ def pumps_post(h, path, q):
                 return err(h, "invalid_param", "lock")
             if p["mode"] == "disabled": return err(h, "pump_disabled", status=409)
             if p["activity"] != "idle": return err(h, "busy", status=409)
-            # 13 ml: a lock time to another pump (the first one in a rule) runs for 10 more minutes
-            holder = next((x for r in LOCKS["rules"] for x in r["pumps"] if n in r["pumps"] and x != n), 2 if n == 1 else 1)
-            if q.get("ml") == "13" and choice != "override":
-                if choice == "queue": return h.send(202, {"status": "queued"})
-                return err(h, "collision_lock", "Lock time", 409, retry_at=int(time.time()) + 600,
-                           retry_local=time.strftime("%Y-%m-%d %H:%M", time.localtime(time.time() + 600)),
-                           ask=LOCKS["manual"] == "ask", pump=holder)
-            if q.get("ml") == "14": return h.send(202, {"status": "queued"})
-            if "tier" in q: p["tier_dose"] = int(q["tier"])
-            p.update(activity="dosing", start=time.time(), done=0.0, target=ml)
+            # lock time to another pump: reject, queue or ask, as on the device
+            now = time.time()
+            until, by = lock_until(i, now)
             over = {}
-            if q.get("ml") == "13":  # dosed over the lock time of the other pump
-                over["lock_overridden"] = holder
-            note("dose", n, "success", target_ml=ml, done_ml=ml, **over)  # the mock books it at once
+            tier = int(q["tier"]) if "tier" in q else None
+            if until is not None and choice == "override":
+                over["lock_overridden"] = by + 1
+                log("pump", n, "dose over the lock time of pump", by + 1)
+            elif until is not None:
+                if choice == "queue" or (choice is None and LOCKS["manual"] == "queue"):
+                    if QUEUED[i]: return err(h, "queue_full", "A dose is already waiting for the lock time to end", 409)
+                    QUEUED[i] = {"ml": ml, "tier": tier, "since": int(now)}
+                    return h.send(202, {"status": "queued"})
+                running = until == float("inf")
+                return err(h, "collision_lock", "Lock time to another pump is running", 409,
+                           retry_at=None if running else int(until),
+                           retry_local=None if running else time.strftime("%Y-%m-%d %H:%M", time.localtime(until)),
+                           ask=LOCKS["manual"] == "ask", pump=by + 1)
+            start_dose(i, ml, now, tier, **over)
             return h.send(200, {"status": "dosing"})
         if path == "/api/v1/pumps/calibrate":
             a = q.get("action")
@@ -530,7 +569,7 @@ class H(BaseHTTPRequestHandler):
                 bx = boost_share(i, nx[0]) if nx else 0
                 pumps.append({"pump": i + 1, "next": {"at": nx[0], "local": time.strftime("%Y-%m-%d %H:%M", time.localtime(nx[0])),
                                                       "ml": round((nx[1] + bx) / 1000, 3), **({"boost_ml": round(bx / 1000, 3)} if bx else {})} if nx else None,
-                              "delayed": None, "queued": None, "skipped": 0, "last_skip": None, "last_run": None,
+                              "delayed": None, "queued": queued_json(i), "skipped": 0, "last_skip": None, "last_run": None,
                               "planned_today_ml": PLAN[i], "remaining_days": rd, "boost": boost_json(i)})
             return self.send(200, {"clock_valid": True, "now": now, "now_local": time.strftime("%Y-%m-%d %H:%M"), "pumps": pumps})
         if p == "/api/v1/system/info":
@@ -578,6 +617,9 @@ class H(BaseHTTPRequestHandler):
             sys_mock.reset_firmware("rolledback=1" in p); return self.send(200, {"status": "ok"})
         if p.startswith("/mock/time"):  # tests: time settings and clock as at start
             sys_mock.reset_time(); return self.send(200, {"status": "ok"})
+        if p.startswith("/mock/locks"):  # tests: no dose ended yet, nothing queued
+            with LOCK: LAST_END[:] = [0.0] * 5; QUEUED[:] = [None] * 5
+            return self.send(200, {"status": "ok"})
         if p.startswith("/mock/kill"):  # drop all WebSocket connections (connection loss)
             for s in list(CLIENTS.values()):
                 try: s.shutdown(socket.SHUT_RDWR)
