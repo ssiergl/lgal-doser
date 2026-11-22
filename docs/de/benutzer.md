@@ -214,8 +214,9 @@ Die Zielmenge der Kalibrierung lässt sich in Profi direkt im Kalibrier-Assisten
 ### Jetzt dosieren
 
 Pumpe → **Jetzt dosieren**: Menge eingeben, starten; Fortschritt und **Stopp** werden
-angezeigt. Liegt die Pumpe gerade in einer Sperrzeit, nennt die Seite, wann es wieder geht
-(oder die Dosis startet danach, je nach Einstellung).
+angezeigt. Liegt die Pumpe gerade in einer Sperrzeit, nennt die Seite, wann es wieder geht, oder
+die Dosis startet danach, je nach Einstellung. Bei **Nachfragen** wählst du: abbrechen, nach der
+Sperrzeit dosieren oder trotzdem dosieren (der Verlauf vermerkt das).
 
 ### Boost
 
@@ -264,7 +265,7 @@ Verbrauch) und warnt, wenn die Lebensdauer erreicht ist. Nach dem Wechsel in Pro
 | Gerät | Gerätename (z. B. „Riffbecken“); daraus folgt die Adresse, z. B. `riffbecken.local` |
 | Uhrzeit | Gerätezeit und Quelle, Zeitzone, Uhrzeit vom Browser übernehmen; in Profi Zeitserver und Uhrzeit von Hand |
 | Status-LED | Bedeutung der Farben, **Nachtmodus**: Bereit-Licht in einem Zeitfenster dimmen oder aus (Alarme bleiben sichtbar) |
-| Sperrzeiten (Profi) | Mindestabstand zwischen zwei Pumpen, z. B. KH und Calcium mindestens 30 min auseinander; dazu, ob eine manuelle Dosis in der Sperrzeit abgelehnt wird oder wartet |
+| Sperrzeiten (Profi) | Mindestabstand zwischen zwei Pumpen, z. B. KH und Calcium mindestens 30 min auseinander; dazu, ob eine manuelle Dosis in der Sperrzeit abgelehnt wird, wartet oder nachfragt |
 | Netzwerk | Status; in Profi LAN/WLAN, feste Adressen, WLAN suchen und testen |
 | MQTT (Profi) | Anbindung an Home Assistant oder einen anderen MQTT-Broker, wahlweise mit Steuerung aus Home Assistant |
 | Anmeldung | Passwort ändern, abmelden, überall abmelden; in Profi API-Schlüssel für Apps und Skripte |
