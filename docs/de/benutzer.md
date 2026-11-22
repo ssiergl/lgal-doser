@@ -119,7 +119,7 @@ Die Seiten:
 | Seite | Inhalt |
 |---|---|
 | **Übersicht** | eine Karte pro Pumpe mit Behälter, heute dosiert / geplant, Reichweite und nächster Dosis |
-| **Pumpe** (Karte antippen) | Behälter, Alarme und Warnungen, jetzt dosieren, Schlauch füllen, Kalibrieren, Zeitplan, Boost, Verbrauch, Einstellungen |
+| **Pumpe** (Karte antippen) | Behälter, Alarme und Warnungen, jetzt dosieren, Kalibrieren (mit Schlauch füllen), Zeitplan, Boost, Verbrauch, Einstellungen |
 | **Verlauf** | dosierte Mengen pro Tag als Diagramm; in Profi alle Ereignisse mit Filter und CSV-Export |
 | **Einstellungen** | Gerät, Uhrzeit, Status-LED, Netzwerk, MQTT, Anmeldung, Darstellung; von hier zur **Wartung** |
 
@@ -160,9 +160,12 @@ Kalibrierung und Eingaben.
 
 ### 6.3 Schlauch füllen
 
-**Schlauch füllen** gedrückt halten, bis die Flüssigkeit am Schlauchende ankommt. Die Pumpe
-läuft nur, solange der Knopf gehalten wird, und stoppt sofort beim Loslassen oder wenn die
-Verbindung abreißt (höchstens 60 Sekunden am Stück).
+Kalibrierung → **Kalibrierung starten** öffnet den Assistenten; dort **Halten zum Füllen**
+gedrückt halten, bis die Flüssigkeit am Schlauchende ankommt. Die Pumpe läuft nur, solange der
+Knopf gehalten wird, und stoppt sofort beim Loslassen oder wenn die Verbindung abreißt
+(höchstens 60 Sekunden am Stück). Wer nur füllen will, schließt den Assistenten danach mit
+**Abbrechen**. Woanders gibt es den Knopf nicht, damit niemand aus Versehen eine Pumpe laufen
+lässt.
 
 ### 6.4 Kalibrieren
 
@@ -205,7 +208,7 @@ Pumpe → Einstellungen in Profi:
 - **Rückzug:** zieht nach jeder Dosis ein wenig zurück, damit nichts nachtropft (ab Werk aus).
 - **Warn- und Alarmschwelle** des Behälters in Tagen Reichweite.
 - **Drehrichtung** von vorne gesehen, ab Werk rechts herum, falls die Pumpe falsch herum fördert
-  (nur im Stillstand; danach kurz Schlauch füllen und die Richtung prüfen).
+  (nur im Stillstand; danach im Kalibrier-Assistenten kurz füllen und die Richtung prüfen).
 
 Die Zielmenge der Kalibrierung lässt sich in Profi direkt im Kalibrier-Assistenten ändern.
 

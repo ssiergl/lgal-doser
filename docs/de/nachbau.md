@@ -211,7 +211,7 @@ Einzelheiten und Hintergründe: [technische Doku, Erstinbetriebnahme](technik.md
    (Kurzschluss, Übertemperatur, offene Spule).
 6. **Pumpen einzeln fahren** (Bereich D, Raw-Test): ein paar Umdrehungen vorwärts. Läuft eine
    Pumpe falsch herum, in der Ansicht Profi unter Pumpe → Einstellungen die **Drehrichtung**
-   umstellen und mit „Schlauch füllen“ prüfen.
+   umstellen und mit „Halten zum Füllen“ im Kalibrier-Assistenten prüfen.
 7. **Uhr:** Einstellungen → Uhrzeit zeigt Quelle „Zeitserver“ und das Uhrenmodul ohne Warnung.
 8. **Alle Pumpen kalibrieren**, siehe [Bedienungsanleitung](benutzer.md#64-kalibrieren).
 

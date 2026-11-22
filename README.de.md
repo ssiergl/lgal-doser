@@ -20,7 +20,8 @@ Home Assistant. Firmware, Platine und Gehäuse liegen offen in diesem Repository
 - **Fünf Pumpen, unabhängig voneinander:** Kamoer KPHM100-ST mit TMC2209-Treibern. Die Pumpen
   laufen leise im StealthChop-Modus mit sanfter Rampe und können alle gleichzeitig fahren.
 - **Genau dosieren:** Kalibrier-Assistent mit Messbecher, Rückzug gegen Nachtropfen,
-  Schlauch füllen per Halten (stoppt sofort beim Loslassen oder bei Verbindungsabbruch).
+  Schlauch füllen per Halten im Assistenten (stoppt sofort beim Loslassen oder bei
+  Verbindungsabbruch).
 - **Zeitpläne:** pro Pumpe eine Tagesmenge auf N Dosen verteilt oder feste Uhrzeiten mit
   eigener Menge; täglich, an Wochentagen oder alle N Tage. Dazu Boost (Zusatzmenge über
   einige Tage) und Sperrzeiten zwischen Pumpen, z. B. Calcium nicht direkt nach KH.
