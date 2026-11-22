@@ -50,9 +50,14 @@ test('dose now runs and shows on the overview', async ({ page }) => {
   await expect(page.locator('a.pump-card').first().locator('.running')).toBeVisible();
 });
 
+// Filling the tube only in the calibration dialog: no card of its own to press by accident
 test('hold to fill primes only while held', async ({ page }) => {
   await open(page, '#/pump/5');
-  const hold = page.locator('main button.hold');
+  await expect(page.locator('main button.hold')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Fill tube' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Start calibration' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Calibrate pump 5' });
+  const hold = dialog.locator('button.hold');
   await expect(hold).toHaveText('Hold to fill');
   await hold.hover();
   await page.mouse.down();
@@ -61,6 +66,8 @@ test('hold to fill primes only while held', async ({ page }) => {
   await page.mouse.up();
   await expect(hold).not.toHaveClass(/held/);
   await expect.poll(async () => (await (await page.request.get('/api/v1/pumps')).json()).pumps[4].activity).toBe('idle');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toHaveCount(0);
 });
 
 const card = (page, title) => page.locator('section.card').filter({ has: page.getByRole('heading', { name: title, level: 2, exact: true }) });

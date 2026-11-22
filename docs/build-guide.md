@@ -211,7 +211,7 @@ Details and background: [technical docs, first start-up](technical.md#first-star
    circuit, over-temperature, open coil).
 6. **Run the pumps one by one** (area D, raw test): a few revolutions forward. If a pump runs the
    wrong way round, switch the **direction of rotation** in the pro view under pump → settings
-   and check it with "Fill tube".
+   and check it with "Hold to fill" in the calibration wizard.
 7. **Clock:** settings → time shows the source "time server" and the clock module without a
    warning.
 8. **Calibrate all pumps**, see the [user guide](user-guide.md#64-calibrating).

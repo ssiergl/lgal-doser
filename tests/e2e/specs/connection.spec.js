@@ -28,7 +28,8 @@ test('live connection drops and comes back by itself', async ({ page }) => {
 // Dead man: priming must stop when the browser is gone
 test('priming stops when the connection is lost', async ({ page }) => {
   await open(page, '#/pump/5');
-  const hold = page.locator('main button.hold');
+  await page.getByRole('button', { name: 'Start calibration' }).click();
+  const hold = page.getByRole('dialog', { name: 'Calibrate pump 5' }).locator('button.hold');
   await hold.hover();
   await page.mouse.down();
   await expect.poll(() => activity(page, 5)).toBe('priming');

@@ -113,7 +113,7 @@ The pages:
 | Page | Content |
 |---|---|
 | **Overview** | one card per pump with container, dosed / planned today, range and next dose |
-| **Pump** (tap a card) | container, alarms and warnings, dose now, fill tube, calibration, schedule, boost, consumption, settings |
+| **Pump** (tap a card) | container, alarms and warnings, dose now, calibration (with filling the tube), schedule, boost, consumption, settings |
 | **History** | dosed amounts per day as a chart; in pro all events with filter and CSV export |
 | **Settings** | device, time, status LED, network, MQTT, sign-in, appearance; from here to **maintenance** |
 
@@ -153,9 +153,11 @@ entries.
 
 ### 6.3 Filling the tube
 
-On the **Fill tube** card, keep **Hold to fill** pressed until the liquid reaches the end of the tube. The pump only runs while the
-button is held and stops at once on release or when the connection drops (at most 60 seconds in
-one go).
+Calibration → **Start calibration** opens the wizard; there keep **Hold to fill** pressed until
+the liquid reaches the end of the tube. The pump only runs while the button is held and stops at
+once on release or when the connection drops (at most 60 seconds in one go). To fill only,
+close the wizard with **Cancel** afterwards. There is no button for it elsewhere, so that
+nobody runs a pump by accident.
 
 ### 6.4 Calibrating
 
@@ -197,7 +199,7 @@ Pump → settings in pro:
 - **Retract:** pulls back a little after every dose so that nothing drips (off by default).
 - **Warning and alarm threshold** of the container in days of range.
 - **Direction of rotation** seen from the front, clockwise from the factory, if the pump delivers
-  the wrong way round (only at standstill; then fill briefly and check the direction).
+  the wrong way round (only at standstill; then fill briefly in the calibration wizard and check the direction).
 
 The target amount of the calibration can be changed in pro directly in the calibration wizard.
 

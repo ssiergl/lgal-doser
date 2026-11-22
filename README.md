@@ -20,7 +20,8 @@ Assistant as well. Firmware, circuit board and enclosure are open in this reposi
 - **Five independent pumps:** Kamoer KPHM100-ST with TMC2209 drivers. The pumps run quietly in
   StealthChop mode with a soft ramp, and all of them can run at the same time.
 - **Accurate dosing:** calibration wizard with a measuring cup, retract against dripping, tube
-  priming by holding a button (stops at once on release or when the connection drops).
+  priming by holding a button in the wizard (stops at once on release or when the connection
+  drops).
 - **Schedules:** per pump a daily amount spread over N doses, or fixed times with their own
   amount; daily, on weekdays or every N days. Plus boost (extra amount over a few days) and
   lock times between pumps, e.g. no calcium right after alkalinity.

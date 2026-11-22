@@ -29,11 +29,10 @@ add({
     'dose.ask.wait': 'Dose at {at}', 'dose.ask.after': 'Dose afterwards', 'dose.ask.over': 'Dose anyway',
     'dose.run': '{done} of {target} ml', 'tier.title': 'Speed',
     'tier.0': 'Slow', 'tier.1': 'Normal', 'tier.2': 'Fast',
-    'prime.title': 'Fill tube', 'prime.hint': 'Hold the button until liquid comes out of the tube end. Not counted for container or daily amount.',
     'prime.btn': 'Hold to fill', 'prime.held': 'Filling … release to stop', 'prime.run': '{s} s · {ml} ml',
     'prime.rest': 'No live connection – stops 0.5 s after releasing.',
     'cal.title': 'Calibration', 'cal.ok': 'Calibrated: {v} ml per revolution', 'cal.none': 'Not calibrated yet – amounts use the nominal value.',
-    'cal.when': 'on {d}', 'cal.s0': 'Fill the tube up to its end (also possible after Start).', 'cal.s1': 'Put the tube end into a measuring cup.', 'cal.s2': 'Start: the pump delivers about {ml} ml.',
+    'cal.when': 'on {d}', 'cal.s0': 'Fill the tube up to its end.', 'cal.s1': 'Put the tube end into a measuring cup.', 'cal.s2': 'Start: the pump delivers about {ml} ml.',
     'cal.dlg.title': 'Calibrate pump {n}', 'cal.dlg.q1': '1 · Is the tube filled?',
     'cal.dlg.fill': 'The tube must be filled with liquid up to its end, air falsifies the measurement. If not: hold the button until liquid comes out (into a glass or back into the container).',
     'cal.dlg.q2': '2 · Tube end into the measuring cup', 'cal.dlg.cup': 'Empty the measuring cup and hold the tube end into it. The pump then delivers about {ml} ml.',
@@ -231,15 +230,6 @@ function PrimeHold({ p, msg }) {
       disabled=${other || p.mode === 'disabled'} onStart=${start} onBeat=${beat} onStop=${stop}/>
     ${p.activity === 'priming' && html`<${Progress} p=${p}/>`}
     ${!ws && html`<p class="mut small">${t('prime.rest')}</p>`}`;
-}
-
-function PrimeCard({ p }) {
-  const msg = useMsg();
-  return html`<section class=${'card' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('prime.title')}</h2>
-    <p class="mut small">${t('prime.hint')}</p>
-    <${PrimeHold} p=${p} msg=${msg}/>
-    ${msg.node}
-  </section>`;
 }
 
 // Start of a calibration: is the tube filled (fill it right here), then the
@@ -545,7 +535,6 @@ export function PumpView({ pump }) {
       </div>
       <div class="col">
         <${DoseCard} p=${p} pro=${pro} nowLocal=${nowLocal}/>
-        <${PrimeCard} p=${p}/>
         <${CalibCard} p=${p} pro=${pro}/>
         <${SettingsCard} p=${p} pro=${pro}/>
       </div>
