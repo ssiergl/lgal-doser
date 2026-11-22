@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <initializer_list>
 #include <string_view>
 
@@ -212,6 +213,18 @@ static void test_runtime() {
     CHECK(lock_until(l, 2, last_end, running, t0) == t0);  // no rule for pump 3
     running[0] = true;
     CHECK(lock_until(l, 1, last_end, running, t0 + 1800) == INT64_MAX);
+    // the pump holding the lock: the running one, the one with the latest end, or none
+    int by = 7;
+    CHECK(lock_until(l, 1, last_end, running, t0 + 1800, &by) == INT64_MAX && by == 0);
+    running[0] = false;
+    l.count = 2;
+    l.rules[1] = LockRule{2, 1, 45};
+    last_end[2] = t0 + 30;
+    CHECK(lock_until(l, 1, last_end, running, t0 + 1800, &by) == t0 + 2700 && by == 2);
+    CHECK(lock_until(l, 1, last_end, running, t0 + 2700, &by) == t0 + 2700 && by == -1);
+    CHECK(parse_manual_during_lock("ask", &l.manual) && l.manual == ManualDuringLock::Ask);
+    CHECK(!std::strcmp(manual_during_lock_str(ManualDuringLock::Ask), "ask"));
+    CHECK(!parse_manual_during_lock("maybe", &l.manual) && l.manual == ManualDuringLock::Ask);
 }
 
 static Validation run_validate(const PumpSchedule (&all)[kPumps], const Locks& l, Conflict* c, int max,

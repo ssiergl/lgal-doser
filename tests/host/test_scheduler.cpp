@@ -351,8 +351,37 @@ static void test_queue_and_clock_jump() {
     CHECK(total(1) == b1);
     sim::run_for(120);
     CHECK(total(1) == b1 + 500 && !scheduler::status(1).queued);
+
+    // ask: without a choice like reject (also for MQTT), with one the caller decides
+    using scheduler::LockChoice;
+    l.manual = sched::ManualDuringLock::Ask;
+    CHECK(scheduler::set_locks(l) == nullptr);
+    int by = -1;
+    CHECK_STR(scheduler::manual_dose(0, 400, dosing::Trigger::Mqtt, -1, &retry, &queued), "collision_lock");
+    CHECK_STR(scheduler::manual_dose(0, 400, dosing::Trigger::Api, -1, &retry, &queued, LockChoice::Policy, &by),
+              "collision_lock");
+    CHECK(by == 1 && !queued && retry > sim::utc());  // pump 2 has just dosed
+    const uint64_t a0 = total(0);
+    CHECK(scheduler::manual_dose(0, 400, dosing::Trigger::Api, -1, &retry, &queued, LockChoice::Override) == nullptr &&
+          !queued);
+    sim::run_for(10);
+    CHECK(total(0) == a0 + 400);
+    const history::Event* over = sim::last_event(history::Kind::Dose, 1);
+    CHECK(over && over->value == 2);  // the history names the pump whose lock time was passed over
+    // now pump 2 waits for pump 1
+    const uint64_t a1 = total(1);
+    CHECK(scheduler::manual_dose(1, 300, dosing::Trigger::Api, -1, &retry, &queued, LockChoice::Queue) == nullptr &&
+          queued);
+    sim::run_for(30);
+    CHECK(total(1) == a1);
+    sim::run_for(400);
+    CHECK(total(1) == a1 + 300 && sim::last_event(history::Kind::Dose, 2)->value == 0);
+
     l.manual = sched::ManualDuringLock::Reject;
     CHECK(scheduler::set_locks(l) == nullptr);
+    // a choice only with the policy ask: reject stays a hard rule
+    CHECK_STR(scheduler::manual_dose(0, 400, dosing::Trigger::Api, -1, &retry, &queued, LockChoice::Override),
+              "invalid_param");
 
     // clock set back by one hour right after the 08:00 slot: it does not run twice
     sim::run_until(local(11, 23, 8, 0, 30));

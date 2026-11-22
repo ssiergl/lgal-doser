@@ -28,7 +28,7 @@ add({
     'hk.dose': 'Dose', 'hk.prime': 'Filling', 'hk.calib_run': 'Calibration run', 'hk.skip': 'Skipped',
     'hk.container': 'Container', 'hk.calibration': 'Calibration', 'hk.tube': 'Tube', 'hk.alarm': 'Alarm',
     'hs.schedule': 'schedule', 'hs.manual': 'manual', 'hs.api': 'API', 'hs.boost': 'boost', 'hs.mqtt': 'MQTT',
-    'hd.done': '{d} ml', 'hd.part': '{d} of {t} ml', 'hd.slots': '{n} doses', 'hd.ct': '{r} of {c} ml',
+    'hd.done': '{d} ml', 'hd.part': '{d} of {t} ml', 'hd.over': 'lock time to {p} passed over', 'hd.slots': '{n} doses', 'hd.ct': '{r} of {c} ml',
     'hd.cal': '{v} ml/rev. · measured {m} of {t} ml', 'hd.tube': '{h} h',
     'hc.success': 'done', 'hc.aborted': 'stopped', 'hc.fault': 'driver fault', 'hc.locked': 'locked (update)',
     'hc.heartbeat_lost': 'stopped (connection)', 'hc.max_duration': 'stopped (max. time)',
@@ -244,11 +244,14 @@ function DailyCard({ keep }) {
   </section>`;
 }
 
-function detail(e) {
+// nameOf: pump number -> name (for a passed-over lock time)
+function detail(e, nameOf) {
   switch (e.kind) {
-    case 'dose': case 'prime': case 'calib_run':
-      return e.code === 'success' || e.kind === 'prime' ? t('hd.done', { d: num(e.done_ml, 2) })
+    case 'dose': case 'prime': case 'calib_run': {
+      const amount = e.code === 'success' || e.kind === 'prime' ? t('hd.done', { d: num(e.done_ml, 2) })
         : t('hd.part', { d: num(e.done_ml, 2), t: num(e.target_ml, 2) });
+      return e.lock_overridden ? amount + ' · ' + t('hd.over', { p: nameOf(e.lock_overridden) }) : amount;
+    }
     case 'skip': return e.count > 1 ? t('hd.slots', { n: e.count }) : e.target_ml ? t('hd.done', { d: num(e.target_ml, 2) }) : '';
     case 'container': return t('hd.ct', { r: num(e.remaining_ml, 0), c: num(e.capacity_ml, 0) });
     case 'calibration': return t('hd.cal', { v: num(e.ul_per_rev / 1000, 3), m: num(e.measured_ml, 2), t: num(e.target_ml, 2) });
@@ -323,7 +326,7 @@ function EventsCard({ pump, keep }) {
         <span class="hi-t num small mut">${e.local.slice(8, 10)}.${e.local.slice(5, 7)}. ${hm(e.local.slice(11, 16))}</span>
         <span class="hi-p"><i class="sw"></i>${e.pump ? nameOf(e.pump) : t('hi.device')}</span>
         <span class="hi-k">${t('hk.' + e.kind)}${e.source && e.kind !== 'skip' ? html` <span class="small mut">· ${t('hs.' + e.source)}</span>` : ''}</span>
-        <span class="hi-d num">${detail(e)}</span>
+        <span class="hi-d num">${detail(e, nameOf)}</span>
         <span class=${'hi-c small ' + codeCls(e)}>${t('hc.' + e.code)}</span>
       </li>`)}</ul>`}
     ${more && html`<button class="sec" disabled=${busy} onClick=${() => load(list.length, list)}>${t('hi.more')}</button>`}

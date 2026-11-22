@@ -272,6 +272,9 @@ static void test_locks() {
     const char* empty = "{}";
     CHECK(r.parse(empty, 2, g_tok, 512) && parse_locks(r.root(), &back, &err));
     CHECK(back.count == 0 && back.manual == sched::ManualDuringLock::Reject);
+    const char* ask = "{\"manual\":\"ask\"}";
+    CHECK(r.parse(ask, std::strlen(ask), g_tok, 512) && parse_locks(r.root(), &back, &err));
+    CHECK(back.manual == sched::ManualDuringLock::Ask);
 
     struct Case {
         const char* text;

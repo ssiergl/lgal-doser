@@ -19,13 +19,14 @@ const kMaxLocks = 10;
 add({
   en: {
     'lk.title': 'Lock times between pumps',
-    'lk.intro': 'A lock time keeps two pumps apart: after a dose of one pump, the other one starts at the earliest once the lock time has passed, counted from the minute in which the dose ended – doses at 08:00 and 08:30 fit a lock time of 30 minutes. Use it for additives that must not meet in the same water flow.',
+    'lk.intro': 'A lock time keeps two pumps apart: after a dose of one pump, the other one starts only once the lock time has passed. For additives that must not meet in the same water flow.',
     'lk.none': 'No lock times – all pumps may dose at the same time.',
     'lk.add': 'Add rule', 'lk.del': 'Delete rule',
     'lk.a': 'Rule {n}: first pump', 'lk.b': 'Rule {n}: second pump', 'lk.gap': 'Rule {n}: lock time in minutes',
-    'lk.manual': 'Manual dose during a lock time', 'lk.m.reject': 'Reject', 'lk.m.queue': 'Wait',
+    'lk.manual': 'Manual dose during a lock time', 'lk.m.reject': 'Reject', 'lk.m.queue': 'Wait', 'lk.m.ask': 'Ask',
     'lk.m.hint.reject': 'The dose is refused with a note when it may start.',
     'lk.m.hint.queue': 'The dose waits and starts by itself once the lock time has passed.',
+    'lk.m.hint.ask': 'When dosing you choose whether to cancel, wait or dose anyway. Home Assistant and MQTT are rejected.',
     'lk.saved': 'Lock times saved', 'lk.rule': 'Rule {n}: {e}',
     'lk.err.same': 'Choose two different pumps', 'lk.err.gap': 'Lock time: 1 to 1440 minutes',
     'lk.err.dup': 'These pumps already have a rule',
@@ -110,7 +111,7 @@ export function LocksCard() {
       <button type="button" class="sec" onClick=${addRule} disabled=${d.rules.length >= kMaxLocks}>+ ${t('lk.add')}</button>
       <div class="field"><span class="lbl">${t('lk.manual')}</span>
         <${Seg} value=${d.manual} onChange=${v => set({ manual: v })}
-          options=${[['reject', t('lk.m.reject')], ['queue', t('lk.m.queue')]]}/>
+          options=${[['reject', t('lk.m.reject')], ['queue', t('lk.m.queue')], ['ask', t('lk.m.ask')]]}/>
         <span class="mut small">${t('lk.m.hint.' + d.manual)}</span>
       </div>
       <div class="row savebar">

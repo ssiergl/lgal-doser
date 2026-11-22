@@ -57,6 +57,7 @@ static void test_event_json() {
     hj::write_event(j, c, local_at(kDay, 10, 0));
     hj::write_event(j, ev(Kind::Skip, 4, 0, 0, 3, "missed"), local_at(kDay, 11, 0));
     hj::write_event(j, ev(Kind::Alarm, 0, 0, 0, 0, "rtc_fault"), local_at(kDay, 12, 0));
+    hj::write_event(j, ev(Kind::Dose, 1, 1000, 1000, 3), local_at(kDay, 13, 0));  // over pump 3's lock time
     j.end();
     lgal::JsonReader r;
     CHECK(r.parse(j.c_str(), j.str().size(), g_tok, 256));
@@ -72,6 +73,7 @@ static void test_event_json() {
     CHECK(a[2]["measured_ml"].get_decimal(1000, &v) && v == 18500);
     CHECK(a[3]["count"].get(&v) && v == 3 && !a[3]["target_ml"].valid());
     CHECK(a[4]["code"].equals("rtc_fault") && a[4]["pump"].get(&v) && v == 0);
+    CHECK(!a[0]["lock_overridden"].valid() && a[5]["lock_overridden"].get(&v) && v == 3);
 }
 
 static void test_kinds_and_csv() {
@@ -88,6 +90,8 @@ static void test_kinds_and_csv() {
     char line[160];
     size_t n = hj::csv_line(ev(Kind::Dose, 1, 1000, 1000), local_at(kDay, 8, 0), line, sizeof(line));
     CHECK(n > 0 && std::string(line) == "1794000000,2026-11-07 08:00:00,dose,1,schedule,success,1.000,1.000,\r\n");
+    n = hj::csv_line(ev(Kind::Dose, 1, 1000, 1000, 3), local_at(kDay, 8, 0), line, sizeof(line));
+    CHECK(n > 0 && std::string(line) == "1794000000,2026-11-07 08:00:00,dose,1,schedule,success,1.000,1.000,3\r\n");
     n = hj::csv_line(ev(Kind::Container, 5, 250000, 0, 125500, "set"), local_at(kDay, 8, 0), line, sizeof(line));
     CHECK(n > 0 && std::string(line) == "1794000000,2026-11-07 08:00:00,container,5,schedule,set,250.000,0.000,125.500\r\n");
     Event t = ev(Kind::Tube, 2, 0, 0, 1200, "set");

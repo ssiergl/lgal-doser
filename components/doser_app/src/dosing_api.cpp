@@ -189,14 +189,29 @@ esp_err_t post_dose(httpd_req_t* req) {
     if (p < 0) return fail(req, "invalid_param", "pump=1..5 required");
     if (!http::query_decimal(req, "ml", 1000, &ul) || ul <= 0 || ul > dose::kMaxDoseUl)
         return fail(req, "invalid_param", "ml required");
-    // Through the scheduler: lock-time policy (reject or queue) applies
+    // Through the scheduler: lock-time policy (reject, queue or ask) applies. With the policy
+    // "ask" the caller chooses: lock=queue (wait for the end) or lock=override (dose anyway).
+    auto choice = scheduler::LockChoice::Policy;
+    char lock[12];
+    if (http::query_str(req, "lock", lock, sizeof(lock))) {
+        if (!std::strcmp(lock, "queue")) choice = scheduler::LockChoice::Queue;
+        else if (!std::strcmp(lock, "override")) choice = scheduler::LockChoice::Override;
+        else return fail(req, "invalid_param", "lock=queue|override");
+        if (scheduler::locks().manual != sched::ManualDuringLock::Ask)
+            return fail(req, "invalid_param", "lock= only with the lock-time policy ask");
+    }
     int64_t retry_at = 0;
     bool queued = false;
-    const char* e =
-        scheduler::manual_dose(p, static_cast<uint32_t>(ul), trigger_of(req), tier_arg(req), &retry_at, &queued);
+    int lock_pump = -1;
+    const char* e = scheduler::manual_dose(p, static_cast<uint32_t>(ul), trigger_of(req), tier_arg(req), &retry_at,
+                                           &queued, choice, &lock_pump);
     if (e && !std::strcmp(e, "collision_lock")) {
         Json j;
         j.obj().obj("error").kv("code", e).kv("message", "Lock time to another pump is running");
+        // "ask": the caller may choose with lock=queue|override; "pump": the pump holding the lock
+        j.kv("ask", scheduler::locks().manual == sched::ManualDuringLock::Ask);
+        if (lock_pump >= 0) j.kv("pump", lock_pump + 1);
+        else j.null("pump");
         if (retry_at == INT64_MAX || retry_at <= 0) {
             j.null("retry_at").null("retry_local");  // other pump still running
         } else {

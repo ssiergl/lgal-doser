@@ -5,11 +5,14 @@
 // REST API of the dosing engine (M2). Amounts in ml (decimal), all require login.
 //
 //   GET  /api/v1/pumps                        status + settings of all pumps
-//   POST /api/v1/pumps/dose       ?pump=1..5&ml=1.5[&tier=0..2]
-//                                 409 collision_lock with "retry_at" (UTC) and
+//   POST /api/v1/pumps/dose       ?pump=1..5&ml=1.5[&tier=0..2][&lock=queue|override]
+//                                 409 collision_lock with "retry_at" (UTC),
 //                                 "retry_local" (null = other pump still
-//                                 running), or 202 "queued" if
-//                                 the lock policy is "queue" (see schedule_api.h)
+//                                 running), "pump" (holding the lock) and "ask"
+//                                 (policy "ask": repeat with lock=queue to wait or
+//                                 lock=override to dose anyway; lock= is refused
+//                                 with any other policy), or 202 "queued" if the
+//                                 lock policy is "queue" (see schedule_api.h)
 //   POST /api/v1/pumps/stop       ?pump=0..5          (0 = all, also drops a queued dose)
 //   POST /api/v1/pumps/prime      ?pump=&action=start|beat|stop[&tier=]
 //   POST /api/v1/pumps/calibrate  ?pump=&action=start[&ml=20][&tier=]

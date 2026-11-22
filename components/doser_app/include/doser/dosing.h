@@ -69,8 +69,11 @@ void set_start_guard(const char* (*guard)());
 // Dosing (amount in µl, speed tier 0..2 or -1 = pump setting).
 // "collision_lock": a lock time to another pump is running; *retry_at is the
 // UTC from which the dose is allowed (INT64_MAX: the other pump is still
-// running, end unknown).
-const char* dose(int pump, uint32_t ul, Trigger trigger, int tier = -1, int64_t* retry_at = nullptr);
+// running, end unknown), *lock_pump the pump holding the lock (0..4).
+// override_lock: dose anyway (chosen by the user); the history entry of the
+// dose names the pump whose lock time was passed over.
+const char* dose(int pump, uint32_t ul, Trigger trigger, int tier = -1, int64_t* retry_at = nullptr,
+                 int* lock_pump = nullptr, bool override_lock = false);
 
 // Priming ("fill tube"): runs as long as beat() arrives in time
 const char* prime_start(int pump, int tier = -1);

@@ -82,11 +82,14 @@ bool parse_power_loss(const char* s, PowerLoss* out) {
     return true;
 }
 
-const char* manual_during_lock_str(ManualDuringLock m) { return m == ManualDuringLock::Queue ? "queue" : "reject"; }
+const char* manual_during_lock_str(ManualDuringLock m) {
+    return m == ManualDuringLock::Queue ? "queue" : m == ManualDuringLock::Ask ? "ask" : "reject";
+}
 
 bool parse_manual_during_lock(const char* s, ManualDuringLock* out) {
     if (!std::strcmp(s, "reject")) *out = ManualDuringLock::Reject;
     else if (!std::strcmp(s, "queue")) *out = ManualDuringLock::Queue;
+    else if (!std::strcmp(s, "ask")) *out = ManualDuringLock::Ask;
     else return false;
     return true;
 }
@@ -238,14 +241,21 @@ int64_t lock_gap(const Locks& l, int pa, int pb) {
 }
 
 int64_t lock_until(const Locks& l, int pump, const int64_t (&last_end)[kPumps], const bool (&running)[kPumps],
-                   int64_t now) {
+                   int64_t now, int* by) {
     int64_t t = now;
+    if (by) *by = -1;
     for (int q = 0; q < kPumps; ++q) {
         if (q == pump) continue;
         const int64_t gap = lock_gap(l, pump, q);
         if (!gap) continue;
-        if (running[q]) return INT64_MAX;
-        if (last_end[q] && lock_start(last_end[q]) + gap > t) t = lock_start(last_end[q]) + gap;
+        if (running[q]) {
+            if (by) *by = q;
+            return INT64_MAX;
+        }
+        if (last_end[q] && lock_start(last_end[q]) + gap > t) {
+            t = lock_start(last_end[q]) + gap;
+            if (by) *by = q;
+        }
     }
     return t;
 }

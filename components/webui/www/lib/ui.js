@@ -175,11 +175,12 @@ export function HoldButton({ label, activeLabel, onStart, onBeat, onStop, every 
 // as a highlighted warning, and a list of points below it. <DialogHost/>
 // renders it once for the whole app.
 const dialogs = hub();
-let asking = null;   // {text, ok, danger, title, warn, points, resolve}
+let asking = null;   // {text, ok, danger, title, warn, points, alt, resolve}
 
-export function ask(text, { ok, danger = false, title = '', warn = false, points = null } = {}) {
+// alt: label of a third choice between "cancel" and ok; the promise then gives 'alt'
+export function ask(text, { ok, danger = false, title = '', warn = false, points = null, alt = '' } = {}) {
   if (asking) asking.resolve(false);
-  return new Promise(resolve => { asking = { text, ok, danger, title, warn, points, resolve }; dialogs.emit(); });
+  return new Promise(resolve => { asking = { text, ok, danger, title, warn, points, alt, resolve }; dialogs.emit(); });
 }
 
 function answer(v) {
@@ -205,13 +206,14 @@ export function DialogHost() {
   if (!a) return null;
   // a dangerous action starts focused on "cancel", so Enter cannot trigger it by accident
   return html`<div class="overlay" onClick=${e => { if (e.target === e.currentTarget) answer(false); }}>
-    <section class="card dialog ask" role="alertdialog" aria-modal="true" aria-describedby="ask-text"
+    <section class=${'card dialog ask' + (a.alt ? ' ask3' : '')} role="alertdialog" aria-modal="true" aria-describedby="ask-text"
       aria-labelledby=${a.title ? 'ask-title' : null}>
       ${a.title && html`<h2 id="ask-title">${a.title}</h2>`}
       <p id="ask-text" class=${a.warn ? 'ask-warn' : ''}>${a.warn && html`<${Ic} n="warn"/>`}<span>${a.text}</span></p>
       ${a.points && html`<ul class="ask-points">${a.points.map(x => html`<li>${x}</li>`)}</ul>`}
       <div class="row end">
         <button type="button" class="sec" ref=${a.danger ? first : null} onClick=${() => answer(false)}>${t('ui.cancel')}</button>
+        ${a.alt && html`<button type="button" class="sec" onClick=${() => answer('alt')}>${a.alt}</button>`}
         <button type="button" class=${a.danger ? 'danger' : ''} ref=${a.danger ? null : first} onClick=${() => answer(true)}>${a.ok || t('ui.ok')}</button>
       </div>
     </section>

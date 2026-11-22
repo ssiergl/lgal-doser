@@ -24,6 +24,9 @@ add({
     'dose.title': 'Dose now', 'dose.btn': 'Dose', 'dose.stop': 'Stop', 'dose.ok': '{ml} ml started',
     'dose.queued': 'Lock time running – the dose starts afterwards', 'dose.lock': 'Lock time to another pump until {at}',
     'dose.lock2': 'Lock time – another pump is still running', 'dose.amount': 'Amount',
+    'dose.ask.title': 'Lock time running', 'dose.ask.until': 'The lock time to {p} runs until {at}.',
+    'dose.ask.running': '{p} is still dosing; the lock time starts when it ends.',
+    'dose.ask.wait': 'Dose at {at}', 'dose.ask.after': 'Dose afterwards', 'dose.ask.over': 'Dose anyway',
     'dose.run': '{done} of {target} ml', 'tier.title': 'Speed',
     'tier.0': 'Slow', 'tier.1': 'Normal', 'tier.2': 'Fast',
     'prime.title': 'Fill tube', 'prime.hint': 'Hold the button until liquid comes out of the tube end. Not counted for container or daily amount.',
@@ -162,7 +165,20 @@ function Progress({ p }) {
   </div>`;
 }
 
+// With the lock-time policy "ask" a dose during a lock time asks what to do: cancel, wait
+// for the end (lock=queue) or dose anyway (lock=override)
+function askLock(e, pumps, nowLocal) {
+  const holder = (pumps || []).find(x => x.pump === e.pump);
+  const name = holder ? pumpName(holder) : t('pump', { n: e.pump });
+  const at = e.retry_local && whenLocal(e.retry_local, nowLocal);
+  return ask(at ? t('dose.ask.until', { p: name, at }) : t('dose.ask.running', { p: name }), {
+    title: t('dose.ask.title'), ok: t('dose.ask.over'), danger: true,
+    alt: at ? t('dose.ask.wait', { at }) : t('dose.ask.after'),
+  }).then(c => (c === 'alt' ? 'queue' : c ? 'override' : null));
+}
+
 function DoseCard({ p, pro, nowLocal }) {
+  const st = useStore();
   const [ml, setMl] = useState('1');
   const [tier, setTier] = useState(p.speed.tier);
   const msg = useMsg();
@@ -171,14 +187,16 @@ function DoseCard({ p, pro, nowLocal }) {
     e.preventDefault();
     const v = parseNum(ml);
     if (!(v > 0)) { msg.err({ code: 'invalid_param' }); return; }
-    api('POST', '/api/v1/pumps/dose?' + qs({ pump: p.pump, ml: dec(v), tier: pro ? tier : undefined }))
-      .then(j => { (j && j.status === 'queued') ? msg.ok(t('dose.queued')) : msg.ok(t('dose.ok', { ml: num(v, 2) })); refresh(); })
-      .catch(err => {
-        if (err.code === 'collision_lock') {
-          const at = err.body && err.body.error && err.body.error.retry_local;
-          msg.err(at ? t('dose.lock', { at: whenLocal(at, nowLocal) }) : t('dose.lock2'));
-        } else msg.err(err);
-      });
+    const send = lock => api('POST', '/api/v1/pumps/dose?' + qs({ pump: p.pump, ml: dec(v), tier: pro ? tier : undefined, lock }))
+      .then(j => { (j && j.status === 'queued') ? msg.ok(t('dose.queued')) : msg.ok(t('dose.ok', { ml: num(v, 2) })); refresh(); });
+    send().catch(err => {
+      const info = (err.body && err.body.error) || {};
+      if (err.code === 'collision_lock' && info.ask) {
+        askLock(info, st.pumps, nowLocal).then(lock => lock && send(lock)).catch(msg.err);
+      } else if (err.code === 'collision_lock') {
+        msg.err(info.retry_local ? t('dose.lock', { at: whenLocal(info.retry_local, nowLocal) }) : t('dose.lock2'));
+      } else msg.err(err);
+    });
   };
   const stop = () => api('POST', '/api/v1/pumps/stop?pump=' + p.pump).then(refresh).catch(msg.err);
   return html`<section class=${'card' + (p.mode === 'disabled' ? ' off' : '')}><h2>${t('dose.title')}</h2>

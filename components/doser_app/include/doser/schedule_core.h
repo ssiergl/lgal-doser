@@ -126,7 +126,9 @@ uint32_t run_seconds(uint32_t ul, const RunParams& p);
 // ---------------------------------------------------------------------------
 // Chemical lock times between pumps (symmetric): after the end of a dose on
 // one pump the other one must wait at least gap_min.
-enum class ManualDuringLock : uint8_t { Reject = 0, Queue = 1 };
+// Ask: the caller chooses per dose (web UI dialog: cancel, wait or dose anyway);
+// a caller that cannot ask (MQTT, API without a choice) is rejected
+enum class ManualDuringLock : uint8_t { Reject = 0, Queue = 1, Ask = 2 };
 const char* manual_during_lock_str(ManualDuringLock m);
 bool parse_manual_during_lock(const char* s, ManualDuringLock* out);
 
@@ -148,9 +150,10 @@ int64_t lock_gap(const Locks& l, int pa, int pb);
 int64_t lock_start(int64_t end);
 // Runtime guard: earliest start for pump `pump`. last_end: end of the last
 // dose per pump (0 = none), running: dose in progress (end unknown ->
-// INT64_MAX). Returns `now` or later.
+// INT64_MAX). Returns `now` or later; *by (optional): the pump that holds the
+// lock (the running one or the one with the latest end), -1 = none.
 int64_t lock_until(const Locks& l, int pump, const int64_t (&last_end)[kPumps], const bool (&running)[kPumps],
-                   int64_t now);
+                   int64_t now, int* by = nullptr);
 
 // ---------------------------------------------------------------------------
 // Validation of all schedules together (before saving)

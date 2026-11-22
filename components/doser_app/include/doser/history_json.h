@@ -19,6 +19,8 @@ void fmt_local_s(int64_t local, char (&out)[20]);
 
 // One event as an object in an open array. Fields depend on the kind:
 //   dose/prime/calib_run  target_ml, done_ml
+//   dose                  lock_overridden: pump 1..5 whose lock time the dose passed over
+//                         (lock=override), missing otherwise; CSV value column
 //   skip                  target_ml (single slot), count
 //   container             remaining_ml, capacity_ml
 //   calibration           target_ml, measured_ml, ul_per_rev
@@ -33,7 +35,7 @@ void write_event(lgal::Json& j, const history::Event& e, int64_t local, bool lea
 // "dose,skip" -> kind bitmask for history::Filter; false on an unknown kind
 bool parse_kinds(const char* s, uint16_t* out);
 
-// CSV with a header line; value = remaining ml (container), µl/rev
+// CSV with a header line; value = lock_overridden (dose), remaining ml (container), µl/rev
 // (calibration), hours (tube), slot count (skip), the changed groups
 // ("name+speed", settings) or the area (system "settings")
 const char* csv_header();

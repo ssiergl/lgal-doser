@@ -52,6 +52,7 @@ struct Job {
     bool stopping = false;          // stop handed to motion
     bool aborted = false;
     const char* reason = nullptr;   // priming: reason for the end
+    uint8_t lock_over = 0;          // dose started over the lock time of this pump (1..5), 0 = none
 };
 
 struct Pump {
@@ -214,7 +215,7 @@ void finish(int i, bool fault) {
     const auto kind = j.act == Activity::Priming       ? history::Kind::Prime
                       : j.act == Activity::Calibrating ? history::Kind::CalibRun
                                                        : history::Kind::Dose;
-    log_event(kind, i, j.trigger, result, j.target_ul, j.done_ul);
+    log_event(kind, i, j.trigger, result, j.target_ul, j.done_ul, j.lock_over);
     j = Job{};
 }
 
@@ -385,7 +386,8 @@ esp_err_t init() {
     return ESP_OK;
 }
 
-const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retry_at) {
+const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retry_at, int* lock_pump,
+                 bool override_lock) {
     if (!valid_pump(pump)) return "invalid_param";
     Guard g;
     Pump& p = s_p[pump];
@@ -401,9 +403,12 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retr
         running[q] = s_p[q].job.act != Activity::Idle;
     }
     const int64_t start = clock ? now_utc() : 0;
-    const int64_t until = sched::lock_until(s_locks, pump, last_end, running, start);
-    if (until > start) {
+    int by = -1;
+    const int64_t until = sched::lock_until(s_locks, pump, last_end, running, start, &by);
+    const bool locked = until > start;
+    if (locked && !override_lock) {
         if (retry_at) *retry_at = until;
+        if (lock_pump) *lock_pump = by;
         return "collision_lock";
     }
     if (p.set.daily_limit_ul && !time_valid()) return "time_invalid";  // limit cannot be checked
@@ -436,8 +441,10 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retr
     j.booked_ul = ul;
     j.ctr_before = ctr_before;
     j.booked_ledger = ledger;
+    j.lock_over = locked && by >= 0 ? static_cast<uint8_t>(by + 1) : 0;
     ESP_LOGI(TAG, "Pump %d: dose %" PRIu32 " ul (%s) = %" PRIu32 " steps at %" PRIu32 " steps/s", pump + 1, ul,
              trigger_str(trigger), steps, j.sps);
+    if (j.lock_over) ESP_LOGW(TAG, "Pump %d: lock time to pump %u passed over", pump + 1, j.lock_over);
     return nullptr;
 }
 

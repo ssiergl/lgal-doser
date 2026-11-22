@@ -439,7 +439,7 @@ sched::PumpSchedule schedule(int pump) {
 
 const char* set_locks(const sched::Locks& l, SaveResult* r, history::Source source) {
     if (!s_mx) return "invalid_param";
-    if (l.manual > sched::ManualDuringLock::Queue) return "invalid_param";
+    if (l.manual > sched::ManualDuringLock::Ask) return "invalid_param";
     sched::Context ctx = make_context();
     const auto ts = lgal::timesync::status();
     Guard g;
@@ -463,7 +463,7 @@ sched::Locks locks() {
 
 const char* set_all(const sched::PumpSchedule (&all)[kN], const sched::Locks& l, SaveResult* r) {
     if (!s_mx) return "invalid_param";
-    if (l.manual > sched::ManualDuringLock::Queue) return "invalid_param";
+    if (l.manual > sched::ManualDuringLock::Ask) return "invalid_param";
     sched::Context ctx = make_context();
     const auto ts = lgal::timesync::status();
     Guard g;
@@ -534,13 +534,17 @@ void boost_stop(int pump, history::Source source) {
     save(pump);
 }
 
-const char* manual_dose(int pump, uint32_t ul, dosing::Trigger trigger, int tier, int64_t* retry_at, bool* queued) {
+const char* manual_dose(int pump, uint32_t ul, dosing::Trigger trigger, int tier, int64_t* retry_at, bool* queued,
+                        LockChoice choice, int* lock_pump) {
     if (queued) *queued = false;
     if (!valid_pump(pump)) return "invalid_param";
-    const char* e = dosing::dose(pump, ul, trigger, tier, retry_at);
+    if (choice != LockChoice::Policy && locks().manual != sched::ManualDuringLock::Ask) return "invalid_param";
+    const char* e = dosing::dose(pump, ul, trigger, tier, retry_at, lock_pump, choice == LockChoice::Override);
     if (!is(e, "collision_lock")) return e;
     Guard g;
-    if (s_locks.manual != sched::ManualDuringLock::Queue) return e;
+    const bool queue = choice == LockChoice::Queue ||
+                       (choice == LockChoice::Policy && s_locks.manual == sched::ManualDuringLock::Queue);
+    if (!queue) return e;
     PumpRt& r = s_rt[pump];
     if (r.queued) return "queue_full";
     r.queued = true;

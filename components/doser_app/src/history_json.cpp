@@ -97,6 +97,8 @@ void write_event(lgal::Json& j, const Event& e, int64_t local, bool leave_open) 
         case Kind::Prime:
         case Kind::CalibRun:
             j.kv("target_ml", ml(e.target_ul), 3).kv("done_ml", ml(e.done_ul), 3);
+            // started over the lock time of this pump (user's choice)
+            if (e.kind == Kind::Dose && e.value > 0) j.kv("lock_overridden", static_cast<int64_t>(e.value));
             break;
         case Kind::Skip:
             if (e.target_ul) j.kv("target_ml", ml(e.target_ul), 3);
@@ -186,6 +188,9 @@ size_t csv_line(const Event& e, int64_t local, char* out, size_t len) {
     fmt_local_s(local, loc);
     char value[96] = "";
     switch (e.kind) {
+        case Kind::Dose:  // pump whose lock time was passed over
+            if (e.value > 0) std::snprintf(value, sizeof(value), "%ld", long(e.value));
+            break;
         case Kind::Container: std::snprintf(value, sizeof(value), "%.3f", ml(e.value)); break;
         case Kind::Calibration: std::snprintf(value, sizeof(value), "%.2f", e.value / 1000.0); break;
         case Kind::Tube:

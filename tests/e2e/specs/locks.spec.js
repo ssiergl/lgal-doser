@@ -64,6 +64,53 @@ test.describe('manual dose during a lock time', () => {
     await c.getByRole('button', { name: 'Dose', exact: true }).click();
     await expect(c.getByRole('status')).toHaveText('Lock time running – the dose starts afterwards');
   });
+
+  test('"Ask": cancel, wait or dose anyway', async ({ page, cleanup }) => {
+    await open(page, '#/settings');
+    await proMode(page);
+    const before = await locksOf(page);
+    cleanup(() => page.request.put('/api/v1/schedule/locks', { data: before }));
+    const lc = card(page);
+    await lc.getByRole('radio', { name: 'Ask' }).click();
+    await expect(lc.getByText('When dosing you choose whether to cancel, wait or dose anyway.', { exact: false })).toBeVisible();
+    await lc.getByRole('button', { name: 'Save' }).click();
+    await expect(lc.getByRole('status')).toHaveText('Lock times saved');
+    expect((await locksOf(page)).manual).toBe('ask');
+
+    await open(page, '#/pump/1');
+    const c = page.locator('section.card').filter({ has: page.getByRole('heading', { name: 'Dose now', level: 2 }) });
+    await c.getByRole('textbox', { name: 'Amount ml', exact: true }).fill('13');
+    const dialog = page.getByRole('alertdialog', { name: 'Lock time running' });
+    const doses = [];
+    page.on('request', r => { if (r.url().includes('/api/v1/pumps/dose')) doses.push(new URL(r.url()).searchParams.get('lock')); });
+
+    // cancel: nothing is sent again
+    await c.getByRole('button', { name: 'Dose', exact: true }).click();
+    await expect(dialog).toContainText(/The lock time to Calcium runs until (tomorrow )?\d{1,2}:\d\d\./);
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();  // Enter cannot dose by accident
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(doses).toEqual([null]);
+
+    // wait: queued until the lock time ends
+    await c.getByRole('button', { name: 'Dose', exact: true }).click();
+    await dialog.getByRole('button', { name: /^Dose at / }).click();
+    await expect(c.getByRole('status')).toHaveText('Lock time running – the dose starts afterwards');
+
+    // dose anyway: started, and the history names the lock time passed over
+    await c.getByRole('button', { name: 'Dose', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Dose anyway' }).click();
+    await expect(c.getByRole('status')).toHaveText('13.00 ml started');
+    expect(doses).toEqual([null, null, 'queue', null, 'override']);
+    await proMode(page);
+    await open(page, '#/history/1');
+    const ev = page.locator('.hi-list > li').first();
+    await expect(ev.locator('.hi-d')).toHaveText('13.00 ml · lock time to Calcium passed over');
+
+    // a choice is refused with any other policy
+    await page.request.put('/api/v1/schedule/locks', { data: before });
+    expect((await page.request.post('/api/v1/pumps/dose?pump=1&ml=13&lock=override')).status()).toBe(400);
+  });
 });
 
 // The device answers a rule that collides with the schedules with 409

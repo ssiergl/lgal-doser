@@ -198,7 +198,7 @@ def put_sched(h, i, body):
 
 def put_locks(h, body):
     global LOCKS
-    if body.get("manual", "reject") not in ("reject", "queue"):
+    if body.get("manual", "reject") not in ("reject", "queue", "ask"):
         return h.send(400, {"error": {"code": "invalid_param", "message": "manual", "field": "manual"}})
     rules = body.get("rules", [])
     if len(rules) > 10: return h.send(400, {"error": {"code": "invalid_param", "message": "rules", "field": "rules"}})
@@ -326,14 +326,27 @@ def pumps_post(h, path, q):
     with LOCK:
         if path == "/api/v1/pumps/dose":
             ml = num("ml")
+            # lock=queue|override: the choice of the policy "ask" (refused with any other policy,
+            # checked first like on the device)
+            choice = q.get("lock")
+            if choice is not None and (choice not in ("queue", "override") or LOCKS["manual"] != "ask"):
+                return err(h, "invalid_param", "lock")
             if p["mode"] == "disabled": return err(h, "pump_disabled", status=409)
             if p["activity"] != "idle": return err(h, "busy", status=409)
-            if q.get("ml") == "13": return err(h, "collision_lock", "Lock time", 409, retry_at=int(time.time()) + 600,
-                                                retry_local=time.strftime("%Y-%m-%d %H:%M", time.localtime(time.time() + 600)))
+            # 13 ml: a lock time to another pump (the first one in a rule) runs for 10 more minutes
+            holder = next((x for r in LOCKS["rules"] for x in r["pumps"] if n in r["pumps"] and x != n), 2 if n == 1 else 1)
+            if q.get("ml") == "13" and choice != "override":
+                if choice == "queue": return h.send(202, {"status": "queued"})
+                return err(h, "collision_lock", "Lock time", 409, retry_at=int(time.time()) + 600,
+                           retry_local=time.strftime("%Y-%m-%d %H:%M", time.localtime(time.time() + 600)),
+                           ask=LOCKS["manual"] == "ask", pump=holder)
             if q.get("ml") == "14": return h.send(202, {"status": "queued"})
             if "tier" in q: p["tier_dose"] = int(q["tier"])
             p.update(activity="dosing", start=time.time(), done=0.0, target=ml)
-            note("dose", n, "success", target_ml=ml, done_ml=ml)  # the mock books it at once
+            over = {}
+            if q.get("ml") == "13":  # dosed over the lock time of the other pump
+                over["lock_overridden"] = holder
+            note("dose", n, "success", target_ml=ml, done_ml=ml, **over)  # the mock books it at once
             return h.send(200, {"status": "dosing"})
         if path == "/api/v1/pumps/calibrate":
             a = q.get("action")

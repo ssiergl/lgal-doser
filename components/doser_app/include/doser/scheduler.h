@@ -53,8 +53,12 @@ const char* boost_start(int pump, uint32_t total_ul, uint16_t days, uint16_t dos
 void boost_stop(int pump, history::Source source = history::Source::Manual);
 
 // Manual dose with the lock-time policy: Reject -> "collision_lock" with
-// *retry_at; Queue -> *queued = true, started as soon as the lock ends.
-const char* manual_dose(int pump, uint32_t ul, dosing::Trigger trigger, int tier, int64_t* retry_at, bool* queued);
+// *retry_at and *lock_pump; Queue -> *queued = true, started as soon as the
+// lock ends; Ask -> like Reject unless the caller chose (choice Queue or
+// Override). A choice is only accepted with the policy Ask ("invalid_param").
+enum class LockChoice : uint8_t { Policy, Queue, Override };
+const char* manual_dose(int pump, uint32_t ul, dosing::Trigger trigger, int tier, int64_t* retry_at, bool* queued,
+                        LockChoice choice = LockChoice::Policy, int* lock_pump = nullptr);
 void cancel_queued(int pump);
 // Resets the count of skipped slots of today (history cleared)
 void clear_skipped();

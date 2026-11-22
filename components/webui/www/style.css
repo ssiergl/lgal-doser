@@ -209,6 +209,12 @@ label.check input { margin-top: 3px; flex: none; }
 .savebar { margin-top: 16px; }
 input[type=time], input[type=date], .amount { min-height: 38px; }
 .msg { white-space: pre-line; }
+/* a dialog with three choices: wider, all buttons in one row from tablet width on */
+@media (min-width: 600px) {
+  .dialog.ask3 { width: min(600px, 100%); }
+  .dialog.ask3 .row.end { flex-wrap: nowrap; }
+  .dialog.ask3 .row.end button { white-space: nowrap; }
+}
 
 /* ---- settings: time, network, account ---- */
 fieldset.sub { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; margin: 16px 0 0; min-width: 0; }

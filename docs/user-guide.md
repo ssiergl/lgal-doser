@@ -206,8 +206,9 @@ The target amount of the calibration can be changed in pro directly in the calib
 ### Dose now
 
 Pump → **Dose now**: enter an amount, start; progress and **Stop** are shown. If the pump is in a
-lock time right now, the page names when it is possible again (or the dose starts afterwards,
-depending on the setting).
+lock time right now, the page names when it is possible again, or the dose starts afterwards,
+depending on the setting. With **Ask** you choose: cancel, dose when the lock time ends, or dose
+anyway (the history notes it).
 
 ### Boost
 
@@ -255,7 +256,7 @@ again.
 | Device | device name (e.g. "Reef tank"); the address follows from it, e.g. `reef-tank.local` |
 | Time | device time and source, time zone, take the time from the browser; in pro time server and time by hand |
 | Status LED | meaning of the colours, **night mode**: dim the ready light in a time window or switch it off (alarms stay visible) |
-| Lock times (pro) | minimum gap between two pumps, e.g. alkalinity and calcium at least 30 min apart; plus whether a manual dose during a lock time is rejected or waits |
+| Lock times (pro) | minimum gap between two pumps, e.g. alkalinity and calcium at least 30 min apart; plus whether a manual dose during a lock time is rejected, waits or asks |
 | Network | status; in pro LAN/Wi-Fi, static addresses, scan and test Wi-Fi |
 | MQTT (pro) | connection to Home Assistant or another MQTT broker, optionally with control from Home Assistant |
 | Sign-in | change password, sign out, sign out everywhere; in pro API keys for apps and scripts |

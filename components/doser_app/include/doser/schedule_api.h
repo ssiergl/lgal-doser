@@ -33,7 +33,7 @@
 //   {"mode": "interval", "every": 2, "anchor": "2026-11-06"}), "anchor" to
 //   today. Whether the plan runs is the pump's mode (auto / manual_only).
 //
-// Locks body: {"manual": "reject" | "queue",
+// Locks body: {"manual": "reject" | "queue" | "ask",
 //              "rules": [{"pumps": [1, 2], "gap_min": 5}]}
 //
 // Errors: 400 with "field" and, for a single time, "entry" (1-based),

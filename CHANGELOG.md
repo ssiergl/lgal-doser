@@ -44,6 +44,8 @@ and on board v1.0.
   N days; daylight saving time, behaviour after a power cut.
 - All plans checked on save (overlap, daily limit, lock times between pumps); a lock time counts
   from the minute in which a dose ends, so doses exactly the lock time apart fit.
+- A manual dose during a lock time is rejected, waits, or asks: cancel, wait or dose anyway
+  (noted in the history).
 - Boost over days or doses.
 
 ### Network, access and security
