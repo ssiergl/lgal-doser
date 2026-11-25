@@ -201,7 +201,7 @@ Details and background: [technical docs, first start-up](technical.md#first-star
 
 ## 7. Start-up and test
 
-1. **Start:** the LED fades in white and then pulses orange (setup Wi-Fi on).
+1. **Start:** the LED fades in white and then pulses white slowly (setup Wi-Fi on).
 2. **Set up** as described in the [user guide](user-guide.md#3-initial-setup).
 3. **Open the engineering menu:** in the web UI click the firmware version in the footer 7×
    quickly and enter the engineering key.

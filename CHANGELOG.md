@@ -30,6 +30,8 @@ and on board v1.0.
   boot-looping on USB power, below 20 V no new doses start, and the device restarts on its own
   when the supply is back.
 - Firmware for the module variants N8R8, N16R8 and N32R8.
+- Status LED in pure colours only: the colour says what it is about, the pattern how urgent it
+  is; yellow and white mixed for the light of board d5v1.
 
 ### Dosing
 

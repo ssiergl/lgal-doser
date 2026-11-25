@@ -1007,7 +1007,7 @@ restarts in setup mode.
 
 | Button (GPIO0) | Action on release | LED while holding |
 |---|---|---|
-| ≥ 3 s | setup Wi-Fi for 30 min (also to reset the admin password) | orange |
+| ≥ 3 s | setup Wi-Fi for 30 min (also to reset the admin password) | white |
 | ≥ 10 s | factory reset (stop pumps, erase EEPROM, NVS and data partition) | red |
 
 Pressed at power-on = ESP download mode (hardware). A button held down permanently triggers
@@ -1018,19 +1018,27 @@ LED states, highest priority first:
 | Colour | Meaning |
 |---|---|
 | red, fast blinking | alarm: a scheduled dose skipped today because of the daily limit, last run with driver fault, clock module not answering, no 24 V supply (board v1.1) |
-| magenta/white | firmware update running |
-| violet pulsing | calibration or priming |
-| cyan pulsing | pump running |
-| orange pulsing | setup Wi-Fi on |
+| white, fast blinking | firmware update running |
+| magenta pulsing | calibration or priming |
+| blue pulsing | pump running |
+| white, slowly pulsing | setup Wi-Fi on |
 | yellow, slow blinking | warning: container almost empty (lasts fewer days than the alarm threshold, default 4), tube life reached, no network, no valid time, 24 V supply below 20 V (board v1.1) |
-| green / turquoise | ready, connected via LAN / Wi-Fi |
+| green | ready, connected via LAN or Wi-Fi |
 | white fading in | start |
+
+The LED uses only pure colours, so that every state stays clear also when the LED channels
+differ: the colour says what it is about (red fault, yellow warning, green ready, blue pump
+running, magenta work on a pump, white the device itself), the pattern how urgent it is. A pulse
+starts bright and a blink starts on when the state appears, so a dose of 2 s shows as well. The
+green chip of the light is far brighter than the red one (series resistors red 1 kΩ, green/blue
+470 Ω), so yellow and white are mixed with less green: yellow with 15 % green duty, white with
+30 % green and blue duty (set by eye on board d5v1, `led.cpp`).
 
 Pumps switched off (mode "off") trigger neither alarm nor warning. The rule is in
 `doser/alarms.h` (host-tested); `main.cpp` evaluates it every 2 s.
 
 **Night mode** (settings → status LED or `PUT /api/v1/system/led`): dims the ready light
-(green/turquoise) in a time window of the local time, e.g. 22:00–07:00, or switches it off.
+(green) in a time window of the local time, e.g. 22:00–07:00, or switches it off.
 Alarms, warnings and running operations stay fully visible; without a valid time the light stays
 bright. Off by default.
 

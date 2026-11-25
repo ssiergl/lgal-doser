@@ -15,16 +15,16 @@ namespace lgal::led {
 
 enum class State : uint8_t {
     ButtonReset = 0,  // button held >= 10 s: steady red
-    ButtonAp,         // button held >= 3 s: steady orange
+    ButtonAp,         // button held >= 3 s: steady white
     Boot,             // white, fade in
     Critical,         // prio 1: red, fast blinking
-    Ota,              // prio 2: magenta/white alternating
-    Service,          // prio 3: violet pulsing (calibration/priming)
-    Dosing,           // prio 4: cyan pulsing
-    SetupAp,          // prio 5: orange pulsing
+    Ota,              // prio 2: white, fast blinking
+    Service,          // prio 3: magenta pulsing (calibration/priming)
+    Dosing,           // prio 4: blue pulsing
+    SetupAp,          // prio 5: white, slow pulsing
     Warning,          // prio 6: yellow, slow blinking
     IdleLan,          // prio 7: green
-    IdleWlan,         // prio 7: turquoise
+    IdleWlan,         // prio 7: green (same as LAN)
     Count
 };
 

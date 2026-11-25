@@ -58,7 +58,7 @@ password**. Both are needed for the setup and in an emergency – do not remove 
 
 ## 3. Initial setup
 
-A new device opens its own Wi-Fi for this, the setup Wi-Fi (LED pulsing orange).
+A new device opens its own Wi-Fi for this, the setup Wi-Fi (LED pulsing white, slowly).
 
 1. On a phone or laptop, choose the Wi-Fi **`LG-Aquatic-Life-Setup-XXXX`** and enter the device
    password from the rating plate.
@@ -296,7 +296,7 @@ The button sits on the enclosure. It counts on release:
 
 | Hold | Effect | LED while holding |
 |---|---|---|
-| 3 seconds | setup Wi-Fi for 30 minutes (repair the network, reset the password) | orange |
+| 3 seconds | setup Wi-Fi for 30 minutes (repair the network, reset the password) | white |
 | 10 seconds | **factory reset:** erases all settings, schedules, calibrations and the history | red |
 
 Do **not** hold the button while plugging in the power supply – otherwise the chip starts in
@@ -307,12 +307,12 @@ The LED always shows the most important state:
 | LED | Meaning |
 |---|---|
 | red, fast blinking | alarm (daily limit, driver fault, clock module, no 24 V supply) |
-| magenta/white | firmware update running |
-| violet pulsing | calibrating or filling the tube |
-| cyan pulsing | a pump is running |
-| orange pulsing | setup Wi-Fi on |
+| white, fast blinking | firmware update running |
+| magenta pulsing | calibrating or filling the tube |
+| blue pulsing | a pump is running |
+| white, slowly pulsing | setup Wi-Fi on |
 | yellow, slow blinking | warning (container almost empty, tube, no network, no time, 24 V supply too low) |
-| green / turquoise | ready, connected via LAN / Wi-Fi |
+| green | ready, connected via LAN or Wi-Fi |
 | white fading in | start |
 
 ## 11. When something does not work

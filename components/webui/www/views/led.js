@@ -13,32 +13,33 @@ add({
   en: {
     'led.title': 'Status LED', 'led.now': 'Now', 'led.legend': 'What the colours mean',
     'led.s.critical': 'Red, fast blinking – alarm: daily limit reached, driver or clock module fault',
-    'led.s.ota': 'Magenta/white – firmware update running, pumps locked',
-    'led.s.service': 'Violet pulsing – calibration or filling the tube',
-    'led.s.dosing': 'Cyan pulsing – a pump is dosing',
-    'led.s.setup_ap': 'Orange pulsing – setup Wi-Fi is on',
+    'led.s.ota': 'White, fast blinking – firmware update running, pumps locked',
+    'led.s.service': 'Magenta pulsing – calibration or filling the tube',
+    'led.s.dosing': 'Blue pulsing – a pump is dosing',
+    'led.s.setup_ap': 'White, slow pulsing – setup Wi-Fi is on',
     'led.s.warning': 'Yellow, slow blinking – warning: container almost empty (lasts fewer days than the alarm threshold, standard 4), tube worn, no network or no valid time',
-    'led.s.idle_lan': 'Green – ready, connected by LAN',
-    'led.s.idle_wlan': 'Turquoise – ready, connected by Wi-Fi',
-    'led.s.boot': 'White fading in – starting', 'led.s.button_ap': 'Orange – button held 3 s', 'led.s.button_reset': 'Red – button held 10 s',
+    'led.s.idle': 'Green – ready, connected by LAN or Wi-Fi',
+    'led.s.boot': 'White fading in – starting', 'led.s.button_ap': 'White – button held 3 s', 'led.s.button_reset': 'Red – button held 10 s',
     'led.s.off': 'Off',
-    'led.n.critical': 'Red blinking – alarm', 'led.n.ota': 'Magenta/white – update', 'led.n.service': 'Violet – calibration / filling',
-    'led.n.dosing': 'Cyan – dosing', 'led.n.setup_ap': 'Orange – setup Wi-Fi', 'led.n.warning': 'Yellow blinking – warning',
-    'led.n.idle_lan': 'Green – ready (LAN)', 'led.n.idle_wlan': 'Turquoise – ready (Wi-Fi)', 'led.n.boot': 'White – starting',
-    'led.n.button_ap': 'Orange – button held', 'led.n.button_reset': 'Red – button held', 'led.n.off': 'Off',
+    'led.n.critical': 'Red blinking – alarm', 'led.n.ota': 'White blinking – update', 'led.n.service': 'Magenta – calibration / filling',
+    'led.n.dosing': 'Blue – dosing', 'led.n.setup_ap': 'White pulsing – setup Wi-Fi', 'led.n.warning': 'Yellow blinking – warning',
+    'led.n.idle_lan': 'Green – ready (LAN)', 'led.n.idle_wlan': 'Green – ready (Wi-Fi)', 'led.n.boot': 'White – starting',
+    'led.n.button_ap': 'White – button held', 'led.n.button_reset': 'Red – button held', 'led.n.off': 'Off',
     'led.why': 'The overview shows which pump it is about.',
     'led.dimmed': 'dimmed by the night mode', 'led.dark': 'switched off by the night mode',
-    'led.night': 'Night mode', 'led.night.hint': 'Dims or switches off the green/turquoise ready light at night. Alarms, warnings and dosing stay fully visible.',
+    'led.night': 'Night mode', 'led.night.hint': 'Dims or switches off the green ready light at night. Alarms, warnings and dosing stay fully visible.',
     'led.night.on': 'On', 'led.night.off': 'Off', 'led.from': 'From', 'led.to': 'To', 'led.bright': 'Ready light at night',
     'led.b.0': 'Off', 'led.saved': 'Status LED saved.', 'led.same': 'Start and end must differ.',
     'led.field': 'Please check: {f}',
   },
 });
 
-const kLegend = ['critical', 'ota', 'service', 'dosing', 'setup_ap', 'warning', 'idle_lan', 'idle_wlan'];
+// LAN and Wi-Fi share the green ready light: one line in the legend
+const kLegend = ['critical', 'ota', 'service', 'dosing', 'setup_ap', 'warning', 'idle'];
 const kColor = {
-  critical: '#ff3b30', ota: '#e040fb', service: '#8c3cff', dosing: '#00ccff', setup_ap: '#ff7a00', warning: '#ffcc00',
-  idle_lan: '#22c55e', idle_wlan: '#14e0a0', boot: '#ffffff', button_ap: '#ff7a00', button_reset: '#ff3b30', off: 'transparent',
+  critical: '#ff3b30', ota: '#ffffff', service: '#e040fb', dosing: '#2f6bff', setup_ap: '#ffffff', warning: '#ffcc00',
+  idle: '#22c55e', idle_lan: '#22c55e', idle_wlan: '#22c55e', boot: '#ffffff', button_ap: '#ffffff', button_reset: '#ff3b30',
+  off: 'transparent',
 };
 const kLevels = [0, 10, 25, 50];
 const fieldKey = { 'night.start': 'led.from', 'night.end': 'led.to', 'night.brightness': 'led.bright' };

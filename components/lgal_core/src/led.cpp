@@ -32,43 +32,48 @@ std::atomic<uint32_t> s_flags{0};
 std::atomic<uint8_t> s_idle_brightness{100};
 int64_t s_boot_start_us = 0;
 
+// Only pure colours, so that every state stays clear also when the LED channels differ: the
+// colour says what it is about, the pattern how urgent it is.
 constexpr Rgb kOff{0, 0, 0};
 constexpr Rgb kRed{1, 0, 0};
-constexpr Rgb kWhite{1, 1, 1};
-constexpr Rgb kMagenta{1, 0, 1};
-constexpr Rgb kViolet{0.55f, 0, 1};
-constexpr Rgb kCyan{0, 0.8f, 1};
-constexpr Rgb kOrange{1, 0.35f, 0};
-constexpr Rgb kYellow{1, 0.8f, 0};
 constexpr Rgb kGreen{0, 1, 0};
-constexpr Rgb kTurquoise{0, 1, 0.6f};
+constexpr Rgb kBlue{0, 0, 1};
+constexpr Rgb kMagenta{1, 0, 1};
+// The green chip of the light is far brighter than the red one (series resistors red 1 kΩ,
+// green/blue 470 Ω): with full green, yellow and white turn green. Set by eye on board d5v1:
+// yellow = 15 % green duty, white = 30 % green and blue duty (values before the gamma
+// correction: 0.15^(1/2.2) = 0.42, 0.30^(1/2.2) = 0.58). The other colours are right at 100 %.
+constexpr Rgb kYellow{1, 0.42f, 0};
+constexpr Rgb kWhite{1, 0.58f, 0.58f};
 
 Rgb scale(Rgb c, float f) { return {c.r * f, c.g * f, c.b * f}; }
 
-// 0..1 triangle/sine pulse with period in ms
+// 1..0..1 pulse with period in ms: starts bright, so that even a dose of 2 s shows
 float pulse(int64_t t_ms, uint32_t period_ms) {
     float phase = static_cast<float>(t_ms % period_ms) / static_cast<float>(period_ms);
-    return 0.5f - 0.5f * cosf(phase * 2.0f * static_cast<float>(M_PI));
+    return 0.5f + 0.5f * cosf(phase * 2.0f * static_cast<float>(M_PI));
 }
 
+// starts with the light on
 bool blink(int64_t t_ms, uint32_t period_ms) { return (t_ms % period_ms) < (period_ms / 2); }
 
+// t_ms: time since the state is shown, so that a pulse or blink starts at its beginning
 Rgb render(State s, int64_t t_ms) {
     switch (s) {
         case State::ButtonReset: return kRed;
-        case State::ButtonAp: return kOrange;
+        case State::ButtonAp: return kWhite;
         case State::Boot: {
             float f = static_cast<float>((esp_timer_get_time() - s_boot_start_us) / 1000) / 1500.0f;
             return scale(kWhite, f > 1.0f ? 1.0f : f);
         }
         case State::Critical: return blink(t_ms, 250) ? kRed : kOff;
-        case State::Ota: return blink(t_ms, 500) ? kMagenta : kWhite;
-        case State::Service: return scale(kViolet, 0.1f + 0.9f * pulse(t_ms, 1500));
-        case State::Dosing: return scale(kCyan, 0.2f + 0.8f * pulse(t_ms, 1200));
-        case State::SetupAp: return scale(kOrange, 0.1f + 0.9f * pulse(t_ms, 2000));
+        case State::Ota: return blink(t_ms, 500) ? kWhite : kOff;
+        case State::Service: return scale(kMagenta, 0.1f + 0.9f * pulse(t_ms, 1500));
+        case State::Dosing: return scale(kBlue, 0.1f + 0.9f * pulse(t_ms, 1200));
+        case State::SetupAp: return scale(kWhite, 0.1f + 0.9f * pulse(t_ms, 3000));
         case State::Warning: return blink(t_ms, 2000) ? kYellow : kOff;
-        case State::IdleLan: return scale(kGreen, s_idle_brightness / 100.0f);
-        case State::IdleWlan: return scale(kTurquoise, s_idle_brightness / 100.0f);
+        case State::IdleLan:
+        case State::IdleWlan: return scale(kGreen, s_idle_brightness / 100.0f);
         default: return kOff;
     }
 }
@@ -91,17 +96,23 @@ void apply(Rgb c) {
 }
 
 void task(void*) {
+    State shown = State::Count;
+    int64_t since_ms = 0;
     while (true) {
         int64_t t_ms = esp_timer_get_time() / 1000;
         uint32_t flags = s_flags.load();
-        Rgb c = kOff;
+        State s = State::Count;
         for (uint8_t i = 0; i < static_cast<uint8_t>(State::Count); ++i) {
             if (flags & (1u << i)) {
-                c = render(static_cast<State>(i), t_ms);
+                s = static_cast<State>(i);
                 break;
             }
         }
-        apply(c);
+        if (s != shown) {
+            shown = s;
+            since_ms = t_ms;
+        }
+        apply(s == State::Count ? kOff : render(s, t_ms - since_ms));
         vTaskDelay(pdMS_TO_TICKS(kFrameMs));
     }
 }

@@ -15,8 +15,9 @@ test('now, legend and night mode', async ({ page, cleanup }) => {
   const c = card(page);
   await expect(c.locator('.led-now')).toHaveText(/^Now: Yellow blinking – warning\s*The overview shows which pump it is about\.$/);
   await c.getByText('What the colours mean').click();
-  await expect(c.locator('.led-legend li')).toHaveCount(8);
+  await expect(c.locator('.led-legend li')).toHaveCount(7);  // LAN and Wi-Fi share the green light
   await expect(c.locator('.led-legend li').first()).toHaveText(/^Red, fast blinking – alarm/);
+  await expect(c.locator('.led-legend li').last()).toHaveText('Green – ready, connected by LAN or Wi-Fi');
 
   const mode = c.locator('.field').filter({ hasText: /^Night mode/ });
   const from = c.getByLabel('From');
