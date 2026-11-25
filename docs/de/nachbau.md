@@ -201,7 +201,7 @@ Einzelheiten und Hintergründe: [technische Doku, Erstinbetriebnahme](technik.md
 
 ## 7. Inbetriebnahme und Test
 
-1. **Start:** Die LED blendet weiß auf und pulsiert dann orange (Setup-WLAN an).
+1. **Start:** Die LED blendet weiß auf und pulsiert dann langsam weiß (Setup-WLAN an).
 2. **Einrichten** wie in der [Bedienungsanleitung](benutzer.md#3-ersteinrichtung) beschrieben.
 3. **Engineering-Menü öffnen:** in der Oberfläche 7× schnell auf die Firmware-Version im Fuß
    klicken und den Engineering-Schlüssel eingeben.

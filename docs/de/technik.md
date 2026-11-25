@@ -1034,7 +1034,7 @@ startet neu im Einrichtungsmodus.
 
 | Taster (GPIO0) | Aktion beim Loslassen | LED während des Haltens |
 |---|---|---|
-| ≥ 3 s | Setup-WLAN für 30 min (auch zum Zurücksetzen des Admin-Passworts) | Orange |
+| ≥ 3 s | Setup-WLAN für 30 min (auch zum Zurücksetzen des Admin-Passworts) | Weiß |
 | ≥ 10 s | Werkseinstellungen (Pumpen stoppen, EEPROM, NVS und Datenpartition löschen) | Rot |
 
 Beim Einschalten gedrückt = ESP-Download-Modus (Hardware). Ein dauerhaft gedrückter
@@ -1045,19 +1045,28 @@ LED-Zustände, höchste Priorität zuerst:
 | Farbe | Bedeutung |
 |---|---|
 | Rot, schnell blinkend | Alarm: heute eine geplante Dosis wegen Tageslimit ausgelassen, letzter Lauf mit Treiberfehler, Uhrenmodul antwortet nicht, keine 24-V-Versorgung (Platine v1.1) |
-| Magenta/Weiß | Firmware-Update läuft |
-| Violett pulsierend | Kalibrierung oder Entlüften |
-| Cyan pulsierend | Pumpe läuft |
-| Orange pulsierend | Setup-WLAN an |
+| Weiß, schnell blinkend | Firmware-Update läuft |
+| Magenta pulsierend | Kalibrierung oder Entlüften |
+| Blau pulsierend | Pumpe läuft |
+| Weiß, langsam pulsierend | Setup-WLAN an |
 | Gelb, langsam blinkend | Warnung: Behälter fast leer (reicht weniger Tage als die Alarmschwelle, Standard 4), Schlauch-Lebensdauer erreicht, kein Netz, keine gültige Uhrzeit, 24-V-Versorgung unter 20 V (Platine v1.1) |
-| Grün / Türkis | bereit, per LAN / WLAN verbunden |
+| Grün | bereit, per LAN oder WLAN verbunden |
 | Weiß aufblendend | Start |
+
+Die LED nutzt nur reine Farben, damit jeder Zustand eindeutig bleibt, auch wenn die Farbkanäle der
+LED unterschiedlich hell sind: Die Farbe sagt, worum es geht (Rot Fehler, Gelb Warnung, Grün bereit,
+Blau Pumpe läuft, Magenta Arbeit an einer Pumpe, Weiß das Gerät selbst), das Muster, wie dringend es
+ist. Ein Pulsieren beginnt hell und ein Blinken beginnt eingeschaltet, sobald der Zustand auftritt –
+so ist auch eine Dosis von 2 s zu sehen. Der grüne Chip der Leuchte ist deutlich heller als der rote
+(Vorwiderstände Rot 1 kΩ, Grün/Blau 470 Ω), daher werden Gelb und Weiß mit weniger Grün gemischt:
+Gelb mit 15 % Grün-Tastverhältnis, Weiß mit 30 % Grün und Blau (auf Platine d5v1 nach Augenmaß
+eingestellt, `led.cpp`).
 
 Ausgeschaltete Pumpen (Betrieb „aus“) lösen weder Alarm noch Warnung aus. Die Regel steht in
 `doser/alarms.h` (Host-getestet); `main.cpp` wertet sie alle 2 s aus.
 
 **Nachtmodus** (Einstellungen → Status-LED oder `PUT /api/v1/system/led`): dimmt das Bereit-Licht
-(Grün/Türkis) in einem Zeitfenster der Ortszeit, z. B. 22:00–07:00, oder schaltet es aus. Alarme,
+(Grün) in einem Zeitfenster der Ortszeit, z. B. 22:00–07:00, oder schaltet es aus. Alarme,
 Warnungen und laufende Vorgänge bleiben voll sichtbar; ohne gültige Uhrzeit bleibt das Licht hell.
 Ab Werk aus.
 

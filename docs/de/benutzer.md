@@ -61,7 +61,7 @@ Beides wird für die Einrichtung und für den Notfall gebraucht – Typenschild 
 
 ## 3. Ersteinrichtung
 
-Ein neues Gerät öffnet dafür ein eigenes WLAN, das Setup-WLAN (LED orange pulsierend).
+Ein neues Gerät öffnet dafür ein eigenes WLAN, das Setup-WLAN (LED weiß, langsam pulsierend).
 
 1. Mit Handy oder Laptop das WLAN **`LG-Aquatic-Life-Setup-XXXX`** wählen und das
    Geräte-Passwort vom Typenschild eingeben.
@@ -307,7 +307,7 @@ Der Taster sitzt am Gehäuse. Gezählt wird beim Loslassen:
 
 | Halten | Wirkung | LED beim Halten |
 |---|---|---|
-| 3 Sekunden | Setup-WLAN für 30 Minuten (Netzwerk reparieren, Passwort zurücksetzen) | orange |
+| 3 Sekunden | Setup-WLAN für 30 Minuten (Netzwerk reparieren, Passwort zurücksetzen) | weiß |
 | 10 Sekunden | **Werkseinstellungen:** löscht alle Einstellungen, Zeitpläne, Kalibrierungen und den Verlauf | rot |
 
 Beim Einstecken des Netzteils den Taster **nicht** gedrückt halten – sonst startet der Chip im
@@ -318,12 +318,12 @@ Die LED zeigt immer den wichtigsten Zustand:
 | LED | Bedeutung |
 |---|---|
 | rot, schnell blinkend | Alarm (Tageslimit, Treiberfehler, Uhrenmodul, keine 24-V-Versorgung) |
-| magenta/weiß | Firmware-Update läuft |
-| violett pulsierend | Kalibrieren oder Schlauch füllen |
-| cyan pulsierend | eine Pumpe läuft |
-| orange pulsierend | Setup-WLAN an |
+| weiß, schnell blinkend | Firmware-Update läuft |
+| magenta pulsierend | Kalibrieren oder Schlauch füllen |
+| blau pulsierend | eine Pumpe läuft |
+| weiß, langsam pulsierend | Setup-WLAN an |
 | gelb, langsam blinkend | Warnung (Behälter fast leer, Schlauch, kein Netz, keine Uhrzeit, 24-V-Versorgung zu niedrig) |
-| grün / türkis | bereit, per LAN / WLAN verbunden |
+| grün | bereit, per LAN oder WLAN verbunden |
 | weiß aufblendend | Start |
 
 ## 11. Wenn etwas nicht geht
