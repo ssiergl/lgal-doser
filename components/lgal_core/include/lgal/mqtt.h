@@ -40,9 +40,11 @@ private:
 };
 
 // Callbacks run in the MQTT task; keep them short and do not call
-// mqtt::publish() or the settings functions from them.
+// mqtt::publish() or the settings functions from them. retained: the copy
+// the broker keeps and sends on every subscribe, i.e. after every connect,
+// not a message published while connected.
 using ConnectHandler = void (*)(Session& s);  // after each connect
-using DataHandler = void (*)(const char* topic, int topic_len, const char* data, int data_len);
+using DataHandler = void (*)(const char* topic, int topic_len, const char* data, int data_len, bool retained);
 void set_handlers(ConnectHandler on_connect, DataHandler on_data);  // before init
 
 esp_err_t init();  // after settings::init, device::init and net::init

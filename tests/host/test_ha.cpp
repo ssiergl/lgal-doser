@@ -249,8 +249,9 @@ static void test_states() {
                                      R"("release_url":"https://example.com/v0.2.0","in_progress":true,"update_percentage":42})");
 }
 
-static bool cmd(const char* topic, const char* payload, Command* c) {
-    return parse_command("aq/doser", topic, int(std::strlen(topic)), payload, int(std::strlen(payload)), c);
+static bool cmd(const char* topic, const char* payload, Command* c, bool retained = false) {
+    return parse_command("aq/doser", topic, int(std::strlen(topic)), payload, int(std::strlen(payload)), retained,
+                         c);
 }
 
 static void test_commands() {
@@ -298,10 +299,20 @@ static void test_commands() {
     CHECK(!cmd("aq/doser/pump/1/dose/set", "0", &c));
     CHECK(!cmd("aq/doser/pump/1/amount/set", "PRESS", &c));
     CHECK(!cmd("aq/doser/pump/1/schedule/set", "on", &c));
-    CHECK(!parse_command("", "x/stop/set", 10, "", 0, &c));
+    CHECK(!parse_command("", "x/stop/set", 10, "", 0, false, &c));
     // payload not terminated
     const char buf[] = "2.5XYZ";
-    CHECK(parse_command("aq/doser", "aq/doser/pump/1/dose/setXX", 24, buf, 3, &c) && c.ul == 2500);
+    CHECK(parse_command("aq/doser", "aq/doser/pump/1/dose/setXX", 24, buf, 3, false, &c) && c.ul == 2500);
+    // kept by the broker (sent again after every connect): no command, whatever it says
+    const char* commands[][2] = {{"aq/doser/pump/1/dose/set", "PRESS"}, {"aq/doser/pump/1/dose/set", "2.5"},
+                                 {"aq/doser/pump/2/amount/set", "3"},   {"aq/doser/pump/3/schedule/set", "ON"},
+                                 {"aq/doser/stop/set", "PRESS"},        {"aq/doser/update/set", "install"}};
+    for (const auto& m : commands) {
+        c = Command{};
+        CHECK(cmd(m[0], m[1], &c) && c.cmd != Cmd::None);
+        c = Command{};
+        CHECK(!cmd(m[0], m[1], &c, true) && c.cmd == Cmd::None);
+    }
 }
 
 int main() {

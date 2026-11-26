@@ -133,14 +133,15 @@ void execute(const ha::Command& c) {
     }
 }
 
-void on_data(const char* topic, int topic_len, const char* data, int data_len) {
+void on_data(const char* topic, int topic_len, const char* data, int data_len, bool retained) {
     if (topic_len == int(s_ha_status.size()) && std::memcmp(topic, s_ha_status.data(), s_ha_status.size()) == 0) {
         if (data_len == 6 && std::memcmp(data, "online", 6) == 0) wake(true, false);
         return;
     }
     ha::Command c;
-    if (!s_control || !ha::parse_command(s_base, topic, topic_len, data, data_len, &c)) {
-        ESP_LOGW(TAG, "Ignored message on %.*s", topic_len, topic);
+    if (!s_control || !ha::parse_command(s_base, topic, topic_len, data, data_len, retained, &c)) {
+        // a retained one comes again after every connect until it is deleted at the broker
+        ESP_LOGW(TAG, "Ignored %smessage on %.*s", retained ? "retained " : "", topic_len, topic);
         return;
     }
     execute(c);

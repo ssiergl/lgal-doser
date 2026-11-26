@@ -284,8 +284,8 @@ bool parse_ml(const char* s, int len, uint32_t* ul) {
 }
 
 bool parse_command(const std::string& base, const char* topic, int topic_len, const char* data, int data_len,
-                   Command* out) {
-    if (!topic || topic_len <= 0 || base.empty()) return false;
+                   bool retained, Command* out) {
+    if (!topic || topic_len <= 0 || base.empty() || retained) return false;
     const int bl = static_cast<int>(base.size());
     if (topic_len <= bl + 1 || std::memcmp(topic, base.data(), size_t(bl)) != 0 || topic[bl] != '/') return false;
     const char* t = topic + bl + 1;

@@ -937,6 +937,11 @@ the broker. Client ID and Home Assistant IDs depend on the MAC and never change:
 | `<base>/update/set` | `install` – install a newer version of the [update source](#ota-update) (never a free URL) – only with control |
 | `<base>/ota/state` | progress as `GET /api/v1/ota/status` (at start, every 5 s, at the end) |
 
+Commands (`…/set`) count only when they arrive while the device is connected. A stored
+(`retained`) command comes again after every connect and would repeat a dose, a stop or an update
+each time; the device ignores it and logs a warning (delete it at the broker, e.g.
+`mosquitto_pub -r -n -t <topic>`). Home Assistant sends its commands without retain.
+
 **Home Assistant discovery** (on by default): a device "LGAL Doser XXXX" by device discovery
 (`homeassistant/device/lgal_doser_xxxx/config`) with per pump status, total dosed
 (`total_increasing`, Home Assistant builds the daily values), planned today, stock, range in

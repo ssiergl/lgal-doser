@@ -149,7 +149,7 @@ void on_event(void*, esp_event_base_t, int32_t id, void* data) {
                 break;
             }
             if (ev->current_data_offset != 0 || ev->data_len != ev->total_data_len) break;
-            if (s_on_data) s_on_data(ev->topic, ev->topic_len, ev->data, ev->data_len);
+            if (s_on_data) s_on_data(ev->topic, ev->topic_len, ev->data, ev->data_len, ev->retain);
             break;
         default: break;
     }

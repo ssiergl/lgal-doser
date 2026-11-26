@@ -98,9 +98,11 @@ struct Command {
     bool on = false;    // schedule: mode auto (ON) or manual only (OFF)
 };
 constexpr uint32_t kMaxCommandUl = 1000000;  // 1 l: plausibility only, dosing checks the limits
-// Topic and payload as received (not terminated). false = not ours or invalid.
+// Topic and payload as received (not terminated). false = not ours, invalid
+// or retained: a command kept by the broker would run again after every
+// connect (a dose, a stop, an update), so only live ones count.
 bool parse_command(const std::string& base, const char* topic, int topic_len, const char* data, int data_len,
-                   Command* out);
+                   bool retained, Command* out);
 // Amount "2.5" (ml, up to 3 decimals) -> µl; false if not a number in 0 < x <= kMaxCommandUl
 bool parse_ml(const char* s, int len, uint32_t* ul);
 
