@@ -121,10 +121,11 @@ def slots_on(i, day):
 def today_slots(i): return slots_on(i, dnum(time.strftime("%Y-%m-%d")))
 
 def next_slot(i, now):
-    """First slot after now within 8 days (like the firmware) -> (utc, ul) or None; DST ignored"""
+    """First slot after now -> (utc, ul) or None; DST ignored. Like the firmware, which looks 31 days
+    ahead: every plan has its next slot today or within the next 30 days ("every 30 days")"""
     lt = time.localtime(now); midnight = now - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec)
     day0 = dnum(time.strftime("%Y-%m-%d", lt))
-    for k in range(9):
+    for k in range(31):
         for m, u in slots_on(i, day0 + k):
             if midnight + k * 86400 + m * 60 > now: return midnight + k * 86400 + m * 60, u
     return None

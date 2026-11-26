@@ -643,6 +643,34 @@ static void test_clock_set_back() {
     CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
 }
 
+// "Every N days" with N up to 30: the next dose is known however far ahead it
+// lies, not only within the next week
+static void test_next_far_ahead() {
+    const int32_t today = scheduler::today();
+    const auto at_6 = [](int32_t day) { return tz::to_utc(g_zone, int64_t(day) * 86400 + 6 * 3600); };
+    // every 14 days at 06:00, next in 10 days
+    auto p = plan({single(360, 1000)});
+    p.days.mode = sched::DayMode::Interval;
+    p.days.interval = 14;
+    p.days.anchor_day = today + 10;
+    CHECK(scheduler::set_schedule(3, p) == nullptr);
+    auto st = scheduler::status(3);
+    CHECK(st.has_next && st.next_utc == at_6(today + 10) && st.next_ul == 1000);
+    // it runs then (device off until shortly before); the one after it is 14 days later
+    const uint64_t b = total(3);
+    sim::set_utc(at_6(today + 10) - 60);
+    sim::run_until(at_6(today + 10) + 30);
+    st = scheduler::status(3);
+    CHECK(total(3) == b + 1000 && st.last_run_at == at_6(today + 10));
+    CHECK(st.has_next && st.next_utc == at_6(today + 24));
+    // every 30 days, today's dose already done: the next one in 30 days
+    p.days.interval = 30;
+    CHECK(scheduler::set_schedule(3, p) == nullptr);
+    st = scheduler::status(3);
+    CHECK(st.has_next && st.next_utc == at_6(today + 40));
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -685,6 +713,8 @@ int main(int argc, char**) {
     test_error_paths();
     std::printf("Scheduler: clock set back by days\n");
     test_clock_set_back();
+    std::printf("Scheduler: next dose far ahead\n");
+    test_next_far_ahead();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

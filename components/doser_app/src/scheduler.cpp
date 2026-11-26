@@ -640,7 +640,7 @@ Status status(int pump) {
     sched::Due d;
     const sched::Cursor from = open_from(r, ts.utc);
     // manual-only and disabled pumps never run the plan: no next dose
-    if (aut && sched::next_due(r.sch, s_zone, s_cfg.grid_min, from, ts.utc + 8 * 86400, &d)) {
+    if (aut && sched::next_due(r.sch, s_zone, s_cfg.grid_min, from, from.utc + kLookAhead, &d)) {
         s.has_next = true;
         s.next_utc = d.utc;
         s.next_ul = d.ul;
