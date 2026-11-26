@@ -73,6 +73,9 @@ bool any_running();
 
 // Lock: true = stop everything immediately, EN off, no new moves. Each
 // reason locks on its own; the pumps are free when no reason is left.
+// lock(true) waits for a move that is being set up (the first move after a
+// configuration tunes its driver for 150 ms) and stops it: when it returns,
+// no pump runs and EN is off.
 enum class LockBy : uint8_t { Ota = 1, Supply = 2 };
 void lock(bool locked, LockBy by = LockBy::Ota);
 bool locked();

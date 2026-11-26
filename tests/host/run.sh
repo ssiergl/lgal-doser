@@ -104,6 +104,19 @@ $CXX \
 "$OUT/ota_manifest"
 
 echo
+# Motion layer unchanged with real threads against fake drivers and step clocks (lock races)
+$CXX -pthread \
+    '-DLGAL_BOARD_HEADER="doser/boards/d5v1.h"' \
+    -I tests/host/stubs_threads \
+    -I tests/host/stubs \
+    -I components/doser_hal/include \
+    tests/host/test_motion.cpp \
+    components/doser_hal/src/motion.cpp \
+    components/doser_hal/src/tmc2209_proto.cpp \
+    -o "$OUT/motion"
+"$OUT/motion" $1
+
+echo
 # Dosing engine unchanged against simulated motor/storage (stubs first)
 $CXX \
     -I tests/host/stubs \

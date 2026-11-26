@@ -305,9 +305,11 @@ esp_err_t run(int pump, const Move& move) {
             set_drivers_enabled(true);
             vTaskDelay(pdMS_TO_TICKS(150));
             p.drv.write(tmc::reg::IHOLD_IRUN, p.regs.ihold_irun);
-            p.tuned = true;
+            p.tuned = !s_locks;  // a lock in the pause switched EN off: tune again next time
         }
     }
+    // A lock that came while the driver was being set up (UART, tuning pause) holds
+    if (s_locks) return ESP_ERR_INVALID_STATE;
     set_drivers_enabled(true);
     s_last_busy_us = esp_timer_get_time();
 
@@ -343,13 +345,19 @@ bool any_running() { return any_busy(); }
 
 void lock(bool locked, LockBy by) {
     const auto bit = static_cast<uint8_t>(by);
-    if (locked) {
-        s_locks |= bit;
-        stop_all(true);
-        set_drivers_enabled(false);
-    } else {
+    if (!locked) {
         s_locks &= static_cast<uint8_t>(~bit);
+        return;
     }
+    s_locks |= bit;
+    stop_all(true);
+    set_drivers_enabled(false);
+    // A run() that checked the lock before it was set may still be setting up its driver:
+    // wait for it, then stop again whatever it started
+    if (!s_mutex) return;
+    Lock l;
+    stop_all(true);
+    set_drivers_enabled(false);
 }
 
 bool locked() { return s_locks != 0; }
