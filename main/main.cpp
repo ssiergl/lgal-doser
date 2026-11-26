@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// LGAL Doser – entry point (M1: hardware layer)
+// LGAL Doser – entry point
 //
 // The order is safety-relevant: first the pump drivers are
 // switched off, only then does anything else start.

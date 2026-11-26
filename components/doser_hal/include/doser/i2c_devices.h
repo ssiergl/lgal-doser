@@ -5,7 +5,8 @@
 // I²C bus (SDA GPIO8, SCL GPIO14, 4.7 kΩ on the board) with
 //   DS3231 (0x68)   real-time clock, stores UTC
 //   AT24C32 (0x57)  4 KB EEPROM (1 M write cycles) for frequently changed
-//                   state from M2 on (retraction, running dose, daily counters)
+//                   state: run state of the pumps (container level,
+//                   retraction, daily amounts) and progress of the schedules
 // Connector J16 brings the bus out for later extensions (display).
 
 #include <cstddef>

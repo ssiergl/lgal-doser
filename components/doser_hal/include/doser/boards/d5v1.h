@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
-// Board d5v1: LGAL Doser 5, circuit board v1.0 (11/2026), five pumps.
+// Board d5v1: LGAL Doser 5, five pumps. Circuit boards v1.0 (11/2026) and
+// v1.1 share the pins; v1.1 adds the 24 V sense (kSupplySense).
 // Source: CLAUDE.md / schematic "Dosingpump 5x Kamoer". Do not change.
 // Included through doser/pins.h only.
 //

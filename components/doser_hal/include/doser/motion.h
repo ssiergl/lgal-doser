@@ -5,7 +5,7 @@
 // Pump layer: TMC2209 configuration + step clock + shared EN.
 //
 // Everything here is "raw" (steps, steps/s). Dosing amounts, calibration,
-// retraction etc. come in M2 (doser_app) and build on top of it.
+// retraction etc. are in doser_app (doser/dosing.h) and build on top of it.
 //
 // Shared EN: as soon as one pump moves, all drivers are enabled.
 // Drivers not moving freewheel with IHOLD = 0 (no current).
