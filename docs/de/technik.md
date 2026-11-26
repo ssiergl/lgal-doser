@@ -22,7 +22,7 @@ brand/                  Marken-Repository als Git-Submodul: das Logo (nicht GPL,
 main/                   Verdrahtung der Komponenten (app_main)
 tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, endurance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (Geräte-Mock für die Weboberfläche)
 tests/host/             Host-Tests (TMC-Protokoll, Strom, Rampe, Kalender, Zeitzonen, JSON, Dosier- und Zeitplan-Logik, LED-Alarme, Historie, Datensicherung, MQTT/Home Assistant, Update-Manifest),
-                        die Pumpensperre beim Anlaufen einer Bewegung (echte Threads) und Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
+                        die Pumpensperre beim Anlaufen einer Bewegung und das Löschen des EEPROMs während eines Schreibvorgangs (echte Threads), Simulation von Dosier-Engine und Scheduler (`tests/host/run.sh`)
 tests/fuzz/             Fuzzer für alle Parser mit Eingaben von außen (`tests/fuzz/run.sh`)
 tests/i18n/, tools/, size/, lint/  Übersetzungen, Python-Werkzeuge, Image-Größe, ESLint und cppcheck (siehe Prüfungen)
 tests/e2e/              End-to-End-Tests der Weboberfläche in Chromium gegen den Mock (Playwright, siehe Prüfungen)
