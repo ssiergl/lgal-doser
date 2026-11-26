@@ -739,7 +739,7 @@ der Weboberfläche.
 | GET | `/api/v1/ws` | WebSocket: Status-Push und Entlüften (siehe [WebSocket](#websocket-m4)) |
 | POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=10]` | Kalibrierlauf; danach `action=apply&measured_ml=…` oder `cancel` |
 | POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (Umdrehungen, `off` = 0 = aus, `global` = Service-Wert; ab Werk aus), `direction=cw\|ccw` (Drehrichtung von vorne gesehen, über `GCONF.shaft`, ab Werk `cw`; nur im Stillstand, sonst 409 `pump_busy`), `warn_days`/`low_days` (eigene Behälter-Schwellen in Tagen Reichweite, 0 = Service-Standard; Alarm höchstens gleich Warnung), `remind_months` (Kalibrier-Erinnerung 0–24 Monate, 0 = aus) |
-| POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter) |
+| POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter; jeweils höchstens 100 l, der Restinhalt höchstens die Kapazität) |
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen; `hours=0` = neuer Schlauch: `calibration.tube_changed` bleibt `true` bis zur nächsten Kalibrierung |
 | GET | `/api/v1/history?…` | Ereignisse, neueste zuerst: `pump=1..5`, `kind=dose,skip,…`, `days=1..90`, oder `from_date`/`to_date` (`YYYY-MM-DD`, Ortstage, beide einschließlich, höchstens 90 Tage), oder `from`/`to` in UTC-Sekunden, `limit=1..500` (100), `offset` → `{"events":[…],"more"}` (siehe [Historie](#historie-m6)) |
 | GET | `/api/v1/history.csv?…` | dieselben Filter als CSV-Download, ohne Limit |
