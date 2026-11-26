@@ -44,9 +44,11 @@
 // Flow: ask guard (e.g. "no dosing active") -> lock pumps ->
 // check header (chip, flash size, project name, board) -> write to inactive slot ->
 // verify image -> switch boot partition -> reboot.
-// The new image starts as PENDING_VERIFY and is only marked valid after
-// CONFIG_LGAL_OTA_CONFIRM_DELAY_S of stable runtime + health check.
-// A crash or watchdog before that -> the bootloader rolls back.
+// The new image starts as PENDING_VERIFY and is marked valid after
+// CONFIG_LGAL_OTA_CONFIRM_DELAY_S of stable runtime once the health check
+// passes; while it fails, it is repeated for CONFIG_LGAL_OTA_CONFIRM_WAIT_S
+// (lgal/ota_confirm.h), then the image is rolled back. A crash or watchdog
+// before that -> the bootloader rolls back.
 
 #include <cstddef>
 #include <cstdint>

@@ -20,6 +20,15 @@ menu "LG Aquatic Life Core"
         default 60
         range 10 600
 
+    config LGAL_OTA_CONFIRM_WAIT_S
+        int "Wait for the network before a new OTA image is rolled back (s)"
+        default 300
+        range 0 3600
+        help
+            A new image that is not reachable after LGAL_OTA_CONFIRM_DELAY_S is
+            checked again every 10 s for this long (router restarting, Wi-Fi still
+            connecting) before it is rolled back. 0 = roll back at once.
+
     config LGAL_OTA_SOURCE
         string "Release manifest of the update source (factory setting)"
         default ""

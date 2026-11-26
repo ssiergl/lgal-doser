@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: 2026 Lars Greiss / LG Aquatic Life
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Host test of the release manifest, version compare (lgal/ota_manifest.h)
-// and board ID of an image (lgal/ota_image.h)
+// Host test of the release manifest, version compare (lgal/ota_manifest.h),
+// board ID of an image (lgal/ota_image.h) and confirmation of a new image
+// (lgal/ota_confirm.h)
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <string>
 
+#include "lgal/ota_confirm.h"
 #include "lgal/ota_image.h"
 #include "lgal/ota_manifest.h"
 
@@ -201,6 +203,45 @@ static void test_bootloader_image() {
     CHECK(!is_bootloader_image(nullptr, sizeof(img)));
 }
 
+// Health check of a new image on a simulated clock; up_at_ms = when the device is reachable
+struct Confirm {
+    long long now_ms = 0;
+    long long up_at_ms;
+    int asked = 0;
+    long long last_ask_ms = -1;
+    bool run(int delay_s, int wait_s, int retry_s) {
+        return await_healthy(
+            [this] {
+                ++asked;
+                last_ask_ms = now_ms;
+                return now_ms >= up_at_ms;
+            },
+            [this](int ms) { now_ms += ms; }, delay_s, wait_s, retry_s);
+    }
+};
+
+static void test_confirm() {
+    std::printf("Confirmation of a new image\n");
+    // reachable after the stable runtime: confirmed at once
+    Confirm a{0, 0};
+    CHECK(a.run(60, 300, 10) && a.asked == 1 && a.last_ask_ms == 60000);
+    // the network is back after 175 s: confirmed at the next check (180 s)
+    Confirm b{0, 175000};
+    CHECK(b.run(60, 300, 10) && b.asked == 13 && b.last_ask_ms == 180000);
+    // reachable just at the last check (60 s + 300 s)
+    Confirm c{0, 360000};
+    CHECK(c.run(60, 300, 10) && c.last_ask_ms == 360000);
+    // never reachable: rolled back after the last check, 6 min after the start
+    Confirm d{0, 360001};
+    CHECK(!d.run(60, 300, 10) && d.asked == 31 && d.last_ask_ms == 360000 && d.now_ms == 360000);
+    // no wait: one check
+    Confirm e{0, 60001};
+    CHECK(!e.run(60, 0, 10) && e.asked == 1 && e.now_ms == 60000);
+    // a wait that is no multiple of the retry: the last check is not before its end
+    Confirm f{0, 1LL << 40};
+    CHECK(!f.run(60, 305, 10) && f.last_ask_ms == 370000);
+}
+
 int main() {
     test_versions();
     test_urls();
@@ -208,6 +249,7 @@ int main() {
     test_variants();
     test_image_board();
     test_bootloader_image();
+    test_confirm();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

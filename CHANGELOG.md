@@ -90,8 +90,8 @@ and on board v1.0.
   workflow keeps the beta manifest in the pre-release `channel-beta`.
 - Release text written from this changelog and the commits since the previous release.
 - Updates by file, from a fixed update source (release manifest) or from a URL; rollback on a
-  failed start; update entity for Home Assistant. A device only accepts firmware for its own
-  board and module variant.
+  failed start (a crash, or the device not reachable for 5 minutes); update entity for Home
+  Assistant. A device only accepts firmware for its own board and module variant.
 - Acceptance test script for a device on the network (`tools/acceptance.py`): locked API,
   firmware, pumps, drivers and clock, a settings snapshot to compare after an update, an
   optional test dose and update; a long-term test (`tools/endurance.py`, 24 hours) that watches

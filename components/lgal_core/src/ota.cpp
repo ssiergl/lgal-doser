@@ -28,6 +28,7 @@
 #include "lgal/json_reader.h"
 #include "lgal/led.h"
 #include "lgal/mqtt.h"
+#include "lgal/ota_confirm.h"
 #include "lgal/ota_image.h"
 #include "lgal/ota_manifest.h"
 #include "lgal/sha256.h"
@@ -56,6 +57,7 @@ constexpr size_t kHeaderLen = kBoardDescOffset + sizeof(BoardDesc);
 constexpr const char* kNs = "ota";
 constexpr int kMaxRedirects = 5;
 constexpr int kTimeoutMs = 15000;
+constexpr int kConfirmRetryS = 10;  // health check of a new image again while it fails
 
 Guard s_guard;
 LockHook s_lock;
@@ -850,8 +852,20 @@ esp_err_t post_install(httpd_req_t* req) {
 }
 
 void rollback_task(void*) {
-    vTaskDelay(pdMS_TO_TICKS(CONFIG_LGAL_OTA_CONFIRM_DELAY_S * 1000));
-    if (!s_health || s_health()) {
+    bool waiting = false;
+    const bool healthy = await_healthy(
+        [&waiting] {
+            const bool ok = !s_health || s_health();
+            if (!ok && !waiting) {
+                waiting = true;
+                ESP_LOGW(TAG, "New firmware not reachable yet, checking again for up to %d s",
+                         CONFIG_LGAL_OTA_CONFIRM_WAIT_S);
+            }
+            return ok;
+        },
+        [](int ms) { vTaskDelay(pdMS_TO_TICKS(ms)); }, CONFIG_LGAL_OTA_CONFIRM_DELAY_S,
+        CONFIG_LGAL_OTA_CONFIRM_WAIT_S, kConfirmRetryS);
+    if (healthy) {
         esp_ota_mark_app_valid_cancel_rollback();
         ESP_LOGI(TAG, "New firmware confirmed (valid)");
     } else {

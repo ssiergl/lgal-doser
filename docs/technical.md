@@ -518,10 +518,11 @@ after the restart.
 Procedure and protection:
 - The image is checked before writing (ESP32-S3, project name `lgal_doser`, flash size, board) and
   verified by hash after writing.
-- The new image starts as `PENDING_VERIFY` and is only marked valid after 60 s of stable running
-  with a reachable web server.
-- Crash, watchdog or failed health check before that: automatic **rollback** to the previous
-  firmware.
+- The new image starts as `PENDING_VERIFY` and is marked valid after 60 s of stable running as
+  soon as the web server is reachable (LAN, Wi-Fi or setup Wi-Fi). If it is not yet (router
+  restarting, Wi-Fi still connecting), the device checks again every 10 s for up to 5 min.
+- Crash or watchdog before that, or still not reachable after these 5 min: automatic
+  **rollback** to the previous firmware.
 - From the moment an update is accepted no dose starts: a manual one gets 409 `locked`, a
   scheduled one waits (at most `max_delay_min`). The pump drivers are switched off for the
   duration of the update.
