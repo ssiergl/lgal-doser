@@ -535,6 +535,25 @@ static void test_supply() {
     CHECK(total(4) > b);
 }
 
+static void test_update_accepted() {
+    // An update was accepted and its download has not locked the pumps yet (start guard
+    // "locked"): the due slot of pump 5 waits instead of being skipped and runs after it
+    auto st = scheduler::status(4);
+    CHECK(st.has_next);
+    const int64_t due = st.next_utc;
+    const uint64_t b = total(4);
+    dosing::set_start_guard([]() -> const char* { return "locked"; });
+    sim::run_until(due + 120);
+    st = scheduler::status(4);
+    CHECK(st.delayed && st.delay_reason && std::strcmp(st.delay_reason, "locked") == 0 && total(4) == b);
+    dosing::set_start_guard(nullptr);  // the update failed: the pumps are free again
+    sim::run_until(due + 300);
+    st = scheduler::status(4);
+    CHECK(!st.delayed && total(4) > b && st.last_run_at >= due + 120);
+    const auto* e = sim::last_event(history::Kind::Skip, 5);
+    CHECK(!e || e->utc < due);  // not skipped
+}
+
 // A run state written while the clock was days ahead: started again from now
 static void test_cursor_in_future() {
     sim::run_for(1);
@@ -813,6 +832,8 @@ int main(int argc, char**) {
     test_events();
     std::printf("Scheduler: 24 V supply missing\n");
     test_supply();
+    std::printf("Scheduler: update accepted\n");
+    test_update_accepted();
     std::printf("Scheduler: queue, time zone and plan change errors\n");
     test_error_paths();
     std::printf("Scheduler: clock set back by days\n");

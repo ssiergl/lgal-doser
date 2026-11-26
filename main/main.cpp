@@ -190,19 +190,24 @@ void log_core_event(const char* code, lgal::events::By by, int32_t value) {
     history::note(history::Kind::System, -1, src, code, 0, 0, value);
 }
 
+// Why no job may start now (start guard of the dosing engine), nullptr = free
+const char* start_blocked() {
+    switch (doser::supply::state()) {  // State::None without sense input
+        case doser::supply::State::Missing: return "supply_missing";
+        case doser::supply::State::Low: return "supply_low";
+        default: break;
+    }
+    // An update was accepted: a download locks the pumps only once the connection to the file
+    // stands, but no job may start before that either (a scheduled dose waits as in the lock)
+    return lgal::ota::in_progress() ? "locked" : nullptr;
+}
+
 // 24 V supply (board with sense input): false = missing at boot. The board
 // 3.3 V rail is then only back-fed through the I/O pins (USB power only), so
 // its peripherals (TMC2209, W5500, DS3231/EEPROM) stay off.
 bool check_supply() {
     using doser::supply::State;
     if (!doser::supply::init(doser::hwconfig::board_rev())) return true;  // no sense input: as before
-    doser::dosing::set_start_guard([]() -> const char* {
-        switch (doser::supply::state()) {
-            case State::Missing: return "supply_missing";
-            case State::Low: return "supply_low";
-            default: return nullptr;
-        }
-    });
     if (doser::supply::boot_state() != State::Missing) return true;
     ESP_LOGW(TAG, "No 24 V supply: pump drivers, Ethernet and clock module stay off");
     doser::release_driver_enable();
@@ -331,6 +336,7 @@ extern "C" void app_main(void) {
     if (doser::history::init() != ESP_OK) ESP_LOGE(TAG, "History not available");
 
     // 4. 24 V supply (board v1.1), pumps, RTC (drivers stay off until a move starts)
+    doser::dosing::set_start_guard(start_blocked);
     const bool powered = check_supply();
     init_hardware(powered);
 

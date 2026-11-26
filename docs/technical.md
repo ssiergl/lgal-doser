@@ -522,7 +522,9 @@ Procedure and protection:
   with a reachable web server.
 - Crash, watchdog or failed health check before that: automatic **rollback** to the previous
   firmware.
-- The pump drivers are switched off for the duration of the update.
+- From the moment an update is accepted no dose starts: a manual one gets 409 `locked`, a
+  scheduled one waits (at most `max_delay_min`). The pump drivers are switched off for the
+  duration of the update.
 
 **Update source:** a fixed address of the release manifest, e.g.
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`. Factory value from
