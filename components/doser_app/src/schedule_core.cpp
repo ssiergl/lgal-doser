@@ -3,6 +3,7 @@
 
 #include "doser/schedule_core.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -372,16 +373,66 @@ Validation validate(const PumpSchedule (&all)[kPumps], const Locks& locks, const
 }
 
 // ---------------------------------------------------------------------------
+namespace {
+// Local days whose slots can lie in (after, until]: one day back, as a DST
+// gap can move a slot of the previous local day. A range of more than 400
+// days is cut at the front: older slots are neither found nor counted.
+struct DayRange {
+    int32_t first, last;
+};
+
+DayRange due_days(const tz::Zone& z, int64_t after_utc, int64_t until) {
+    DayRange r{day_of(tz::to_local(z, after_utc)) - 1, day_of(tz::to_local(z, until))};
+    if (r.last - r.first > 400) r.first = r.last - 400;
+    return r;
+}
+
+// tz::to_utc gives local - offset with the standard or the DST offset, so a
+// slot lies between local - hi and local - lo (UTC)
+struct Offsets {
+    int32_t lo, hi;
+};
+
+Offsets offsets(const tz::Zone& z) {
+    if (!z.has_dst) return {z.std_offset, z.std_offset};
+    return {std::min(z.std_offset, z.dst_offset), std::max(z.std_offset, z.dst_offset)};
+}
+
+// Latest slot in (after, until], the days walked backwards from `until`.
+// slots, k: the plan's slots, the same on every day it runs.
+bool latest_due(const PumpSchedule& s, const tz::Zone& z, const Slot* slots, int k, const Cursor& after,
+                int64_t until, Due* out) {
+    const DayRange days = due_days(z, after.utc, until);
+    const Offsets o = offsets(z);
+    bool found = false;
+    for (int32_t d = days.last; d >= days.first; --d) {
+        if (found && d < day_of(tz::to_local(z, out->utc)) - 1) break;  // earlier days only get earlier
+        if (!active_on(s.days, d)) continue;
+        const int64_t day = int64_t(d) * 86400;
+        for (int i = k - 1; i >= 0; --i) {
+            const int64_t local = day + slots[i].minute * 60;
+            if (local - o.hi > until) continue;           // after `until` for sure
+            if (local - o.lo < after.utc) break;          // this and the earlier ones: before the cursor
+            if (found && local - o.lo < out->utc) break;  // this and the earlier ones: before the latest
+            const int64_t utc = tz::to_utc(z, local);
+            const uint32_t tag = tag_of(slots[i]);
+            if (!before(after.utc, after.tag, utc, tag) || utc > until) continue;
+            if (found && !before(out->utc, out->tag, utc, tag)) continue;
+            *out = Due{utc, d, slots[i].minute, slots[i].ul, tag, k - i};
+            found = true;
+        }
+    }
+    return found;
+}
+}  // namespace
+
 bool next_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, const Cursor& after, int64_t until,
               Due* out) {
     if (until < after.utc) return false;
-    // one day back: a DST gap can move a slot of the previous local day
-    int32_t first = day_of(tz::to_local(z, after.utc)) - 1;
-    const int32_t last = day_of(tz::to_local(z, until));
-    if (last - first > 400) first = last - 400;  // the scheduler skips long gaps before
+    const DayRange days = due_days(z, after.utc, until);
     bool found = false;
     Slot slots[kMaxSlotsPerDay];
-    for (int32_t d = first; d <= last; ++d) {
+    for (int32_t d = days.first; d <= days.last; ++d) {
         const int n = day_slots(s, d, grid_min, slots, kMaxSlotsPerDay);
         for (int k = 0; k < n; ++k) {
             const int64_t utc = tz::to_utc(z, int64_t(d) * 86400 + slots[k].minute * 60);
@@ -396,13 +447,33 @@ bool next_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, const
     return found;
 }
 
-int count_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, Cursor after, int64_t until) {
+int count_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, const Cursor& after, int64_t until,
+              Due* last) {
+    if (until < after.utc) return 0;
+    Slot slots[kMaxSlotsPerDay];
+    const int k = expand(s, grid_min, 0, slots, kMaxSlotsPerDay, nullptr);  // the same on every day the plan runs
+    if (k <= 0) return 0;
+    const DayRange days = due_days(z, after.utc, until);
+    const Offsets o = offsets(z);
+    // every slot of a day lies between its first slot - hi and its last slot - lo (UTC)
+    const int64_t head = slots[0].minute * 60 - int64_t(o.hi), tail = slots[k - 1].minute * 60 - int64_t(o.lo);
     int n = 0;
-    Due d;
-    while (next_due(s, z, grid_min, after, until, &d)) {
-        ++n;
-        after = cursor_of(d);
+    for (int32_t d = days.first; d <= days.last; ++d) {
+        if (!active_on(s.days, d)) continue;
+        const int64_t day = int64_t(d) * 86400;
+        if (day + head > after.utc && day + tail <= until) {
+            n += k;  // the whole day lies inside: no time zone needed
+            continue;
+        }
+        for (int i = 0; i < k; ++i) {
+            const int64_t local = day + slots[i].minute * 60;
+            if (local - o.lo < after.utc) continue;  // before the cursor for sure
+            if (local - o.hi > until) break;         // this and the later ones: after `until`
+            const int64_t utc = tz::to_utc(z, local);
+            if (before(after.utc, after.tag, utc, tag_of(slots[i])) && utc <= until) ++n;
+        }
     }
+    if (n && last) latest_due(s, z, slots, k, after, until, last);  // found: the same slots match the same test
     return n;
 }
 

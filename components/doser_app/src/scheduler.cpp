@@ -289,18 +289,15 @@ void process(int p, int64_t now) {
         return;
     }
     // After a long outage everything older than the policy window is skipped at once
-    // The cursor only moves to the last skipped slot: without slots to skip
-    // nothing changes and nothing is written (the window moves every second).
+    // (counted day by day, so months cost little). The cursor only moves to the
+    // last skipped slot: without slots to skip nothing changes and nothing is
+    // written (the window moves every second).
     const sched::Cursor rp = sched::resume_point(r.sch, r.run.cursor, now);
     sched::Due d;
     if (rp.utc != r.run.cursor.utc || rp.tag != r.run.cursor.tag) {
-        int n = 0;
-        sched::Cursor c = r.run.cursor;
-        while (sched::next_due(r.sch, s_zone, s_cfg.grid_min, c, rp.utc, &d)) {
-            ++n;
-            c = sched::cursor_of(d);
-        }
+        const int n = sched::count_due(r.sch, s_zone, s_cfg.grid_min, r.run.cursor, rp.utc, &d);
         if (n) {
+            const sched::Cursor c = sched::cursor_of(d);
             r.run.cursor = c;
             pass_boost(p, c.utc, n);
             count_skips(r, n, now);

@@ -4,6 +4,7 @@
 // Host tests for the schedule logic (components/doser_app/src/schedule_core.cpp).
 //   tests/host/run.sh
 
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -401,6 +402,134 @@ static void test_due() {
     CHECK(resume_point(ps, Cursor{now - 60, 0}, now).utc == now - 60);
 }
 
+// --- counting due slots against every single slot ---------------------------
+static uint64_t g_rng = 0x9E3779B97F4A7C15ull;
+static uint32_t rnd(uint32_t n) {  // 0..n-1, xorshift64* (the same sequence on every run)
+    g_rng ^= g_rng >> 12;
+    g_rng ^= g_rng << 25;
+    g_rng ^= g_rng >> 27;
+    return static_cast<uint32_t>((g_rng * 0x2545F4914F6CDD1Dull) >> 32) % n;
+}
+
+// Slots in (after, until], every slot of every day looked at (two days more
+// on each side than the scheduler needs): number and the latest one
+static int every_slot(const PumpSchedule& s, const tz::Zone& z, const Cursor& after, int64_t until, Due* last) {
+    Slot slots[kMaxSlotsPerDay];
+    int n = 0;
+    const int32_t first = day_of(tz::to_local(z, after.utc)) - 2, end = day_of(tz::to_local(z, until)) + 2;
+    for (int32_t d = first; d <= end; ++d) {
+        const int k = day_slots(s, d, 5, slots, kMaxSlotsPerDay);
+        for (int i = 0; i < k; ++i) {
+            const int64_t utc = tz::to_utc(z, int64_t(d) * 86400 + slots[i].minute * 60);
+            const uint32_t tag = slots[i].minute * 16u + 1u;
+            if (!(utc > after.utc || (utc == after.utc && tag > after.tag)) || utc > until) continue;
+            if (!n || utc > last->utc || (utc == last->utc && tag > last->tag))
+                *last = Due{utc, d, slots[i].minute, slots[i].ul, tag, k - i};
+            ++n;
+        }
+    }
+    return n;
+}
+
+static PumpSchedule random_plan() {
+    DayRule days = rnd(2) ? weekdays(static_cast<uint8_t>(1 + rnd(127)))
+                          : every(static_cast<uint8_t>(1 + rnd(kMaxInterval)), static_cast<int32_t>(rnd(60)) - 30);
+    if (rnd(2)) {
+        const uint16_t from = static_cast<uint16_t>(5 * rnd(288));
+        if (from == 1435 || rnd(8) == 0) return spread(from, from, 1, 20 + rnd(5000), days);
+        const uint16_t to = static_cast<uint16_t>(from + 5 * (1 + rnd((1435 - from) / 5)));
+        const int most = (to - from) / 5 + 1 < kMaxSlotsPerDay ? (to - from) / 5 + 1 : kMaxSlotsPerDay;
+        const uint16_t n = static_cast<uint16_t>(2 + rnd(static_cast<uint32_t>(most - 1)));
+        return spread(from, to, n, n * (20 + rnd(5000)), days);
+    }
+    PumpSchedule p = at(0, 1, days);
+    p.time_count = 0;
+    for (uint16_t m = 0; m < kMinutesPerDay && p.time_count < kMaxTimes; m += 5)
+        if (rnd(288) < 6) p.times[p.time_count++] = TimeDose{m, 0, 20 + rnd(5000)};
+    if (!p.time_count) p.times[p.time_count++] = TimeDose{static_cast<uint16_t>(5 * rnd(288)), 0, 1000};
+    return p;
+}
+
+static void test_due_counting() {
+    // gaps at midnight (Chile), half-hour offsets and DST (Lord Howe), negative change times (Nuuk),
+    // a gap and a double hour across midnight (made up: slots move into the next or previous day)
+    const char* zones[] = {"UTC0",
+                           "CET-1CEST,M3.5.0,M10.5.0/3",
+                           "EST5EDT,M3.2.0,M11.1.0",
+                           "AEST-10AEDT,M10.1.0,M4.1.0/3",
+                           "<+1030>-10:30<+11>-11,M10.1.0,M4.1.0",
+                           "<-04>4<-03>,M9.1.6/24,M4.1.6/24",
+                           "IST-5:30",
+                           "<-03>3<-02>,M3.5.0/-2,M10.5.0/-1",
+                           "<+01>-1<+02>,M3.5.0/23:30,M10.5.0/0:30"};
+    constexpr int kZones = sizeof(zones) / sizeof(zones[0]);
+    tz::Zone zone[kZones];
+    for (int i = 0; i < kZones; ++i) CHECK(tz::parse(zones[i], &zone[i]));
+    // their DST changes in 2026..2028, to the day
+    const int64_t t0 = utc_of(2026, 1, 1, 0, 0);
+    int64_t change[kZones][8];
+    int changes[kZones] = {};
+    for (int i = 0; i < kZones; ++i)
+        for (int64_t t = t0; t < t0 + 3 * 365 * 86400LL && changes[i] < 8; t += 86400)
+            if (tz::offset_at(zone[i], t) != tz::offset_at(zone[i], t + 86400)) change[i][changes[i]++] = t;
+    CHECK(changes[0] == 0 && changes[1] == 6 && changes[5] == 6);
+
+    // the same count and latest slot as looking at every slot, also around DST changes
+    int differ = 0, counted = 0;
+    for (int run = 0; run < 4000; ++run) {
+        const int zi = static_cast<int>(rnd(kZones));
+        const tz::Zone& z = zone[zi];
+        const PumpSchedule s = random_plan();
+        int64_t from = t0 + int64_t(rnd(2 * 365)) * 86400 + rnd(86400);
+        if (changes[zi] && rnd(2)) from = change[zi][rnd(changes[zi])] - 2 * 86400 + rnd(4 * 86400);
+        const uint32_t pick = rnd(3);
+        const Cursor after{from, pick == 0 ? 0u : pick == 1 ? UINT32_MAX : 5u * rnd(288) * 16u + 1u};
+        const uint32_t len = rnd(10) < 6 ? rnd(3 * 86400) : rnd(10) < 7 ? rnd(40 * 86400) : rnd(380 * 86400);
+        const int64_t until = from + len;
+        Due fast{}, slow{};
+        const int n = count_due(s, z, 5, after, until, &fast), expected = every_slot(s, z, after, until, &slow);
+        counted += expected;
+        if (n != expected || (n && (fast.utc != slow.utc || fast.tag != slow.tag || fast.day != slow.day ||
+                                    fast.minute != slow.minute || fast.ul != slow.ul ||
+                                    fast.remaining_today != slow.remaining_today))) {
+            if (!differ) std::printf("  first difference: run %d, %d instead of %d slots\n", run, n, expected);
+            ++differ;
+        }
+    }
+    CHECK(differ == 0);
+    CHECK(counted > 100000);  // the runs really counted something
+
+    // The made-up zone jumps from Sunday 29 March 2026 23:30 to Monday 00:30: Sunday's 23:45
+    // (22:45 UTC) lies between Monday's 00:40 (22:40 UTC) and 00:15 (23:15 UTC)
+    const tz::Zone& mid = zone[8];
+    const PumpSchedule night = times({{15, 1000}, {40, 2000}, {1425, 3000}});
+    const Cursor after_0040{utc_of(2026, 3, 29, 22, 40), 40 * 16 + 1};
+    Due late{};
+    CHECK(count_due(night, mid, 5, Cursor{utc_of(2026, 3, 29, 22, 0), 0}, utc_of(2026, 3, 29, 23, 0), &late) == 2);
+    CHECK(late.minute == 1425 && late.day == day_num(2026, 3, 29) && late.utc == utc_of(2026, 3, 29, 22, 45));
+    CHECK(count_due(night, mid, 5, after_0040, utc_of(2026, 3, 29, 23, 0), &late) == 1 && late.minute == 1425);
+    CHECK(next_due(night, mid, 5, after_0040, utc_of(2026, 3, 30, 12, 0), &late) && late.minute == 1425);
+    CHECK(next_due(night, mid, 5, cursor_of(late), utc_of(2026, 3, 30, 12, 0), &late) && late.minute == 15 &&
+          late.utc == utc_of(2026, 3, 29, 23, 15));
+
+    // a gap of more than 400 days counts only its last 401 days
+    const tz::Zone utc0{};
+    const int64_t until = utc_of(2026, 11, 26, 12, 0);
+    CHECK(count_due(at(480, 1000), utc0, 5, Cursor{until - 1000 * 86400, 0}, until) == 401);
+
+    // a year without power and the densest plan: about as cheap as a day (one search
+    // per slot took about 3 s on a PC; the device is many times slower, its watchdog bites after 10 s)
+    const PumpSchedule dense = spread(0, 1435, kMaxSlotsPerDay, kMaxSlotsPerDay * 100);
+    const tz::Zone& cet = zone[1];
+    const auto start = std::chrono::steady_clock::now();
+    int n = 0;
+    Due d{};
+    for (int p = 0; p < kPumps; ++p) n += count_due(dense, cet, 5, Cursor{until - 400 * 86400, 0}, until, &d);
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+    CHECK(n == kPumps * every_slot(dense, cet, Cursor{until - 400 * 86400, 0}, until, &d));
+    CHECK(ms.count() < 100);
+}
+
 static void test_boost() {
     // 10 ml over 3 days, started 18:01 with 12 doses a day: 36 doses get the same share
     const int64_t t0 = utc_of(2026, 11, 6, 17, 1);
@@ -550,6 +679,8 @@ int main() {
     test_validate();
     std::printf("Schedule: due slots, DST, power loss\n");
     test_due();
+    std::printf("Schedule: counting due slots day by day\n");
+    test_due_counting();
     std::printf("Schedule: boost\n");
     test_boost();
     std::printf("Schedule: forecast\n");

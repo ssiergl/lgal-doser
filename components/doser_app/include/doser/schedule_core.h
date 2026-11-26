@@ -212,8 +212,12 @@ bool next_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, const
               Due* out);
 inline Cursor cursor_of(const Due& d) { return Cursor{d.utc, d.tag}; }
 
-// Number of slots in (after, until] (e.g. how many were skipped)
-int count_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, Cursor after, int64_t until);
+// Number of slots in (after, until] (e.g. how many were skipped); *last
+// (optional): the latest of them, set when the count is not 0. Counted day by
+// day: only the days at both ends need the time zone, so a gap of months
+// costs about as much as a few days.
+int count_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, const Cursor& after, int64_t until,
+              Due* last = nullptr);
 
 enum class Action : uint8_t { Run, SkipMissed };
 // What to do with a slot that becomes due at `now` (power loss, clock jump)
