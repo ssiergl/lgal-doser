@@ -429,20 +429,30 @@ bool latest_due(const PumpSchedule& s, const tz::Zone& z, const Slot* slots, int
 bool next_due(const PumpSchedule& s, const tz::Zone& z, uint16_t grid_min, const Cursor& after, int64_t until,
               Due* out) {
     if (until < after.utc) return false;
-    const DayRange days = due_days(z, after.utc, until);
-    bool found = false;
     Slot slots[kMaxSlotsPerDay];
-    for (int32_t d = days.first; d <= days.last; ++d) {
-        const int n = day_slots(s, d, grid_min, slots, kMaxSlotsPerDay);
-        for (int k = 0; k < n; ++k) {
-            const int64_t utc = tz::to_utc(z, int64_t(d) * 86400 + slots[k].minute * 60);
-            const uint32_t tag = tag_of(slots[k]);
+    const int k = expand(s, grid_min, 0, slots, kMaxSlotsPerDay, nullptr);  // the same on every day the plan runs
+    if (k <= 0) return false;
+    const DayRange days = due_days(z, after.utc, until);
+    const Offsets o = offsets(z);
+    bool found = false;
+    int32_t last = days.last;  // once found: up to the day after the earliest slot, later days only get later
+    for (int32_t d = days.first; d <= last; ++d) {
+        if (!active_on(s.days, d)) continue;
+        const int64_t day = int64_t(d) * 86400;
+        // only slots that can be after the cursor and before the earliest one so far need the time zone
+        for (int i = 0; i < k; ++i) {
+            const int64_t local = day + slots[i].minute * 60;
+            if (local - o.lo < after.utc) continue;       // before the cursor for sure
+            if (local - o.hi > until) break;              // this and the later ones: after `until`
+            if (found && local - o.hi > out->utc) break;  // this and the later ones: after the earliest
+            const int64_t utc = tz::to_utc(z, local);
+            const uint32_t tag = tag_of(slots[i]);
             if (!before(after.utc, after.tag, utc, tag) || utc > until) continue;
             if (found && !before(utc, tag, out->utc, out->tag)) continue;
-            *out = Due{utc, d, slots[k].minute, slots[k].ul, tag, n - k};
+            *out = Due{utc, d, slots[i].minute, slots[i].ul, tag, k - i};
             found = true;
+            last = std::min(days.last, day_of(tz::to_local(z, utc)) + 1);
         }
-        if (found && d >= day_of(tz::to_local(z, out->utc)) + 1) break;  // later days only get later
     }
     return found;
 }

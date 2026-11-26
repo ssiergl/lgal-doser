@@ -412,23 +412,30 @@ static uint32_t rnd(uint32_t n) {  // 0..n-1, xorshift64* (the same sequence on 
 }
 
 // Slots in (after, until], every slot of every day looked at (two days more
-// on each side than the scheduler needs): number and the latest one
-static int every_slot(const PumpSchedule& s, const tz::Zone& z, const Cursor& after, int64_t until, Due* last) {
+// on each side than the scheduler needs): number, the latest and the earliest one
+static int every_slot(const PumpSchedule& s, const tz::Zone& z, const Cursor& after, int64_t until, Due* last,
+                      Due* first = nullptr) {
     Slot slots[kMaxSlotsPerDay];
     int n = 0;
-    const int32_t first = day_of(tz::to_local(z, after.utc)) - 2, end = day_of(tz::to_local(z, until)) + 2;
-    for (int32_t d = first; d <= end; ++d) {
+    const int32_t from = day_of(tz::to_local(z, after.utc)) - 2, to = day_of(tz::to_local(z, until)) + 2;
+    for (int32_t d = from; d <= to; ++d) {
         const int k = day_slots(s, d, 5, slots, kMaxSlotsPerDay);
         for (int i = 0; i < k; ++i) {
             const int64_t utc = tz::to_utc(z, int64_t(d) * 86400 + slots[i].minute * 60);
             const uint32_t tag = slots[i].minute * 16u + 1u;
             if (!(utc > after.utc || (utc == after.utc && tag > after.tag)) || utc > until) continue;
-            if (!n || utc > last->utc || (utc == last->utc && tag > last->tag))
-                *last = Due{utc, d, slots[i].minute, slots[i].ul, tag, k - i};
+            const Due due{utc, d, slots[i].minute, slots[i].ul, tag, k - i};
+            if (!n || utc > last->utc || (utc == last->utc && tag > last->tag)) *last = due;
+            if (first && (!n || utc < first->utc || (utc == first->utc && tag < first->tag))) *first = due;
             ++n;
         }
     }
     return n;
+}
+
+static bool same_due(const Due& a, const Due& b) {
+    return a.utc == b.utc && a.tag == b.tag && a.day == b.day && a.minute == b.minute && a.ul == b.ul &&
+           a.remaining_today == b.remaining_today;
 }
 
 static PumpSchedule random_plan() {
@@ -475,7 +482,7 @@ static void test_due_counting() {
     CHECK(changes[0] == 0 && changes[1] == 6 && changes[5] == 6);
 
     // the same count and latest slot as looking at every slot, also around DST changes
-    int differ = 0, counted = 0;
+    int differ = 0, differ_next = 0, counted = 0;
     for (int run = 0; run < 4000; ++run) {
         const int zi = static_cast<int>(rnd(kZones));
         const tz::Zone& z = zone[zi];
@@ -486,17 +493,22 @@ static void test_due_counting() {
         const Cursor after{from, pick == 0 ? 0u : pick == 1 ? UINT32_MAX : 5u * rnd(288) * 16u + 1u};
         const uint32_t len = rnd(10) < 6 ? rnd(3 * 86400) : rnd(10) < 7 ? rnd(40 * 86400) : rnd(380 * 86400);
         const int64_t until = from + len;
-        Due fast{}, slow{};
-        const int n = count_due(s, z, 5, after, until, &fast), expected = every_slot(s, z, after, until, &slow);
+        Due fast{}, slow{}, next{}, first{};
+        const int n = count_due(s, z, 5, after, until, &fast), expected = every_slot(s, z, after, until, &slow, &first);
         counted += expected;
-        if (n != expected || (n && (fast.utc != slow.utc || fast.tag != slow.tag || fast.day != slow.day ||
-                                    fast.minute != slow.minute || fast.ul != slow.ul ||
-                                    fast.remaining_today != slow.remaining_today))) {
+        if (n != expected || (n && !same_due(fast, slow))) {
             if (!differ) std::printf("  first difference: run %d, %d instead of %d slots\n", run, n, expected);
             ++differ;
         }
+        // and the same next slot
+        const bool found = next_due(s, z, 5, after, until, &next);
+        if (found != (expected > 0) || (found && !same_due(next, first))) {
+            if (!differ_next) std::printf("  first other next slot: run %d\n", run);
+            ++differ_next;
+        }
     }
     CHECK(differ == 0);
+    CHECK(differ_next == 0);
     CHECK(counted > 100000);  // the runs really counted something
 
     // The made-up zone jumps from Sunday 29 March 2026 23:30 to Monday 00:30: Sunday's 23:45
@@ -508,6 +520,8 @@ static void test_due_counting() {
     CHECK(count_due(night, mid, 5, Cursor{utc_of(2026, 3, 29, 22, 0), 0}, utc_of(2026, 3, 29, 23, 0), &late) == 2);
     CHECK(late.minute == 1425 && late.day == day_num(2026, 3, 29) && late.utc == utc_of(2026, 3, 29, 22, 45));
     CHECK(count_due(night, mid, 5, after_0040, utc_of(2026, 3, 29, 23, 0), &late) == 1 && late.minute == 1425);
+    CHECK(next_due(night, mid, 5, Cursor{utc_of(2026, 3, 29, 22, 0), 0}, utc_of(2026, 3, 30, 12, 0), &late) &&
+          late.minute == 40 && late.utc == utc_of(2026, 3, 29, 22, 40));
     CHECK(next_due(night, mid, 5, after_0040, utc_of(2026, 3, 30, 12, 0), &late) && late.minute == 1425);
     CHECK(next_due(night, mid, 5, cursor_of(late), utc_of(2026, 3, 30, 12, 0), &late) && late.minute == 15 &&
           late.utc == utc_of(2026, 3, 29, 23, 15));
