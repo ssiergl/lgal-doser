@@ -43,7 +43,7 @@ void key(char* buf, size_t len, char prefix, int pump) { snprintf(buf, len, "%c%
 
 void load_engineering(dose::Engineering* e) {
     dose::Engineering v;
-    if (nvs_load("eng", &v) && dose::validate(v, 600) == nullptr) *e = v;
+    if (nvs_load("eng", &v) && dose::validate(v, kMaxRpm) == nullptr) *e = v;
 }
 
 esp_err_t save_engineering(const dose::Engineering& e) { return nvs_save("eng", e); }

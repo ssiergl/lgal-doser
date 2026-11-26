@@ -379,7 +379,7 @@ void write_engineering(Json& j) {
         .kv("warn_days", e.warn_days)
         .kv("low_days", e.low_days)
         .kv("nominal_ml_per_rev", dose::kNominalUlPerRev / 1000.0, 3)
-        .kv("max_rpm", 600)
+        .kv("max_rpm", kMaxRpm)
         .end();
 }
 
@@ -406,7 +406,7 @@ esp_err_t post_engineering(httpd_req_t* req) {
     const char* tier_keys[] = {"tier1_rpm", "tier2_rpm", "tier3_rpm"};
     for (int t = 0; t < dose::kTiers; ++t) {
         if (http::query_int(req, tier_keys[t], &v)) {
-            if (v < 10 || v > 600) return fail(req, "invalid_param", "tier rpm=10..600");
+            if (v < 10 || v > kMaxRpm) return fail(req, "invalid_param", "tier rpm=10..600");
             e.tier_rpm[t] = static_cast<uint16_t>(v);
         }
     }
@@ -435,7 +435,7 @@ esp_err_t post_engineering(httpd_req_t* req) {
         if (v < 0 || v > 60) return fail(req, "invalid_param", thr[k]);
         *dst[k] = static_cast<uint8_t>(v);
     }
-    if (const char* f = dose::validate(e, 600)) return fail(req, "invalid_param", f);
+    if (const char* f = dose::validate(e, kMaxRpm)) return fail(req, "invalid_param", f);
     if (const char* err = dosing::set_engineering(e)) return fail(req, err);
     note_system(req, "engineering");
     return get_engineering(req);

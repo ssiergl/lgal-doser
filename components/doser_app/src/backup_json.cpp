@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "doser/limits.h"
 #include "doser/schedule_json.h"
 #include "doser/tmc2209_proto.h"
 #include "lgal/device_name.h"
@@ -19,7 +20,6 @@ using lgal::JsonValue;
 namespace {
 constexpr const char* kParts[] = {"system", "network", "pumps", "engineering", "auth", "mqtt"};
 constexpr int kPartCount = sizeof(kParts) / sizeof(kParts[0]);
-constexpr uint16_t kMaxRpm = 600;
 
 double ml(int64_t ul) { return static_cast<double>(ul) / 1000.0; }
 

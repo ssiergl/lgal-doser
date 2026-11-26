@@ -30,7 +30,7 @@ struct PumpConfig {
     uint32_t rpm_to_sps(uint32_t rpm) const { return rpm * steps_per_rev() / 60; }
     uint32_t accel_or_default() const { return accel ? accel : rpm_to_sps(600); }
     uint32_t v_start_or_default() const { return v_start ? v_start : rpm_to_sps(20); }
-    uint32_t max_sps() const { return rpm_to_sps(600); }  // characteristic linear up to 600 rpm
+    uint32_t max_sps() const { return rpm_to_sps(kMaxRpm); }
 };
 
 struct Move {

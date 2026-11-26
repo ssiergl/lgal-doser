@@ -24,7 +24,6 @@ namespace {
 constexpr const char* TAG = "dosing";
 constexpr int kN = kMaxPumps;
 constexpr int kTickMs = 20;
-constexpr uint16_t kMaxRpm = 600;
 
 struct Job {
     Activity act = Activity::Idle;
