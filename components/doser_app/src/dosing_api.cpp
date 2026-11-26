@@ -252,7 +252,9 @@ esp_err_t post_prime(httpd_req_t* req) {
     const char* e = nullptr;
     if (!std::strcmp(action, "start")) e = dosing::prime_start(p, tier_arg(req));
     else if (!std::strcmp(action, "beat")) e = dosing::prime_beat(p);
-    else if (!std::strcmp(action, "stop")) dosing::stop(p);
+    // Ends priming only: when the device has ended it already (heartbeat, maximum duration), a
+    // scheduled dose may have started in its place and must keep running. Nothing to stop = ok.
+    else if (!std::strcmp(action, "stop")) dosing::prime_stop(p);
     else return fail(req, "invalid_param", "action=start|beat|stop");
     return e ? fail(req, e) : ok(req);
 }

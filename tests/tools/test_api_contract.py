@@ -241,11 +241,17 @@ def test_rest_priming(mock):
         return status, json.loads(body or b"{}")
     status, body = prime("beat")
     assert status == 409 and body["error"]["code"] == "not_priming"
-    assert prime("stop")[0] == 200  # nothing to stop: dosing::stop answers ok
+    assert prime("stop")[0] == 200  # nothing to stop: answers ok, as on the device
     assert prime("start")[0] == 200
     assert prime("beat")[0] == 200
     assert prime("stop")[0] == 200
     assert mock.call("POST", "/api/v1/pumps/prime?pump=9&action=start", {})[0] == 400
+    # the stop ends priming only: one that comes after the device ended priming leaves a dose
+    # that started since alone (pump 3: no lock time rule)
+    assert mock.call("POST", "/api/v1/pumps/dose?pump=3&ml=2", {})[0] == 200
+    assert mock.call("POST", "/api/v1/pumps/prime?pump=3&action=stop", {})[0] == 200
+    assert json.loads(mock.call("GET", "/api/v1/pumps")[2])["pumps"][2]["activity"] == "dosing"
+    assert mock.call("POST", "/api/v1/pumps/stop?pump=3", {})[0] == 200
 
 
 # Routes that end the session or restart the device go last (the mock then is "down" for a few

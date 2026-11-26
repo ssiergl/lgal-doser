@@ -416,6 +416,19 @@ static void test_interface() {
     CHECK(sim::run_until_idle(p, 2));
     CHECK_STR(dosing::status(p).last_result, "success");
     CHECK(!dosing::service());
+    // a priming stop that comes late leaves a dose and a calibration run that started since alone
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Schedule) == nullptr);
+    sim::tick();
+    CHECK_STR(dosing::prime_stop(p), "not_priming");
+    CHECK(sim::run_until_idle(p));
+    CHECK_STR(dosing::status(p).last_result, "success");
+    CHECK(dosing::status(p).last_done_ul == 1000);
+    CHECK(dosing::calibrate_start(p, 5000) == nullptr);
+    sim::tick();
+    CHECK_STR(dosing::prime_stop(p), "not_priming");
+    CHECK(sim::run_until_idle(p));
+    CHECK(dosing::status(p).calib_pending && dosing::status(p).last_done_ul == 5000);
+    dosing::calibrate_cancel(p);
     // stop_all ends every job
     CHECK(dosing::prime_start(p) == nullptr);
     CHECK(dosing::dose(0, 20000, dosing::Trigger::Manual) == nullptr);

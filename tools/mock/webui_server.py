@@ -362,7 +362,7 @@ def pumps_post(h, path, q):
     if starts and sup in ("missing", "low"): return err(h, "supply_" + sup, status=409)
     if path == "/api/v1/pumps/prime":  # prime() takes the lock itself
         e = prime(None, {"pump": n, "action": q.get("action")})
-        if e == "not_priming" and q.get("action") == "stop": e = None  # the firmware just stops (dosing::stop)
+        if e == "not_priming" and q.get("action") == "stop": e = None  # the firmware: nothing to stop = ok
         return err(h, e, status=409) if e else h.send(200, {"status": "ok"})
     with LOCK:
         if path == "/api/v1/pumps/dose":
