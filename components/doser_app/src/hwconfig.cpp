@@ -4,8 +4,8 @@
 #include "doser/hwconfig.h"
 
 #include <cstdio>
-#include <type_traits>
 
+#include "doser/nvs_blob.h"
 #include "doser/pins.h"
 #include "esp_log.h"
 #include "nvs.h"
@@ -44,55 +44,21 @@ uint8_t load_factory_mask() {
 }
 
 bool valid_mask(uint8_t m) { return m != 0 && (m & ~pins::kBoardMask) == 0; }
-
-template <typename T>
-struct Blob {
-    uint16_t version;
-    T value;
-};
-
-template <typename T>
-bool load_blob(nvs_handle_t h, const char* key, T* out) {
-    static_assert(std::is_trivially_copyable_v<T>);
-    Blob<T> b{};
-    size_t len = sizeof(b);
-    if (nvs_get_blob(h, key, &b, &len) != ESP_OK || len != sizeof(b) || b.version != kVersion) return false;
-    *out = b.value;
-    return true;
-}
-
-template <typename T>
-esp_err_t save_blob(const char* key, const T& v) {
-    nvs_handle_t h;
-    esp_err_t err = nvs_open(kNs, NVS_READWRITE, &h);
-    if (err != ESP_OK) return err;
-    Blob<T> b{kVersion, v};
-    err = nvs_set_blob(h, key, &b, sizeof(b));
-    if (err == ESP_OK) err = nvs_commit(h);
-    nvs_close(h);
-    return err;
-}
 }  // namespace
 
 void load(motion::PumpConfig (&pumps)[kMaxPumps]) {
     // until the population is saved (and again after a factory reset): factory population
     s_factory = s_fitted = s_fitted_saved = load_factory_mask();
     if (s_factory != pins::kBoardMask) ESP_LOGI(TAG, "Factory population 0x%02x", s_factory);
-    nvs_handle_t h;
-    if (nvs_open(kNs, NVS_READONLY, &h) != ESP_OK) {
-        ESP_LOGI(TAG, "No stored hardware parameters, using defaults");
-        for (int i = 0; i < pins::kPumpCount; ++i)
-            if (!fitted(i)) ESP_LOGI(TAG, "Pump %d: not fitted", i + 1);
-        return;
-    }
     char key[12];
+    int stored = 0;
     for (int i = 0; i < kMaxPumps; ++i) {
         snprintf(key, sizeof(key), "pump%d", i);
-        load_blob(h, key, &pumps[i]);
+        if (nvs_blob::load(kNs, key, kVersion, &pumps[i])) ++stored;
     }
+    if (!stored) ESP_LOGI(TAG, "No stored hardware parameters, using defaults");
     uint8_t m = 0;
-    if (load_blob(h, "fitted", &m) && valid_mask(m)) s_fitted = s_fitted_saved = m;
-    nvs_close(h);
+    if (nvs_blob::load(kNs, "fitted", kVersion, &m) && valid_mask(m)) s_fitted = s_fitted_saved = m;
     for (int i = 0; i < pins::kPumpCount; ++i)
         if (!fitted(i)) ESP_LOGI(TAG, "Pump %d: not fitted", i + 1);
 }
@@ -116,7 +82,7 @@ uint8_t factory_fitted_mask() { return s_factory; }
 
 esp_err_t save_fitted(uint8_t mask) {
     if (!valid_mask(mask)) return ESP_ERR_INVALID_ARG;
-    const esp_err_t err = save_blob("fitted", mask);
+    const esp_err_t err = nvs_blob::save(kNs, "fitted", kVersion, mask);
     if (err == ESP_OK) s_fitted_saved = mask;
     return err;
 }
@@ -124,7 +90,7 @@ esp_err_t save_fitted(uint8_t mask) {
 esp_err_t save_pump(int pump, const motion::PumpConfig& cfg) {
     char key[12];
     snprintf(key, sizeof(key), "pump%d", pump);
-    return save_blob(key, cfg);
+    return nvs_blob::save(kNs, key, kVersion, cfg);
 }
 
 }  // namespace doser::hwconfig
