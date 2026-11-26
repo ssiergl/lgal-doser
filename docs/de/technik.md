@@ -536,7 +536,9 @@ Ablauf und Schutz:
   Laufzeit mit erreichbarem Webserver als gültig markiert.
 - Absturz, Watchdog oder fehlgeschlagener Health-Check vorher: automatischer
   **Rollback** auf die vorherige Firmware.
-- Die Pumpentreiber werden für die Dauer des Updates abgeschaltet.
+- Ab dem Moment, in dem ein Update angenommen ist, startet keine Dosis mehr: Eine manuelle bekommt
+  409 `locked`, eine geplante wartet (höchstens `max_delay_min`). Die Pumpentreiber werden für die
+  Dauer des Updates abgeschaltet.
 
 **Update-Quelle:** Eine feste Adresse für das Release-Manifest, z. B.
 `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`. Ab Werk aus
