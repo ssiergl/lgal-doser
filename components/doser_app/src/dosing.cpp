@@ -200,7 +200,9 @@ void finish(int i, bool fault) {
                          : j.aborted ? "aborted"
                          : (j.act == Activity::Priming && j.reason) ? j.reason
                                                                     : "success";
-    if (time_valid()) p.st.last_end = static_cast<uint32_t>(now_utc());
+    // only a dose reaches the aquarium: priming and calibration go into a glass
+    // or the measuring cup and start no lock time
+    if (j.act == Activity::Dosing && time_valid()) p.st.last_end = static_cast<uint32_t>(now_utc());
     dosing_store::save_state(i, p.st);
     p.last_result = result;
     p.last_act = j.act;
@@ -397,13 +399,13 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retr
     if (const char* e = precheck(pump)) return e;
     if ((trigger == Trigger::Schedule || trigger == Trigger::Boost) && p.set.mode != dose::Mode::Auto)
         return "pump_manual_only";
-    // Lock times: without a valid clock only running pumps count
+    // Lock times: the doses of the other pumps, without a valid clock only running ones
     const bool clock = time_valid();
     int64_t last_end[kN];
     bool running[kN];
     for (int q = 0; q < kN; ++q) {
         last_end[q] = clock ? s_p[q].st.last_end : 0;
-        running[q] = s_p[q].job.act != Activity::Idle;
+        running[q] = s_p[q].job.act == Activity::Dosing;
     }
     const int64_t start = clock ? now_utc() : 0;
     int by = -1;

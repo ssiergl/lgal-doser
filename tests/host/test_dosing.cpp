@@ -682,6 +682,42 @@ static void test_locks() {
     CHECK(rp.ul_per_rev > 0);
 }
 
+// Priming and calibration go into a glass or the measuring cup: they neither
+// wait for a lock time nor start one, only a dose holds the other pump
+static void test_locks_service() {
+    sim::reset();
+    sched::Locks l;
+    l.count = 1;
+    l.rules[0] = sched::LockRule{0, 1, 5};  // pump 1 <-> pump 2: 5 min
+    dosing::set_locks(l);
+    sim::now_us += 600 * 1000000LL;  // the doses of the tests before are over
+    // calibration of pump 2: pump 1 doses meanwhile and right after it
+    CHECK(dosing::calibrate_start(1) == nullptr);
+    CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(0) && sim::run_until_idle(1));
+    CHECK(dosing::status(1).calib_pending);
+    CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(0));
+    dosing::calibrate_cancel(1);
+    // priming of pump 2 likewise
+    CHECK(dosing::prime_start(1) == nullptr);
+    CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(dosing::prime_stop(1) == nullptr);
+    CHECK(sim::run_until_idle(1, 5) && sim::run_until_idle(0));
+    CHECK(dosing::dose(0, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK(sim::run_until_idle(0));
+    // a dose of pump 2 holds pump 1 while it runs and for the lock time after it
+    sim::now_us += 600 * 1000000LL;  // the doses of pump 1 are over
+    int64_t retry = 0;
+    CHECK(dosing::dose(1, 1000, dosing::Trigger::Manual) == nullptr);
+    CHECK_STR(dosing::dose(0, 1000, dosing::Trigger::Manual, -1, &retry), "collision_lock");
+    CHECK(retry == INT64_MAX);
+    CHECK(sim::run_until_idle(1));
+    CHECK_STR(dosing::dose(0, 1000, dosing::Trigger::Manual, -1, &retry), "collision_lock");
+    CHECK(retry == sched::lock_start(dosing::status(1).state.last_end) + 300);
+    dosing::set_locks(sched::Locks{});
+}
+
 // Direction and driver configuration: only while no job of the pump runs, and
 // saved before anything else changes
 static void test_pump_config() {
@@ -798,6 +834,7 @@ int main(int argc, char**) {
     test_retract_off();
     std::printf("Lock times between pumps\n");
     test_locks();
+    test_locks_service();
     std::printf("Direction and driver configuration\n");
     test_pump_config();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);

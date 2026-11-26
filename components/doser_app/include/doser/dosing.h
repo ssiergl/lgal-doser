@@ -116,8 +116,9 @@ const char* set_settings(int pump, const dose::PumpSettings& s, history::Source 
 // the configuration when it is configured again: it is saved anyway, and
 // *driver_err tells (otherwise ESP_OK).
 const char* set_pump_config(int pump, const motion::PumpConfig& cfg, esp_err_t* driver_err = nullptr);
-// Chemical lock times between pumps, checked on every dose (all triggers).
-// Priming and calibration are not affected (operator present, measuring cup).
+// Chemical lock times between pumps, checked on every dose (all triggers)
+// against the doses of the other pumps. Priming and calibration neither wait
+// for one nor start one: they go into a glass or the measuring cup.
 void set_locks(const sched::Locks& l);
 // Parameters for the run-time estimate of scheduled doses
 sched::RunParams run_params(int pump);
