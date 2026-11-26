@@ -89,10 +89,8 @@ struct CalibResult {
 CalibResult calibrate(uint32_t steps_run, uint32_t steps_per_rev, uint32_t measured_ul);
 
 // ---------------------------------------------------------------------------
-// Daily limit: pumped amount in hourly buckets (ring over 26 h).
-// Enough for "rolling 24 h" (incl. the started hour) and for a calendar
-// day with 25 hours (DST change). Boundaries are drawn conservatively:
-// a started hour at the window start counts in full.
+// Daily limit: pumped amount in hourly buckets (ring over 26 h), enough for
+// a calendar day with 25 hours (DST change).
 struct Ledger {
     static constexpr int kBuckets = 26;
     uint32_t newest_hour;            // UTC hour (utc / 3600) of the newest bucket
@@ -104,8 +102,12 @@ struct Ledger {
     // sum of all buckets from hour from_hour (inclusive), including "future" ones
     uint32_t sum_from(uint32_t from_hour) const;
 };
-// First hour of the limit window. local_midnight_utc: start of the local
-// calendar day in UTC (only for CalendarDay).
+// First hour of the limit window:
+// - CalendarDay: the hour in which local midnight lies (local_midnight_utc:
+//   start of the local calendar day in UTC); a started hour counts in full
+// - Rolling24h: the hours started within the last 24 h, the current one and
+//   the 23 before it. A dose drops out 23 to 24 h later, before the dose at
+//   the same time on the next day.
 uint32_t window_start_hour(LimitMode m, int64_t now_utc, int64_t local_midnight_utc);
 
 // ---------------------------------------------------------------------------

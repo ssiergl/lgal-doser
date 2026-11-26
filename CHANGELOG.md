@@ -38,7 +38,7 @@ and on board v1.0.
 - Calibration per pump with a wizard and reminder, retract against dripping, tube priming with
   a dead-man switch in the wizard (no card of its own, so nothing runs by accident).
 - Container tracking with range in days, warning and alarm threshold per pump.
-- Hard daily limit per pump, tube operating hours.
+- Hard daily limit per pump (calendar day or rolling 24 h), tube operating hours.
 
 ### Schedule
 

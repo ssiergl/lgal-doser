@@ -704,6 +704,62 @@ static void test_forecast_interval() {
     CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
 }
 
+// Pump 4 until a time: amount dosed and doses skipped
+struct Runs {
+    uint64_t ul;
+    int skipped;
+};
+static Runs run_pump4_until(int64_t t) {
+    const uint64_t b = total(3);
+    const size_t e0 = sim::events.size();
+    sim::run_until(t);
+    int skipped = 0;
+    for (size_t i = e0; i < sim::events.size(); ++i)
+        if (sim::events[i].kind == history::Kind::Skip && sim::events[i].pump == 4) ++skipped;
+    return {total(3) - b, skipped};
+}
+
+// A daily limit as large as the daily amount of the plan lets every dose run.
+// Rolling 24 h counts the hours started within the last 24 h, so that
+// yesterday's dose at the same time no longer counts. Only on the day the
+// clocks go forward are two doses at the same time 23 h apart: one of them is
+// skipped (documented).
+static void test_limit_window() {
+    auto set = dosing::settings(3);
+    set.daily_limit_ul = 1000;
+    CHECK(dosing::set_settings(3, set) == nullptr);
+    auto eng = dosing::engineering();
+    eng.limit_mode = dose::LimitMode::Rolling24h;
+    CHECK(dosing::set_engineering(eng) == nullptr);
+    // rolling 24 h: 1 ml once a day (in 15 to 20 min)
+    dosing::clear_today();
+    const int64_t local_now = tz::to_local(g_zone, sim::utc());
+    const uint16_t slot = static_cast<uint16_t>((local_now % 86400 / 60 + 15) / 5 * 5 % 1440);
+    CHECK(scheduler::set_schedule(3, plan({single(slot, 1000)})) == nullptr);
+    Runs r = run_pump4_until(scheduler::status(3).next_utc + 3 * 86400 + 60);
+    CHECK(r.ul == 4000 && r.skipped == 0);
+    // rolling 24 h: 0.5 ml at 08:00 and at 20:00
+    dosing::clear_today();
+    CHECK(scheduler::set_schedule(3, plan({single(480, 500), single(1200, 500)})) == nullptr);
+    r = run_pump4_until(scheduler::status(3).next_utc + 2 * 86400 + 60);
+    CHECK(r.ul == 2500 && r.skipped == 0);
+    // rolling 24 h, 1 ml at 08:00 around the day the clocks go forward (Sunday 28 March 2027):
+    // only that dose is skipped
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+    sim::set_utc(tz::to_utc(g_zone, civil::to_unix({2027, 3, 26, 12, 0, 0, 0})));
+    sim::run_for(2);
+    dosing::clear_today();
+    CHECK(scheduler::set_schedule(3, plan({single(480, 1000)})) == nullptr);
+    r = run_pump4_until(tz::to_utc(g_zone, civil::to_unix({2027, 3, 30, 8, 1, 0, 0})));
+    CHECK(r.ul == 3000 && r.skipped == 1);
+    CHECK(is_code(sim::last_event(history::Kind::Skip, 4), "daily_limit"));
+    eng.limit_mode = dose::LimitMode::CalendarDay;
+    CHECK(dosing::set_engineering(eng) == nullptr);
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+    set.daily_limit_ul = 0;
+    CHECK(dosing::set_settings(3, set) == nullptr);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -750,6 +806,8 @@ int main(int argc, char**) {
     test_next_far_ahead();
     std::printf("Scheduler: range of an interval plan\n");
     test_forecast_interval();
+    std::printf("Scheduler: daily limit window\n");
+    test_limit_window();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

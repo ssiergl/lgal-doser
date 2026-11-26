@@ -323,11 +323,15 @@ static void test_ledger() {
     l.add(t0, 1000);
     l.add(t0 + 600, 500);  // same hour
     CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 600, 0)) == 1500);
-    // 23 h later: still in the rolling window, 25 h later no longer
+    // Rolling 24 h: the hours started within the last 24 h. The doses of 12:30 still count until
+    // 11:59:59 on the next day and no longer from 12:00, so that a dose at the same time on the
+    // next day does not meet them.
+    const int64_t next_noon = t0 - 1815 + 24 * 3600;  // 2026-11-07 12:00 UTC
     CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 23 * 3600, 0)) == 1500);
-    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 24 * 3600, 0)) == 1500);  // started hour: conservative
-    l.add(t0 + 25 * 3600 + 3599, 0);
-    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 25 * 3600 + 3599, 0)) == 0);
+    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, next_noon - 1, 0)) == 1500);
+    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, next_noon, 0)) == 0);
+    l.add(next_noon + 1815, 800);
+    CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, next_noon + 1815, 0)) == 800);
     // Calendar day (CET): local midnight = 23:00 UTC of the previous day
     Ledger d{};
     const int64_t midnight = 1793919600;  // 2026-11-06 00:00 CET

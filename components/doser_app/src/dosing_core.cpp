@@ -133,7 +133,7 @@ uint32_t Ledger::sum_from(uint32_t from_hour) const {
 
 uint32_t window_start_hour(LimitMode m, int64_t now_utc, int64_t local_midnight_utc) {
     const uint32_t now_h = hour_of(now_utc);
-    if (m == LimitMode::Rolling24h) return now_h >= 24 ? now_h - 24 : 0;
+    if (m == LimitMode::Rolling24h) return now_h >= 23 ? now_h - 23 : 0;
     // Round down: with half-hour time zones the started hour counts too
     return hour_of(local_midnight_utc);
 }
