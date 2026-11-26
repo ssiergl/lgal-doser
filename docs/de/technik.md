@@ -738,7 +738,7 @@ der Weboberfläche.
 | POST | `/api/v1/pumps/prime?pump=1&action=start\|beat\|stop` | Entlüften mit Totmann-Heartbeat (besser per WebSocket); `stop` beendet nur das Entlüften, eine laufende Dosis oder Kalibrierung läuft weiter (nichts zu stoppen: trotzdem 200) |
 | GET | `/api/v1/ws` | WebSocket: Status-Push und Entlüften (siehe [WebSocket](#websocket-m4)) |
 | POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=10]` | Kalibrierlauf; danach `action=apply&measured_ml=…` oder `cancel` |
-| POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (Umdrehungen, `off` = 0 = aus, `global` = Service-Wert; ab Werk aus), `direction=cw\|ccw` (Drehrichtung von vorne gesehen, über `GCONF.shaft`, ab Werk `cw`; nur im Stillstand, sonst 409 `pump_busy`), `warn_days`/`low_days` (eigene Behälter-Schwellen in Tagen Reichweite, 0 = Service-Standard; Alarm höchstens gleich Warnung), `remind_months` (Kalibrier-Erinnerung 0–24 Monate, 0 = aus) |
+| POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (Umdrehungen, `off` = 0 = aus, `global` = Service-Wert; ab Werk aus), `direction=cw\|ccw` (Drehrichtung von vorne gesehen, über `GCONF.shaft`, ab Werk `cw`; nur solange kein Auftrag der Pumpe läuft, auch nicht zwischen seinen Fahrten, sonst 409 `pump_busy`; vor den übrigen Parametern angewendet und gespeichert, die unverändert bleiben, wenn das scheitert), `warn_days`/`low_days` (eigene Behälter-Schwellen in Tagen Reichweite, 0 = Service-Standard; Alarm höchstens gleich Warnung), `remind_months` (Kalibrier-Erinnerung 0–24 Monate, 0 = aus) |
 | POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (nur Kapazität = neuer, voller Behälter; jeweils höchstens 100 l, der Restinhalt höchstens die Kapazität) |
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | Schlauchzähler setzen/zurücksetzen; `hours=0` = neuer Schlauch: `calibration.tube_changed` bleibt `true` bis zur nächsten Kalibrierung |
 | GET | `/api/v1/history?…` | Ereignisse, neueste zuerst: `pump=1..5`, `kind=dose,skip,…`, `days=1..90`, oder `from_date`/`to_date` (`YYYY-MM-DD`, Ortstage, beide einschließlich, höchstens 90 Tage), oder `from`/`to` in UTC-Sekunden, `limit=1..500` (100), `offset` → `{"events":[…],"more"}` (siehe [Historie](#historie-m6)) |
@@ -762,7 +762,7 @@ der Weboberfläche.
 | POST | `/api/v1/hw/channels?pumps=1,2,3,4` | Bestückung speichern (mindestens eine Pumpe), wirkt nach einem Neustart |
 | POST | `/api/v1/hw/pump/run?pump=1&steps=±N&sps=N` | Raw-Fahrt (optional `accel`, `vstart`, `force=1`) |
 | POST | `/api/v1/hw/pump/stop?pump=0..5&mode=soft\|hard` | Stopp (0 = alle) |
-| POST | `/api/v1/hw/pump/config?pump=1&run_ma=…` | `run_ma`, `hold_ma`, `microsteps`, `full_steps`, `invert`, `accel`, `vstart` |
+| POST | `/api/v1/hw/pump/config?pump=1&run_ma=…` | `run_ma`, `hold_ma`, `microsteps`, `full_steps`, `invert`, `accel`, `vstart`; nur solange kein Auftrag der Pumpe läuft (409 `pump_busy`). Auch gespeichert, wenn der Treiber nicht antwortet (502 `driver_config_failed`, er bekommt die Werte, sobald er wieder konfiguriert wird); lassen sie sich nicht speichern, bleiben die alten Werte (500 `storage_error`) |
 | GET | `/api/v1/hw/tmc?pump=1` | TMC2209-Rohregister |
 | POST | `/api/v1/hw/time?utc=…` | Zeit manuell setzen (System + RTC) |
 | POST | `/api/v1/hw/rtc/aging?offset=…` | DS3231 Aging-Offset von Hand (−128…127), nur ohne Zeitserver (sonst 409 `ntp_active`: automatischer Abgleich) |
