@@ -46,12 +46,15 @@ constexpr uint8_t kAddr = 0x57;
 constexpr size_t kSize = 4096;
 constexpr size_t kPage = 32;
 
+// One access at a time: a read, a write (all its pages) or the erase
 esp_err_t init();
 bool present();
 esp_err_t read(uint16_t addr, void* data, size_t len);
 esp_err_t write(uint16_t addr, const void* data, size_t len);
 // Write/read test on the last page, content is restored
 esp_err_t self_test();
-// Whole EEPROM to 0xFF (factory reset)
+// Whole EEPROM to 0xFF (factory reset). Every later write is refused
+// (ESP_ERR_INVALID_STATE) until the restart: what a task still saves must not
+// bring an old state back.
 esp_err_t erase();
 }  // namespace doser::eeprom

@@ -23,7 +23,7 @@ brand/                  brand repository as Git submodule: the logo (not GPL, se
 main/                   wiring of the components (app_main)
 tools/                  provision.py, ap_password.py, ota_upload.py, acceptance.py, endurance.py, release.sh, make_manifest.py, channel_manifest.py, release_notes.py, third_party_notices.py, sbom.py, mock/ (device mock for the web UI)
 tests/host/             host tests (TMC protocol, current, ramp, calendar, time zones, JSON, dosing and schedule logic, LED alarms, history, backup, MQTT/Home Assistant, update manifest),
-                        the pump lock while a move starts (real threads) and simulation of dosing engine and scheduler (`tests/host/run.sh`)
+                        the pump lock while a move starts and the EEPROM erased during a write (real threads), simulation of dosing engine and scheduler (`tests/host/run.sh`)
 tests/fuzz/             fuzzers for all parsers of external input (`tests/fuzz/run.sh`)
 tests/i18n/, tools/, size/, lint/  translations, Python tools, image size, ESLint and cppcheck (see Checks)
 tests/e2e/              end-to-end tests of the web UI in Chromium against the mock (Playwright, see Checks)

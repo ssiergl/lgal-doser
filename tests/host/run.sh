@@ -117,6 +117,18 @@ $CXX -pthread \
 "$OUT/motion" $1
 
 echo
+# EEPROM driver against a simulated AT24C32 with real threads (erase during a write)
+$CXX -pthread \
+    '-DLGAL_BOARD_HEADER="doser/boards/d5v1.h"' \
+    -I tests/host/stubs_threads \
+    -I tests/host/stubs \
+    -I components/doser_hal/include \
+    tests/host/test_eeprom.cpp \
+    components/doser_hal/src/i2c_devices.cpp \
+    -o "$OUT/eeprom"
+"$OUT/eeprom" $1
+
+echo
 # Dosing engine unchanged against simulated motor/storage (stubs first)
 $CXX \
     -I tests/host/stubs \

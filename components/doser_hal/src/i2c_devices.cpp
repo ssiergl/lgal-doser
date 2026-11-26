@@ -17,6 +17,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 
 namespace doser {
@@ -223,6 +224,16 @@ esp_err_t set_aging(int8_t offset) {
 // ---------------------------------------------------------------------------
 namespace eeprom {
 namespace {
+// One access at a time: a read does not run into the write cycle of another
+// task's write, and a write does not mix its pages with the erase
+SemaphoreHandle_t s_mx = nullptr;
+bool s_erased = false;  // no write after the erase (factory reset) until the restart
+
+struct Excl {
+    Excl() { xSemaphoreTake(s_mx, portMAX_DELAY); }
+    ~Excl() { xSemaphoreGive(s_mx); }
+};
+
 esp_err_t wait_ready() {
     // Write cycle max. 10 ms; the chip only answers again afterwards (ACK polling)
     for (int i = 0; i < 20; ++i) {
@@ -231,32 +242,8 @@ esp_err_t wait_ready() {
     }
     return ESP_ERR_TIMEOUT;
 }
-}  // namespace
 
-esp_err_t init() {
-    ESP_RETURN_ON_ERROR(i2c::init(), TAG, "bus");
-    if (!i2c::probe(kAddr)) {
-        ESP_LOGW(TAG, "AT24C32 (0x57) not found");
-        return ESP_ERR_NOT_FOUND;
-    }
-    ESP_RETURN_ON_ERROR(add_device(kAddr, &s_eeprom), TAG, "eeprom dev");
-    ESP_LOGI(TAG, "AT24C32 found");
-    return ESP_OK;
-}
-
-bool present() { return s_eeprom != nullptr; }
-
-esp_err_t read(uint16_t addr, void* data, size_t len) {
-    if (!s_eeprom) return ESP_ERR_INVALID_STATE;
-    if (addr + len > kSize) return ESP_ERR_INVALID_SIZE;
-    const uint8_t a[2] = {static_cast<uint8_t>(addr >> 8), static_cast<uint8_t>(addr)};
-    return i2c_master_transmit_receive(s_eeprom, a, 2, static_cast<uint8_t*>(data), len, kTimeoutMs);
-}
-
-esp_err_t write(uint16_t addr, const void* data, size_t len) {
-    if (!s_eeprom) return ESP_ERR_INVALID_STATE;
-    if (addr + len > kSize) return ESP_ERR_INVALID_SIZE;
-    const auto* src = static_cast<const uint8_t*>(data);
+esp_err_t write_pages(uint16_t addr, const uint8_t* src, size_t len) {
     while (len) {
         // Page writes must not cross a 32-byte boundary
         const size_t chunk = std::min(len, kPage - (addr % kPage));
@@ -272,11 +259,46 @@ esp_err_t write(uint16_t addr, const void* data, size_t len) {
     }
     return ESP_OK;
 }
+}  // namespace
+
+esp_err_t init() {
+    ESP_RETURN_ON_ERROR(i2c::init(), TAG, "bus");
+    if (!i2c::probe(kAddr)) {
+        ESP_LOGW(TAG, "AT24C32 (0x57) not found");
+        return ESP_ERR_NOT_FOUND;
+    }
+    if (!s_mx && !(s_mx = xSemaphoreCreateMutex())) return ESP_ERR_NO_MEM;
+    ESP_RETURN_ON_ERROR(add_device(kAddr, &s_eeprom), TAG, "eeprom dev");
+    ESP_LOGI(TAG, "AT24C32 found");
+    return ESP_OK;
+}
+
+bool present() { return s_eeprom != nullptr; }
+
+esp_err_t read(uint16_t addr, void* data, size_t len) {
+    if (!s_eeprom) return ESP_ERR_INVALID_STATE;
+    if (addr + len > kSize) return ESP_ERR_INVALID_SIZE;
+    const uint8_t a[2] = {static_cast<uint8_t>(addr >> 8), static_cast<uint8_t>(addr)};
+    Excl x;
+    return i2c_master_transmit_receive(s_eeprom, a, 2, static_cast<uint8_t*>(data), len, kTimeoutMs);
+}
+
+esp_err_t write(uint16_t addr, const void* data, size_t len) {
+    if (!s_eeprom) return ESP_ERR_INVALID_STATE;
+    if (addr + len > kSize) return ESP_ERR_INVALID_SIZE;
+    Excl x;
+    if (s_erased) return ESP_ERR_INVALID_STATE;
+    return write_pages(addr, static_cast<const uint8_t*>(data), len);
+}
 
 esp_err_t erase() {
+    if (!s_eeprom) return ESP_ERR_INVALID_STATE;
+    Excl x;
+    s_erased = true;  // also if a page fails: the reset goes on
     uint8_t ff[kPage];
     std::memset(ff, 0xFF, sizeof(ff));
-    for (size_t a = 0; a < kSize; a += kPage) ESP_RETURN_ON_ERROR(write(static_cast<uint16_t>(a), ff, kPage), TAG, "erase");
+    for (size_t a = 0; a < kSize; a += kPage)
+        ESP_RETURN_ON_ERROR(write_pages(static_cast<uint16_t>(a), ff, kPage), TAG, "erase");
     return ESP_OK;
 }
 
