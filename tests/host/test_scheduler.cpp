@@ -512,7 +512,7 @@ static void test_events() {
     std::strcpy(set.name, "Kalium");
     CHECK(dosing::set_settings(3, set, Source::Manual) == nullptr);
     CHECK(count_events(Kind::Settings) == others + 1);
-    CHECK(dosing::set_settings(3, set, Source::Manual, true) == nullptr);  // direction changed
+    CHECK(dosing::set_settings(3, set, Source::Manual, dosing::Direction::Ccw) == nullptr);  // direction changed
     CHECK(count_events(Kind::Settings) == others + 2);
     const size_t modes = count_events(Kind::Mode);
     set.mode = dose::Mode::Auto;

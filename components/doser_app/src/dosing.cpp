@@ -567,30 +567,63 @@ int32_t settings_changes(const dose::PumpSettings& a, const dose::PumpSettings& 
     if (a.recal_months != b.recal_months) m |= history::kChReminder;
     return m;
 }
+
+// set_pump_config() with the Guard held: between two moves of a job the motor
+// stands still, so only the job tells that the pump is busy
+const char* apply_config(int i, const motion::PumpConfig& cfg, esp_err_t* driver_err) {
+    if (s_p[i].job.act != Activity::Idle) return "pump_busy";
+    const auto old = motion::config(i);
+    const esp_err_t err = motion::set_config(i, cfg);
+    if (err == ESP_ERR_INVALID_ARG) return "invalid_param";
+    if (err == ESP_ERR_INVALID_STATE) return "pump_busy";  // a raw move of the engineering page
+    if (hwconfig::save_pump(i, cfg) != ESP_OK) {
+        motion::set_config(i, old);  // otherwise it would go back unnoticed at the next start
+        return "storage_error";
+    }
+    if (driver_err) *driver_err = err;
+    return nullptr;
+}
 }  // namespace
 
-const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source, int turned) {
+const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source, Direction dir) {
     if (!valid_pump(pump)) return "invalid_param";
     if (s.speed_tier >= dose::kTiers || s.retract_mrev < -1 || s.retract_mrev > 2000 ||
         s.daily_limit_ul > 10000000 || s.capacity_ul > dose::kMaxContainerUl || !dose::valid_ul_per_rev(s.ul_per_rev) ||
-        s.mode > dose::Mode::Disabled || s.warn_days > 60 || s.low_days > 60 || s.recal_months > dose::kMaxRecalMonths)
+        s.mode > dose::Mode::Disabled || s.warn_days > 60 || s.low_days > 60 || s.recal_months > dose::kMaxRecalMonths ||
+        dir > Direction::Ccw)
         return "invalid_param";
     Guard g;
     // the alarm threshold may not lie above the warning one
     if (dose::low_days(s, s_eng) > dose::warn_days(s, s_eng)) return "invalid_param";
     Pump& p = s_p[pump];
+    // the direction first: the settings follow only when it is in effect
+    int32_t turned = 0;  // its history bits
+    if (dir != Direction::Keep) {
+        auto cfg = motion::config(pump);
+        const bool ccw = dir == Direction::Ccw;
+        if (cfg.driver.invert != ccw) {
+            cfg.driver.invert = ccw;
+            if (const char* e = apply_config(pump, cfg, nullptr)) return e;
+            turned = history::kChDirection | (ccw ? int32_t(history::kChNowCcw) : 0);
+        }
+    }
     const dose::PumpSettings before = p.set;
     p.set = s;
     p.set.name[sizeof(p.set.name) - 1] = 0;
-    if (dosing_store::save_settings(pump, p.set) != ESP_OK) return "storage_error";
+    const bool saved = dosing_store::save_settings(pump, p.set) == ESP_OK;
     if (source != history::Source::None) {
-        if (before.mode != p.set.mode)
+        if (saved && before.mode != p.set.mode)
             history::note(history::Kind::Mode, pump, source, "set", 0, 0, static_cast<int32_t>(p.set.mode));
-        int32_t changed = settings_changes(before, p.set);
-        if (turned) changed |= history::kChDirection | (turned == 2 ? int32_t(history::kChNowCcw) : 0);
+        const int32_t changed = (saved ? settings_changes(before, p.set) : 0) | turned;
         if (changed) history::note(history::Kind::Settings, pump, source, "set", 0, 0, changed);
     }
-    return nullptr;
+    return saved ? nullptr : "storage_error";
+}
+
+const char* set_pump_config(int pump, const motion::PumpConfig& cfg, esp_err_t* driver_err) {
+    if (!valid_pump(pump)) return "invalid_param";
+    Guard g;
+    return apply_config(pump, cfg, driver_err);
 }
 
 void set_locks(const sched::Locks& l) {

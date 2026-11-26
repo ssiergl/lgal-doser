@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "doser/dosing.h"
 #include "doser/event_source.h"
 #include "doser/hwconfig.h"
 #include "doser/i2c_devices.h"
@@ -257,10 +258,12 @@ esp_err_t post_pump_config(httpd_req_t* req) {
     if (http::query_int(req, "invert", &v)) c.driver.invert = v != 0;
     if (http::query_int(req, "accel", &v) && v >= 0) c.accel = static_cast<uint32_t>(v);
     if (http::query_int(req, "vstart", &v) && v >= 0) c.v_start = static_cast<uint32_t>(v);
-    const esp_err_t err = motion::set_config(p, c);
-    if (err == ESP_ERR_INVALID_ARG) return bad(req, "Invalid (current 50..1500 mA, hold <= run, microsteps 1..256)");
-    if (err == ESP_ERR_INVALID_STATE) return http::send_error(req, "409 Conflict", "pump_busy", "Pump is running");
-    hwconfig::save_pump(p, c);
+    esp_err_t err = ESP_OK;
+    if (const char* e = dosing::set_pump_config(p, c, &err)) {
+        if (!std::strcmp(e, "invalid_param")) return bad(req, "Invalid (current 50..1500 mA, hold <= run, microsteps 1..256)");
+        if (!std::strcmp(e, "pump_busy")) return http::send_error(req, "409 Conflict", e, "Pump is running");
+        return http::send_error(req, "500 Internal Server Error", e, "Could not save, the old values stay");
+    }
     note_system(req, "engineering");
     if (err != ESP_OK) return http::send_error(req, "502 Bad Gateway", "driver_config_failed", "Saved, but driver could not be configured");
     return http::send_json(req, "{\"status\":\"ok\"}");

@@ -329,26 +329,15 @@ esp_err_t post_settings(httpd_req_t* req) {
         if (v < 0 || v > 60) return fail(req, "invalid_param", "low_days=0..60");
         s.low_days = static_cast<uint8_t>(v);
     }
-    // Direction is the driver's GCONF.shaft (DIR is wired to GND); it can
-    // only change while the pump stands still.
-    auto mc = motion::config(p);
-    bool turn = false;
+    // Direction is the driver's GCONF.shaft (DIR is wired to GND); the engine
+    // changes it only while no job of the pump runs, before the settings.
+    auto dir = dosing::Direction::Keep;
     if (http::query_str(req, "direction", buf, sizeof(buf))) {
-        const bool ccw = std::strcmp(buf, "ccw") == 0;
-        if (!ccw && std::strcmp(buf, "cw") != 0) return fail(req, "invalid_param", "direction=cw|ccw");
-        turn = ccw != mc.driver.invert;
-        mc.driver.invert = ccw;
-        if (turn && motion::status(p).running) return fail(req, "pump_busy");
+        if (!std::strcmp(buf, "cw")) dir = dosing::Direction::Cw;
+        else if (!std::strcmp(buf, "ccw")) dir = dosing::Direction::Ccw;
+        else return fail(req, "invalid_param", "direction=cw|ccw");
     }
-    if (const char* e = dosing::set_settings(p, s, source_of(req), turn ? (mc.driver.invert ? 2 : 1) : 0))
-        return fail(req, e);
-    if (turn) {
-        const esp_err_t err = motion::set_config(p, mc);
-        if (err == ESP_ERR_INVALID_STATE) return fail(req, "pump_busy");
-        // Saved even if the driver does not answer: it gets the setting
-        // when it is configured again.
-        if (err != ESP_ERR_INVALID_ARG) hwconfig::save_pump(p, mc);
-    }
+    if (const char* e = dosing::set_settings(p, s, source_of(req), dir)) return fail(req, e);
     return ok(req);
 }
 

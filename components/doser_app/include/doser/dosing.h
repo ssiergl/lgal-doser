@@ -22,11 +22,17 @@
 #include "doser/schedule_core.h"
 #include "esp_err.h"
 
+namespace doser::motion {
+struct PumpConfig;
+}
+
 namespace doser::dosing {
 
 enum class Activity : uint8_t { Idle, Dosing, Priming, Calibrating };
 enum class Phase : uint8_t { None, Unretract, Main, Retract };
 enum class Trigger : uint8_t { Manual, Api, Schedule, Boost, Mqtt };
+// Direction of rotation seen from the front (driver GCONF.shaft, DIR is wired to GND)
+enum class Direction : uint8_t { Keep, Cw, Ccw };
 
 const char* activity_str(Activity a);
 const char* phase_str(Phase p);
@@ -95,12 +101,21 @@ void clear_today();
 void stop_all();
 
 // Records a mode change (history "mode") and any other change ("settings",
-// with the groups that changed). turned: the direction, which is not in
-// PumpSettings, changed with it (0 = no, 1 = now clockwise, 2 = now
-// counter-clockwise). source None records nothing (backup restore logs on
-// its own).
+// with the groups that changed). source None records nothing (backup restore
+// logs on its own). dir: the direction, which is not in PumpSettings but in
+// the driver configuration, as set_pump_config() changes it; it comes first,
+// and the settings are only saved when it is in effect. If they cannot be
+// saved then, the new direction is still recorded.
 const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source = history::Source::None,
-                         int turned = 0);
+                         Direction dir = Direction::Keep);
+// Driver configuration of a pump (currents, microsteps, direction, ramp):
+// applied and saved under the lock of the engine, so that no job of the pump
+// starts or moves on to its next move meanwhile. "pump_busy" while a job of
+// the pump runs (also between its moves), "invalid_param", "storage_error"
+// (the old configuration stays in effect). A driver that does not answer gets
+// the configuration when it is configured again: it is saved anyway, and
+// *driver_err tells (otherwise ESP_OK).
+const char* set_pump_config(int pump, const motion::PumpConfig& cfg, esp_err_t* driver_err = nullptr);
 // Chemical lock times between pumps, checked on every dose (all triggers).
 // Priming and calibration are not affected (operator present, measuring cup).
 void set_locks(const sched::Locks& l);

@@ -682,6 +682,82 @@ static void test_locks() {
     CHECK(rp.ul_per_rev > 0);
 }
 
+// Direction and driver configuration: only while no job of the pump runs, and
+// saved before anything else changes
+static void test_pump_config() {
+    sim::reset();
+    using history::Kind;
+    using history::Source;
+    const int p = 2;
+    auto s = dosing::settings(p);
+    // 1. idle: turned, saved and recorded together with the other settings
+    std::strcpy(s.name, "Mg");
+    CHECK(dosing::set_settings(p, s, Source::Api, dosing::Direction::Ccw) == nullptr);
+    CHECK(sim::config[p].driver.invert && sim::hw_saved[p].driver.invert);
+    auto* e = sim::last_event(Kind::Settings, p + 1);
+    CHECK(e && e->value == (history::kChName | history::kChDirection | history::kChNowCcw));
+    int saves = sim::hw_saves[p];
+    CHECK(dosing::set_settings(p, s, Source::Api, dosing::Direction::Ccw) == nullptr);  // already so
+    CHECK(sim::hw_saves[p] == saves && sim::events.size() == 1);
+    CHECK_STR(dosing::set_settings(p, s, Source::Api, static_cast<dosing::Direction>(3)), "invalid_param");
+
+    // 2. between two moves of a dose the motor stands still, the job goes on
+    CHECK(dosing::dose(p, 1000, dosing::Trigger::Manual) == nullptr);
+    while (sim::motor[p].running) sim::advance(20000);  // the first move ends, the engine has not ticked yet
+    CHECK(dosing::status(p).activity == dosing::Activity::Dosing && sim::motor[p].moves.size() == 1);
+    const size_t events = sim::events.size();
+    auto other = s;
+    other.name[0] = 0;
+    CHECK_STR(dosing::set_settings(p, other, Source::Api, dosing::Direction::Cw), "pump_busy");
+    auto c = sim::config[p];
+    c.driver.run_ma = 700;
+    CHECK_STR(dosing::set_pump_config(p, c), "pump_busy");
+    CHECK(sim::config[p].driver.invert && sim::config[p].driver.run_ma == 600 && sim::hw_saves[p] == saves);
+    CHECK(std::strcmp(dosing::settings(p).name, "Mg") == 0 && sim::events.size() == events);
+    CHECK(sim::run_until_idle(p));
+    CHECK_STR(dosing::status(p).last_result, "success");
+    CHECK(dosing::set_settings(p, other, Source::Api, dosing::Direction::Cw) == nullptr);  // now it may
+    CHECK(!sim::config[p].driver.invert && !sim::hw_saved[p].driver.invert);
+    e = sim::last_event(Kind::Settings, p + 1);
+    CHECK(e && e->value == (history::kChName | history::kChDirection));
+
+    // 3. a raw move of the engineering page is no job, but the motor runs
+    sim::motor[p].running = true;
+    CHECK_STR(dosing::set_pump_config(p, c), "pump_busy");
+    sim::motor[p].running = false;
+
+    // 4. the driver configuration cannot be saved: the old one stays in effect, nothing else changes
+    sim::hw_err = ESP_FAIL;
+    const size_t before = sim::events.size();
+    CHECK_STR(dosing::set_settings(p, s, Source::Api, dosing::Direction::Ccw), "storage_error");
+    CHECK_STR(dosing::set_pump_config(p, c), "storage_error");
+    CHECK(!sim::config[p].driver.invert && sim::config[p].driver.run_ma == 600);
+    CHECK(dosing::settings(p).name[0] == 0 && sim::events.size() == before);
+    sim::hw_err = ESP_OK;
+
+    // 5. the settings cannot be saved after turning: the direction stays and is recorded
+    sim::settings_err = ESP_FAIL;
+    CHECK_STR(dosing::set_settings(p, s, Source::Api, dosing::Direction::Ccw), "storage_error");
+    CHECK(sim::config[p].driver.invert && sim::hw_saved[p].driver.invert);
+    e = sim::last_event(Kind::Settings, p + 1);
+    CHECK(sim::events.size() == before + 1 && e && e->value == (history::kChDirection | history::kChNowCcw));
+    sim::settings_err = ESP_OK;
+
+    // 6. invalid values; a driver that does not answer gets them later, they are saved
+    c = sim::config[p];
+    c.driver.hold_ma = c.driver.run_ma + 1;
+    CHECK_STR(dosing::set_pump_config(p, c), "invalid_param");
+    c.driver.hold_ma = 0;
+    c.driver.run_ma = 700;
+    sim::driver_err = ESP_ERR_TIMEOUT;
+    esp_err_t drv = ESP_OK;
+    CHECK(dosing::set_pump_config(p, c, &drv) == nullptr && drv == ESP_ERR_TIMEOUT);
+    CHECK(sim::config[p].driver.run_ma == 700 && sim::hw_saved[p].driver.run_ma == 700);
+    sim::driver_err = ESP_OK;
+    CHECK(dosing::set_pump_config(p, c, &drv) == nullptr && drv == ESP_OK);
+    CHECK_STR(dosing::set_pump_config(5, c), "invalid_param");
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -722,6 +798,8 @@ int main(int argc, char**) {
     test_retract_off();
     std::printf("Lock times between pumps\n");
     test_locks();
+    std::printf("Direction and driver configuration\n");
+    test_pump_config();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

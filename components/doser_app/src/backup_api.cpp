@@ -146,10 +146,8 @@ esp_err_t post_backup(httpd_req_t* req) {
         if (const char* e = scheduler::set_config(d->scheduler)) return apply_failed(req, bk::kEngineering, e, applied);
         // a backup of a board with more pumps: only the pumps of this board
         for (int i = 0; i < hwconfig::board_pumps(); ++i) {
-            const esp_err_t e = motion::set_config(i, d->hw[i]);
-            if (e == ESP_ERR_INVALID_ARG || e == ESP_ERR_INVALID_STATE)
-                return apply_failed(req, bk::kEngineering, e == ESP_ERR_INVALID_STATE ? "pump_busy" : "invalid_param", applied);
-            hwconfig::save_pump(i, d->hw[i]);  // also when the driver did not answer
+            // saved also when the driver does not answer
+            if (const char* e = dosing::set_pump_config(i, d->hw[i])) return apply_failed(req, bk::kEngineering, e, applied);
         }
         // channel population: in effect after the next restart, limited to the
         // board (no pump of the backup on this board: unchanged)

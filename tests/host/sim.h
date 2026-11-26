@@ -45,6 +45,11 @@ Motor motor[5];
 bool locked = false;
 int saves[5];
 esp_err_t settings_err = ESP_OK;  // saving the settings fails (storage error)
+motion::PumpConfig config[5];     // driver configuration in effect
+motion::PumpConfig hw_saved[5];   // as saved last (hwconfig)
+int hw_saves[5];
+esp_err_t hw_err = ESP_OK;      // saving the driver configuration fails
+esp_err_t driver_err = ESP_OK;  // the driver does not answer when it is configured
 float boot_ul_per_rev[5];         // calibration in the stored settings at the start
 dose::PumpState stored[5];
 std::vector<history::Event> events;  // recorded history (utc 0 = "now" on the device)
@@ -120,9 +125,10 @@ void run_until(int64_t t) { run_for(static_cast<double>(t - utc()) + 0.5); }
 
 void reset() {
     for (auto& m : motor) m = Motor{};
+    for (auto& c : config) c = motion::PumpConfig{};
     locked = false;
     time_valid = true;
-    settings_err = ESP_OK;
+    settings_err = hw_err = driver_err = ESP_OK;
     events.clear();
 }
 
@@ -153,7 +159,7 @@ esp_err_t run(int pump, const Move& m) {
         s.fail_move = -1;
         return s.fail_err;
     }
-    if (m.sps == 0 || m.sps > PumpConfig{}.max_sps()) return ESP_ERR_INVALID_ARG;
+    if (m.sps == 0 || m.sps > sim::config[pump].max_sps()) return ESP_ERR_INVALID_ARG;
     s.moves.push_back(m.steps);
     if (m.steps == 0) return ESP_OK;
     s.running = true;
@@ -181,13 +187,29 @@ PumpStatus status(int pump) {
     st.configured = true;
     return st;
 }
-PumpConfig config(int) { return PumpConfig{}; }
+PumpConfig config(int pump) { return sim::config[pump]; }
+// as the motion layer: refused while the motor runs; a driver that does not
+// answer still takes the configuration for its next configuring
+esp_err_t set_config(int pump, const PumpConfig& cfg) {
+    if (tmc::mres_for(cfg.driver.microsteps) == 0xFF || cfg.driver.run_ma < 50 || cfg.driver.run_ma > 1500 ||
+        cfg.driver.hold_ma > cfg.driver.run_ma || cfg.full_steps == 0 || cfg.full_steps > 1000)
+        return ESP_ERR_INVALID_ARG;
+    if (sim::motor[pump].running) return ESP_ERR_INVALID_STATE;
+    sim::config[pump] = cfg;
+    return sim::driver_err;
+}
 }  // namespace doser::motion
 
 namespace doser::hwconfig {
 uint8_t g_fitted = 0x1F;  // channel population (tests change it)
 uint8_t fitted_mask() { return g_fitted; }
 bool fitted(int pump) { return pump >= 0 && pump < 5 && (g_fitted >> pump & 1); }
+esp_err_t save_pump(int pump, const motion::PumpConfig& cfg) {
+    if (sim::hw_err != ESP_OK) return sim::hw_err;
+    ++sim::hw_saves[pump];
+    sim::hw_saved[pump] = cfg;
+    return ESP_OK;
+}
 }  // namespace doser::hwconfig
 
 namespace lgal::timesync {
