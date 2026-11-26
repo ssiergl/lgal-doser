@@ -617,15 +617,21 @@ static void test_forecast() {
     CHECK(remaining_days(ps, none, 0, day, now, 500000) == 50.0f);
     CHECK(remaining_days(ps, none, 0, day, now, 0) == 0.0f);
     Boost b;
-    boost_start(b, 30000, 3, now, 12);
-    const float with_boost = remaining_days(ps, b, boost_end(b), day, now, 500000);  // 100 ml in 7 days
-    CHECK(with_boost > 34.9f && with_boost < 35.1f);
-    boost_start(b, 140000, 14, now, 56);  // half of it falls into the next 7 days
-    const float long_boost = remaining_days(ps, b, boost_end(b), day, now, 500000);  // 140 ml in 7 days
-    CHECK(long_boost > 24.9f && long_boost < 25.1f);
+    boost_start(b, 30000, 3, now, 12);  // 30 ml off the 500 ml, the rest at 10 ml per day
+    const float with_boost = remaining_days(ps, b, boost_end(b), day, now, 500000);
+    CHECK(with_boost > 46.9f && with_boost < 47.1f);
+    // 60 ml run dry with the boost's last dose in 3 days; 50 ml last 2.5 days at 20 ml per day
+    const float at_end = remaining_days(ps, b, boost_end(b), day, now, 60000);
+    CHECK(at_end > 2.99f && at_end < 3.01f);
+    const float dry = remaining_days(ps, b, boost_end(b), day, now, 50000);
+    CHECK(dry > 2.49f && dry < 2.51f);
+    CHECK(remaining_days(ps, b, 0, day, now, 20000) == 0.0f);  // end of the window unknown
+    boost_start(b, 140000, 14, now, 56);  // 360 ml left after it
+    const float long_boost = remaining_days(ps, b, boost_end(b), day, now, 500000);
+    CHECK(long_boost > 35.9f && long_boost < 36.1f);
     boost_start(b, 30000, 0, now, 12);  // window in doses, the last one in 3 days
     const float by_doses = remaining_days(ps, b, now + 3 * 86400, day, now, 500000);
-    CHECK(by_doses > 34.9f && by_doses < 35.1f);
+    CHECK(by_doses > 46.9f && by_doses < 47.1f);
     ps.days = weekdays(0x1F);  // Monday to Friday
     const float weekdays_only = remaining_days(ps, none, 0, day, now, 500000);
     CHECK(weekdays_only > 69.9f && weekdays_only < 70.1f);
@@ -648,6 +654,15 @@ static void test_forecast() {
     ps = at(480, 10000, every(kMaxInterval, day + 29));
     const float longest = remaining_days(ps, none, 0, day, now, 100000);
     CHECK(longest > 299.9f && longest < 300.1f);
+    // every 14 days with 6 ml over the next 2 doses (5 and 19 days ahead): 94 ml
+    // for the plan, the same on each day up to the first of them
+    ps = at(480, 10000, every(14, day + 5));
+    boost_start(b, 6000, 0, now, 2);
+    const int64_t last_boost = utc_of(2026, 11, 25, 8, 0);
+    for (int32_t d = day; d < day + 5; ++d) {
+        const float r = remaining_days(ps, b, last_boost, d, now + int64_t(d - day) * 86400, 100000);
+        CHECK(r > 131.5f && r < 131.7f);
+    }
 }
 
 static void test_same() {

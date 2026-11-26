@@ -165,15 +165,19 @@ def boost_json(i):
 
 def remaining_days(i):
     """Like sched::remaining_days: container / average per day over one period of the day rule (7 days, or N
-    for "every N days": the same from every day) plus the boost's part of the next 7 days"""
+    for "every N days": the same from every day); the rest of a running boost comes off the container first,
+    a container that runs dry before the boost ends lasts at both rates together"""
     day0 = dnum(time.strftime("%Y-%m-%d")); days = SCHED[i]["days"]
     period = days["every"] if days["mode"] == "interval" else 7
     per_day = sum(u for k in range(period) for _, u in slots_on(i, day0 + k)) / 1000 / period
-    b = BOOST[i]
-    if b:
-        left = boost_end(b) - time.time()
-        if left > 0: per_day += b["remaining_ml"] * min(1, 7 * 86400 / left) / 7
-    return round(P[i]["remaining"] / per_day, 1) if per_day > 0 else None
+    if per_day <= 0: return None
+    rest, b, now = P[i]["remaining"], BOOST[i], time.time()
+    if rest <= 0: return 0.0
+    if b and now <= boost_end(b) and boost_share(i) > 0:  # running, as "active" in boost_json
+        boost, window = b["remaining_ml"], max(boost_end(b) - now, 0) / 86400
+        if rest < boost + per_day * window: return round(rest / (per_day + boost / window), 1) if window > 0 else 0.0
+        rest -= boost
+    return round(rest / per_day, 1)
 
 def sched_json(i):
     sl = today_slots(i)

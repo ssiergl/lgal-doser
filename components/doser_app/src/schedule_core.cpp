@@ -587,14 +587,21 @@ float remaining_days(const PumpSchedule& s, const Boost& b, int64_t boost_until,
     const int period = s.days.mode == DayMode::Interval ? std::max<int>(s.days.interval, 1) : 7;
     double planned = 0;
     for (int32_t d = today; d < today + period; ++d) planned += day_total(s, d);
-    double per_day = planned / period;
-    if (boost_active(b, now)) {  // the part of the rest that falls into the next 7 days
-        const double left = double(boost_until - now), week = 7.0 * 86400;
-        per_day += (left <= week ? b.remaining_ul : b.remaining_ul * week / left) / 7;
-    }
+    const double per_day = planned / period;
     if (per_day <= 0) return -1.0f;
     if (remaining_ul <= 0) return 0.0f;
-    return static_cast<float>(remaining_ul / per_day);
+    double rest = double(remaining_ul);
+    if (boost_active(b, now)) {
+        // The boost rest is dosed on top of the plan by the end of its window;
+        // what is left after it lasts at the plan's average. A container that
+        // runs dry before the window ends lasts at both rates together; the two
+        // meet when it runs dry just at the end of the window.
+        const double boost = b.remaining_ul, window = double(std::max<int64_t>(boost_until - now, 0)) / 86400;
+        if (rest < boost + per_day * window)
+            return window > 0 ? static_cast<float>(rest / (per_day + boost / window)) : 0.0f;
+        rest -= boost;
+    }
+    return static_cast<float>(rest / per_day);
 }
 
 }  // namespace doser::sched

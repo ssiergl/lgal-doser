@@ -292,12 +292,14 @@ static void test_boost_and_forecast() {
     CHECK_STR(scheduler::boost_start(4, 3000, 3), "no_slots");
     CHECK(scheduler::boost_start(3, 3000, 3) == nullptr);  // 12 doses until 22 Nov 07:00: +0.25 ml each
     st = scheduler::status(3);
-    CHECK(st.boost_active && st.remaining_days < 24.0f);
+    CHECK(st.boost_active && st.remaining_days > 24.2f && st.remaining_days < 24.3f);  // 97 ml for the plan
     CHECK(st.boost.slots_left == 12 && st.next_boost_ul == 250 && st.boost_today_ul == 1000);
     const uint64_t b = total(3);
     sim::run_until(local(11, 19, 8, 0, 30));
     CHECK(total(3) == b + 1250);
     CHECK(dosing::status(3).last_target_ul == 1250);
+    st = scheduler::status(3);  // 98.75 ml, 2.75 ml of them for the boost: 24 days
+    CHECK(st.remaining_days > 23.9f && st.remaining_days < 24.1f);
     sim::run_until(local(11, 22, 7, 0));
     CHECK(total(3) == b + 3 * 4000 + 3000);
     st = scheduler::status(3);

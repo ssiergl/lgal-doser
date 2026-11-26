@@ -296,8 +296,8 @@ int newest(const RunRecord& a, const RunRecord& b);
 // ---------------------------------------------------------------------------
 // Forecast: days until the container is empty, based on the plan's average
 // per day over one period of its day rule (7 days, or N days for "every N
-// days") plus the boost's part of the next 7 days (its window ends at
-// boost_until). < 0 = no consumption planned.
+// days"). The rest of a running boost (its window ends at boost_until) comes
+// off the container first. < 0 = no consumption planned.
 float remaining_days(const PumpSchedule& s, const Boost& b, int64_t boost_until, int32_t today, int64_t now,
                      int64_t remaining_ul);
 
