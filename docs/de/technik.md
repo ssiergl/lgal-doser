@@ -963,6 +963,12 @@ Nachrichten unter dem alten. Client-ID und Home-Assistant-IDs hängen an der MAC
 | `<basis>/update/set` | `install` – neuere Version der [Update-Quelle](#ota-update) installieren (nie eine freie Adresse) – nur mit Steuerung |
 | `<basis>/ota/state` | Fortschritt wie `GET /api/v1/ota/status` (beim Start, alle 5 s, am Ende) |
 
+Befehle (`…/set`) zählen nur, wenn sie ankommen, während das Gerät verbunden ist. Ein
+gespeicherter (`retained`) Befehl kommt nach jedem Verbinden wieder und würde jedes Mal eine Dosis,
+einen Stopp oder ein Update wiederholen; das Gerät ignoriert ihn und schreibt eine Warnung ins Log
+(beim Broker löschen, z. B. `mosquitto_pub -r -n -t <topic>`). Home Assistant sendet seine Befehle
+ohne Retain.
+
 **Home-Assistant-Erkennung** (Standard an): ein Gerät „LGAL Doser XXXX“ per Device-Discovery
 (`homeassistant/device/lgal_doser_xxxx/config`) mit je Pumpe Status, dosiert gesamt
 (`total_increasing`, Tageswerte bildet Home Assistant), geplant heute, Vorrat, Reichweite in
