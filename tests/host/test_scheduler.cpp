@@ -671,6 +671,37 @@ static void test_next_far_ahead() {
     CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
 }
 
+// "Every 14 days": the range (and with it the container-low alarm) is the
+// same on every day, whether the coming week has the dose day or not, and
+// drops by 14 days with each dose
+static void test_forecast_interval() {
+    const int32_t today = scheduler::today();
+    const auto at_h = [](int32_t day, int h) { return tz::to_utc(g_zone, int64_t(day) * 86400 + h * 3600); };
+    auto p = plan({single(360, 10000)});  // 10 ml at 06:00, next in 10 days
+    p.days.mode = sched::DayMode::Interval;
+    p.days.interval = 14;
+    p.days.anchor_day = today + 10;
+    CHECK(scheduler::set_schedule(3, p) == nullptr);
+    CHECK(dosing::set_container(3, 100000, 100000) == nullptr);
+    const auto range_on = [&](int32_t day) {  // at 07:00
+        sim::set_utc(at_h(day, 7));
+        sim::run_for(1);
+        return scheduler::status(3).remaining_days;
+    };
+    for (int32_t d = today; d < today + 10; ++d) {  // 10 doses left: 140 days
+        const float r = range_on(d);
+        CHECK(r > 139.9f && r < 140.1f);
+    }
+    sim::set_utc(at_h(today + 10, 6) - 60);
+    sim::run_until(at_h(today + 10, 6) + 120);
+    CHECK(dosing::status(3).state.remaining_ul == 90000);
+    for (int32_t d = today + 10; d < today + 24; ++d) {  // 9 doses left: 126 days
+        const float r = range_on(d);
+        CHECK(r > 125.9f && r < 126.1f);
+    }
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -715,6 +746,8 @@ int main(int argc, char**) {
     test_clock_set_back();
     std::printf("Scheduler: next dose far ahead\n");
     test_next_far_ahead();
+    std::printf("Scheduler: range of an interval plan\n");
+    test_forecast_interval();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

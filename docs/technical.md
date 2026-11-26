@@ -831,7 +831,7 @@ The web UI operates this per pump; the engineering parameters are in the
 | Power cut | Up to 2 min late a dose counts as on time. After that it is skipped (default) or caught up within a configurable window. Skipped doses are counted per day and shown with a reason; after long outages everything older is skipped in one step. |
 | Clock set back | By up to a day (e.g. NTP corrects a clock module that ran ahead): doses already given are not repeated. By more than a day, while running or found at start: the schedule starts again from now, and a dose waiting to start is dropped. |
 | Boost | Extra amount over 1–30 days from the start (days × 24 h), spread evenly over all scheduled doses in this period: each dose gets rest ÷ doses still due. The share of a skipped or failed dose goes to the following ones; a rest after the last dose of the period is dropped. A changed schedule counts the doses again. Ends by itself. |
-| Range | Container rest divided by the average of the next 7 days (incl. boost). |
+| Range | Container rest divided by the plan's average per day over one period of its days (a week for daily and weekdays, N days for "every N days"), so it does not change from day to day; a boost adds its part of the next 7 days. |
 | Without a valid time | Nothing is scheduled; manual doses stay possible (except for pumps with a daily limit). |
 | Storage | Plans, lock times, parameters in NVS (`sched`). Progress per pump (last processed dose, boost, counters) in the EEPROM as A/B records from 0x640, fallback to NVS. Written only when a dose was processed. |
 

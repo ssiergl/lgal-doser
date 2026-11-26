@@ -631,6 +631,23 @@ static void test_forecast() {
     CHECK(weekdays_only > 69.9f && weekdays_only < 70.1f);
     ps = times({{480, 4000}, {1200, 6000}});
     CHECK(remaining_days(ps, none, 0, day, now, 500000) == 50.0f);
+
+    // every 14 days: the same range on every day, whether the coming week has
+    // the dose day or not (10 ml per dose, 100 ml left: 10 doses = 140 days)
+    ps = spread(480, 1200, 4, 10000, every(14, day + 10));
+    for (int32_t d = day; d < day + 14; ++d) {
+        const float r = remaining_days(ps, none, 0, d, now + int64_t(d - day) * 86400, 100000);
+        CHECK(r > 139.9f && r < 140.1f);
+    }
+    // every 3 days: 2 or 3 dose days in a week, 1 ml per day on average
+    ps = at(480, 3000, every(3, day));
+    for (int32_t d = day; d < day + 3; ++d) {
+        const float r = remaining_days(ps, none, 0, d, now + int64_t(d - day) * 86400, 30000);
+        CHECK(r > 29.9f && r < 30.1f);
+    }
+    ps = at(480, 10000, every(kMaxInterval, day + 29));
+    const float longest = remaining_days(ps, none, 0, day, now, 100000);
+    CHECK(longest > 299.9f && longest < 300.1f);
 }
 
 static void test_same() {

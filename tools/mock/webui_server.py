@@ -164,9 +164,11 @@ def boost_json(i):
             "start_utc": b["start_utc"], "start_local": loc(b["start_utc"]), "end_utc": end, "end_local": loc(end)}
 
 def remaining_days(i):
-    """Like sched::remaining_days: container / average of the next 7 days incl. the boost"""
-    day0 = dnum(time.strftime("%Y-%m-%d"))
-    per_day = sum(u for k in range(7) for _, u in slots_on(i, day0 + k)) / 7000
+    """Like sched::remaining_days: container / average per day over one period of the day rule (7 days, or N
+    for "every N days": the same from every day) plus the boost's part of the next 7 days"""
+    day0 = dnum(time.strftime("%Y-%m-%d")); days = SCHED[i]["days"]
+    period = days["every"] if days["mode"] == "interval" else 7
+    per_day = sum(u for k in range(period) for _, u in slots_on(i, day0 + k)) / 1000 / period
     b = BOOST[i]
     if b:
         left = boost_end(b) - time.time()

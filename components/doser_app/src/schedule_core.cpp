@@ -581,13 +581,17 @@ int newest(const RunRecord& a, const RunRecord& b) {
 // ---------------------------------------------------------------------------
 float remaining_days(const PumpSchedule& s, const Boost& b, int64_t boost_until, int32_t today, int64_t now,
                      int64_t remaining_ul) {
+    // One period of the day rule holds each of its days equally often, so its
+    // average is the same from whatever day it starts: "every 14 days" has a
+    // dose day in any 14 days in a row, but only in every other week.
+    const int period = s.days.mode == DayMode::Interval ? std::max<int>(s.days.interval, 1) : 7;
     double planned = 0;
-    for (int32_t d = today; d < today + 7; ++d) planned += day_total(s, d);
+    for (int32_t d = today; d < today + period; ++d) planned += day_total(s, d);
+    double per_day = planned / period;
     if (boost_active(b, now)) {  // the part of the rest that falls into the next 7 days
         const double left = double(boost_until - now), week = 7.0 * 86400;
-        planned += left <= week ? b.remaining_ul : b.remaining_ul * week / left;
+        per_day += (left <= week ? b.remaining_ul : b.remaining_ul * week / left) / 7;
     }
-    const double per_day = planned / 7;
     if (per_day <= 0) return -1.0f;
     if (remaining_ul <= 0) return 0.0f;
     return static_cast<float>(remaining_ul / per_day);
