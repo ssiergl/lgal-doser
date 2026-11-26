@@ -210,17 +210,30 @@ uint32_t boost_today(const PumpRt& r, int32_t day, int64_t until) {
     return share * k;
 }
 
+// Cursor more than a day ahead: written while the clock was days ahead, or the
+// clock was set back by days since. Its slots would only come again once the
+// clock gets there, so the plan starts again from now and a slot waiting to
+// start is dropped. Up to a day ahead stays: after the clock is set back by
+// hours, the slots in between do not run twice.
+bool restart_if_ahead(int p, int64_t now) {
+    PumpRt& r = s_rt[p];
+    if (r.run.cursor.utc <= now + 86400) return false;
+    ESP_LOGW(TAG, "Pump %d: schedule cursor in the future, restarting from now", p + 1);
+    if (r.pending) {
+        sched::boost_refund(r.run.boost, r.share);
+        r.pending = false;
+        r.delay_reason = nullptr;
+    }
+    r.run.cursor = sched::Cursor{now, UINT32_MAX};
+    recount_boost(r);
+    return true;
+}
+
 void init_cursors(int64_t now) {
     for (int p = 0; p < kN; ++p) {
         PumpRt& r = s_rt[p];
-        if (!r.run_loaded || r.run.cursor.utc == 0) {
-            start_from_now(r, now);
-        } else if (r.run.cursor.utc > now + 86400) {
-            // cursor far in the future: the clock was wrong when it was written
-            ESP_LOGW(TAG, "Pump %d: schedule cursor in the future, restarting from now", p + 1);
-            r.run.cursor = sched::Cursor{now, UINT32_MAX};
-            recount_boost(r);
-        }
+        if (!r.run_loaded || r.run.cursor.utc == 0) start_from_now(r, now);
+        else restart_if_ahead(p, now);
         save(p);
     }
     s_ready = true;
@@ -271,6 +284,7 @@ void try_start(int p, int64_t now) {
 
 void process(int p, int64_t now) {
     PumpRt& r = s_rt[p];
+    if (restart_if_ahead(p, now)) save(p);  // the clock was set back by days while running
     if (r.queued) {
         if (now - r.q_since > int64_t(s_cfg.max_delay_min) * 60) {
             r.queued = false;

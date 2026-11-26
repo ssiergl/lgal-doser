@@ -43,7 +43,7 @@ and on board v1.0.
 ### Schedule
 
 - One plan per pump: daily amount spread over doses or single times; daily, weekdays or every
-  N days; daylight saving time, behaviour after a power cut.
+  N days; daylight saving time, behaviour after a power cut and after the clock is set back.
 - All plans checked on save (overlap, daily limit, lock times between pumps); a lock time counts
   from the minute in which a dose ends, so doses exactly the lock time apart fit.
 - A manual dose during a lock time is rejected, waits, or asks: cancel, wait or dose anyway

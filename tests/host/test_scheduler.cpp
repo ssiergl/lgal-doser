@@ -613,6 +613,36 @@ static void test_error_paths() {
     CHECK(scheduler::set_locks(before) == nullptr);
 }
 
+// The clock set back by days while running (an RTC that ran ahead, corrected
+// by NTP or by hand): the plan starts again from now at once instead of
+// waiting until the clock reaches its last slot again; a slot waiting to
+// start is dropped
+static void test_clock_set_back() {
+    const int64_t local_now = tz::to_local(g_zone, sim::utc());
+    const uint16_t slot = static_cast<uint16_t>((local_now % 86400 / 60 + 15) / 5 * 5 % 1440);
+    CHECK(scheduler::set_schedule(3, plan({single(slot, 1000)})) == nullptr);
+    const int64_t due = scheduler::status(3).next_utc;  // today in 15 to 20 min
+    // three days ahead: the slot there comes while a manual dose runs
+    sim::utc_offset += due + 3 * 86400 - 5 - sim::utc();
+    sim::run_for(1);
+    const uint64_t b = total(3);
+    int64_t retry = 0;
+    bool queued = false;
+    CHECK(scheduler::manual_dose(3, 40000, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && !queued);
+    sim::run_for(10);
+    CHECK(scheduler::status(3).delayed);
+    // back to the right time: the plan goes on from now, the waiting slot is gone
+    sim::utc_offset -= 3 * 86400;
+    sim::run_for(2);
+    CHECK(!scheduler::status(3).delayed && store::run[3].cursor.utc <= sim::utc());
+    CHECK(scheduler::status(3).next_utc == due + 86400);
+    sim::run_for(120);
+    CHECK(total(3) == b + 40000);  // the manual dose only
+    sim::run_until(due + 86400 + 30);
+    CHECK(total(3) == b + 40000 + 1000 && scheduler::status(3).last_run_at == due + 86400);
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -653,6 +683,8 @@ int main(int argc, char**) {
     test_supply();
     std::printf("Scheduler: queue, time zone and plan change errors\n");
     test_error_paths();
+    std::printf("Scheduler: clock set back by days\n");
+    test_clock_set_back();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }
