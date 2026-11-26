@@ -721,9 +721,10 @@ static Runs run_pump4_until(int64_t t) {
 
 // A daily limit as large as the daily amount of the plan lets every dose run.
 // Rolling 24 h counts the hours started within the last 24 h, so that
-// yesterday's dose at the same time no longer counts. Only on the day the
-// clocks go forward are two doses at the same time 23 h apart: one of them is
-// skipped (documented).
+// yesterday's dose at the same time no longer counts. A calendar day in a time
+// zone with an offset of hh:30 starts at local midnight, not at the full UTC
+// hour before it. Only on the day the clocks go forward are two doses at the
+// same time 23 h apart: with rolling 24 h one of them is skipped (documented).
 static void test_limit_window() {
     auto set = dosing::settings(3);
     set.daily_limit_ul = 1000;
@@ -753,9 +754,23 @@ static void test_limit_window() {
     r = run_pump4_until(tz::to_utc(g_zone, civil::to_unix({2027, 3, 30, 8, 1, 0, 0})));
     CHECK(r.ul == 3000 && r.skipped == 1);
     CHECK(is_code(sim::last_event(history::Kind::Skip, 4), "daily_limit"));
+    // calendar day in India (+5:30): 0.5 ml at 12:00 and at 23:45
     eng.limit_mode = dose::LimitMode::CalendarDay;
     CHECK(dosing::set_engineering(eng) == nullptr);
+    const char* cet = sim::tz;
+    sim::tz = "IST-5:30";
+    setenv("TZ", sim::tz, 1);
+    tzset();
+    CHECK(tz::parse(sim::tz, &g_zone));
+    dosing::clear_today();
+    CHECK(scheduler::set_schedule(3, plan({single(720, 500), single(1425, 500)})) == nullptr);
+    r = run_pump4_until(scheduler::status(3).next_utc + 3 * 86400 + 60);
+    CHECK(r.ul == 3500 && r.skipped == 0);
     CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+    sim::tz = cet;
+    setenv("TZ", sim::tz, 1);
+    tzset();
+    CHECK(tz::parse(sim::tz, &g_zone));
     set.daily_limit_ul = 0;
     CHECK(dosing::set_settings(3, set) == nullptr);
 }

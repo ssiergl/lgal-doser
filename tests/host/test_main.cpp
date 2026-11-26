@@ -320,8 +320,8 @@ static void test_ledger() {
     using namespace dose;
     const int64_t t0 = 1793968215;  // 2026-11-06 12:30:15 UTC
     Ledger l{};
-    l.add(t0, 1000);
-    l.add(t0 + 600, 500);  // same hour
+    l.add(ledger_hour(t0, 0), 1000);
+    l.add(ledger_hour(t0 + 600, 0), 500);  // same hour
     CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 600, 0)) == 1500);
     // Rolling 24 h: the hours started within the last 24 h. The doses of 12:30 still count until
     // 11:59:59 on the next day and no longer from 12:00, so that a dose at the same time on the
@@ -330,24 +330,37 @@ static void test_ledger() {
     CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, t0 + 23 * 3600, 0)) == 1500);
     CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, next_noon - 1, 0)) == 1500);
     CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, next_noon, 0)) == 0);
-    l.add(next_noon + 1815, 800);
+    l.add(ledger_hour(next_noon + 1815, 0), 800);
     CHECK(l.sum_from(window_start_hour(LimitMode::Rolling24h, next_noon + 1815, 0)) == 800);
     // Calendar day (CET): local midnight = 23:00 UTC of the previous day
     Ledger d{};
     const int64_t midnight = 1793919600;  // 2026-11-06 00:00 CET
-    d.add(midnight - 60, 700);            // 23:59 on the previous day
-    d.add(midnight + 3600, 300);
-    d.add(t0, 200);
+    d.add(ledger_hour(midnight - 60, midnight), 700);  // 23:59 on the previous day
+    d.add(ledger_hour(midnight + 3600, midnight), 300);
+    d.add(ledger_hour(t0, midnight), 200);
     CHECK(d.sum_from(window_start_hour(LimitMode::CalendarDay, t0, midnight)) == 500);
+    // Calendar day in a time zone with an offset of hh:30 or hh:45 (India +5:30, Nepal +5:45,
+    // Newfoundland -3:30): the buckets start at the full local hours, so that the day starts at
+    // midnight and not at the full UTC hour before it
+    const int64_t offsets[] = {5 * 3600 + 1800, 5 * 3600 + 2700, -(3 * 3600 + 1800)};
+    for (const int64_t offset : offsets) {
+        const int64_t mid = midnight + 3600 - offset;  // 2026-11-06 00:00 local
+        CHECK(ledger_hour(mid - 1, mid) + 1 == ledger_hour(mid, mid));  // a bucket starts at midnight
+        Ledger z{};
+        z.add(ledger_hour(mid - 300, mid), 700);  // 23:55 on the previous day
+        z.add(ledger_hour(mid + 300, mid), 300);  // 00:05
+        z.add(ledger_hour(mid + 86400 - 300, mid), 200);  // 23:55
+        CHECK(z.sum_from(window_start_hour(LimitMode::CalendarDay, mid + 86400 - 60, mid)) == 500);
+    }
     // credit on abort
-    d.subtract(t0, 150);
+    d.subtract(ledger_hour(t0, midnight), 150);
     CHECK(d.sum_from(window_start_hour(LimitMode::CalendarDay, t0, midnight)) == 350);
     // Long pause: old buckets are cleared on the next entry
-    d.add(t0 + 30 * 24 * 3600, 10);
+    d.add(ledger_hour(t0 + 30 * 24 * 3600, midnight), 10);
     CHECK(d.sum_from(0) == 10);
     // Clock far back: nothing is lost (conservative)
-    d.add(t0, 5);
-    CHECK(d.sum_from(window_start_hour(LimitMode::Rolling24h, t0, 0)) == 15);
+    d.add(ledger_hour(t0, midnight), 5);
+    CHECK(d.sum_from(window_start_hour(LimitMode::Rolling24h, t0, midnight)) == 15);
     // check before start
     PumpSettings p;
     Engineering e;

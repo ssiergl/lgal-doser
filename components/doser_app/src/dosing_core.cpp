@@ -89,12 +89,7 @@ CalibResult calibrate(uint32_t steps_run, uint32_t spr, uint32_t measured_ul) {
 }
 
 // ---------------------------------------------------------------------------
-namespace {
-uint32_t hour_of(int64_t utc) { return utc <= 0 ? 0u : static_cast<uint32_t>(utc / 3600); }
-}  // namespace
-
-void Ledger::add(int64_t utc, uint32_t amount) {
-    const uint32_t h = hour_of(utc);
+void Ledger::add(uint32_t h, uint32_t amount) {
     if (h > newest_hour) {
         // Clear buckets of the skipped hours (at most once around)
         const uint32_t gap = h - newest_hour;
@@ -113,8 +108,7 @@ void Ledger::add(int64_t utc, uint32_t amount) {
     b = (b > 0xFFFFFFFFu - amount) ? 0xFFFFFFFFu : b + amount;
 }
 
-void Ledger::subtract(int64_t utc, uint32_t amount) {
-    const uint32_t h = hour_of(utc);
+void Ledger::subtract(uint32_t h, uint32_t amount) {
     if (h > newest_hour || newest_hour - h >= static_cast<uint32_t>(kBuckets)) return;
     uint32_t& b = ul[h % kBuckets];
     b = b > amount ? b - amount : 0;
@@ -131,11 +125,18 @@ uint32_t Ledger::sum_from(uint32_t from_hour) const {
     return sum > 0xFFFFFFFFu ? 0xFFFFFFFFu : static_cast<uint32_t>(sum);
 }
 
+uint32_t ledger_hour(int64_t utc, int64_t local_midnight_utc) {
+    // minutes and seconds of local midnight past the full UTC hour
+    const int64_t shift = (local_midnight_utc % 3600 + 3600) % 3600;
+    return utc - shift <= 0 ? 0u : static_cast<uint32_t>((utc - shift) / 3600);
+}
+
 uint32_t window_start_hour(LimitMode m, int64_t now_utc, int64_t local_midnight_utc) {
-    const uint32_t now_h = hour_of(now_utc);
-    if (m == LimitMode::Rolling24h) return now_h >= 23 ? now_h - 23 : 0;
-    // Round down: with half-hour time zones the started hour counts too
-    return hour_of(local_midnight_utc);
+    if (m == LimitMode::Rolling24h) {
+        const uint32_t now_h = ledger_hour(now_utc, local_midnight_utc);
+        return now_h >= 23 ? now_h - 23 : 0;
+    }
+    return ledger_hour(local_midnight_utc, local_midnight_utc);
 }
 
 const char* check_dose(uint32_t ul, const PumpSettings& p, const Engineering& e, const PumpState& s,

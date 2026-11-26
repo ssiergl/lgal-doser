@@ -40,7 +40,7 @@ struct Job {
     uint16_t retract_mrev = 0;      // to be stored after the retraction
     uint32_t done_ul = 0;
     // booking (dosing only)
-    int64_t booked_at = 0;
+    uint32_t booked_hour = 0;       // ledger hour
     uint32_t booked_ul = 0;
     int32_t ctr_before = -1;        // container before the booking, -1 = not tracked
     bool booked_ledger = false;     // only with valid time
@@ -186,7 +186,7 @@ void refund(Pump& p, uint32_t ul) {
     Job& j = p.job;
     if (!ul || !j.booked_ul) return;
     if (ul > j.booked_ul) ul = j.booked_ul;
-    if (j.booked_ledger) p.st.ledger.subtract(j.booked_at, ul);
+    if (j.booked_ledger) p.st.ledger.subtract(j.booked_hour, ul);
     p.st.total_ul -= ul;
     j.booked_ul -= ul;
     if (j.ctr_before >= 0) p.st.remaining_ul = drained(j.ctr_before, j.booked_ul);
@@ -421,7 +421,8 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retr
     const dose::PumpState before = p.st;
     const int64_t now = now_utc();
     const bool ledger = time_valid();  // without a time no assignment to a day is possible
-    if (ledger) p.st.ledger.add(now, ul);
+    const uint32_t hour = ledger ? dose::ledger_hour(now, local_midnight(now)) : 0;
+    if (ledger) p.st.ledger.add(hour, ul);
     const int32_t ctr_before = p.set.capacity_ul ? (p.st.remaining_ul > 0 ? p.st.remaining_ul : 0) : -1;
     if (ctr_before >= 0) p.st.remaining_ul = drained(ctr_before, ul);
     p.st.total_ul += ul;
@@ -437,7 +438,7 @@ const char* dose(int pump, uint32_t ul, Trigger trigger, int tier, int64_t* retr
     Job& j = p.job;
     j.trigger = trigger;
     j.target_ul = ul;
-    j.booked_at = now;
+    j.booked_hour = hour;
     j.booked_ul = ul;
     j.ctr_before = ctr_before;
     j.booked_ledger = ledger;

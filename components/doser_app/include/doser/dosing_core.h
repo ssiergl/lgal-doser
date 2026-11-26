@@ -90,21 +90,26 @@ CalibResult calibrate(uint32_t steps_run, uint32_t steps_per_rev, uint32_t measu
 
 // ---------------------------------------------------------------------------
 // Daily limit: pumped amount in hourly buckets (ring over 26 h), enough for
-// a calendar day with 25 hours (DST change).
+// a calendar day with 25 hours (DST change). A bucket is a full hour of
+// local time (ledger_hour()), so that the calendar day starts with one.
 struct Ledger {
     static constexpr int kBuckets = 26;
-    uint32_t newest_hour;            // UTC hour (utc / 3600) of the newest bucket
+    uint32_t newest_hour;            // ledger hour of the newest bucket
     uint32_t ul[kBuckets];
 
     void clear() { *this = Ledger{}; }
-    void add(int64_t utc, uint32_t amount_ul);
-    void subtract(int64_t utc, uint32_t amount_ul);  // credit (abort)
+    void add(uint32_t hour, uint32_t amount_ul);
+    void subtract(uint32_t hour, uint32_t amount_ul);  // credit (abort)
     // sum of all buckets from hour from_hour (inclusive), including "future" ones
     uint32_t sum_from(uint32_t from_hour) const;
 };
-// First hour of the limit window:
-// - CalendarDay: the hour in which local midnight lies (local_midnight_utc:
-//   start of the local calendar day in UTC); a started hour counts in full
+// Ledger hour of a time: hours since 1970 that start at the full hours of
+// local time. local_midnight_utc: start of the local calendar day in UTC;
+// with a time zone offset of hh:30 or hh:45 the hours start at hh:30 or
+// hh:15 UTC.
+uint32_t ledger_hour(int64_t utc, int64_t local_midnight_utc);
+// First ledger hour of the limit window:
+// - CalendarDay: the hour that starts at local midnight
 // - Rolling24h: the hours started within the last 24 h, the current one and
 //   the 23 before it. A dose drops out 23 to 24 h later, before the dose at
 //   the same time on the next day.
