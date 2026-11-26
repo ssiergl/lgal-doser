@@ -107,6 +107,14 @@ static void test_abort_and_container() {
     CHECK_STR(dosing::set_container(p, 100000, -1), "pump_busy");
     CHECK(sim::run_until_idle(p));
     CHECK_STR(dosing::set_container(p, 600000, -1), "invalid_param");  // > capacity
+    // at most 100 l, also while the container is not tracked (the state holds an int32_t)
+    CHECK_STR(dosing::set_container(p, -1, dose::kMaxContainerUl + 1), "invalid_param");
+    CHECK(dosing::set_container(p, -1, 0) == nullptr);
+    CHECK_STR(dosing::set_container(p, 3000000000LL, -1), "invalid_param");
+    CHECK_STR(dosing::set_container(p, dose::kMaxContainerUl + 1, -1), "invalid_param");
+    CHECK(dosing::set_container(p, dose::kMaxContainerUl, -1) == nullptr);
+    CHECK(dosing::status(p).state.remaining_ul == int32_t(dose::kMaxContainerUl));
+    CHECK(dosing::set_container(p, -1, 500000) == nullptr);  // back to 500 ml, full
     // a forgotten refill: the container stops at 0 ml, the dose still runs
     CHECK(dosing::set_container(p, 1500, -1) == nullptr);
     CHECK(dosing::dose(p, 2000, dosing::Trigger::Api) == nullptr);

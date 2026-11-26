@@ -720,7 +720,7 @@ the sign-in, setup and `/recovery` pages and in the settings of the web UI.
 | GET | `/api/v1/ws` | WebSocket: status push and priming (see [WebSocket](#websocket-m4)) |
 | POST | `/api/v1/pumps/calibrate?pump=1&action=start[&ml=10]` | calibration run; then `action=apply&measured_ml=…` or `cancel` |
 | POST | `/api/v1/pumps/settings?pump=1&…` | `name`, `mode=auto\|manual_only\|disabled`, `tier`, `daily_limit_ml`, `retract_rev` (revolutions, `off` = 0 = off, `global` = service value; off by default), `direction=cw\|ccw` (direction seen from the front of the pump, set via `GCONF.shaft`, `cw` by default; only at standstill, otherwise 409 `pump_busy`), `warn_days`/`low_days` (own container thresholds in days of range, 0 = service default; alarm at most equal to warning), `remind_months` (calibration reminder 0–24 months, 0 = off) |
-| POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (capacity only = new, full container) |
+| POST | `/api/v1/pumps/container?pump=1&…` | `capacity_ml`, `remaining_ml` (capacity only = new, full container; each at most 100 l, the remaining amount at most the capacity) |
 | POST | `/api/v1/pumps/tube?pump=1&hours=0` | set/reset the tube counter; `hours=0` = new tube: `calibration.tube_changed` stays `true` until the next calibration |
 | GET | `/api/v1/history?…` | events, newest first: `pump=1..5`, `kind=dose,skip,…`, `days=1..90`, or `from_date`/`to_date` (`YYYY-MM-DD`, local days, both inclusive, at most 90 days), or `from`/`to` in UTC seconds, `limit=1..500` (100), `offset` → `{"events":[…],"more"}` (see [History](#history-m6)) |
 | GET | `/api/v1/history.csv?…` | the same filters as a CSV download, without limit |

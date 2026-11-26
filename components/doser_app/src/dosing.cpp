@@ -569,7 +569,7 @@ int32_t settings_changes(const dose::PumpSettings& a, const dose::PumpSettings& 
 const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source, int turned) {
     if (!valid_pump(pump)) return "invalid_param";
     if (s.speed_tier >= dose::kTiers || s.retract_mrev < -1 || s.retract_mrev > 2000 ||
-        s.daily_limit_ul > 10000000 || s.capacity_ul > 100000000 || s.ul_per_rev < 0.0f ||
+        s.daily_limit_ul > 10000000 || s.capacity_ul > dose::kMaxContainerUl || s.ul_per_rev < 0.0f ||
         s.mode > dose::Mode::Disabled || s.warn_days > 60 || s.low_days > 60 || s.recal_months > dose::kMaxRecalMonths)
         return "invalid_param";
     Guard g;
@@ -624,8 +624,9 @@ const char* set_container(int pump, int64_t remaining_ul, int64_t capacity_ul) {
     Pump& p = s_p[pump];
     if (p.job.act != Activity::Idle) return "pump_busy";
     const int64_t cap = capacity_ul >= 0 ? capacity_ul : p.set.capacity_ul;
-    if (cap < 0 || cap > 100000000) return "invalid_param";
-    if (remaining_ul >= 0 && cap && remaining_ul > cap) return "invalid_param";
+    if (cap < 0 || cap > dose::kMaxContainerUl) return "invalid_param";
+    // at most the container, or 100 l while it is not tracked (the state holds an int32_t)
+    if (remaining_ul > (cap ? cap : int64_t(dose::kMaxContainerUl))) return "invalid_param";
     if (capacity_ul >= 0 && static_cast<uint32_t>(capacity_ul) != p.set.capacity_ul) {
         p.set.capacity_ul = static_cast<uint32_t>(capacity_ul);
         if (dosing_store::save_settings(pump, p.set) != ESP_OK) return "storage_error";

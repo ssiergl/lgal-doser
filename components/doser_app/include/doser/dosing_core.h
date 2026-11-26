@@ -19,6 +19,7 @@ namespace doser::dose {
 constexpr float kNominalUlPerRev = 270.0f;
 constexpr int kTiers = 3;
 constexpr uint32_t kMaxDoseUl = 1000000;  // 1 l per single job
+constexpr uint32_t kMaxContainerUl = 100000000;  // 100 l: container size and remaining amount
 
 enum class Mode : uint8_t { Auto = 0, ManualOnly = 1, Disabled = 2 };
 enum class LimitMode : uint8_t { CalendarDay = 0, Rolling24h = 1 };

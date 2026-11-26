@@ -239,7 +239,8 @@ bool parse_pump(const JsonValue& v, int i, int32_t today, Data* d, Error* err) {
     if (!opt_u8(v["low_days"], 60, &p.low_days)) return failf(err, "pumps[%d].%s", i, "low_days");
     if (!opt_u8(v["recal_months"], dose::kMaxRecalMonths, &p.recal_months))
         return failf(err, "pumps[%d].%s", i, "recal_months");
-    if (!get_ul(v["capacity_ml"], 100000000, &p.capacity_ul)) return failf(err, "pumps[%d].%s", i, "capacity_ml");
+    if (!get_ul(v["capacity_ml"], dose::kMaxContainerUl, &p.capacity_ul))
+        return failf(err, "pumps[%d].%s", i, "capacity_ml");
     int64_t milli = 0;
     if (!v["ul_per_rev"].get_decimal(1000, &milli) || milli < 0 || milli > 100000000)
         return failf(err, "pumps[%d].%s", i, "ul_per_rev");
