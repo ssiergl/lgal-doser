@@ -532,9 +532,10 @@ Passwort meldet sich das Skript nach dem Neustart selbst wieder an.
 Ablauf und Schutz:
 - Das Image wird vor dem Schreiben geprüft (ESP32-S3, Projektname `lgal_doser`, Flash-Größe, Board) und
   nach dem Schreiben per Hash verifiziert.
-- Das neue Image startet als `PENDING_VERIFY` und wird erst nach 60 s stabiler
-  Laufzeit mit erreichbarem Webserver als gültig markiert.
-- Absturz, Watchdog oder fehlgeschlagener Health-Check vorher: automatischer
+- Das neue Image startet als `PENDING_VERIFY` und wird nach 60 s stabiler Laufzeit als gültig
+  markiert, sobald der Webserver erreichbar ist (LAN, WLAN oder Setup-WLAN). Ist er es noch nicht
+  (Router startet neu, WLAN verbindet noch), prüft das Gerät 5 min lang alle 10 s erneut.
+- Absturz oder Watchdog vorher oder nach diesen 5 min immer noch nicht erreichbar: automatischer
   **Rollback** auf die vorherige Firmware.
 - Ab dem Moment, in dem ein Update angenommen ist, startet keine Dosis mehr: Eine manuelle bekommt
   409 `locked`, eine geplante wartet (höchstens `max_delay_min`). Die Pumpentreiber werden für die
