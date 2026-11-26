@@ -81,10 +81,12 @@ uint32_t mrev_to_steps(uint32_t mrev, uint32_t spr) {
 
 float flow_ml_min(uint32_t rpm, float upr) { return rpm * upr / 1000.0f; }
 
+bool valid_ul_per_rev(float v) { return v == 0.0f || (v >= kMinUlPerRev && v <= kMaxUlPerRev); }
+
 CalibResult calibrate(uint32_t steps_run, uint32_t spr, uint32_t measured_ul) {
     if (steps_run == 0 || spr == 0) return {false, 0.0f, "no_steps"};
     const float upr = static_cast<float>(static_cast<double>(measured_ul) * spr / steps_run);
-    if (upr < kNominalUlPerRev / 4 || upr > kNominalUlPerRev * 4) return {false, upr, "measured_out_of_range"};
+    if (upr < kMinUlPerRev || upr > kMaxUlPerRev) return {false, upr, "measured_out_of_range"};
     return {true, upr, nullptr};
 }
 

@@ -376,7 +376,10 @@ esp_err_t init() {
         auto& set = s_p[i].set;
         if (set.speed_tier >= dose::kTiers) set.speed_tier = 1;
         if (set.mode > dose::Mode::Disabled) set.mode = dose::Mode::Disabled;
-        if (!(set.ul_per_rev >= 0.0f) || set.ul_per_rev > dose::kNominalUlPerRev * 4) set.ul_per_rev = 0.0f;
+        if (!dose::valid_ul_per_rev(set.ul_per_rev)) {
+            ESP_LOGW(TAG, "Pump %d: implausible calibration (%.1f ul/rev) dropped", i + 1, set.ul_per_rev);
+            set.ul_per_rev = 0.0f;
+        }
         if (!dosing_store::load_state(i, &s_p[i].st)) s_p[i].st = dose::PumpState{};
     }
     ESP_LOGI(TAG, "Ready: tiers %u/%u/%u rpm, retraction %u/1000 rev, calibration %" PRIu32 " ul, state in %s",
@@ -569,7 +572,7 @@ int32_t settings_changes(const dose::PumpSettings& a, const dose::PumpSettings& 
 const char* set_settings(int pump, const dose::PumpSettings& s, history::Source source, int turned) {
     if (!valid_pump(pump)) return "invalid_param";
     if (s.speed_tier >= dose::kTiers || s.retract_mrev < -1 || s.retract_mrev > 2000 ||
-        s.daily_limit_ul > 10000000 || s.capacity_ul > dose::kMaxContainerUl || s.ul_per_rev < 0.0f ||
+        s.daily_limit_ul > 10000000 || s.capacity_ul > dose::kMaxContainerUl || !dose::valid_ul_per_rev(s.ul_per_rev) ||
         s.mode > dose::Mode::Disabled || s.warn_days > 60 || s.low_days > 60 || s.recal_months > dose::kMaxRecalMonths)
         return "invalid_param";
     Guard g;

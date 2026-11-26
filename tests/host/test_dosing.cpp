@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <limits>
 
 static int g_fail = 0;
 static int g_checks = 0;
@@ -182,6 +183,27 @@ static void test_limits_and_checks() {
     set.mode = dose::Mode::Auto;
     set.speed_tier = 5;
     CHECK_STR(dosing::set_settings(p, set), "invalid_param");
+    // the calibration value: 0 (not calibrated) or 1/4 to 4 times the nominal value
+    auto cal = dosing::settings(p);
+    for (float v : {1.0f, 67.4f, 1080.5f, -1.0f, std::nanf(""), std::numeric_limits<float>::infinity()}) {
+        cal.ul_per_rev = v;
+        CHECK_STR(dosing::set_settings(p, cal), "invalid_param");
+    }
+    for (float v : {dose::kMinUlPerRev, dose::kMaxUlPerRev, 0.0f}) {
+        cal.ul_per_rev = v;
+        CHECK(dosing::set_settings(p, cal) == nullptr && dosing::settings(p).ul_per_rev == v);
+    }
+}
+
+// Implausible calibration values in the storage are dropped at the start (set in main)
+static void test_start_values() {
+    CHECK(dosing::settings(0).ul_per_rev == 0.0f);    // not a number
+    CHECK(dosing::settings(1).ul_per_rev == 0.0f);    // below 1/4 of the nominal value
+    CHECK(dosing::settings(2).ul_per_rev == 0.0f);    // above 4 times
+    CHECK(dosing::settings(4).ul_per_rev == 300.0f);  // plausible: kept
+    auto s = dosing::settings(4);
+    s.ul_per_rev = 0.0f;  // the flows below start uncalibrated
+    CHECK(dosing::set_settings(4, s) == nullptr);
 }
 
 static void test_priming() {
@@ -665,7 +687,14 @@ int main(int argc, char**) {
     g_log_verbose = argc > 1;
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
+    // calibration values in the stored settings (test_start_values)
+    sim::boot_ul_per_rev[0] = std::nanf("");
+    sim::boot_ul_per_rev[1] = 10.0f;
+    sim::boot_ul_per_rev[2] = 2000.0f;
+    sim::boot_ul_per_rev[4] = 300.0f;
     CHECK(dosing::init() == ESP_OK && sim::task);
+    std::printf("Calibration values at the start\n");
+    test_start_values();
     std::printf("Dosing with retraction\n");
     test_dose_and_retract();
     std::printf("Abort and container\n");

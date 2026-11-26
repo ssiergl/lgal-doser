@@ -45,6 +45,7 @@ Motor motor[5];
 bool locked = false;
 int saves[5];
 esp_err_t settings_err = ESP_OK;  // saving the settings fails (storage error)
+float boot_ul_per_rev[5];         // calibration in the stored settings at the start
 dose::PumpState stored[5];
 std::vector<history::Event> events;  // recorded history (utc 0 = "now" on the device)
 
@@ -204,7 +205,10 @@ void load_engineering(dose::Engineering*) {}
 esp_err_t save_engineering(const dose::Engineering&) { return ESP_OK; }
 // Stored settings use the global retraction, so the flows below run with it
 // (the factory default of a pump is off, see test_retract_off)
-void load_settings(int, dose::PumpSettings* p) { p->retract_mrev = -1; }
+void load_settings(int i, dose::PumpSettings* p) {
+    p->retract_mrev = -1;
+    p->ul_per_rev = sim::boot_ul_per_rev[i];
+}
 esp_err_t save_settings(int, const dose::PumpSettings&) { return sim::settings_err; }
 bool load_state(int, dose::PumpState*) { return false; }
 esp_err_t save_state(int pump, const dose::PumpState& s) {

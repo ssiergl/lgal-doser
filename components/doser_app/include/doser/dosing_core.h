@@ -82,6 +82,11 @@ float flow_ml_min(uint32_t rpm, float ul_per_rev);
 
 // Calibration: steps_run steps pumped, measured_ul collected.
 // Plausible is 0.25x to 4x the nominal value.
+constexpr float kMinUlPerRev = kNominalUlPerRev / 4;
+constexpr float kMaxUlPerRev = kNominalUlPerRev * 4;
+// A calibration value the settings may hold: 0 (not calibrated) or a plausible one. The
+// settings, a backup and the stored value at the start take no other.
+bool valid_ul_per_rev(float v);
 struct CalibResult {
     bool ok;
     float ul_per_rev;

@@ -298,6 +298,10 @@ static void test_errors() {
     expect_error("\"pump\":2", "\"pump\":1", "invalid_param", "pumps[1].pump");
     expect_error("\"count\":12", "\"count\":0", "invalid_param", nullptr);
     expect_error("\"warn_days\":14", "\"warn_days\":61", "invalid_param", "pumps[1].warn_days");
+    // a calibration value no calibration gives (1/4 to 4 times the nominal value, 0 = none)
+    expect_error("\"ul_per_rev\":342.25", "\"ul_per_rev\":1081", "invalid_param", "pumps[0].ul_per_rev");
+    expect_error("\"ul_per_rev\":342.25", "\"ul_per_rev\":67.4", "invalid_param", "pumps[0].ul_per_rev");
+    expect_error("\"ul_per_rev\":342.25", "\"ul_per_rev\":-1", "invalid_param", "pumps[0].ul_per_rev");
     expect_error("\"warn_days\":10", "\"warn_days\":61", "invalid_param", "engineering.dosing.warn_days");
     expect_error("\"warn_days\":10", "\"warn_days\":3", "invalid_param", "engineering.dosing.low_days");
     expect_error("\"tier_rpm\":[100,200,450]", "\"tier_rpm\":[100,200,601]", "invalid_param", "engineering.dosing.tier_rpm");

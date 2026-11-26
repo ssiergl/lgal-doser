@@ -245,6 +245,8 @@ bool parse_pump(const JsonValue& v, int i, int32_t today, Data* d, Error* err) {
     if (!v["ul_per_rev"].get_decimal(1000, &milli) || milli < 0 || milli > 100000000)
         return failf(err, "pumps[%d].%s", i, "ul_per_rev");
     p.ul_per_rev = static_cast<float>(milli) / 1000.0f;
+    // as a calibration gives it: the device would drop another value at its next start
+    if (!dose::valid_ul_per_rev(p.ul_per_rev)) return failf(err, "pumps[%d].%s", i, "ul_per_rev");
     if (!v["calibrated_at"].get(&p.calibrated_at) || p.calibrated_at < 0) return failf(err, "pumps[%d].%s", i, "calibrated_at");
     sched_json::Error se;
     if (!sched_json::parse_schedule(v["schedule"], today, &d->schedules[i], &se)) {
