@@ -794,6 +794,50 @@ static void test_limit_window() {
     CHECK(dosing::set_settings(3, set) == nullptr);
 }
 
+// A manual dose waits in the queue for a lock time: a slot that comes due meanwhile waits
+// behind it and runs after it, instead of counting as missed once the queue is empty
+static void test_queue_holds_slot() {
+    sim::run_for(31 * 60);  // the earlier doses of pump 4 are past any lock time
+    sched::Locks l;
+    l.count = 1;
+    l.rules[0] = sched::LockRule{2, 3, 30};
+    l.manual = sched::ManualDuringLock::Queue;
+    CHECK(scheduler::set_locks(l) == nullptr);
+    // pump 4: 0.7 ml in 6 to 10 min
+    const int64_t local_now = tz::to_local(g_zone, sim::utc());
+    const uint16_t slot = static_cast<uint16_t>((local_now % 86400 / 60 + 10) / 5 * 5 % 1440);
+    CHECK(scheduler::set_schedule(3, plan({single(slot, 700)})) == nullptr);
+    const int64_t due = scheduler::status(3).next_utc;
+    // pump 3 doses, then a manual dose of pump 4 waits for the end of its lock time (30 min)
+    bool queued = false;
+    int64_t retry = 0;
+    CHECK(scheduler::manual_dose(2, 1000, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && !queued);
+    sim::run_for(30);
+    const uint64_t b3 = total(3);
+    const size_t ev0 = sim::events.size();
+    CHECK(scheduler::manual_dose(3, 500, dosing::Trigger::Api, -1, &retry, &queued) == nullptr && queued);
+    sim::run_until(due + 60);
+    auto st = scheduler::status(3);
+    CHECK(st.queued && st.delayed && st.delay_reason && std::strcmp(st.delay_reason, "collision_lock") == 0);
+    CHECK(total(3) == b3);
+    // the lock time ends: first the queued dose, then the slot; nothing is skipped
+    sim::run_until(due + 40 * 60);
+    st = scheduler::status(3);
+    CHECK(!st.queued && !st.delayed && total(3) == b3 + 500 + 700);
+    std::vector<history::Source> doses;
+    int skips = 0;
+    for (size_t k = ev0; k < sim::events.size(); ++k) {
+        const history::Event& e = sim::events[k];
+        if (e.pump != 4) continue;
+        if (e.kind == history::Kind::Dose) doses.push_back(e.source);
+        if (e.kind == history::Kind::Skip) ++skips;
+    }
+    CHECK(doses.size() == 2 && doses[0] == history::Source::Api && doses[1] == history::Source::Schedule);
+    CHECK(skips == 0);
+    CHECK(scheduler::set_schedule(3, sched::PumpSchedule{}) == nullptr);
+    CHECK(scheduler::set_locks(sched::Locks{}) == nullptr);
+}
+
 int main(int argc, char**) {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     g_log_verbose = argc > 1;
@@ -844,6 +888,8 @@ int main(int argc, char**) {
     test_forecast_interval();
     std::printf("Scheduler: daily limit window\n");
     test_limit_window();
+    std::printf("Scheduler: slot due behind a queued dose\n");
+    test_queue_holds_slot();
     std::printf("\n%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

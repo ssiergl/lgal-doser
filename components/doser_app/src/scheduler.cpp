@@ -290,12 +290,16 @@ void process(int p, int64_t now) {
             r.queued = false;
             ESP_LOGW(TAG, "Pump %d: queued dose dropped (lock time did not end)", p + 1);
         } else {
+            // Tried first every second, so it starts before a slot that waits as well. While it
+            // waits the plan goes on: a slot that comes due waits behind it (at most
+            // max_delay_min, as any delayed slot) instead of counting as missed afterwards.
             const char* e = dosing::dose(p, r.q_ul, r.q_trigger, r.q_tier, nullptr);
-            if (is_wait(e)) return;  // the schedule waits behind the queued dose
-            r.queued = false;
-            if (e) ESP_LOGW(TAG, "Pump %d: queued dose failed: %s", p + 1, e);
-            else ESP_LOGI(TAG, "Pump %d: queued dose started", p + 1);
-            return;
+            if (!is_wait(e)) {
+                r.queued = false;
+                if (e) ESP_LOGW(TAG, "Pump %d: queued dose failed: %s", p + 1, e);
+                else ESP_LOGI(TAG, "Pump %d: queued dose started", p + 1);
+                return;
+            }
         }
     }
     if (r.pending) {
