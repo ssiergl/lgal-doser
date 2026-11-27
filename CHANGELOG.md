@@ -7,6 +7,13 @@ All notable changes to the LGAL Doser firmware. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/). The current version is in `version.txt`.
 
+## Unreleased – 0.1.1
+
+### Fixed
+
+- littlefs 1.23.3: a failed close of a file no longer leaks memory or leaves the file looking
+  open, and a closed or invalid file handle is rejected instead of read past the table.
+
 ## 0.1.0 – 2026-11-27
 
 First complete firmware (milestones M0–M6). Tested with host tests, fuzzers, the device mock
