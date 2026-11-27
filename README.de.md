@@ -7,6 +7,12 @@
 
 *[English](README.md) · Deutsch*
 
+[![CI](https://github.com/ssiergl/lgal-doser/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ssiergl/lgal-doser/actions/workflows/ci.yml)
+[![Stable](https://img.shields.io/github/v/release/ssiergl/lgal-doser?label=stable)](https://github.com/ssiergl/lgal-doser/releases/latest)
+[![Beta](https://img.shields.io/github/v/release/ssiergl/lgal-doser?include_prereleases&sort=semver&label=beta)](https://github.com/ssiergl/lgal-doser/releases)
+[![Lizenz](https://img.shields.io/badge/Lizenz-GPL--3.0%20%7C%20CC%20BY--NC--SA%204.0-blue)](#lizenz)
+[![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v6.1.1-E7352C)](https://github.com/espressif/esp-idf/releases/tag/v6.1.1)
+
 Offene Dosierpumpe für Meerwasseraquarien von **LG Aquatic Life**. Das erste Gerät hat fünf
 Schlauchpumpen mit Schrittmotor, gesteuert von einem ESP32-S3; Varianten mit weniger Pumpen
 sind geplant. Bedient wird sie über eine Weboberfläche im Browser, auf Wunsch zusätzlich über
