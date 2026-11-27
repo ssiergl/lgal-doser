@@ -9,7 +9,10 @@
      version it leads to (0.2.0); a heading matches when it names the
      version, e.g. "## 0.2.0 – 2026-12-01" or "## Unreleased – 0.2.0".
   2. every commit since the previous version tag, folded away under
-     "All changes", with a link to the full comparison on GitHub.
+     "All changes", with a link to the full comparison on GitHub. A
+     release compares with the previous release and skips the release
+     candidates in between; a release candidate compares with any
+     previous version tag.
 
 Usage: release_notes.py <tag> [--repo owner/name]   (e.g. v0.2.0-rc.1)
 
@@ -77,7 +80,9 @@ def main():
     section = changelog_section(base)
     parts.append(unwrap(section) if section else f"No changelog entry for {base} yet.")
 
-    prev = git("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", f"{a.tag}^")
+    # a release is compared with the previous release, not with its own candidates
+    skip_rc = ["--exclude", "v*-*"] if a.tag.lstrip("v") == base else []
+    prev = git("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", *skip_rc, f"{a.tag}^")
     if prev:
         log = git("log", "--no-merges", "--format=- %s (%h)", f"{prev}..{a.tag}")
         count = len(log.splitlines()) if log else 0

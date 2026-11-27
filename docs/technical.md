@@ -221,7 +221,8 @@ repository secrets. Tags with a pre-release part (`v1.0.0-rc.1`) become pre-rele
 The text of the release page comes from `tools/release_notes.py`: the section of `CHANGELOG.md`
 whose heading names the version (a release candidate `0.2.0-rc.1` uses the section of `0.2.0`,
 e.g. `## Unreleased – 0.2.0`) as a summary in bullet points, then every commit since the
-previous version tag, folded away under "All changes", and a link to the full comparison. So
+previous version tag (a release skips its release candidates and compares with the previous
+release), folded away under "All changes", and a link to the full comparison. So
 keep the changelog section up to date before tagging.
 
 #### SBOM

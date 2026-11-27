@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # The release text: changelog section of the version (a release candidate uses the section of
-# its release) and the commits since the previous version tag.
+# its release) and the commits since the previous version tag (a release skips the candidates).
 import subprocess
 import sys
 
@@ -72,3 +72,32 @@ def test_release_candidate_notes(repo):
 def test_unknown_tag_fails(repo):
     r = subprocess.run([sys.executable, str(TOOL), "v9.9.9"], capture_output=True, text=True, cwd=repo)
     assert r.returncode != 0
+
+
+def test_release_skips_its_candidates(repo):
+    subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "Set the version to 0.2.0"], cwd=repo, check=True)
+    subprocess.run(["git", "tag", "v0.2.0"], cwd=repo, check=True)
+    r = subprocess.run([sys.executable, str(TOOL), "v0.2.0", "--repo", "o/r"],
+                       capture_output=True, text=True, cwd=repo)
+    assert r.returncode == 0, r.stderr
+    assert "Release candidate" not in r.stdout
+    assert "All changes since v0.1.0 (3 commits)" in r.stdout
+    assert "https://github.com/o/r/compare/v0.1.0...v0.2.0" in r.stdout
+
+
+def test_first_release_after_candidates(tmp_path):
+    def git(*a):
+        subprocess.run(["git", *a], cwd=tmp_path, check=True, capture_output=True)
+    git("init", "-q")
+    git("config", "user.email", "test@example.com")
+    git("config", "user.name", "Test")
+    (tmp_path / "CHANGELOG.md").write_text(CHANGELOG, encoding="utf-8")
+    git("add", ".")
+    git("commit", "-q", "-m", "First")
+    git("tag", "v0.1.0-rc.1")
+    git("commit", "-q", "--allow-empty", "-m", "Set the version to 0.1.0")
+    git("tag", "v0.1.0")
+    r = subprocess.run([sys.executable, str(TOOL), "v0.1.0"], capture_output=True, text=True, cwd=tmp_path)
+    assert r.returncode == 0, r.stderr
+    assert "First release: the summary above covers every change." in r.stdout
+    assert "All changes" not in r.stdout
