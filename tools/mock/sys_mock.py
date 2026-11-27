@@ -138,6 +138,14 @@ OTA = {"allow_http": False, "auto_check": True, "source": OTA_FACTORY, "beta": F
 # Update source: release 0.6.0 (beta channel: 0.7.0-rc.1), last checked 3 h ago; a check takes 2 s,
 # a source not ending in ".json" fails. The channel can be chosen while the source is the factory one.
 REL = {"latest": "0.6.0", "checked_at": time.time() - 3 * 3600, "checking_until": 0, "error": None}
+# MOCK_DEMO=1: a clean device for the screenshots of the docs (tests/e2e/screenshots.config.js):
+# clock in step, no crash report, the release of version.txt (without "-rc.N") and no newer one
+DEMO = os.environ.get("MOCK_DEMO") == "1"
+if DEMO:
+    OFFSET = 0
+    _ver = open(os.path.join(os.path.dirname(__file__), "..", "..", "version.txt")).read().strip()
+    SYS.update(coredump=False, version=_ver.split("-")[0])
+    REL["latest"] = SYS["version"]
 _FW0 = ({k: SYS[k] for k in ("coredump", "version", "partition", "invalid")}, dict(OTA), dict(REL))
 
 def reset_firmware(rolledback=False):
@@ -170,7 +178,7 @@ def rel_json():
     if REL["checking_until"] and not checking and REL["checked_at"] < REL["checking_until"]:  # check finished
         REL["checked_at"] = REL["checking_until"]
         REL["error"] = None if OTA["source"].endswith(".json") else ("http_status", "HTTP 404")
-    REL["latest"] = "0.7.0-rc.1" if ota_channel() == "beta" else "0.6.0"
+    REL["latest"] = SYS["version"] if DEMO else "0.7.0-rc.1" if ota_channel() == "beta" else "0.6.0"
     cur, latest = ver_key(SYS["version"]), ver_key(REL["latest"])
     j = {"source": bool(OTA["source"]), "channel": ota_channel(), "board": "d5v1", "variant": "N16R8", "current": SYS["version"], "auto_check": OTA["auto_check"],
          "checking": checking, "checked_at": int(REL["checked_at"]) if REL["checked_at"] else None,
@@ -417,6 +425,7 @@ def route(h, method, path, q, body):
             if SCAN["state"] == "running" and time.time() - SCAN["t"] > 1.5: SCAN["state"] = "done"
             nets = [{"ssid": "HomeNet", "rssi": -58, "channel": 6, "secure": True}, {"ssid": "HomeNet-Guest", "rssi": -66, "channel": 6, "secure": True},
                     {"ssid": "Nachbar 5G", "rssi": -82, "channel": 11, "secure": True}, {"ssid": "Cafe Open", "rssi": -88, "channel": 1, "secure": False}]
+            if DEMO: nets = [n for n in nets if n["ssid"] != "Nachbar 5G"]  # three networks fit the setup card
             h.send(200, {"state": SCAN["state"], "networks": nets if SCAN["state"] == "done" else []}); return True
     if path == "/api/v1/net/wlan/test":
         if method == "POST":

@@ -16,4 +16,5 @@ dist/
 tests/lint/node_modules/
 tests/e2e/node_modules/
 tests/e2e/results/
+tests/e2e/results-screenshots/
 tests/e2e/report/

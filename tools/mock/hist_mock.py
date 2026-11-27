@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # Mock of the history endpoints: 90 days of generated events (test data only)
-import random, time
+import os, random, time
 
 KEEP = 90  # maximum retention
 KEEP_MIN = 30  # minimum retention
@@ -23,6 +23,9 @@ def add_now(kind, pump, source, code, **extra):
     if kind == "boost" and code != "started": extra["done_ml"] = done
     _add(time.time(), kind, pump, source, code, target, done, **extra)
 
+# MOCK_DEMO=1 (screenshots of the docs): all five pumps dose, without faults, skipped or missed doses
+DEMO = os.environ.get("MOCK_DEMO") == "1"
+
 def _gen():
     rnd = random.Random(7)
     now = time.time()
@@ -30,9 +33,10 @@ def _gen():
     midnight = now - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec)
     plans = {1: [(8 * 60 + k * 65, 5.0) for k in range(12)], 2: [(9 * 60 + k * 144, 5.0) for k in range(6)],
              3: [(600, 5.0), (1320, 2.5)], 5: [(720, 2.0)]}
+    if DEMO: plans[4] = [(660, 3.0)]
     for d in range(KEEP + 1, -1, -1):
         day0 = midnight - d * 86400
-        off = 20 <= d <= 21  # device off two days
+        off = 20 <= d <= 21 and not DEMO  # device off two days
         for pump, slots in plans.items():
             if pump == 3 and time.localtime(day0 + 43200).tm_wday not in (0, 2, 4, 5): continue
             for minute, ml in slots:
@@ -40,13 +44,14 @@ def _gen():
                 if t > now: continue
                 if off:
                     continue
-                if pump == 2 and d == 5 and minute > 14 * 60:
+                if pump == 2 and d == 5 and minute > 14 * 60 and not DEMO:
                     _add(t, "skip", 2, "schedule", "daily_limit", count=1, target_ml=ml); continue
                 res = "success"; done = ml
-                if pump == 2 and d == 0 and minute >= 13 * 60: res = "fault"; done = round(ml * 0.3, 3)
-                if pump == 1 and d == 9 and minute == 8 * 60: res = "aborted"; done = 1.2
+                if DEMO: pass
+                elif pump == 2 and d == 0 and minute >= 13 * 60: res = "fault"; done = round(ml * 0.3, 3)
+                elif pump == 1 and d == 9 and minute == 8 * 60: res = "aborted"; done = 1.2
                 _add(t, "dose", pump, "schedule", res, ml, done)
-        if d == 19:
+        if d == 19 and not DEMO:
             for pump in plans: _add(day0 + 5, "skip", pump, "schedule", "missed", count=len(plans[pump]))
         if d % 6 == 0 and d:
             _add(day0 + 19 * 3600, "dose", 1, "manual", "success", 10.0, 10.0)
@@ -85,7 +90,7 @@ def _gen():
             _add(day0 + 13 * 3600 + 30, "system", 0, "manual", "password")
             _add(day0 + 13 * 3600 + 60, "system", 0, "manual", "key_added")
     _add(now - 7200, "system", 0, None, "boot", reason="restart")
-    _add(now - 3500, "alarm", 2, None, "container_low")
+    if not DEMO: _add(now - 3500, "alarm", 2, None, "container_low")
     EV.sort(key=lambda e: e["utc"])
 _gen()
 

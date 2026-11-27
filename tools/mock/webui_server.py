@@ -44,8 +44,23 @@ SCHED = [
     {"kind": "none", "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
     {"kind": "times", "times": [{"time": "12:00", "ml": 2.0}], "days": D, "power_loss": "skip_missed", "catch_up_min": 60},
 ]
+# MOCK_DEMO=1: a clean device for the screenshots of the docs (tests/e2e/screenshots.config.js):
+# all five pumps set up and calibrated, no fault; only calcium warns that its container runs low
+# The pump names follow the device language, as a reef keeper would choose them.
+DEMO_NAMES = {}
+if os.environ.get("MOCK_DEMO") == "1":
+    DEMO_NAMES = {"en": ["Alkalinity", "Calcium", "Magnesium", "Potassium", "Trace elements"],
+                  "de": ["KH", "Calcium", "Magnesium", "Kalium", "Spurenelemente"]}
+    NAMES[:] = DEMO_NAMES["de"]; CAP[3] = 1000.0; USED[3] = 3.0; PLAN[3] = 3.0
+    REM[:] = [1312.4, 186.0, 655.0, 820.0, 412.0]  # calcium: container warning (6 days)
+    SCHED[3] = {"kind": "times", "times": [{"time": "11:00", "ml": 3.0}], "days": D, "power_loss": "skip_missed", "catch_up_min": 60}
+    for i, p in enumerate(P):
+        p.update(remaining=REM[i], last={"result": "success", "activity": "dosing", "target_ml": 2.0, "done_ml": 2.0, "at": int(time.time()) - 1800},
+                 calat=int(time.time()) - 86400 * 20, mlrev=0.37, mode="auto")
+    P[3]["limit"] = 10.0
 BOOST = [None] * 5  # {"total_ml", "remaining_ml", "days", "doses", "start_utc"}
 LOCKS = {"manual": "reject", "rules": [{"pumps": [1, 2], "gap_min": 5}]}
+if DEMO_NAMES: LOCKS["rules"][0]["gap_min"] = 30  # alkalinity and calcium half an hour apart
 # lock times at run time, as on the device: end of the last dose per pump, and the manual dose
 # waiting for the end of a lock time (one per pump: {"ml", "tier", "since"})
 LAST_END = [0.0] * 5
@@ -616,10 +631,12 @@ class H(BaseHTTPRequestHandler):
                 try: pb = json.loads(raw or b"{}")
                 except ValueError: pb = {}
             if sysr(self, "POST", pb): return
-        if p.startswith("/api/v1/system/language"):
+        if p.startswith(("/api/v1/system/language", "/mock/language")):  # /mock/: also signed out (screenshots)
             lang = dict(_pq(_us(p).query)).get("lang")
             if lang not in sys_mock.LANGUAGES: return err(self, "invalid_param", "lang: unsupported language")
-            LANG["v"] = lang; return self.send(200, {"language": LANG["v"], "languages": sys_mock.LANGUAGES})
+            LANG["v"] = lang
+            if DEMO_NAMES: NAMES[:] = DEMO_NAMES.get(lang, DEMO_NAMES["en"])
+            return self.send(200, {"language": LANG["v"], "languages": sys_mock.LANGUAGES})
         if p.startswith("/mock/firmware"):  # tests: firmware state as at start (?rolledback=1: failed update)
             sys_mock.reset_firmware("rolledback=1" in p); return self.send(200, {"status": "ok"})
         if p.startswith("/mock/time"):  # tests: time settings and clock as at start
