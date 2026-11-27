@@ -7,7 +7,7 @@ All notable changes to the LGAL Doser firmware. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow
 [Semantic Versioning](https://semver.org/). The current version is in `version.txt`.
 
-## Unreleased – 0.1.0
+## 0.1.0 – 2026-11-27
 
 First complete firmware (milestones M0–M6). Tested with host tests, fuzzers, the device mock
 and on board v1.0.
