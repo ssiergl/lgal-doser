@@ -7,6 +7,12 @@
 
 *English · [Deutsch](README.de.md)*
 
+[![CI](https://github.com/ssiergl/lgal-doser/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ssiergl/lgal-doser/actions/workflows/ci.yml)
+[![Stable](https://img.shields.io/github/v/release/ssiergl/lgal-doser?label=stable)](https://github.com/ssiergl/lgal-doser/releases/latest)
+[![Beta](https://img.shields.io/github/v/release/ssiergl/lgal-doser?include_prereleases&sort=semver&label=beta)](https://github.com/ssiergl/lgal-doser/releases)
+[![License](https://img.shields.io/badge/license-GPL--3.0%20%7C%20CC%20BY--NC--SA%204.0-blue)](#license)
+[![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v6.1.1-E7352C)](https://github.com/espressif/esp-idf/releases/tag/v6.1.1)
+
 Open dosing pump for reef aquariums by **LG Aquatic Life**. The first device has five
 peristaltic pumps with stepper motors, controlled by an ESP32-S3; versions with fewer pumps
 are planned. It is operated through a web UI in the browser and, if you like, from Home
