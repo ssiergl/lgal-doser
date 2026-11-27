@@ -18,6 +18,20 @@ Schlauchpumpen mit Schrittmotor, gesteuert von einem ESP32-S3; Varianten mit wen
 sind geplant. Bedient wird sie über eine Weboberfläche im Browser, auf Wunsch zusätzlich über
 Home Assistant. Firmware, Platine und Gehäuse liegen offen in diesem Repository.
 
+<h3 align="center">Dashboard – Desktop</h3>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/de/overview-dark.png">
+    <img src="docs/images/de/overview-light.png" width="90%" alt="Übersicht der Weboberfläche mit einer Karte pro Pumpe">
+  </picture>
+</p>
+
+<h3 align="center">Dashboard – Mobil</h3>
+<p align="center"><img src="docs/images/de/overview-phone.png" width="300" alt="Die Übersicht am Handy"></p>
+
+<h3 align="center">Einige Highlights</h3>
+<p align="center"><img src="docs/images/de/highlights.png" width="90%" alt="Zeitplan, Kalibrierung, Verlauf, Jetzt dosieren, Boost und MQTT / Home Assistant"></p>
+
 > **Wichtig:** Eine Dosierpumpe gibt Stoffe ins Aquarium, die in falscher Menge Tiere töten
 > können. Vor dem ersten Einsatz die [Sicherheitshinweise](#sicherheit-und-haftung) lesen.
 

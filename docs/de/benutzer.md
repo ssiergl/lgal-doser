@@ -85,11 +85,28 @@ Ein neues Gerät öffnet dafür ein eigenes WLAN, das Setup-WLAN (LED weiß, lan
    Setup-WLAN ab. Handy oder Laptop wieder mit dem Heimnetz verbinden und die neue Adresse
    öffnen.
 
+Die Einrichtung Schritt für Schritt:
+
+<table>
+<tr>
+<td align="center" width="33%"><img src="../images/de/setup-1-language.png" width="260" alt="Einrichtung Schritt 1: Sprache wählen"><br>1. Sprache</td>
+<td align="center" width="33%"><img src="../images/de/setup-2-password.png" width="260" alt="Einrichtung Schritt 2: Geräte-Passwort vom Typenschild und eigenes Admin-Passwort"><br>2. Eigenes Passwort</td>
+<td align="center" width="33%"><img src="../images/de/setup-3-network.png" width="260" alt="Einrichtung Schritt 3: das LAN ist verbunden"><br>3. Netzwerk (LAN)</td>
+</tr>
+<tr>
+<td align="center" width="33%"><img src="../images/de/setup-3-wifi.png" width="260" alt="Einrichtung Schritt 3: gefundene WLANs nach der Suche"><br>3. Netzwerk (WLAN)</td>
+<td align="center" width="33%"><img src="../images/de/setup-4-time.png" width="260" alt="Einrichtung Schritt 4: Zeitzone und Zeitserver"><br>4. Zeitzone</td>
+<td align="center" width="33%"><img src="../images/de/setup-5-finish.png" width="260" alt="Einrichtung Schritt 5: Zusammenfassung vor dem Abschluss"><br>5. Abschluss</td>
+</tr>
+</table>
+
 Tipp: Die Adresse als Lesezeichen speichern oder auf den Home-Bildschirm des Handys legen (dort
 erscheint sie mit dem Tropfen-Icon). Funktioniert `….local` nicht (manche Android-Geräte), die
 IP-Adresse verwenden; sie steht auch in der Geräteliste des Routers.
 
 ## 4. Anmelden
+
+<p align="center"><img src="../images/de/sign-in.png" width="260" alt="Anmeldeseite am Handy"></p>
 
 - Angemeldet wird als Benutzer **admin** mit dem eigenen **Admin-Passwort**. Der Browser bleibt
   angemeldet, solange er mindestens einmal pro Woche benutzt und nicht geschlossen wird (höchstens
@@ -102,6 +119,8 @@ IP-Adresse verwenden; sie steht auch in der Geräteliste des Routers.
   immer länger (bis 5 Minuten).
 - **Passwort vergessen:** siehe [Wenn etwas nicht geht](#11-wenn-etwas-nicht-geht).
 - Passwort ändern, Abmelden und Überall abmelden: Einstellungen → Anmeldung.
+
+<p align="center"><img src="../images/de/account.png" width="380" alt="Karte Anmeldung in den Einstellungen: Passwort ändern, abmelden, überall abmelden"></p>
 
 ## 5. Die Oberfläche
 
@@ -123,6 +142,8 @@ Die Seiten:
 | **Verlauf** | dosierte Mengen pro Tag als Diagramm; in Profi alle Ereignisse mit Filter und CSV-Export |
 | **Einstellungen** | Gerät, Uhrzeit, Status-LED, Netzwerk, MQTT, Anmeldung, Darstellung; von hier zur **Wartung** |
 
+![Übersicht mit einer Karte pro Pumpe](../images/de/overview-dark.png)
+
 Eine Pumpenkarte in der Übersicht:
 
 - **Behälter-Grafik:** Füllstand in Prozent. Der Rand wird **gelb**, wenn der Vorrat weniger
@@ -135,6 +156,8 @@ Eine Pumpenkarte in der Übersicht:
   laufendem Boost. Die Texte dazu stehen auf der Pumpenseite.
 
 ## 6. Eine Pumpe einrichten
+
+![Pumpenseite: Behälter, Jetzt dosieren, Kalibrierung, Zeitplan und Einstellungen](../images/de/pump.png)
 
 Für jede Pumpe in dieser Reihenfolge:
 
@@ -151,12 +174,17 @@ Pumpe → Einstellungen: **Name** (z. B. „KH“, „Calcium“) und **Betrieb*
 ### 6.2 Behälter eintragen
 
 Auf der Behälter-Karte **Ändern**: Größe des Behälters in ml. Ein neu eingetragener Behälter
-gilt als voll. Nach dem Nachfüllen genügt **Nachgefüllt**. Größe 0 schaltet die
-Behälter-Erfassung ab.
+gilt als voll. Nach dem Nachfüllen genügt **Nachgefüllt** (oder **Ändern**, wenn der Behälter
+nicht ganz voll ist). Größe 0 schaltet die Behälter-Erfassung ab.
+
+<p align="center"><img src="../images/de/container-edit.png" width="576" alt="Behälter ändern: Größe und aktueller Inhalt"></p>
 
 Das Gerät zieht jede Dosis und das Kalibrieren vom Behälter ab und
 berechnet daraus die Reichweite. Der Füllstand ist eine Rechnung und nur so genau wie
-Kalibrierung und Eingaben.
+Kalibrierung und Eingaben. Wird der Vorrat knapp, färbt sich die Reichweite gelb und die Pumpe
+warnt, siehe [Alarme und Warnungen](#alarme-und-warnungen).
+
+<p align="center"><img src="../images/de/container-warning.png" width="576" alt="Behälterkarte mit Warnung: der Vorrat reicht nur noch 6 Tage"></p>
 
 ### 6.3 Schlauch füllen
 
@@ -178,12 +206,19 @@ abweichen kann. **Darum jede Pumpe vor dem Einsatz kalibrieren.**
    0,1-ml-Teilung) halten. Die Pumpe fördert die Zielmenge (Standard 10 ml).
 3. Die **tatsächlich gemessene Menge** eintragen und übernehmen – oder verwerfen.
 
+<p align="center"><img src="../images/de/calibration.png" width="440" alt="Kalibrier-Assistent: Schlauch füllen, dann fördert die Pumpe etwa 10 ml in den Messbecher"></p>
+
+<p align="center"><img src="../images/de/calibration-measure.png" width="576" alt="Nach dem Lauf: die tatsächlich gemessene Menge eintragen"></p>
+
 Die Pumpe erinnert an eine neue Kalibrierung (einstellbar: aus, 3, 6, 9 oder 12 Monate,
 Standard 3). Nach einem Schlauchwechsel immer neu kalibrieren.
 
 ### 6.5 Zeitplan
 
 Jede Pumpe hat genau einen Zeitplan. Die 24-Stunden-Leiste zeigt die Dosen von heute.
+
+<p align="center"><img src="../images/de/schedule.png" width="49%" alt="Zeitplan in der Ansicht Einfach: Tagesmenge, Anzahl Dosen, von und bis">
+<img src="../images/de/schedule-pro.png" width="49%" alt="Zeitplan in der Ansicht Profi: Einzelzeiten mit eigener Menge an gewählten Wochentagen"></p>
 
 - **Einfach:** Tagesmenge, Anzahl der Dosen und zwei Uhrzeiten, z. B. „24 ml in 12 Dosen
   zwischen 08:00 und 20:00“, täglich. Die Vorschau zeigt die Uhrzeiten.
@@ -202,6 +237,8 @@ lässt er sich als Datei exportieren und auf derselben oder einer anderen Pumpe 
 
 Pumpe → Einstellungen in Profi:
 
+<p align="center"><img src="../images/de/pump-settings-pro.png" width="576" alt="Pumpen-Einstellungen in der Ansicht Profi mit dem Feintuning"></p>
+
 - **Tageslimit:** harte Obergrenze pro Tag für alle Dosen zusammen. Eine Dosis, die darüber
   ginge, wird ausgelassen und gemeldet. **Dringend empfohlen.**
 - **Geschwindigkeit** beim Dosieren (drei Stufen).
@@ -212,6 +249,14 @@ Pumpe → Einstellungen in Profi:
 
 Die Zielmenge der Kalibrierung lässt sich in Profi direkt im Kalibrier-Assistenten ändern.
 
+### 6.7 Schlauch wechseln
+
+Pumpenschläuche verschleißen. Das Gerät zählt die Betriebsstunden pro Pumpe (Pumpe →
+Verbrauch) und warnt, wenn die Lebensdauer erreicht ist. Nach dem Wechsel in Profi
+**Schlauch getauscht** drücken und die Pumpe neu kalibrieren.
+
+<p align="center"><img src="../images/de/consumption.png" width="576" alt="Karte Verbrauch in der Ansicht Profi: Schlauchstunden und der Knopf Schlauch getauscht"></p>
+
 ## 7. Im Alltag
 
 ### Jetzt dosieren
@@ -221,6 +266,8 @@ angezeigt. Liegt die Pumpe gerade in einer Sperrzeit, nennt die Seite, wann es w
 die Dosis startet danach, je nach Einstellung. Bei **Nachfragen** wählst du: abbrechen, nach der
 Sperrzeit dosieren oder trotzdem dosieren (der Verlauf vermerkt das).
 
+<p align="center"><img src="../images/de/dose-running.png" width="576" alt="Jetzt dosieren: eine Dosis von 5 ml läuft, mit Fortschritt und Stopp"></p>
+
 ### Boost
 
 Für eine begrenzte Zeit mehr dosieren, z. B. nach einem Wasserwechsel: Pumpe → **Boost**,
@@ -229,10 +276,7 @@ Dosen verteilt; die Vorschau zeigt „≈ X ml zusätzlich pro Tag“. In Profi 
 nächsten N Dosen“. Ein Boost endet von selbst und lässt sich vorher beenden. Er braucht einen
 Zeitplan und Betrieb „automatisch“.
 
-### Nachfüllen
-
-Behälter auffüllen, dann auf der Behälter-Karte **Nachgefüllt** (oder **Ändern**, wenn nicht
-ganz voll).
+<p align="center"><img src="../images/de/boost.png" width="576" alt="Boost: 20 ml zusätzlich über 5 Tage, die Vorschau nennt die Zusatzmenge pro Tag"></p>
 
 ### Alarme und Warnungen
 
@@ -249,19 +293,19 @@ ganz voll).
 
 ### Verlauf
 
+![Verlauf: dosierte Menge pro Tag und Pumpe](../images/de/history.png)
+
 **Verlauf** zeigt die dosierte Menge pro Tag und Pumpe für 7, 14 (Standard) oder 30 Tage oder
 mit **Zeitraum** für beliebige Tage, die das Gerät noch aufbewahrt (von – bis; 30 bis 90 Tage,
 eingestellt im Engineering-Bereich), als Balken oder Linie. Antippen eines Tages nennt Menge, Anzahl der Dosen und ausgelassene Dosen.
 In Profi gibt es die Liste aller Ereignisse (Dosen, Füllen, Kalibrierung, Alarme, Änderungen …)
 mit Filter und CSV-Export.
 
-### Schlauch wechseln
-
-Pumpenschläuche verschleißen. Das Gerät zählt die Betriebsstunden pro Pumpe (Pumpe →
-Verbrauch) und warnt, wenn die Lebensdauer erreicht ist. Nach dem Wechsel in Profi
-**Schlauch getauscht** drücken und die Pumpe neu kalibrieren.
+![Ereignisliste in der Ansicht Profi](../images/de/history-events.png)
 
 ## 8. Einstellungen
+
+![Seite Einstellungen](../images/de/settings.png)
 
 | Bereich | Inhalt |
 |---|---|
@@ -274,14 +318,21 @@ Verbrauch) und warnt, wenn die Lebensdauer erreicht ist. Nach dem Wechsel in Pro
 | Anmeldung | Passwort ändern, abmelden, überall abmelden; in Profi API-Schlüssel für Apps und Skripte |
 | Darstellung | dunkel, hell oder wie das System; Sprache; 24- oder 12-Stunden-Format |
 
+<p align="center"><img src="../images/de/led.png" width="49%" alt="Karte Status-LED mit dem Nachtmodus">
+<img src="../images/de/locks.png" width="49%" alt="Sperrzeiten in der Ansicht Profi: Mindestabstand zwischen zwei Pumpen"></p>
+
 **Home Assistant:** Broker-Adresse eintragen und „Home-Assistant-Erkennung“ einschalten; das
 Gerät erscheint dann von selbst mit Sensoren für jede Pumpe. „Steuerung über MQTT erlauben“
 ermöglicht Dosieren und Schalten aus Home Assistant – nur einschalten, wenn der Broker
 geschützt ist.
 
+<p align="center"><img src="../images/de/mqtt.png" width="380" alt="Karte MQTT in der Ansicht Profi mit der Home-Assistant-Erkennung"></p>
+
 ## 9. Updates und Wartung
 
 Einstellungen → **Wartung**:
+
+<p align="center"><img src="../images/de/updates.png" width="380" alt="Karte Updates auf der Seite Wartung"></p>
 
 - **Updates:** Ist eine Update-Quelle eingerichtet, zeigt die Karte die installierte und die
   neueste Version, prüft auf Wunsch täglich und installiert per Knopfdruck. Installiert wird
