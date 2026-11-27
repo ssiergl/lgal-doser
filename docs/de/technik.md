@@ -228,7 +228,8 @@ Als Update-Quelle der Geräte dient dann
 Der Text der Release-Seite kommt von `tools/release_notes.py`: der Abschnitt aus `CHANGELOG.md`,
 dessen Überschrift die Version nennt (ein Release-Kandidat `0.2.0-rc.1` nimmt den Abschnitt von
 `0.2.0`, z. B. `## Unreleased – 0.2.0`), als Zusammenfassung in Stichpunkten, danach jeder Commit
-seit dem vorigen Versions-Tag, eingeklappt unter „All changes“, und ein Link auf den vollständigen
+seit dem vorigen Versions-Tag (ein Release überspringt seine Release-Kandidaten und vergleicht
+mit dem vorigen Release), eingeklappt unter „All changes“, und ein Link auf den vollständigen
 Vergleich. Den Changelog-Abschnitt also vor dem Taggen aktuell halten.
 
 #### SBOM
