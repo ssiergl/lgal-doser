@@ -80,11 +80,28 @@ A new device opens its own Wi-Fi for this, the setup Wi-Fi (LED pulsing white, s
    `http://lgal-doser-xxxx.local/`, and the IP address. 20 seconds later the setup Wi-Fi switches
    off. Connect phone or laptop to the home network again and open the new address.
 
+The setup step by step:
+
+<table>
+<tr>
+<td align="center" width="33%"><img src="images/en/setup-1-language.png" width="260" alt="Setup step 1: choosing the language"><br>1. Language</td>
+<td align="center" width="33%"><img src="images/en/setup-2-password.png" width="260" alt="Setup step 2: the device password from the rating plate and the own admin password"><br>2. Own password</td>
+<td align="center" width="33%"><img src="images/en/setup-3-network.png" width="260" alt="Setup step 3: the LAN is connected"><br>3. Network (LAN)</td>
+</tr>
+<tr>
+<td align="center" width="33%"><img src="images/en/setup-3-wifi.png" width="260" alt="Setup step 3: Wi-Fi networks found by the scan"><br>3. Network (Wi-Fi)</td>
+<td align="center" width="33%"><img src="images/en/setup-4-time.png" width="260" alt="Setup step 4: time zone and time server"><br>4. Time zone</td>
+<td align="center" width="33%"><img src="images/en/setup-5-finish.png" width="260" alt="Setup step 5: summary before finishing"><br>5. Finish</td>
+</tr>
+</table>
+
 Tip: bookmark the address, or add it to the home screen of your phone (it gets the drop icon
 there). If `….local` does not work (some Android devices), use the IP address; it is also listed
 in the router's device list.
 
 ## 4. Signing in
+
+<p align="center"><img src="images/en/sign-in.png" width="260" alt="Sign-in page on a phone"></p>
 
 - You sign in as user **admin** with your own **admin password**. The browser stays signed in as long as it is used
   at least once a week (at most 30 days) and is not closed. After a restart or update of the
@@ -97,6 +114,8 @@ in the router's device list.
   then longer and longer (up to 5 minutes).
 - **Forgotten password:** see [When something does not work](#11-when-something-does-not-work).
 - Change password, sign out and sign out everywhere: settings → sign-in.
+
+<p align="center"><img src="images/en/account.png" width="380" alt="Sign-in card in the settings: change password, sign out, sign out everywhere"></p>
 
 ## 5. The web UI
 
@@ -117,6 +136,8 @@ The pages:
 | **History** | dosed amounts per day as a chart; in pro all events with filter and CSV export |
 | **Settings** | device, time, status LED, network, MQTT, sign-in, appearance; from here to **maintenance** |
 
+![Overview with one card per pump](images/en/overview-dark.png)
+
 A pump card in the overview:
 
 - **Container graphic:** level in percent. The border turns **yellow** when the stock lasts fewer
@@ -129,6 +150,8 @@ A pump card in the overview:
   boost. The texts are on the pump page.
 
 ## 6. Setting up a pump
+
+![Pump page: container, dose now, calibration, schedule and settings](images/en/pump.png)
 
 For every pump, in this order:
 
@@ -145,11 +168,17 @@ Pump → settings: **name** (e.g. "Alkalinity", "Calcium") and **mode**:
 ### 6.2 Entering the container
 
 On the container card, **Change**: size of the container in ml. A newly entered container counts
-as full. After refilling, **Refilled** is enough. Size 0 switches the container tracking off.
+as full. After refilling, **Refilled** is enough (or **Change** if the container is not quite
+full). Size 0 switches the container tracking off.
+
+<p align="center"><img src="images/en/container-edit.png" width="576" alt="Changing the container: size and current content"></p>
 
 The device subtracts every dose and the calibration from the container and
 computes the range from it. The level is a calculation and only as accurate as calibration and
-entries.
+entries. When the stock runs low, the range turns yellow and the pump warns, see
+[Alarms and warnings](#alarms-and-warnings).
+
+<p align="center"><img src="images/en/container-warning.png" width="576" alt="Container card with a warning: the stock lasts only 6 more days"></p>
 
 ### 6.3 Filling the tube
 
@@ -170,12 +199,19 @@ the tube. **So calibrate every pump before use.**
    graduation). The pump delivers the target amount (default 10 ml).
 3. Enter the **amount actually measured** and apply it – or discard it.
 
+<p align="center"><img src="images/en/calibration.png" width="440" alt="Calibration wizard: fill the tube, then the pump delivers about 10 ml into the measuring cup"></p>
+
+<p align="center"><img src="images/en/calibration-measure.png" width="576" alt="After the run: entering the amount actually measured"></p>
+
 The pump reminds you to calibrate again (configurable: off, 3, 6, 9 or 12 months, default 3).
 Always calibrate again after a tube change.
 
 ### 6.5 Schedule
 
 Every pump has exactly one schedule. The 24-hour bar shows today's doses.
+
+<p align="center"><img src="images/en/schedule.png" width="49%" alt="Schedule in the simple view: daily amount, number of doses, from and to">
+<img src="images/en/schedule-pro.png" width="49%" alt="Schedule in the pro view: single times with their own amount on chosen weekdays"></p>
 
 - **Simple:** daily amount, number of doses and two times, e.g. "24 ml in 12 doses between 08:00
   and 20:00", daily. The preview shows the times.
@@ -193,6 +229,8 @@ as a file and imported on the same or another pump.
 
 Pump → settings in pro:
 
+<p align="center"><img src="images/en/pump-settings-pro.png" width="576" alt="Pump settings in the pro view with the fine-tuning"></p>
+
 - **Daily limit:** hard upper limit per day for all doses together. A dose that would go beyond
   it is skipped and reported. **Strongly recommended.**
 - **Speed** when dosing (three tiers).
@@ -203,6 +241,14 @@ Pump → settings in pro:
 
 The target amount of the calibration can be changed in pro directly in the calibration wizard.
 
+### 6.7 Changing the tube
+
+Pump tubes wear out. The device counts the operating hours per pump (pump → consumption) and warns when
+the tube life is reached. After the change, press **Tube replaced** in pro and calibrate the pump
+again.
+
+<p align="center"><img src="images/en/consumption.png" width="576" alt="Consumption card in the pro view: tube hours and the button Tube replaced"></p>
+
 ## 7. Daily use
 
 ### Dose now
@@ -212,6 +258,8 @@ lock time right now, the page names when it is possible again, or the dose start
 depending on the setting. With **Ask** you choose: cancel, dose when the lock time ends, or dose
 anyway (the history notes it).
 
+<p align="center"><img src="images/en/dose-running.png" width="576" alt="Dose now: a dose of 5 ml running, with progress and stop"></p>
+
 ### Boost
 
 Dose more for a limited time, e.g. after a water change: pump → **Boost**, choose the extra amount
@@ -219,10 +267,7 @@ and the period (1–30 days). The amount is spread evenly over the scheduled dos
 shows "≈ X ml extra per day". In pro "over the next N doses" is possible too. A boost ends by
 itself and can be ended earlier. It needs a schedule and mode "automatic".
 
-### Refilling
-
-Fill up the container, then **Refilled** on the container card (or **Change** if not quite
-full).
+<p align="center"><img src="images/en/boost.png" width="576" alt="Boost: 20 ml extra over 5 days, the preview names the extra amount per day"></p>
 
 ### Alarms and warnings
 
@@ -239,19 +284,19 @@ full).
 
 ### History
 
+![History: dosed amount per day and pump](images/en/history.png)
+
 **History** shows the dosed amount per day and pump for 7, 14 (default) or 30 days, or with
 **Period** for any days the device still keeps (from – to; 30 to 90 days, set in the
 engineering area), as bars or line. Tapping a day names amount, number of doses and skipped doses. In pro there is
 the list of all events (doses, tube filling, calibration, alarms, changes …) with filter and CSV
 export.
 
-### Changing the tube
-
-Pump tubes wear out. The device counts the operating hours per pump (pump → consumption) and warns when
-the tube life is reached. After the change, press **Tube replaced** in pro and calibrate the pump
-again.
+![Event list in the pro view](images/en/history-events.png)
 
 ## 8. Settings
+
+![Settings page](images/en/settings.png)
 
 | Area | Content |
 |---|---|
@@ -264,13 +309,20 @@ again.
 | Sign-in | change password, sign out, sign out everywhere; in pro API keys for apps and scripts |
 | Appearance | dark, light or as the system; language; 24- or 12-hour format |
 
+<p align="center"><img src="images/en/led.png" width="49%" alt="Status LED card with the night mode">
+<img src="images/en/locks.png" width="49%" alt="Lock times in the pro view: minimum gap between two pumps"></p>
+
 **Home Assistant:** enter the broker address and switch on "Home Assistant discovery"; the device
 then appears by itself with sensors for every pump. "Allow control via MQTT" enables dosing and
 switching from Home Assistant – only switch it on if the broker is protected.
 
+<p align="center"><img src="images/en/mqtt.png" width="380" alt="MQTT card in the pro view with the Home Assistant discovery"></p>
+
 ## 9. Updates and maintenance
 
 Settings → **Maintenance**:
+
+<p align="center"><img src="images/en/updates.png" width="380" alt="Updates card on the maintenance page"></p>
 
 - **Updates:** if an update source is set up, the card shows the installed and the newest
   version, checks daily if you like and installs at the press of a button. Nothing is ever

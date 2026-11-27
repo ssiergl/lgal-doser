@@ -18,6 +18,20 @@ peristaltic pumps with stepper motors, controlled by an ESP32-S3; versions with 
 are planned. It is operated through a web UI in the browser and, if you like, from Home
 Assistant as well. Firmware, circuit board and enclosure are open in this repository.
 
+<h3 align="center">Dashboard – Desktop</h3>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/en/overview-dark.png">
+    <img src="docs/images/en/overview-light.png" width="90%" alt="Overview of the web UI with one card per pump">
+  </picture>
+</p>
+
+<h3 align="center">Dashboard – Mobile</h3>
+<p align="center"><img src="docs/images/en/overview-phone.png" width="300" alt="The overview on a phone"></p>
+
+<h3 align="center">A few highlights</h3>
+<p align="center"><img src="docs/images/en/highlights.png" width="90%" alt="Schedule, calibration, history, dose now, boost and MQTT / Home Assistant"></p>
+
 > **Important:** A dosing pump adds substances to the aquarium that can kill animals in the
 > wrong amount. Read the [safety notes](#safety-and-liability) before first use.
 
