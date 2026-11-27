@@ -23,14 +23,15 @@ body{min-height:100vh;min-height:100dvh}
  .mark{--reef-top:calc(env(safe-area-inset-bottom) + min(22vh,180px))}
 }
 /* the step card floats in the middle of the logo (the box between the language picker and the
-   reef that lgal.css gives .mark); title and progress hang above it, the buttons below */
+   reef that lgal.css gives .mark); title and progress hang above it */
 main{--gap-y:clamp(12px,4vh,40px);display:grid;grid-template-rows:1fr auto 1fr;max-width:520px;
  min-height:100vh;min-height:100dvh;margin:0 auto;padding:calc(56px + var(--gap-y)) 16px calc(min(30vh,240px) + var(--gap-y))}
 @media (max-width:939px){main{padding-bottom:calc(env(safe-area-inset-bottom) + min(22vh,180px) + var(--gap-y))}}
 .head{align-self:end;text-align:center}
 #stepno{margin:2px 0 0;font-size:13px}
 .progress{display:flex;gap:4px;margin:14px 0}.progress i{flex:1;height:4px;border-radius:2px;background:var(--line)}.progress i.on{background:var(--acc)}
-.nav{align-self:start;display:flex;justify-content:space-between;gap:8px;margin-top:14px}
+/* back and next: the foot of the visible step card, as the buttons of every other card */
+.nav{display:flex;justify-content:space-between;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .nav #next{margin-left:auto}
 h2{margin:0 0 10px}
 input,select{width:100%}
@@ -117,7 +118,7 @@ ul{padding-left:20px}
 </section>
 </div>
 
-<div class="nav"><button type="button" class="sec" id="back" data-i18n="back"></button><button type="button" id="next" data-i18n="next"></button></div>
+<div class="nav" id="nav"><button type="button" class="sec" id="back" data-i18n="back"></button><button type="button" id="next" data-i18n="next"></button></div>
 </main>
 <script type="module">
 import { drawReef } from '/ui/lib/reef.js';
@@ -654,6 +655,7 @@ function urls(id,list){$(id).innerHTML=(list||[]).map(u=>`<li><a href="${esc(u)}
 function show(n){
   step=Math.max(0,Math.min(STEPS.length-1,n));
   document.querySelectorAll('[data-step]').forEach(s=>s.hidden=s.dataset.step!==STEPS[step]);
+  document.querySelector(`[data-step="${STEPS[step]}"]`).append($('nav'));
   $('stepno').textContent=t('step',{n:step+1,m:STEPS.length});
   $('bar').innerHTML=STEPS.map((_,i)=>`<i class="${i<=step?'on':''}"></i>`).join('');
   $('back').hidden=step===0||done;
@@ -670,6 +672,7 @@ function updNext(){
   $('next').textContent=t(k==='done'?'done.btn':'next');
   $('next').hidden=done;
   $('next').disabled=(k==='pw'&&!S.password_set)||(k==='net'&&!(NS&&NS.active!=='none'));
+  $('nav').hidden=$('back').hidden&&$('next').hidden;
 }
 
 // 1 language
@@ -746,7 +749,7 @@ async function loadDone(){
 async function complete(){
   try{const j=await api('POST','/api/v1/setup/complete');done=true;S.completed=true;
     urls('urls2',j.urls);$('done_todo').hidden=true;$('done_ok').hidden=false;
-    $('done_ap').textContent=t('done.ap',{s:j.ap_off_in_s});$('done_msg').textContent='';updNext();$('back').hidden=true;
+    $('done_ap').textContent=t('done.ap',{s:j.ap_off_in_s});$('done_msg').textContent='';$('back').hidden=true;updNext();
   }catch(e){msg('done_msg',e.message)}
 }
 
