@@ -9,6 +9,11 @@ All notable changes to the LGAL Doser firmware. The format follows
 
 ## Unreleased – 0.1.1
 
+### Changed
+
+- Web UI: the warning and error outline of the container graphic runs around the cap as well,
+  not only around the body (overview and pump page).
+
 ### Fixed
 
 - littlefs 1.23.3: a failed close of a file no longer leaks memory or leaves the file looking

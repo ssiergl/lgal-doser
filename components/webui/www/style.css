@@ -85,7 +85,7 @@
 .canister.l { width: 168px; height: 224px; }
 .canister .cap, .canister .neck { fill: var(--line); }
 .canister .body { fill: var(--card-2); }
-.canister .outline { fill: none; stroke: var(--line); stroke-width: 2.5; }
+.canister .outline { fill: none; stroke: var(--line); stroke-width: 2.5; stroke-linejoin: round; }
 .canister .outline.warn { stroke: var(--warn); }
 .canister .outline.err { stroke: var(--err); }
 .canister .outline.none { stroke-dasharray: 6 5; }

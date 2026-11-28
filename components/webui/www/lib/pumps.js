@@ -107,6 +107,11 @@ let clipSeq = 0;
 // full period (CSS .wave) without a gap at either side of the canister
 const wavePath = (y, bottom) => `M-70 ${y} q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V${bottom} H-70 Z`;
 
+// Outline of the whole canister (cap, neck and body), so a warning or error
+// colour runs around the cap as well
+const outlinePath = 'M47 3H73A3 3 0 0 1 76 6V15H71V24H90A16 16 0 0 1 106 40V138A16 16 0 0 1 90 154'
+  + 'H30A16 16 0 0 1 14 138V40A16 16 0 0 1 30 24H49V15H44V6A3 3 0 0 1 47 3Z';
+
 // sp: schedule status of the pump (range in days for the outline colour)
 export function Container({ p, sp, size = 'm', style }) {
   const c = p.container;
@@ -128,7 +133,7 @@ export function Container({ p, sp, size = 'm', style }) {
         d=${wavePath(y, bottom)} fill=${color} opacity=${cls === 'wave' ? '.55' : '.3'}/>`)}
     </g>`}
     ${[0.25, 0.5, 0.75].map(f => html`<line x1="94" x2="104" y1=${bottom - h * f} y2=${bottom - h * f} class="tick"/>`)}
-    <rect x="14" y="24" width="92" height="130" rx="16" class=${'outline ' + level}/>
+    <path d=${outlinePath} class=${'outline ' + level}/>
     <text x="60" y="96" class="pct">${c.tracked ? num(pct, 0) + '%' : '–'}</text>
   </svg>`;
 }
